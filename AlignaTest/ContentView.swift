@@ -1,79 +1,98 @@
-//
-//  ContentView.swift
-//  
-//
-//  Created by Elaine Hsieh on 6/29/25.
-//
-
-
 import SwiftUI
+
+struct Suggestion: Identifiable {
+    let id = UUID()
+    let title: String
+    let iconName: String
+}
+
+final class SuggestionVM: ObservableObject {
+    @Published var items: [Suggestion] = [
+        .init(title: "Place", iconName: "icon_place"),
+        .init(title: "Gemstone", iconName: "icon_gemstone"),
+        .init(title: "Color", iconName: "icon_color"),
+        .init(title: "Scent", iconName: "icon_scent"),
+        .init(title: "Activity", iconName: "icon_activity"),
+        .init(title: "Sound", iconName: "icon_sound"),
+        .init(title: "Career", iconName: "icon_career"),
+        .init(title: "Relationship", iconName: "icon_relationship")
+    ]
+}
+
+private struct SuggestionChip: View {
+    let title: String
+    let iconName: String
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(iconName)
+                .resizable()
+                .renderingMode(.template)
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 24, height: 24)
+                .foregroundColor(.primary)
+            
+            Text(title)
+                .font(.subheadline)
+                .foregroundColor(.primary)
+            
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .background(
+            Capsule()
+                .fill(Color(.secondarySystemBackground))
+        )
+    }
+}
+
 
 struct ContentView: View {
     @State private var selectedDate = Date()
-
+    @StateObject private var vm = SuggestionVM()
+    
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     var body: some View {
-        GeometryReader { geometry in
+        GeometryReader { geo in
             ZStack {
                 AppBackgroundView()
                     .environmentObject(starManager)
+                
+                ScrollView {
+                    VStack(spacing: 24) {
+                        CalendarView(selectedDate: $selectedDate)
+                            .frame(height: 330)
+                            .padding(.horizontal)
+                        
+                        LazyVGrid(
+                            columns: [.init(.flexible(), spacing: 16), .init(.flexible(), spacing: 16)],
+                            spacing: 16
+                        ) {
+                            ForEach(vm.items) { item in
+                                SuggestionChip(title: item.title, iconName: item.iconName)
+                            }
+                        }
 
-                VStack(spacing: 20) {
-                    Spacer().frame(height: geometry.size.height * 0.05)
-
-                    Text("📅 Select a Date")
-                        .font(Font.custom("PlayfairDisplay-Regular", size: min(geometry.size.width, geometry.size.height) * 0.06))
-                        .foregroundColor(themeManager.foregroundColor)
-
-                    CalendarView(
-                        selectedDate: $selectedDate,
-                        backgroundColor: UIColor(themeManager.foregroundColor)
-                    )
-                    .frame(height: 330)
-                    .padding(.horizontal)
-
-
-                    VStack(spacing: 8) {
-                        Text("You selected:")
-                            .font(.headline)
-                            .foregroundColor(themeManager.foregroundColor)
-
-                        Text("\(formattedDate(date: selectedDate))")
-                            .font(.body)
-                            .foregroundColor(themeManager.foregroundColor.opacity(0.8))
                     }
-
-                    Button(action: {
-                        print("✅ Date confirmed: \(selectedDate)")
-                        // Handle your navigation or logic here
-                    }) {
-                        Text("Confirm")
-                            .font(.headline)
-                            .foregroundColor(.black)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(themeManager.foregroundColor)
-                            .cornerRadius(12)
-                            .padding(.horizontal, geometry.size.width * 0.1)
-                    }
-                    .padding(.top, 20)
-
-                    Spacer()
+                    .padding(.vertical)
+                    .padding(.top, geo.safeAreaInsets.top + 8)
                 }
-                .padding(.bottom)
             }
+            .ignoresSafeArea(edges: .vertical)
+            .navigationTitle("Calendar")
             .onAppear {
                 starManager.animateStar = true
                 themeManager.updateTheme()
             }
         }
     }
+}
 
-    func formattedDate(date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        return formatter.string(from: date)
-    }
+#Preview {
+    ContentView()
+        .environmentObject(StarAnimationManager())
+        .environmentObject(ThemeManager())
 }

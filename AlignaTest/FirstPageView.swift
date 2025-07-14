@@ -66,14 +66,6 @@ struct FirstPageView: View {
                             .multilineTextAlignment(.center)
                             .foregroundColor(themeManager.foregroundColor.opacity(0.7))
                             .padding(.horizontal, geometry.size.width * 0.1)
-
-                        NavigationLink(destination: ContentView()) {
-                            Text("or check a previous date")
-                                .font(.callout)
-                                .underline()
-                                .foregroundColor(themeManager.foregroundColor.opacity(0.8))
-                                .padding(.top, 5)
-                        }
                         
                         Spacer()
 
