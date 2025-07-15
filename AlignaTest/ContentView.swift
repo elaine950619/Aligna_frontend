@@ -1,3 +1,10 @@
+//
+//  CalendarView.swift
+//
+//
+//  Created by Elaine Hsieh on 6/29/25.
+//
+
 import SwiftUI
 
 struct Suggestion: Identifiable {
@@ -5,7 +12,6 @@ struct Suggestion: Identifiable {
     let title: String
     let iconName: String
 }
-
 final class SuggestionVM: ObservableObject {
     @Published var items: [Suggestion] = [
         .init(title: "Place", iconName: "icon_place"),
@@ -18,7 +24,6 @@ final class SuggestionVM: ObservableObject {
         .init(title: "Relationship", iconName: "icon_relationship")
     ]
 }
-
 private struct SuggestionChip: View {
     let title: String
     let iconName: String
@@ -47,52 +52,51 @@ private struct SuggestionChip: View {
     }
 }
 
-
 struct ContentView: View {
-    @State private var selectedDate = Date()
-    @StateObject private var vm = SuggestionVM()
-    
-    @EnvironmentObject var starManager: StarAnimationManager
-    @EnvironmentObject var themeManager: ThemeManager
-    
-    var body: some View {
-        GeometryReader { geo in
-            ZStack {
-                AppBackgroundView()
-                    .environmentObject(starManager)
-                
-                ScrollView {
-                    VStack(spacing: 24) {
-                        CalendarView(selectedDate: $selectedDate)
-                            .frame(height: 330)
-                            .padding(.horizontal)
-                        
-                        LazyVGrid(
-                            columns: [.init(.flexible(), spacing: 16), .init(.flexible(), spacing: 16)],
-                            spacing: 16
-                        ) {
-                            ForEach(vm.items) { item in
-                                SuggestionChip(title: item.title, iconName: item.iconName)
-                            }
-                        }
+  @State private var selectedDate = Date()
+  @StateObject private var vm = SuggestionVM()
+  @EnvironmentObject var starManager: StarAnimationManager
+  @EnvironmentObject var themeManager: ThemeManager
 
-                    }
-                    .padding(.vertical)
-                    .padding(.top, geo.safeAreaInsets.top + 8)
-                }
+  var body: some View {
+    GeometryReader { geo in
+      ZStack {
+        AppBackgroundView().environmentObject(starManager)
+        ScrollView {
+          VStack(spacing: 24) {
+            // ← here’s your new SwiftUI CalendarView
+            CalendarView(selectedDate: $selectedDate)
+              .frame(height: 330)
+              .padding(.horizontal)
+              .background(Color(.secondarySystemBackground)) 
+              .cornerRadius(20)
+
+            // ← then your chips grid
+              LazyVGrid(
+                  columns: [.init(.flexible(), spacing: 16), .init(.flexible(), spacing: 16)],
+                  spacing: 16
+              ) {
+              ForEach(vm.items) { item in
+                SuggestionChip(title: item.title, iconName: item.iconName)
+              }
             }
-            .ignoresSafeArea(edges: .vertical)
-            .navigationTitle("Calendar")
-            .onAppear {
-                starManager.animateStar = true
-                themeManager.updateTheme()
-            }
+          }
+          .padding(.vertical)
+          .padding(.top, geo.safeAreaInsets.top + 8)
         }
+      }
+      .ignoresSafeArea(edges: .vertical)
+      .navigationTitle("Calendar")
+      .onAppear {
+        starManager.animateStar = true
+        themeManager.updateTheme()
+      }
     }
+  }
 }
 
 #Preview {
-    ContentView()
-        .environmentObject(StarAnimationManager())
-        .environmentObject(ThemeManager())
+  ContentView()
+    .environmentObject(StarAnimationManager())
+    .environmentObject(ThemeManager())
 }
