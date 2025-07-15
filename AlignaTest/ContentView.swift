@@ -64,14 +64,12 @@ struct ContentView: View {
         AppBackgroundView().environmentObject(starManager)
         ScrollView {
           VStack(spacing: 24) {
-            // ← here’s your new SwiftUI CalendarView
             CalendarView(selectedDate: $selectedDate)
               .frame(height: 330)
               .padding(.horizontal)
               .background(Color(.secondarySystemBackground)) 
               .cornerRadius(20)
 
-            // ← then your chips grid
               LazyVGrid(
                   columns: [.init(.flexible(), spacing: 16), .init(.flexible(), spacing: 16)],
                   spacing: 16

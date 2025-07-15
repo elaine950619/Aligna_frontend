@@ -160,7 +160,7 @@ struct CalendarView: View {
                     Image(systemName: "chevron.right")
                 }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 24)
             
             // 2. Weekday symbols
             HStack {
@@ -170,6 +170,7 @@ struct CalendarView: View {
                         .frame(maxWidth: .infinity)
                 }
             }
+            .padding(.horizontal, 24)
             
             // 3. Day grid
             LazyVGrid(columns: columns, spacing: 8) {
@@ -186,8 +187,8 @@ struct CalendarView: View {
                 }
             }
         }
-        .padding()
-//        .foregroundColor(.white)  
+        .padding(.horizontal, 24)
+//        .foregroundColor(.white)
     }
     
     // advance or rewind the displayed month
