@@ -1303,7 +1303,7 @@ struct OnboardingFinalStep: View {
             "longitude": lng
         ]
 
-        guard let url = URL(string: "https://aligna-16639733048.us-central1.run.app/recommend/") else {
+        guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
             print("❌ 无效的 FastAPI URL")
             return
         }

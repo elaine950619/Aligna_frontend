@@ -50,11 +50,44 @@ struct SuggestionRow: View {
     .padding(.horizontal, 12)
     .frame(maxWidth: .infinity)
     .background(Color(.secondarySystemBackground))
+<<<<<<< HEAD
     .clipShape(Capsule())
+=======
+    .cornerRadius(20)
+//    .clipShape(Capsule())
+  }
+}
+
+struct PlaceholderRow: View {
+  let category: String
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      Text(category)
+        .font(.headline)
+        .foregroundColor(.secondary)
+        .textCase(.uppercase)
+        .frame(maxWidth: .infinity, alignment: .center)
+
+      // empty capsule
+      RoundedRectangle(cornerRadius: 20)
+        .fill(Color(.secondarySystemBackground))
+        .frame(height: 60)
+    }
+    .padding(.vertical, 6)
+    .padding(.horizontal, 12)
+    .background(Color(.secondarySystemBackground))
+    .cornerRadius(20)
+>>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
   }
 }
 
 struct ContentView: View {
+  private let allCategories = [
+    "Place","Color","Gemstone","Scent",
+    "Activity","Sound","Career","Relationship"
+  ]
+  
   @State private var selectedDate = Date()
   @StateObject private var dailyVM = DailyViewModel()
   @EnvironmentObject var starManager: StarAnimationManager
@@ -79,6 +112,10 @@ struct ContentView: View {
             .onChange(of: selectedDate) {
               dailyVM.load(for: selectedDate)
             }
+<<<<<<< HEAD
+=======
+            .padding(.horizontal, 16)
+>>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
 
 //            NavigationLink {
 //              JournalView(date: selectedDate)
@@ -106,12 +143,28 @@ struct ContentView: View {
             }
 
             // one‑column grid of full‑width capsules
+<<<<<<< HEAD
             LazyVGrid(columns: [GridItem(.flexible())], spacing: 4) {
               ForEach(dailyVM.items) { item in
                 SuggestionRow(item: item)
               }
             }
             .padding(.horizontal)
+=======
+            LazyVGrid(columns: [GridItem(.flexible())], spacing: 12) {
+              ForEach(allCategories, id: \.self) { category in
+                if let item = dailyVM.items.first(where: { $0.category == category }) {
+                  // real data
+                  SuggestionRow(item: item)
+                } else {
+                  // placeholder skeleton
+                  PlaceholderRow(category: category)
+                    .redacted(reason: .placeholder)  // iOS 15+ greyed-out look
+                }
+              }
+            }
+            .padding(.horizontal, 16)  // outer margin
+>>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
           }
           .padding(.top)
         }

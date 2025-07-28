@@ -7,6 +7,10 @@
 
 import FirebaseFirestore
 import Combine
+<<<<<<< HEAD
+=======
+import FirebaseAuth
+>>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
 
 struct SuggestionItem: Identifiable {
   let id: String            // e.g. "Place-F7qJq41pACtid7QaIHHD"
@@ -29,8 +33,19 @@ final class DailyViewModel: ObservableObject {
   }()
 
   func load(for date: Date) {
+<<<<<<< HEAD
     let ds = Self.fmt.string(from: date)
     db.collection("daily_recommendation")
+=======
+    guard let userId = Auth.auth().currentUser?.uid else {
+        print("❌ 依然无法获取 UID")
+        return
+    }
+    
+    let ds = Self.fmt.string(from: date)
+    db.collection("daily_recommendation")
+      .whereField("uid", isEqualTo: userId)
+>>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
       .whereField("createdAt", isEqualTo: ds)
       .getDocuments { snap, err in
         if let err = err {
