@@ -1,11 +1,18 @@
 //
 //  CalendarView.swift
-//  
+//  AlignaTest
 //
-//  Created by Elaine Hsieh on 6/29/25.
+//  Created by Elaine Hsieh on 7/20/25.
 //
+
 import SwiftUI
 import Foundation
+
+struct RecommendationResponse: Decodable {
+  let mantra: String
+  let sentiment: String
+  let recommendations: [String:String]
+}
 
 
 enum MoonPhase: String, CaseIterable {
@@ -138,9 +145,10 @@ struct DayCell: View {
   }
 }
 
-/// Rename this from `MoonCalendarView` → `CalendarView`
 struct CalendarView: View {
     @Binding var selectedDate: Date
+    var accentColor: Color
+    
     @State private var displayMonth: Date = Date()
     private let calendar = Calendar.current
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
@@ -160,7 +168,7 @@ struct CalendarView: View {
                     Image(systemName: "chevron.right")
                 }
             }
-            .padding(.horizontal, 24)
+//            .padding(.horizontal, 24)
             
             // 2. Weekday symbols
             HStack {
@@ -179,6 +187,7 @@ struct CalendarView: View {
                   DayCell(
                     date: maybeDate,
                     isSelected: maybeDate.map { calendar.isDate($0, inSameDayAs: selectedDate) } ?? false
+                    
                   ) {
                     if let d = maybeDate {
                       selectedDate = d
