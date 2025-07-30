@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseAuth
 
 struct RegisterPageView: View {
     @Environment(\.dismiss) private var dismiss
@@ -6,118 +7,122 @@ struct RegisterPageView: View {
     @EnvironmentObject var themeManager: ThemeManager
 
     @State private var email = ""
-    @State private var code = ""
     @State private var password = ""
     @State private var showAlert = false
     @State private var alertMessage = ""
-    @State private var isCodeSent = false
+    @State private var navigateToAccount = false
+    @State private var isVerificationSent = false
 
     var body: some View {
-        GeometryReader { geometry in
-            let minLength = min(geometry.size.width, geometry.size.height)
+        NavigationStack {
+            GeometryReader { geometry in
+                let minLength = min(geometry.size.width, geometry.size.height)
 
-            ZStack {
-                // 背景动画
-                AppBackgroundView()
-                    .environmentObject(starManager)
+                ZStack {
+                    AppBackgroundView()
+                        .environmentObject(starManager)
 
-                VStack {
-                    // 顶部返回按钮
-                    HStack {
-                        Button(action: {
-                            dismiss()
-                        }) {
-                            Image(systemName: "chevron.left")
-                                .font(.title2)
-                                .foregroundColor(themeManager.foregroundColor)
+                    VStack {
+                        HStack {
+                            Button(action: { dismiss() }) {
+                                Image(systemName: "chevron.left")
+                                    .font(.title2)
+                                    .foregroundColor(themeManager.foregroundColor)
+                            }
+                            .padding(.leading, geometry.size.width * 0.05)
+                            .padding(.top, geometry.size.height * 0.05)
+
+                            Spacer()
                         }
-                        .padding(.leading, geometry.size.width * 0.05)
-                        .padding(.top, geometry.size.height * 0.05)
 
                         Spacer()
-                    }
 
-                    Spacer()
+                        VStack(spacing: 20) {
+                            Text("Create Account")
+                                .font(.custom("PlayfairDisplay-Regular", size: 34))
+                                .foregroundColor(themeManager.foregroundColor)
 
-                    VStack(spacing: 20) {
-                        Text("Create Account")
-                            .font(.custom("PlayfairDisplay-Regular", size: 34))
-                            .foregroundColor(themeManager.foregroundColor)
+                            TextField("Email", text: $email)
+                                .textContentType(.emailAddress)
+                                .keyboardType(.emailAddress)
+                                .padding()
+                                .background(Color.white.opacity(0.1))
+                                .cornerRadius(12)
+                                .foregroundColor(themeManager.foregroundColor)
 
-                        // 邮箱输入
-                        TextField("Email", text: $email)
-                            .textContentType(.emailAddress)
-                            .keyboardType(.emailAddress)
-                            .padding()
-                            .background(Color.white.opacity(0.1))
-                            .cornerRadius(12)
-                            .foregroundColor(themeManager.foregroundColor)
-
-                        // 验证码输入和发送按钮
-                        HStack {
-                            TextField("Verification Code", text: $code)
-                                .keyboardType(.numberPad)
+                            SecureField("Password", text: $password)
                                 .padding()
                                 .background(Color.white.opacity(0.1))
                                 .cornerRadius(12)
                                 .foregroundColor(themeManager.foregroundColor)
 
                             Button(action: {
-                                // 模拟发送验证码
-                                isCodeSent = true
-                                alertMessage = "Verification code sent to your email."
-                                showAlert = true
+                                registerAndSendVerification()
                             }) {
-                                Text("Send Code")
-                                    .font(.system(size: 14))
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 8)
-                                    .background(Color(hex: "#E6D9BD").opacity(0.2))
-                                    .cornerRadius(10)
-                                    .foregroundColor(themeManager.foregroundColor)
+                                Text("Register & Send Email")
+                                    .font(.headline)
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(themeManager.foregroundColor)
+                                    .foregroundColor(.black)
+                                    .cornerRadius(12)
                             }
                         }
+                        .padding(.horizontal, geometry.size.width * 0.1)
 
-                        // 密码输入
-                        SecureField("Password", text: $password)
-                            .padding()
-                            .background(Color.white.opacity(0.1))
-                            .cornerRadius(12)
-                            .foregroundColor(themeManager.foregroundColor)
-
-                        // 注册按钮
-                        Button(action: {
-                            if email.isEmpty || code.isEmpty || password.isEmpty {
-                                alertMessage = "Please fill in all fields."
-                                showAlert = true
-                            } else {
-                                alertMessage = "Registration successful!"
-                                showAlert = true
-                                // 可以在这里连接后端注册逻辑
-                            }
-                        }) {
-                            Text("Register")
-                                .font(.headline)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(themeManager.foregroundColor)
-                                .foregroundColor(.black)
-                                .cornerRadius(12)
-                        }
+                        Spacer()
                     }
-                    .padding(.horizontal, geometry.size.width * 0.1)
-
-                    Spacer()
+                }
+                .alert(isPresented: $showAlert) {
+                    Alert(title: Text("Notice"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+                }
+                .navigationDestination(isPresented: $navigateToAccount) {
+                    AccountPageView()
+                        .environmentObject(starManager)
+                        .environmentObject(themeManager)
                 }
             }
-            .alert(isPresented: $showAlert) {
-                Alert(title: Text("Notice"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        }
+    }
+
+    private func registerAndSendVerification() {
+        guard !email.isEmpty, !password.isEmpty else {
+            alertMessage = "Please fill in all fields."
+            showAlert = true
+            return
+        }
+
+        guard let currentUser = Auth.auth().currentUser, currentUser.isAnonymous else {
+            alertMessage = "No anonymous user to link with."
+            showAlert = true
+            return
+        }
+
+        let credential = EmailAuthProvider.credential(withEmail: email, password: password)
+
+        currentUser.link(with: credential) { result, error in
+            if let error = error {
+                alertMessage = "❌ \(error.localizedDescription)"
+                showAlert = true
+            } else if let user = result?.user {
+                user.sendEmailVerification(completion: { err in
+                    if let err = err {
+                        alertMessage = "Failed to send verification email: \(err.localizedDescription)"
+                        showAlert = true
+                    } else {
+                        alertMessage = "✅ Verification email sent. Please check your inbox."
+                        showAlert = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                            navigateToAccount = true
+                        }
+                    }
+                })
             }
         }
     }
 }
 
-#Preview{
+#Preview {
     RegisterPageView()
         .environmentObject(StarAnimationManager())
         .environmentObject(ThemeManager())

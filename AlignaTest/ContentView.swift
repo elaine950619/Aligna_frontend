@@ -7,132 +7,116 @@
 
 import SwiftUI
 
-struct Suggestion: Identifiable {
-    let id = UUID()
-    let title: String
-    let iconName: String
-//    let description : String
-}
+// Tiny row view to offload icon + text layout
+struct SuggestionRow: View {
+  let item: SuggestionItem
 
-extension Color {
-  static func fromSentiment(_ s: String) -> Color {
-    switch s.lowercased() {
-    case "positive": return .yellow
-    case "negative": return .blue
-    default:         return .gray
-    }
-  }
-}
+  var body: some View {
+    VStack(alignment: .leading, spacing: 4) {
+      // category
+      Text(item.category)
+        .font(.headline)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .foregroundColor(.secondary)
+        .textCase(.uppercase)
 
-final class SuggestionVM: ObservableObject {
-    @Published var items: [Suggestion] = [
-        .init(title: "Place", iconName: "icon_place"),
-        .init(title: "Gemstone", iconName: "icon_gemstone"),
-        .init(title: "Color", iconName: "icon_color"),
-        .init(title: "Scent", iconName: "icon_scent"),
-        .init(title: "Activity", iconName: "icon_activity"),
-        .init(title: "Sound", iconName: "icon_sound"),
-        .init(title: "Career", iconName: "icon_career"),
-        .init(title: "Relationship", iconName: "icon_relationship")
-    ]
-}
-private struct SuggestionChip: View {
-    let title: String
-    let iconName: String
-//    let description: String
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(iconName)
-                .resizable()
-                .renderingMode(.template)
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 24, height: 24)
-                .foregroundColor(.primary)
-            
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(.primary)
-            
-            Spacer(minLength: 0)
+      // icon, title
+      HStack {
+        // try your real asset first
+        if let ui = UIImage(named: item.assetName) {
+          Image(uiImage: ui)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 24, height: 24)
+            .foregroundColor(.accentColor)
+        } else {
+          // fallback
+          Image(systemName: "photo")
+            .frame(width: 24, height: 24)
+            .foregroundColor(.secondary)
         }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 16)
-        .background(
-            Capsule()
-                .fill(Color(.secondarySystemBackground))
-        )
+
+        Text(item.title)
+          .font(.subheadline).bold()
+
+        Spacer()
+      }
+
+      Text(item.description)
+        .font(.footnote)
+        .foregroundColor(.secondary)
     }
+    .padding(.vertical, 6)
+    .padding(.horizontal, 12)
+    .frame(maxWidth: .infinity)
+    .background(Color(.secondarySystemBackground))
+    .clipShape(Capsule())
+  }
 }
 
 struct ContentView: View {
   @State private var selectedDate = Date()
-  @State private var sentiment: String = "neutral"
-  @StateObject private var vm = SuggestionVM()
+  @StateObject private var dailyVM = DailyViewModel()
   @EnvironmentObject var starManager: StarAnimationManager
   @EnvironmentObject var themeManager: ThemeManager
-    
-    private var accent: Color{
-        Color.fromSentiment(sentiment)
-    }
 
   var body: some View {
-    GeometryReader { geo in
+    NavigationStack {
       ZStack {
-        AppBackgroundView().environmentObject(starManager)
+        AppBackgroundView()
+          .ignoresSafeArea()
+
         ScrollView {
           VStack(spacing: 24) {
-            // Calendar
             CalendarView(
               selectedDate: $selectedDate,
-              accentColor: accent
+              accentColor: .accentColor
             )
             .padding(16)
             .background(Color(.secondarySystemBackground))
             .cornerRadius(20)
-            
-            // Jornaling button
-            NavigationLink {
-              JournalView(date: selectedDate)
-            } label: {
-              Text("Have something to say?")
-                .font(.subheadline)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 16)
-                .background(Capsule().fill(accent.opacity(0.2)))
-                .foregroundColor(accent)
+            .onAppear { dailyVM.load(for: selectedDate) }
+            .onChange(of: selectedDate) {
+              dailyVM.load(for: selectedDate)
             }
-            
-            // suggestion
-            LazyVGrid(
-              columns: [.init(.flexible(), spacing: 16), .init(.flexible(), spacing: 16)],
-              spacing: 16
-            ) {
-              ForEach(vm.items) { item in
-                SuggestionChip(
-                  title: item.title,
-                  iconName: item.iconName
-//                  description: item.description
-                )
+
+//            NavigationLink {
+//              JournalView(date: selectedDate)
+//            } label: {
+//              Text("Have something to say?")
+//                .padding(.vertical, 8)
+//                .padding(.horizontal, 16)
+//                .background(Capsule().fill(Color.accentColor.opacity(0.2)))
+//                .foregroundColor(.accentColor)
+//            }
+
+            Group {
+              if dailyVM.mantra.isEmpty {
+                Text("Your daily mantra will appear here.")
+                  .italic()
+                  .foregroundColor(.secondary)
+                  .multilineTextAlignment(.center)
+                  .padding(.horizontal)
+              } else {
+                Text(dailyVM.mantra)
+                  .italic()
+                  .padding(.horizontal)
+                  .colorInvert()
               }
             }
+
+            // one‑column grid of full‑width capsules
+            LazyVGrid(columns: [GridItem(.flexible())], spacing: 4) {
+              ForEach(dailyVM.items) { item in
+                SuggestionRow(item: item)
+              }
+            }
+            .padding(.horizontal)
           }
-          .padding(.vertical)
-          .padding(.top, geo.safeAreaInsets.top + 8)
+          .padding(.top)
         }
       }
-      .ignoresSafeArea(edges: .vertical)
       .navigationTitle("Calendar")
-      .onAppear {
-        starManager.animateStar = true
-        themeManager.updateTheme()
-      }
     }
   }
-}
-
-#Preview {
-  ContentView()
-    .environmentObject(StarAnimationManager())
-    .environmentObject(ThemeManager())
 }

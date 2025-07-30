@@ -7,13 +7,29 @@
 
 import SwiftUI
 import FirebaseCore
+import UIKit
+import GoogleSignIn
 
 class AppDelegate: NSObject, UIApplicationDelegate {
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        print("✅ AppDelegate - FirebaseApp.configure()")
         FirebaseApp.configure()
         return true
     }
+
+    func application(_ app: UIApplication,
+                     open url: URL,
+                     options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+        print("📩 AppDelegate - OpenURL 回调: \(url.absoluteString)")
+        if GIDSignIn.sharedInstance.handle(url) {
+            print("✅ Google 登录 URL 已处理")
+            return true
+        }
+        return false
+    }
 }
+
 
 @main
 struct AlignaTestApp: App {
@@ -29,13 +45,16 @@ struct AlignaTestApp: App {
         WindowGroup {
             if hasCompletedOnboarding {
                     FirstPageView()
-                        .environmentObject(StarAnimationManager())
-                        .environmentObject(ThemeManager())
+                        .environmentObject(starManager)
+                        .environmentObject(themeManager)
                         .environmentObject(onboardingViewModel)
                 } else {
                     NavigationStack {
-                        OnboardingStep1(viewModel: OnboardingViewModel())
+                        OnboardingStep1(viewModel: onboardingViewModel)
                     }
+                    .environmentObject(starManager)
+                    .environmentObject(themeManager)
+                    .environmentObject(onboardingViewModel)
                 }
         }
     }
