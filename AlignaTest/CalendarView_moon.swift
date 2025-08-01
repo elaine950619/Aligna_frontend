@@ -1,10 +1,6 @@
 ////
 ////  CalendarView.swift
-<<<<<<< HEAD
-////  
-=======
 ////
->>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
 ////
 ////  Created by Elaine Hsieh on 6/29/25.
 ////
@@ -79,11 +75,7 @@
 //
 //  // 2) how many days in month
 //  let days = calendar.range(of: .day, in: .month, for: monthInterval.start)!
-<<<<<<< HEAD
-//  
-=======
 //
->>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
 //  // 3) add leading nils to align the first day to its weekday
 //  let leadingBlanks: [Date?] = Array(repeating: nil, count: firstWeekday - 1)
 //
@@ -91,20 +83,12 @@
 //  let monthDates = days.map { day -> Date in
 //    calendar.date(byAdding: .day, value: day - 1, to: monthInterval.start)!
 //  }
-<<<<<<< HEAD
-//  
-=======
 //
->>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
 //  // 5) trailing blanks to fill out the final row
 //  let total = leadingBlanks.count + monthDates.count
 //  let trailingBlanks: [Date?] = Array(repeating: nil,
 //                                       count: (7 - (total % 7)) % 7)
-<<<<<<< HEAD
-//  
-=======
 //
->>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
 //  return leadingBlanks + monthDates.map { Optional($0) } + trailingBlanks
 //}
 //
@@ -160,11 +144,7 @@
 //    @State private var displayMonth: Date = Date()
 //    private let calendar = Calendar.current
 //    private let columns = Array(repeating: GridItem(.flexible()), count: 7)
-<<<<<<< HEAD
-//    
-=======
 //
->>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
 //    var body: some View {
 //        VStack(spacing: 12) {
 //            // 1. Month header
@@ -181,11 +161,7 @@
 //                }
 //            }
 //            .padding(.horizontal, 24)
-<<<<<<< HEAD
-//            
-=======
 //
->>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
 //            // 2. Weekday symbols
 //            HStack {
 //                ForEach(calendar.shortWeekdaySymbols, id: \.self) { wd in
@@ -195,11 +171,7 @@
 //                }
 //            }
 //            .padding(.horizontal, 24)
-<<<<<<< HEAD
-//            
-=======
 //
->>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
 //            // 3. Day grid
 //            LazyVGrid(columns: columns, spacing: 8) {
 //                ForEach(Array(makeCalendarGrid(for: displayMonth).enumerated()),
@@ -218,11 +190,7 @@
 //        .padding(.horizontal, 24)
 ////        .foregroundColor(.white)
 //    }
-<<<<<<< HEAD
-//    
-=======
 //
->>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
 //    // advance or rewind the displayed month
 //    private func prevMonth() {
 //        displayMonth = calendar.date(byAdding: .month, value: -1, to: displayMonth)!
@@ -230,11 +198,7 @@
 //    private func nextMonth() {
 //        displayMonth = calendar.date(byAdding: .month, value:  1, to: displayMonth)!
 //    }
-<<<<<<< HEAD
-//    
-=======
 //
->>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
 //    private var monthTitle: String {
 //        let df = DateFormatter()
 //        df.dateFormat = "LLLL yyyy"

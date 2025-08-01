@@ -7,10 +7,7 @@
 
 import SwiftUI
 import FirebaseFirestore
-<<<<<<< HEAD
-=======
 import FirebaseAuth
->>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
 
 struct JournalView: View {
   let date: Date
@@ -56,24 +53,6 @@ struct JournalView: View {
   }
   
   private func saveEntry() {
-<<<<<<< HEAD
-    let db = Firestore.firestore()
-    let journalRef = db
-      .collection("daily_recommendation")
-      .document(dateString)
-      .collection("journals")
-    
-    journalRef.addDocument(data: [
-      "text": text,
-      "createdAt": Timestamp()
-    ]) { error in
-      if let error = error {
-        print("❌ Failed to save journal:", error)
-      } else {
-        print("✅ Journal saved!")
-      }
-    }
-=======
     guard let userId = Auth.auth().currentUser?.uid else {
       print("❌ No user")
       return
@@ -112,6 +91,5 @@ struct JournalView: View {
           }
         }
       }
->>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
   }
 }

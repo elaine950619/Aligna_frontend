@@ -1,0 +1,25 @@
+*.wav
+
+# macOS Finder
+.DS_Store
+
+# Xcode build artifacts
+build/
+DerivedData/
+
+# Xcode workspace/user settings
+*.xcworkspace
+xcuserdata/
+*.xcuserdatad
+*.xcuserstate
+
+# Swift Package Manager
+.swiftpm/
+Packages/
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+

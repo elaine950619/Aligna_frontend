@@ -19,6 +19,9 @@
 		54DE58E32DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */; };
 		54DE58E42DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DE2DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf */; };
 		54DE58E52DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */; };
+		B925B2912E3D203C00A0D2D8 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = B925B2902E3D203800A0D2D8 /* .gitignore */; };
+		B925B2922E3D203C00A0D2D8 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = B925B2902E3D203800A0D2D8 /* .gitignore */; };
+		B925B2932E3D203C00A0D2D8 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = B925B2902E3D203800A0D2D8 /* .gitignore */; };
 		B95C17E12E37CC190074C099 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = B95C17E02E37CC190074C099 /* GoogleSignIn */; };
 		B95C17E32E37CC3B0074C099 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = B95C17E22E37CC3B0074C099 /* GoogleSignInSwift */; };
 		B96F12A22E37215B00C851AE /* FirebaseAI in Frameworks */ = {isa = PBXBuildFile; productRef = B96F12A12E37215B00C851AE /* FirebaseAI */; };
@@ -54,10 +57,11 @@
 		54DE58DA2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-VariableFont_opsz,wght.ttf"; sourceTree = "<group>"; };
 		54DE58DE2DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlayfairDisplay-Italic-VariableFont_wght.ttf"; sourceTree = "<group>"; };
 		54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlayfairDisplay-VariableFont_wght.ttf"; sourceTree = "<group>"; };
+		B925B2902E3D203800A0D2D8 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		54DE58E72DC2A19B008BE4B8 /* Exceptions for "AlignaTest" folder in "AlignaTest" target */ = {
+		B925B29C2E3D22E800A0D2D8 /* Exceptions for "AlignaTest" folder in "AlignaTest" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -70,7 +74,7 @@
 		54DE58B22DC29A91008BE4B8 /* AlignaTest */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				54DE58E72DC2A19B008BE4B8 /* Exceptions for "AlignaTest" folder in "AlignaTest" target */,
+				B925B29C2E3D22E800A0D2D8 /* Exceptions for "AlignaTest" folder in "AlignaTest" target */,
 			);
 			path = AlignaTest;
 			sourceTree = "<group>";
@@ -127,6 +131,7 @@
 		54DE58A72DC29A91008BE4B8 = {
 			isa = PBXGroup;
 			children = (
+				B925B2902E3D203800A0D2D8 /* .gitignore */,
 				54DE58DE2DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf */,
 				54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */,
 				54DE58DA2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf */,
@@ -283,6 +288,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B925B2932E3D203C00A0D2D8 /* .gitignore in Resources */,
 				54DE58DC2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf in Resources */,
 				54DE58E02DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
 				54DE58E12DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
@@ -293,6 +299,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B925B2922E3D203C00A0D2D8 /* .gitignore in Resources */,
 				54DE58E42DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
 				54DE58E52DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
 				54DE58DD2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf in Resources */,
@@ -303,6 +310,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B925B2912E3D203C00A0D2D8 /* .gitignore in Resources */,
 				54DE58E22DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
 				54DE58E32DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
 				54DE58DB2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf in Resources */,

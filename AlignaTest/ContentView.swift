@@ -50,9 +50,6 @@ struct SuggestionRow: View {
     .padding(.horizontal, 12)
     .frame(maxWidth: .infinity)
     .background(Color(.secondarySystemBackground))
-<<<<<<< HEAD
-    .clipShape(Capsule())
-=======
     .cornerRadius(20)
 //    .clipShape(Capsule())
   }
@@ -78,7 +75,6 @@ struct PlaceholderRow: View {
     .padding(.horizontal, 12)
     .background(Color(.secondarySystemBackground))
     .cornerRadius(20)
->>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
   }
 }
 
@@ -112,10 +108,7 @@ struct ContentView: View {
             .onChange(of: selectedDate) {
               dailyVM.load(for: selectedDate)
             }
-<<<<<<< HEAD
-=======
             .padding(.horizontal, 16)
->>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
 
 //            NavigationLink {
 //              JournalView(date: selectedDate)
@@ -143,14 +136,6 @@ struct ContentView: View {
             }
 
             // one‑column grid of full‑width capsules
-<<<<<<< HEAD
-            LazyVGrid(columns: [GridItem(.flexible())], spacing: 4) {
-              ForEach(dailyVM.items) { item in
-                SuggestionRow(item: item)
-              }
-            }
-            .padding(.horizontal)
-=======
             LazyVGrid(columns: [GridItem(.flexible())], spacing: 12) {
               ForEach(allCategories, id: \.self) { category in
                 if let item = dailyVM.items.first(where: { $0.category == category }) {
@@ -164,7 +149,6 @@ struct ContentView: View {
               }
             }
             .padding(.horizontal, 16)  // outer margin
->>>>>>> 2d7fab6 (added jouirnal and fixed calendar overflow issues)
           }
           .padding(.top)
         }
