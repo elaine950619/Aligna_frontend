@@ -6,14 +6,27 @@ struct AppBackgroundView: View {
 
     private var isNight: Bool {
         let hour = Calendar.current.component(.hour, from: Date())
-        return hour < 7
+        return hour < 7 || hour >= 22
     }
 
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                Color(hex: isNight ? "#0D0D0D" : "#E6D9BD")
+                if isNight {
+                    LinearGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: Color(hex: "#1a1a2e"), location: 0.00),
+                            .init(color: Color(hex: "#16213e"), location: 0.50),
+                            .init(color: Color(hex: "#0f3460"), location: 1.00),
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
                     .ignoresSafeArea()
+                } else {
+                    Color(hex: "#E6D9BD")
+                        .ignoresSafeArea()
+                }
                 
                 if !isNight{
                     Image("dayBackground") // 替换为你的图片名（不要带 .png）

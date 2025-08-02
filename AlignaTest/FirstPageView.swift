@@ -502,16 +502,17 @@ struct PlaceDetailView: View {
                 
                 // Place
                 Text("Place")
-                    .foregroundColor(.secondary)
-                    .font(.custom("PlayfairDisplay-Regular", size: 28))
+                    .foregroundColor(themeManager.watermark)
+                    .font(.custom("PlayfairDisplay-Regular", size: 36))
+                    .bold()
               
                 if let item = item {
                     // Title
                     Text(item.title)
                         .multilineTextAlignment(.center)
 //                        .padding(.top)
-                        .font(.custom("PlayfairDisplay-Regular", size: 34))
-                        .foregroundColor(themeManager.foregroundColor)
+                        .font(.custom("PlayfairDisplay-Regular", size: 36))
+                        .foregroundColor(themeManager.primaryText)
                         .bold()
 
                     // Description
@@ -520,6 +521,7 @@ struct PlaceDetailView: View {
                         .padding(.horizontal)
                         .font(.custom("PlayfairDisplay-Italic", size: 17))
                         .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(themeManager.descriptionText)
                   
                     // Image
                     Image(documentName) // assumes .png in Assets
@@ -528,7 +530,7 @@ struct PlaceDetailView: View {
                         .scaledToFit()
                         .frame(width: 150, height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.foregroundColor)
+                        .foregroundColor(themeManager.accent)
 
                     // Explanation
                     Text(item.explanation)
@@ -538,6 +540,7 @@ struct PlaceDetailView: View {
                         .italic()
                         .font(.custom("PlayfairDisplay-Regular", size: 14))
                         .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(themeManager.bodyText)
                     
                     // three images
 //                    if !imageNames.isEmpty {
@@ -567,11 +570,11 @@ struct PlaceDetailView: View {
                                         .resizable()
                                         .scaledToFit()
                                         .frame(width: 50, height: 50)
-                                        .foregroundColor(themeManager.foregroundColor)
+                                        .foregroundColor(themeManager.accent)
                                     Text(item.title)
                                         .font(.custom("PlayfairDisplay-Regular", size: 16))
                                         .multilineTextAlignment(.center)
-                                        .foregroundColor(themeManager.foregroundColor)
+                                        .foregroundColor(themeManager.accent)
                                         .fixedSize(horizontal: true, vertical: true)
                                         .lineLimit(2)
                                 }
@@ -586,11 +589,11 @@ struct PlaceDetailView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 50, height: 50)
-                                .foregroundColor(themeManager.foregroundColor)
+                                .foregroundColor(themeManager.accent)
                             Text(iconItems[0].title)
                                 .font(.custom("PlayfairDisplay-Regular", size: 16))
                                 .multilineTextAlignment(.center)
-                                .foregroundColor(themeManager.foregroundColor)
+                                .foregroundColor(themeManager.accent)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .lineLimit(2)
                         }
