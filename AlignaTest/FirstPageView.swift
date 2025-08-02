@@ -130,6 +130,7 @@ struct FirstPageView: View {
                         Spacer()
                         Spacer().frame(height: geometry.size.height * 0.03)
                     }
+                    .padding(.top, 16)
                 }
                 .onAppear {
                     starManager.animateStar = true
@@ -393,6 +394,11 @@ struct SoundDetailView: View {
     var body: some View {
         VStack(spacing: 20) {
             if let item = item {
+                // Sound
+                Text("Sound")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+              
                 // Title
                 Text(item.title)
                     .font(.largeTitle)
@@ -471,6 +477,10 @@ struct PlaceDetailView: View {
     var body: some View {
         VStack(spacing: 20) {
             if let item = item {
+                // Place
+                Text("Place")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
                 // Title
                 Text(item.title)
                     .font(.largeTitle)
@@ -537,6 +547,10 @@ struct GemstoneDetailView: View {
     var body: some View {
         VStack(spacing: 20) {
             if let item = item {
+                // Gemstone
+                Text("Gemstone")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
                 // Title
                 Text(item.title)
                     .font(.largeTitle)
@@ -600,6 +614,10 @@ struct ColorDetailView: View {
     var body: some View {
         VStack(spacing: 20) {
             if let item = item {
+                // Color
+                Text("Color")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
                 // Title
                 Text(item.title)
                     .font(.largeTitle)
@@ -663,6 +681,11 @@ struct ScentDetailView: View {
     var body: some View {
         VStack(spacing: 20) {
             if let item = item {
+                // Scent
+                Text("Scent")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+              
                 // Title
                 Text(item.title)
                     .font(.largeTitle)
@@ -726,6 +749,11 @@ struct ActivityDetailView: View {
     var body: some View {
         VStack(spacing: 20) {
             if let item = item {
+                // Activity
+                Text("Activity")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                
                 // Title
                 Text(item.title)
                     .font(.largeTitle)
@@ -789,6 +817,11 @@ struct CareerDetailView: View {
     var body: some View {
         VStack(spacing: 20) {
             if let item = item {
+                // Career
+                Text("Career")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+              
                 // Title
                 Text(item.title)
                     .font(.largeTitle)
@@ -853,6 +886,10 @@ struct RelationshipDetailView: View {
     var body: some View {
         VStack(spacing: 20) {
             if let item = item {
+                // Relationship
+                Text("Relationship")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
                 // Title
                 Text(item.title)
                     .font(.largeTitle)
@@ -2020,6 +2057,7 @@ extension Color {
     FirstPageView()
         .environmentObject(StarAnimationManager())
         .environmentObject(ThemeManager())
+        .environmentObject(OnboardingViewModel())
 }
 
 
