@@ -12,7 +12,7 @@ struct RecommendationDetailView: View {
     let category: String
     let documentName: String
     @State private var item: RecommendationItem?
-
+    
     var body: some View {
         VStack(spacing: 20) {
             if let item = item {
@@ -32,7 +32,7 @@ struct RecommendationDetailView: View {
             fetchItem()
         }
     }
-
+    
     private func fetchItem() {
         let db = Firestore.firestore()
         db.collection(category).document(documentName).getDocument { snapshot, error in

@@ -9,151 +9,151 @@ import SwiftUI
 
 // Tiny row view to offload icon + text layout
 struct SuggestionRow: View {
-  let item: SuggestionItem
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 4) {
-      // category
-      Text(item.category)
-        .font(.headline)
-        .frame(maxWidth: .infinity, alignment: .center)
-        .foregroundColor(.secondary)
-        .textCase(.uppercase)
-
-      // icon, title
-      HStack {
-        // try your real asset first
-        if let ui = UIImage(named: item.assetName) {
-          Image(uiImage: ui)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 24, height: 24)
-            .foregroundColor(.accentColor)
-        } else {
-          // fallback
-          Image(systemName: "photo")
-            .frame(width: 24, height: 24)
-            .foregroundColor(.secondary)
+    let item: SuggestionItem
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            // category
+            Text(item.category)
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+            
+            // icon, title
+            HStack {
+                // try your real asset first
+                if let ui = UIImage(named: item.assetName) {
+                    Image(uiImage: ui)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(.accentColor)
+                } else {
+                    // fallback
+                    Image(systemName: "photo")
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(.secondary)
+                }
+                
+                Text(item.title)
+                    .font(.subheadline).bold()
+                
+                Spacer()
+            }
+            
+            Text(item.description)
+                .font(.footnote)
+                .foregroundColor(.secondary)
         }
-
-        Text(item.title)
-          .font(.subheadline).bold()
-
-        Spacer()
-      }
-
-      Text(item.description)
-        .font(.footnote)
-        .foregroundColor(.secondary)
+        .padding(.vertical, 6)
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity)
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(20)
+        //    .clipShape(Capsule())
     }
-    .padding(.vertical, 6)
-    .padding(.horizontal, 12)
-    .frame(maxWidth: .infinity)
-    .background(Color(.secondarySystemBackground))
-    .cornerRadius(20)
-//    .clipShape(Capsule())
-  }
 }
 
 struct PlaceholderRow: View {
-  let category: String
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      Text(category)
-        .font(.headline)
-        .foregroundColor(.secondary)
-        .textCase(.uppercase)
-        .frame(maxWidth: .infinity, alignment: .center)
-
-      // empty capsule
-      RoundedRectangle(cornerRadius: 20)
-        .fill(Color(.secondarySystemBackground))
-        .frame(height: 60)
+    let category: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(category)
+                .font(.headline)
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+                .frame(maxWidth: .infinity, alignment: .center)
+            
+            // empty capsule
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.secondarySystemBackground))
+                .frame(height: 60)
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 12)
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(20)
     }
-    .padding(.vertical, 6)
-    .padding(.horizontal, 12)
-    .background(Color(.secondarySystemBackground))
-    .cornerRadius(20)
-  }
 }
 
 struct ContentView: View {
-  private let allCategories = [
-    "Place","Color","Gemstone","Scent",
-    "Activity","Sound","Career","Relationship"
-  ]
-  
-  @State private var selectedDate = Date()
-  @StateObject private var dailyVM = DailyViewModel()
-  @EnvironmentObject var starManager: StarAnimationManager
-  @EnvironmentObject var themeManager: ThemeManager
-
-  var body: some View {
-    NavigationStack {
-      ZStack {
-        AppBackgroundView()
-          .ignoresSafeArea()
-
-        ScrollView {
-          VStack(spacing: 24) {
-            CalendarView(
-              selectedDate: $selectedDate,
-              accentColor: .accentColor
-            )
-            .padding(16)
-            .background(Color(.secondarySystemBackground))
-            .cornerRadius(20)
-            .onAppear { dailyVM.load(for: selectedDate) }
-            .onChange(of: selectedDate) {
-              dailyVM.load(for: selectedDate)
-            }
-            .padding(.horizontal, 16)
-
-//            NavigationLink {
-//              JournalView(date: selectedDate)
-//            } label: {
-//              Text("Have something to say?")
-//                .padding(.vertical, 8)
-//                .padding(.horizontal, 16)
-//                .background(Capsule().fill(Color.accentColor.opacity(0.2)))
-//                .foregroundColor(.accentColor)
-//            }
-
-            Group {
-              if dailyVM.mantra.isEmpty {
-                Text("Your daily mantra will appear here.")
-                  .italic()
-                  .foregroundColor(.secondary)
-                  .multilineTextAlignment(.center)
-                  .padding(.horizontal)
-              } else {
-                Text(dailyVM.mantra)
-                  .italic()
-                  .padding(.horizontal)
-                  .colorInvert()
-              }
-            }
-
-            // one‑column grid of full‑width capsules
-            LazyVGrid(columns: [GridItem(.flexible())], spacing: 12) {
-              ForEach(allCategories, id: \.self) { category in
-                if let item = dailyVM.items.first(where: { $0.category == category }) {
-                  // real data
-                  SuggestionRow(item: item)
-                } else {
-                  // placeholder skeleton
-                  PlaceholderRow(category: category)
-                    .redacted(reason: .placeholder)  // iOS 15+ greyed-out look
+    private let allCategories = [
+        "Place","Color","Gemstone","Scent",
+        "Activity","Sound","Career","Relationship"
+    ]
+    
+    @State private var selectedDate = Date()
+    @StateObject private var dailyVM = DailyViewModel()
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AppBackgroundView()
+                    .ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: 24) {
+                        CalendarView(
+                            selectedDate: $selectedDate,
+                            accentColor: .accentColor
+                        )
+                        .padding(16)
+                        .background(Color(.secondarySystemBackground))
+                        .cornerRadius(20)
+                        .onAppear { dailyVM.load(for: selectedDate) }
+                        .onChange(of: selectedDate) {
+                            dailyVM.load(for: selectedDate)
+                        }
+                        .padding(.horizontal, 16)
+                        
+                        //            NavigationLink {
+                        //              JournalView(date: selectedDate)
+                        //            } label: {
+                        //              Text("Have something to say?")
+                        //                .padding(.vertical, 8)
+                        //                .padding(.horizontal, 16)
+                        //                .background(Capsule().fill(Color.accentColor.opacity(0.2)))
+                        //                .foregroundColor(.accentColor)
+                        //            }
+                        
+                        Group {
+                            if dailyVM.mantra.isEmpty {
+                                Text("Your daily mantra will appear here.")
+                                    .italic()
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                            } else {
+                                Text(dailyVM.mantra)
+                                    .italic()
+                                    .padding(.horizontal)
+                                    .colorInvert()
+                            }
+                        }
+                        
+                        // one‑column grid of full‑width capsules
+                        LazyVGrid(columns: [GridItem(.flexible())], spacing: 12) {
+                            ForEach(allCategories, id: \.self) { category in
+                                if let item = dailyVM.items.first(where: { $0.category == category }) {
+                                    // real data
+                                    SuggestionRow(item: item)
+                                } else {
+                                    // placeholder skeleton
+                                    PlaceholderRow(category: category)
+                                        .redacted(reason: .placeholder)  // iOS 15+ greyed-out look
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 16)  // outer margin
+                    }
+                    .padding(.top)
                 }
-              }
             }
-            .padding(.horizontal, 16)  // outer margin
-          }
-          .padding(.top)
+            .navigationTitle("Calendar")
         }
-      }
-      .navigationTitle("Calendar")
     }
-  }
 }

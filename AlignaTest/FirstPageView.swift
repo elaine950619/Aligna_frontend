@@ -317,6 +317,7 @@ struct FirstPageView: View {
         switch title {
         case "Place":
             PlaceDetailView(documentName: documentName)
+//            imageNames:
         case "Gemstone":
             GemstoneDetailView(documentName: documentName)
         case "Color":
@@ -405,6 +406,12 @@ struct SoundDetailView: View {
                     .multilineTextAlignment(.center)
                     .padding(.top)
 
+                // Description
+                Text(item.description)
+                    .font(.body)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+
                 // Image + Play Button Side by Side
                 HStack(alignment: .center, spacing: 20) {
                     Image(documentName) // assumes .png in assets with name matching documentName
@@ -426,13 +433,7 @@ struct SoundDetailView: View {
                         .foregroundColor(.primary)
                     }
                 }
-
-                // Description
-                Text(item.description)
-                    .font(.body)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-
+              
                 // Explanation
                 Text(item.explanation)
                     .font(.footnote)
@@ -471,49 +472,82 @@ struct SoundDetailView: View {
 }
 
 struct PlaceDetailView: View {
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    
     let documentName: String
+//    let imageNames: [String]
     @State private var item: RecommendationItem?
 
     var body: some View {
-        VStack(spacing: 20) {
-            if let item = item {
+        ZStack{
+            AppBackgroundView()
+                .environmentObject(starManager)
+    //                .ignoresSafeArea()
+            
+            VStack(spacing: 20) {
+                
                 // Place
                 Text("Place")
-                    .font(.headline)
                     .foregroundColor(.secondary)
-                // Title
-                Text(item.title)
-                    .font(.largeTitle)
-                    .multilineTextAlignment(.center)
-                    .padding(.top)
+                    .font(.custom("PlayfairDisplay-Regular", size: 28))
+              
+                if let item = item {
+                    // Title
+                    Text(item.title)
+                        .multilineTextAlignment(.center)
+//                        .padding(.top)
+                        .font(.custom("PlayfairDisplay-Regular", size: 34))
+                        .foregroundColor(themeManager.foregroundColor)
+                        .bold()
 
-                // Image
-                Image(documentName) // assumes .png in Assets
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 200, height: 200)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    // Description
+                    Text(item.description)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .font(.custom("PlayfairDisplay-Italic", size: 17))
+                  
+                    // Image
+                    Image(documentName) // assumes .png in Assets
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 200, height: 200)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                // Description
-                Text(item.description)
-                    .font(.body)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-
-                // Explanation
-                Text(item.explanation)
-                    .font(.footnote)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                    .padding(.bottom)
-            } else {
-                ProgressView("Loading...")
-                    .padding(.top, 100)
+                    // Explanation
+                    Text(item.explanation)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .padding(.bottom)
+                        .italic()
+                        .font(.custom("PlayfairDisplay-Regular", size: 14))
+                    
+                    // three images
+//                    if !imageNames.isEmpty {
+//                        ScrollView(.horizontal, showsIndicators: false) {
+//                            HStack(spacing: 12) {
+//                                ForEach(imageNames, id: \.self) { name in
+//                                    Image(name)
+//                                        .resizable()
+//                                        .scaledToFill()
+//                                        .frame(width: 140, height: 140)
+//                                        .clipped()
+//                                        .cornerRadius(8)
+//                                }
+//                            }
+//                            .padding(.horizontal)
+//                        }
+//                        .frame(height: 160)
+//                    }
+                } else {
+                    ProgressView("Loading...")
+                        .padding(.top, 100)
+                }
             }
-        }
-        .padding()
-        .onAppear {
-            fetchItem()
+            .padding()
+            .onAppear {
+                fetchItem()
+            }
         }
     }
 
@@ -551,31 +585,36 @@ struct GemstoneDetailView: View {
                 Text("Gemstone")
                     .font(.headline)
                     .foregroundColor(.secondary)
+                    .font(Font.custom("PlayfairDisplay-Regular", size: 20))
                 // Title
                 Text(item.title)
                     .font(.largeTitle)
                     .multilineTextAlignment(.center)
                     .padding(.top)
-
+                    .font(Font.custom("PlayfairDisplay-Regular", size: 28))
+                
                 // Image
                 Image(documentName) // assumes .png in Assets
                     .resizable()
                     .scaledToFit()
                     .frame(width: 200, height: 200)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-
+                
                 // Description
                 Text(item.description)
                     .font(.body)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
-
+                    .font(Font.custom("PlayfairDisplay-Regular", size: 16))
+                
                 // Explanation
                 Text(item.explanation)
                     .font(.footnote)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
                     .padding(.bottom)
+                    .font(.custom("PlayfairDisplay-Regular", size: 16))
+                
             } else {
                 ProgressView("Loading...")
                     .padding(.top, 100)
