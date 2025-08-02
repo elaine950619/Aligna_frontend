@@ -471,18 +471,31 @@ struct SoundDetailView: View {
     }
 }
 
+struct IconItem: Identifiable {
+  let id = UUID()
+  let imageName: String
+  let title: String
+}
+
 struct PlaceDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     
     let documentName: String
 //    let imageNames: [String]
+    let iconItems = [
+        IconItem(imageName: "botanical_garden", title: "Botanical\ngardens"),
+        IconItem(imageName: "small_parks",     title: "Small\nparks"),
+        IconItem(imageName: "shaded_paths",    title: "Shaded\npaths")
+      ]
     @State private var item: RecommendationItem?
 
     var body: some View {
         ZStack{
             AppBackgroundView()
                 .environmentObject(starManager)
+            
+//                .preferredColorScheme(.light)
     //                .ignoresSafeArea()
             
             VStack(spacing: 20) {
@@ -506,13 +519,16 @@ struct PlaceDetailView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                         .font(.custom("PlayfairDisplay-Italic", size: 17))
+                        .fixedSize(horizontal: false, vertical: true)
                   
                     // Image
                     Image(documentName) // assumes .png in Assets
+                        .renderingMode(.template)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 200, height: 200)
+                        .frame(width: 150, height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .foregroundColor(themeManager.foregroundColor)
 
                     // Explanation
                     Text(item.explanation)
@@ -521,6 +537,7 @@ struct PlaceDetailView: View {
                         .padding(.bottom)
                         .italic()
                         .font(.custom("PlayfairDisplay-Regular", size: 14))
+                        .fixedSize(horizontal: false, vertical: true)
                     
                     // three images
 //                    if !imageNames.isEmpty {
@@ -539,6 +556,45 @@ struct PlaceDetailView: View {
 //                        }
 //                        .frame(height: 160)
 //                    }
+                    
+                    VStack(spacing: 24) {
+                      // top two
+                        HStack(spacing: 40) {
+                            ForEach(iconItems[1...2]) { item in
+                                VStack(spacing: 8) {
+                                    Image(item.imageName)
+                                        .renderingMode(.template)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 50, height: 50)
+                                        .foregroundColor(themeManager.foregroundColor)
+                                    Text(item.title)
+                                        .font(.custom("PlayfairDisplay-Regular", size: 16))
+                                        .multilineTextAlignment(.center)
+                                        .foregroundColor(themeManager.foregroundColor)
+                                        .fixedSize(horizontal: true, vertical: true)
+                                        .lineLimit(2)
+                                }
+                                .padding(.horizontal, 60)
+                            }
+                        }
+                        
+                        // bottom icon
+                        VStack(spacing: 8) {
+                            Image(iconItems[0].imageName)
+                                .renderingMode(.template)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 50, height: 50)
+                                .foregroundColor(themeManager.foregroundColor)
+                            Text(iconItems[0].title)
+                                .font(.custom("PlayfairDisplay-Regular", size: 16))
+                                .multilineTextAlignment(.center)
+                                .foregroundColor(themeManager.foregroundColor)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .lineLimit(2)
+                        }
+                    }
                 } else {
                     ProgressView("Loading...")
                         .padding(.top, 100)

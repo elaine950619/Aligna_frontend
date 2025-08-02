@@ -6,7 +6,7 @@ struct AppBackgroundView: View {
 
     private var isNight: Bool {
         let hour = Calendar.current.component(.hour, from: Date())
-        return hour < 7 || hour >= 22
+        return hour < 7
     }
 
     var body: some View {
