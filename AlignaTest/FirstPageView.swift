@@ -388,66 +388,83 @@ import FirebaseFirestore
 import AVFoundation
 
 struct SoundDetailView: View {
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    
     let documentName: String
     @State private var item: RecommendationItem?
     @StateObject private var soundPlayer = SoundPlayer()
 
     var body: some View {
-        VStack(spacing: 20) {
-            if let item = item {
+        ZStack{
+            AppBackgroundView()
+                .environmentObject(starManager)
+            
+            VStack(spacing: 20) {
                 // Sound
                 Text("Sound")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-              
-                // Title
-                Text(item.title)
-                    .font(.largeTitle)
-                    .multilineTextAlignment(.center)
-                    .padding(.top)
-
-                // Description
-                Text(item.description)
-                    .font(.body)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-
-                // Image + Play Button Side by Side
-                HStack(alignment: .center, spacing: 20) {
-                    Image(documentName) // assumes .png in assets with name matching documentName
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 150, height: 150)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                    Button(action: {
-                        soundPlayer.playSound(named: documentName)
-                    }) {
-                        VStack {
-                            Image(systemName: "play.circle.fill")
-                                .resizable()
-                                .frame(width: 50, height: 50)
-                            Text("Play")
-                                .font(.subheadline)
+                    .foregroundColor(themeManager.watermark)
+                    .font(.custom("PlayfairDisplay-Regular", size: 36))
+                    .bold()
+                
+                if let item = item {
+                    // Title
+                    Text(item.title)
+                        .multilineTextAlignment(.center)
+                        .font(.custom("PlayfairDisplay-Regular", size: 36))
+                        .foregroundColor(themeManager.primaryText)
+                        .bold()
+                    
+                    // Description
+                    Text(item.description)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .font(.custom("PlayfairDisplay-Italic", size: 17))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(themeManager.descriptionText)
+                    
+                    // Image + Play Button Side by Side
+                    HStack(alignment: .center, spacing: 20) {
+                        Image(documentName) // assumes .png in assets with name matching documentName
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 150, height: 150)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .foregroundColor(themeManager.accent)
+                        
+                        Button(action: {
+                            soundPlayer.playSound(named: documentName)
+                        }) {
+                            VStack {
+                                Image(systemName: "play.circle.fill")
+                                    .resizable()
+                                    .frame(width: 50, height: 50)
+                                Text("Play")
+                                    .font(.subheadline)
+                            }
+                            .foregroundColor(.primary)
                         }
-                        .foregroundColor(.primary)
                     }
+                    
+                    // Explanation
+                    Text(item.explanation)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .padding(.bottom)
+                        .italic()
+                        .font(.custom("PlayfairDisplay-Regular", size: 14))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(themeManager.bodyText)
+                } else {
+                    ProgressView("Loading...")
+                        .padding(.top, 100)
                 }
-              
-                // Explanation
-                Text(item.explanation)
-                    .font(.footnote)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                    .padding(.bottom)
-            } else {
-                ProgressView("Loading...")
-                    .padding(.top, 100)
             }
-        }
-        .padding()
-        .onAppear {
-            fetchItem()
+            .padding()
+            .onAppear {
+                fetchItem()
+            }
         }
     }
 
@@ -495,11 +512,7 @@ struct PlaceDetailView: View {
             AppBackgroundView()
                 .environmentObject(starManager)
             
-//                .preferredColorScheme(.light)
-    //                .ignoresSafeArea()
-            
             VStack(spacing: 20) {
-                
                 // Place
                 Text("Place")
                     .foregroundColor(themeManager.watermark)
@@ -510,7 +523,6 @@ struct PlaceDetailView: View {
                     // Title
                     Text(item.title)
                         .multilineTextAlignment(.center)
-//                        .padding(.top)
                         .font(.custom("PlayfairDisplay-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
                         .bold()
@@ -634,54 +646,67 @@ import SwiftUI
 import FirebaseFirestore
 
 struct GemstoneDetailView: View {
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    
     let documentName: String
     @State private var item: RecommendationItem?
 
     var body: some View {
-        VStack(spacing: 20) {
-            if let item = item {
+        ZStack{
+            AppBackgroundView()
+                .environmentObject(starManager)
+            VStack(spacing: 20) {
                 // Gemstone
                 Text("Gemstone")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-                    .font(Font.custom("PlayfairDisplay-Regular", size: 20))
-                // Title
-                Text(item.title)
-                    .font(.largeTitle)
-                    .multilineTextAlignment(.center)
-                    .padding(.top)
-                    .font(Font.custom("PlayfairDisplay-Regular", size: 28))
+                    .foregroundColor(themeManager.watermark)
+                    .font(.custom("PlayfairDisplay-Regular", size: 36))
+                    .bold()
                 
-                // Image
-                Image(documentName) // assumes .png in Assets
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 200, height: 200)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                
-                // Description
-                Text(item.description)
-                    .font(.body)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                    .font(Font.custom("PlayfairDisplay-Regular", size: 16))
-                
-                // Explanation
-                Text(item.explanation)
-                    .font(.footnote)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                    .padding(.bottom)
-                    .font(.custom("PlayfairDisplay-Regular", size: 16))
-                
-            } else {
-                ProgressView("Loading...")
-                    .padding(.top, 100)
+                if let item = item {
+                    // Title
+                    Text(item.title)
+                        .multilineTextAlignment(.center)
+                        .font(.custom("PlayfairDisplay-Regular", size: 36))
+                        .foregroundColor(themeManager.primaryText)
+                        .bold()
+                    
+                    // Description
+                    Text(item.description)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .font(.custom("PlayfairDisplay-Italic", size: 17))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(themeManager.descriptionText)
+                    
+                    // Image
+                    Image(documentName) // assumes .png in Assets
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 150, height: 150)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .foregroundColor(themeManager.accent)
+                    
+                    // Explanation
+                    Text(item.explanation)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .padding(.bottom)
+                        .italic()
+                        .font(.custom("PlayfairDisplay-Regular", size: 14))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(themeManager.bodyText)
+                    
+                } else {
+                    ProgressView("Loading...")
+                        .padding(.top, 100)
+                }
             }
-        }
-        .padding()
-        .onAppear {
-            fetchItem()
+            .padding()
+            .onAppear {
+                fetchItem()
+            }
         }
     }
 
@@ -706,49 +731,67 @@ struct GemstoneDetailView: View {
 }
 
 struct ColorDetailView: View {
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    
     let documentName: String
     @State private var item: RecommendationItem?
 
     var body: some View {
-        VStack(spacing: 20) {
-            if let item = item {
+        ZStack{
+            AppBackgroundView()
+                .environmentObject(starManager)
+            
+            VStack(spacing: 20) {
                 // Color
                 Text("Color")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-                // Title
-                Text(item.title)
-                    .font(.largeTitle)
-                    .multilineTextAlignment(.center)
-                    .padding(.top)
-
-                // Image
-                Image(documentName) // assumes .png in Assets
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 200, height: 200)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                // Description
-                Text(item.description)
-                    .font(.body)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-
-                // Explanation
-                Text(item.explanation)
-                    .font(.footnote)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                    .padding(.bottom)
-            } else {
-                ProgressView("Loading...")
-                    .padding(.top, 100)
+                    .foregroundColor(themeManager.watermark)
+                    .font(.custom("PlayfairDisplay-Regular", size: 36))
+                    .bold()
+                
+                if let item = item {
+                    // Title
+                    Text(item.title)
+                        .multilineTextAlignment(.center)
+                        .font(.custom("PlayfairDisplay-Regular", size: 36))
+                        .foregroundColor(themeManager.primaryText)
+                        .bold()
+                    
+                    // Description
+                    Text(item.description)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .font(.custom("PlayfairDisplay-Italic", size: 17))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(themeManager.descriptionText)
+                    
+                    // Image
+                    Image(documentName) // assumes .png in Assets
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 150, height: 150)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .foregroundColor(themeManager.accent)
+                    
+                    // Explanation
+                    Text(item.explanation)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .padding(.bottom)
+                        .italic()
+                        .font(.custom("PlayfairDisplay-Regular", size: 14))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(themeManager.bodyText)
+                } else {
+                    ProgressView("Loading...")
+                        .padding(.top, 100)
+                }
             }
-        }
-        .padding()
-        .onAppear {
-            fetchItem()
+            .padding()
+            .onAppear {
+                fetchItem()
+            }
         }
     }
 
@@ -773,50 +816,66 @@ struct ColorDetailView: View {
 }
 
 struct ScentDetailView: View {
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    
     let documentName: String
     @State private var item: RecommendationItem?
 
     var body: some View {
-        VStack(spacing: 20) {
-            if let item = item {
+        ZStack{
+            AppBackgroundView()
+                .environmentObject(starManager)
+            VStack(spacing: 20) {
                 // Scent
                 Text("Scent")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-              
-                // Title
-                Text(item.title)
-                    .font(.largeTitle)
-                    .multilineTextAlignment(.center)
-                    .padding(.top)
-
-                // Image
-                Image(documentName) // assumes .png in Assets
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 200, height: 200)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                // Description
-                Text(item.description)
-                    .font(.body)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-
-                // Explanation
-                Text(item.explanation)
-                    .font(.footnote)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                    .padding(.bottom)
-            } else {
-                ProgressView("Loading...")
-                    .padding(.top, 100)
+                    .foregroundColor(themeManager.watermark)
+                    .font(.custom("PlayfairDisplay-Regular", size: 36))
+                    .bold()
+                
+                if let item = item {
+                    // Title
+                    Text(item.title)
+                        .multilineTextAlignment(.center)
+                        .font(.custom("PlayfairDisplay-Regular", size: 36))
+                        .foregroundColor(themeManager.primaryText)
+                        .bold()
+                    
+                    // Description
+                    Text(item.description)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .font(.custom("PlayfairDisplay-Italic", size: 17))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(themeManager.descriptionText)
+                    
+                    // Image
+                    Image(documentName) // assumes .png in Assets
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 150, height: 150)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .foregroundColor(themeManager.accent)
+                    
+                    // Explanation
+                    Text(item.explanation)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .padding(.bottom)
+                        .italic()
+                        .font(.custom("PlayfairDisplay-Regular", size: 14))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(themeManager.bodyText)
+                } else {
+                    ProgressView("Loading...")
+                        .padding(.top, 100)
+                }
             }
-        }
-        .padding()
-        .onAppear {
-            fetchItem()
+            .padding()
+            .onAppear {
+                fetchItem()
+            }
         }
     }
 
@@ -841,50 +900,67 @@ struct ScentDetailView: View {
 }
 
 struct ActivityDetailView: View {
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    
     let documentName: String
     @State private var item: RecommendationItem?
 
     var body: some View {
-        VStack(spacing: 20) {
-            if let item = item {
+        ZStack{
+            AppBackgroundView()
+                .environmentObject(starManager)
+            
+            VStack(spacing: 20) {
                 // Activity
                 Text("Activity")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(themeManager.watermark)
+                    .font(.custom("PlayfairDisplay-Regular", size: 36))
+                    .bold()
                 
-                // Title
-                Text(item.title)
-                    .font(.largeTitle)
-                    .multilineTextAlignment(.center)
-                    .padding(.top)
-
-                // Image
-                Image(documentName) // assumes .png in Assets
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 200, height: 200)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                // Description
-                Text(item.description)
-                    .font(.body)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-
-                // Explanation
-                Text(item.explanation)
-                    .font(.footnote)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                    .padding(.bottom)
-            } else {
-                ProgressView("Loading...")
-                    .padding(.top, 100)
+                if let item = item {
+                    // Title
+                    Text(item.title)
+                        .multilineTextAlignment(.center)
+                        .font(.custom("PlayfairDisplay-Regular", size: 36))
+                        .foregroundColor(themeManager.primaryText)
+                        .bold()
+                    
+                    // Description
+                    Text(item.description)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .font(.custom("PlayfairDisplay-Italic", size: 17))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(themeManager.descriptionText)
+                    
+                    // Image
+                    Image(documentName) // assumes .png in Assets
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 150, height: 150)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .foregroundColor(themeManager.accent)
+                    
+                    // Explanation
+                    Text(item.explanation)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .padding(.bottom)
+                        .italic()
+                        .font(.custom("PlayfairDisplay-Regular", size: 14))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(themeManager.bodyText)
+                } else {
+                    ProgressView("Loading...")
+                        .padding(.top, 100)
+                }
             }
-        }
-        .padding()
-        .onAppear {
-            fetchItem()
+            .padding()
+            .onAppear {
+                fetchItem()
+            }
         }
     }
 
@@ -909,50 +985,66 @@ struct ActivityDetailView: View {
 }
 
 struct CareerDetailView: View {
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    
     let documentName: String
     @State private var item: RecommendationItem?
 
     var body: some View {
-        VStack(spacing: 20) {
-            if let item = item {
+        ZStack{
+            AppBackgroundView()
+                .environmentObject(starManager)
+            
+            VStack(spacing: 20) {
                 // Career
                 Text("Career")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-              
-                // Title
-                Text(item.title)
-                    .font(.largeTitle)
-                    .multilineTextAlignment(.center)
-                    .padding(.top)
-
-                // Image
-                Image(documentName) // assumes .png in Assets
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 200, height: 200)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                // Description
-                Text(item.description)
-                    .font(.body)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-
-                // Explanation
-                Text(item.explanation)
-                    .font(.footnote)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                    .padding(.bottom)
-            } else {
-                ProgressView("Loading...")
-                    .padding(.top, 100)
+                    .foregroundColor(themeManager.watermark)
+                    .font(.custom("PlayfairDisplay-Regular", size: 36))
+                    .bold()
+                
+                if let item = item {
+                    // Title
+                    Text(item.title)
+                        .font(.largeTitle)
+                        .multilineTextAlignment(.center)
+                        .padding(.top)
+                    
+                    // Description
+                    Text(item.description)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .font(.custom("PlayfairDisplay-Italic", size: 17))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(themeManager.descriptionText)
+                    
+                    // Image
+                    Image(documentName) // assumes .png in Assets
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 150, height: 150)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .foregroundColor(themeManager.accent)
+                    
+                    // Explanation
+                    Text(item.explanation)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .padding(.bottom)
+                        .italic()
+                        .font(.custom("PlayfairDisplay-Regular", size: 14))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(themeManager.bodyText)
+                } else {
+                    ProgressView("Loading...")
+                        .padding(.top, 100)
+                }
             }
-        }
-        .padding()
-        .onAppear {
-            fetchItem()
+            .padding()
+            .onAppear {
+                fetchItem()
+            }
         }
     }
 
@@ -978,49 +1070,70 @@ struct CareerDetailView: View {
 
 
 struct RelationshipDetailView: View {
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    
     let documentName: String
     @State private var item: RecommendationItem?
 
     var body: some View {
-        VStack(spacing: 20) {
-            if let item = item {
+        ZStack{
+            AppBackgroundView()
+                .environmentObject(starManager)
+            
+            VStack(spacing: 20) {
                 // Relationship
                 Text("Relationship")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-                // Title
-                Text(item.title)
-                    .font(.largeTitle)
-                    .multilineTextAlignment(.center)
-                    .padding(.top)
-
-                // Image
-                Image(documentName) // assumes .png in Assets
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 200, height: 200)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                // Description
-                Text(item.description)
-                    .font(.body)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-
-                // Explanation
-                Text(item.explanation)
-                    .font(.footnote)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                    .padding(.bottom)
-            } else {
-                ProgressView("Loading...")
-                    .padding(.top, 100)
+                    .foregroundColor(themeManager.watermark)
+                    .font(.custom("PlayfairDisplay-Regular", size: 36))
+                    .bold()
+                
+                if let item = item {
+                    // Title
+                    Text(item.title)
+                        .multilineTextAlignment(.center)
+                        .font(.custom("PlayfairDisplay-Regular", size: 36))
+                        .foregroundColor(themeManager.primaryText)
+                        .bold()
+                    
+                    // Description
+                    Text(item.description)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .font(.custom("PlayfairDisplay-Italic", size: 17))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(themeManager.descriptionText)
+                    
+                    // Image
+                    Image(documentName) // assumes .png in Assets
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 150, height: 150)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .foregroundColor(themeManager.accent)
+                    
+                    // Explanation
+                    Text(item.explanation)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .padding(.bottom)
+                        .italic()
+                        .font(.custom("PlayfairDisplay-Regular", size: 14))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(themeManager.bodyText)
+                    
+                    // three images
+                    
+                } else {
+                    ProgressView("Loading...")
+                        .padding(.top, 100)
+                }
             }
-        }
-        .padding()
-        .onAppear {
-            fetchItem()
+            .padding()
+            .onAppear {
+                fetchItem()
+            }
         }
     }
 
