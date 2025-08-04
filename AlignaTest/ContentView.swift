@@ -95,6 +95,15 @@ struct ContentView: View {
                 AppBackgroundView()
                     .ignoresSafeArea()
                 
+//                CustomBackButton(
+//                    iconSize: 18,
+//                    paddingSize: 8,
+//                    backgroundColor: Color.black.opacity(0.3),
+//                    iconColor: themeManager.foregroundColor,
+//                    topPadding: 44,
+//                    horizontalPadding: 24
+//                )
+                
                 ScrollView {
                     VStack(spacing: 24) {
                         CalendarView(
@@ -110,16 +119,6 @@ struct ContentView: View {
                         }
                         .padding(.horizontal, 16)
                         
-                        //            NavigationLink {
-                        //              JournalView(date: selectedDate)
-                        //            } label: {
-                        //              Text("Have something to say?")
-                        //                .padding(.vertical, 8)
-                        //                .padding(.horizontal, 16)
-                        //                .background(Capsule().fill(Color.accentColor.opacity(0.2)))
-                        //                .foregroundColor(.accentColor)
-                        //            }
-                        
                         Group {
                             if dailyVM.mantra.isEmpty {
                                 Text("Your daily mantra will appear here.")
@@ -134,6 +133,7 @@ struct ContentView: View {
                                     .colorInvert()
                             }
                         }
+                        .id(selectedDate)
                         
                         // one‑column grid of full‑width capsules
                         LazyVGrid(columns: [GridItem(.flexible())], spacing: 12) {

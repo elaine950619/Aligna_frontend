@@ -7,12 +7,12 @@ struct FirstPageView: View {
     
     @AppStorage("lastRecommendationDate") var lastRecommendationDate: String = ""
     @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
-
+    
     @StateObject private var locationManager = LocationManager()
     @State private var recommendationTitles: [String: String] = [:]
     
     @State private var selectedDate = Date()
-
+    
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
@@ -21,7 +21,7 @@ struct FirstPageView: View {
                     // 背景组件
                     AppBackgroundView()
                         .environmentObject(starManager)
-
+                    
                     VStack(spacing: minLength * 0.015) {
                         // 顶部按钮
                         HStack {
@@ -55,22 +55,22 @@ struct FirstPageView: View {
                                             .foregroundColor(.black)
                                     )
                             }
-                            .padding(.horizontal, geometry.size.width * 0.05)
-
+//                            .padding(.horizontal, geometry.size.width * 0.05)
+                            
                             Spacer()
-
+                            
                             HStack(spacing: geometry.size.width * 0.04) {
                                 if isLoggedIn {
                                     NavigationLink(destination: AccountDetailView()
                                         .environmentObject(starManager)
                                         .environmentObject(themeManager)) {
-                                        Image("account")
-                                            .resizable()
-                                            .renderingMode(.template)
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 28, height: 28)
-                                            .foregroundColor(themeManager.foregroundColor)
-                                    }
+                                            Image("account")
+                                                .resizable()
+                                                .renderingMode(.template)
+                                                .aspectRatio(contentMode: .fit)
+                                                .frame(width: 28, height: 28)
+                                                .foregroundColor(themeManager.foregroundColor)
+                                        }
                                 } else {
                                     NavigationLink(destination: AccountDetailView()) {
                                         Image("account")
@@ -84,24 +84,25 @@ struct FirstPageView: View {
                             }
                             .padding(.horizontal, geometry.size.width * 0.05)
                         }
-
+                        
                         Text("Aligna")
                             .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.13))
                             .foregroundColor(themeManager.foregroundColor)
-
+                        
                         Text(viewModel.dailyMantra)
                             .font(Font.custom("PlayfairDisplay-Italic", size: minLength * 0.04))
                             .multilineTextAlignment(.center)
                             .foregroundColor(themeManager.foregroundColor.opacity(0.7))
                             .padding(.horizontal, geometry.size.width * 0.1)
-
+                            .fixedSize(horizontal: false, vertical: true)
+                        
                         Spacer()
-
+                        
                         VStack(spacing: minLength * 0.05) {
                             if viewModel.recommendations.isEmpty {
-                                    ProgressView("Loading your personalized guidance...")
-                                        .foregroundColor(themeManager.foregroundColor)
-                                        .padding()
+                                ProgressView("Loading your personalized guidance...")
+                                    .foregroundColor(themeManager.foregroundColor)
+                                    .padding()
                             } else {
                                 let columns = [
                                     GridItem(.flexible(), alignment: .center),
@@ -109,7 +110,7 @@ struct FirstPageView: View {
                                 ]
                                 
                                 
-                                LazyVGrid(columns: columns, spacing: geometry.size.height * 0.03) {
+                                LazyVGrid(columns: columns, spacing: geometry.size.height * 0.001) {
                                     navItemView(title: "Place", geometry: geometry)
                                     navItemView(title: "Gemstone", geometry: geometry)
                                     navItemView(title: "Color", geometry: geometry)
@@ -122,8 +123,8 @@ struct FirstPageView: View {
                                 .padding(.horizontal, geometry.size.width * 0.05)
                             }
                         }
-
-                        Spacer()
+                        
+//                        Spacer()
                         Spacer().frame(height: geometry.size.height * 0.03)
                     }
                     .padding(.top, 16)
@@ -135,7 +136,7 @@ struct FirstPageView: View {
                     let dateFormatter = DateFormatter()
                     dateFormatter.dateFormat = "yyyy-MM-dd"
                     let today = dateFormatter.string(from: Date())
-
+                    
                     print("🧠 当前推荐：\(viewModel.recommendations)")
                     
                     if viewModel.recommendations.isEmpty || lastRecommendationDate != today {
@@ -155,13 +156,13 @@ struct FirstPageView: View {
         for (category, documentName) in viewModel.recommendations {
             let collection = firebaseCollectionName(for: category)
             let db = Firestore.firestore()
-
+            
             db.collection(collection).document(documentName).getDocument { snapshot, error in
                 if let error = error {
                     print("❌ 加载 \(category) 标题失败: \(error)")
                     return
                 }
-
+                
                 if let data = snapshot?.data(), let title = data["title"] as? String {
                     DispatchQueue.main.async {
                         recommendationTitles[category] = title
@@ -170,19 +171,19 @@ struct FirstPageView: View {
             }
         }
     }
-
+    
     
     private func fetchAndSaveRecommendationIfNeeded() {
         guard let userId = Auth.auth().currentUser?.uid else {
             print("❌ 用户未登录，跳过获取推荐")
             return
         }
-
+        
         let db = Firestore.firestore()
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let today = dateFormatter.string(from: Date())
-
+        
         db.collection("daily_recommendation")
             .whereField("uid", isEqualTo: userId)
             .whereField("createdAt", isEqualTo: today)
@@ -191,19 +192,19 @@ struct FirstPageView: View {
                     print("❌ 查询推荐失败：\(error)")
                     return
                 }
-
+                
                 guard let snapshot = snapshot else {
                     print("❌ 查询 snapshot 为 nil")
                     return
                 }
-
+                
                 if !snapshot.documents.isEmpty {
                     print("📌 今日已有推荐，跳过生成")
                     loadTodayRecommendation()
                     lastRecommendationDate = today
                     return
                 }
-
+                
                 // 👇 如果没有推荐，等定位获取后调用后端
                 if let coord = locationManager.currentLocation {
                     fetchFromFastAPIAndSave(coord: coord, userId: userId, today: today)
@@ -217,47 +218,47 @@ struct FirstPageView: View {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let birthDateString = dateFormatter.string(from: viewModel.birth_date)
-
+        
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "HH:mm"
         let birthTimeString = timeFormatter.string(from: viewModel.birth_time)
-
+        
         let payload: [String: Any] = [
             "birth_date": birthDateString,
             "birth_time": birthTimeString,
             "latitude": coord.latitude,
             "longitude": coord.longitude
         ]
-
+        
         guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
             print("❌ 无效的 FastAPI URL")
             return
         }
-
+        
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
+        
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: payload)
         } catch {
             print("❌ JSON 序列化失败: \(error)")
             return
         }
-
+        
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("❌ FastAPI 请求失败: \(error.localizedDescription)")
                 return
             }
-
+            
             guard let data = data,
                   let rawString = String(data: data, encoding: .utf8),
                   let jsonData = rawString.data(using: .utf8) else {
                 print("❌ FastAPI 响应格式错误")
                 return
             }
-
+            
             do {
                 if let parsed = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
                    let recs = parsed["recommendations"] as? [String: String],
@@ -266,17 +267,17 @@ struct FirstPageView: View {
                         viewModel.recommendations = recs
                         viewModel.dailyMantra = mantra
                         lastRecommendationDate = today
-
+                        
                         // ⏱ 添加这句代码，确保写入后再 fetch title
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             fetchAllRecommendationTitles()
                         }
-
+                        
                         var recommendationData: [String: Any] = recs
                         recommendationData["uid"] = userId
                         recommendationData["createdAt"] = today
                         recommendationData["mantra"] = mantra
-
+                        
                         let db = Firestore.firestore()
                         db.collection("daily_recommendation").addDocument(data: recommendationData) { error in
                             if let error = error {
@@ -286,23 +287,23 @@ struct FirstPageView: View {
                             }
                         }
                     }
-
+                    
                 }
             } catch {
                 print("❌ FastAPI 响应解析失败: \(error)")
             }
         }.resume()
     }
-
-
-
+    
+    
+    
     private func navItemView(title: String, geometry: GeometryProxy) -> some View {
         let documentName = viewModel.recommendations[title] ?? ""
-
+        
         return Group {
             if !documentName.isEmpty {
                 NavigationLink(destination:
-                    viewForCategory(title: title, documentName: documentName)
+                                viewForCategory(title: title, documentName: documentName)
                 ) {
                     VStack(spacing: 6) {
                         // 图标图像
@@ -321,7 +322,7 @@ struct FirstPageView: View {
                             .multilineTextAlignment(.center)
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
-
+                        
                         // 类别标题
                         Text(title)
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.055))
@@ -338,11 +339,11 @@ struct FirstPageView: View {
                             .scaledToFit()
                             .frame(width: geometry.size.width * 0.20)
                             .foregroundColor(themeManager.foregroundColor.opacity(0.4))
-
+                        
                         Text("Loading")
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.035))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.5))
-
+                        
                         Text(title)
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.055))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.5))
@@ -351,8 +352,8 @@ struct FirstPageView: View {
             }
         }
     }
-
-
+    
+    
     
     @ViewBuilder
     private func viewForCategory(title: String, documentName: String) -> some View {
@@ -377,19 +378,19 @@ struct FirstPageView: View {
             Text("⚠️ Unknown Category")
         }
     }
-
-
+    
+    
     private func loadTodayRecommendation() {
         guard let userId = Auth.auth().currentUser?.uid else {
             print("❌ 未登录，无法获取推荐")
             return
         }
-
+        
         let db = Firestore.firestore()
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let today = dateFormatter.string(from: Date())
-
+        
         db.collection("daily_recommendation")
             .whereField("uid", isEqualTo: userId)
             .whereField("createdAt", isEqualTo: today)
@@ -398,12 +399,12 @@ struct FirstPageView: View {
                     print("❌ 查询推荐失败：\(error)")
                     return
                 }
-
+                
                 guard let documents = snapshot?.documents, let doc = documents.first else {
                     print("⚠️ 今日暂无推荐数据")
                     return
                 }
-
+                
                 var recs: [String: String] = [:]
                 var fetchedMantra = ""
                 
@@ -414,12 +415,12 @@ struct FirstPageView: View {
                         recs[key] = str
                     }
                 }
-
+                
                 DispatchQueue.main.async {
                     self.viewModel.recommendations = recs
                     self.viewModel.dailyMantra = fetchedMantra
                     fetchAllRecommendationTitles()
-
+                    
                     print("✅ 成功加载今日推荐：\(recs)")
                 }
             }
@@ -437,7 +438,7 @@ struct SoundDetailView: View {
     let documentName: String
     @State private var item: RecommendationItem?
     @StateObject private var soundPlayer = SoundPlayer()
-
+    
     var body: some View {
         ZStack{
             AppBackgroundView()
@@ -510,7 +511,7 @@ struct SoundDetailView: View {
             }
         }
     }
-
+    
     private func fetchItem() {
         let db = Firestore.firestore()
         db.collection("sounds").document(documentName).getDocument { snapshot, error in
@@ -531,29 +532,58 @@ struct SoundDetailView: View {
     }
 }
 
+struct Glow: ViewModifier {
+  var color: Color = .white
+  var radius: CGFloat = 8
+
+  func body(content: Content) -> some View {
+    content
+      // first, a tight glow…
+      .shadow(color: color.opacity(0.6), radius: radius, x: 0, y: 0)
+      // …then a wider, fainter glow
+      .shadow(color: color.opacity(0.4), radius: radius * 2, x: 0, y: 0)
+  }
+}
+
+extension View {
+  func glow(color: Color = .white, radius: CGFloat = 8) -> some View {
+    self.modifier(Glow(color: color, radius: radius))
+  }
+}
+
 struct IconItem: Identifiable {
-  let id = UUID()
-  let imageName: String
-  let title: String
+    let id = UUID()
+    let imageName: String
+    let title: String
 }
 
 struct PlaceDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     
+    @Environment(\.dismiss) private var dismiss
     let documentName: String
-//    let imageNames: [String]
+    //    let imageNames: [String]
     let iconItems = [
         IconItem(imageName: "botanical_garden", title: "Botanical\ngardens"),
         IconItem(imageName: "small_parks",     title: "Small\nparks"),
         IconItem(imageName: "shaded_paths",    title: "Shaded\npaths")
-      ]
+    ]
     @State private var item: RecommendationItem?
-
+    
     var body: some View {
         ZStack{
             AppBackgroundView()
                 .environmentObject(starManager)
+            
+            CustomBackButton(
+                iconSize: 18,
+                paddingSize: 8,
+                backgroundColor: Color.black.opacity(0.3),
+                iconColor: themeManager.foregroundColor,
+                topPadding: 44,
+                horizontalPadding: 24
+            )
             
             VStack(spacing: 20) {
                 // Place
@@ -561,7 +591,8 @@ struct PlaceDetailView: View {
                     .foregroundColor(themeManager.watermark)
                     .font(.custom("PlayfairDisplay-Regular", size: 36))
                     .bold()
-              
+//                    .glow(color: themeManager.watermark, radius: 6)
+                
                 if let item = item {
                     // Title
                     Text(item.title)
@@ -569,7 +600,7 @@ struct PlaceDetailView: View {
                         .font(.custom("PlayfairDisplay-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
                         .bold()
-
+                    
                     // Description
                     Text(item.description)
                         .multilineTextAlignment(.center)
@@ -577,7 +608,7 @@ struct PlaceDetailView: View {
                         .font(.custom("PlayfairDisplay-Italic", size: 17))
                         .fixedSize(horizontal: false, vertical: true)
                         .foregroundColor(themeManager.descriptionText)
-                  
+                    
                     // Image
                     Image(documentName) // assumes .png in Assets
                         .renderingMode(.template)
@@ -585,8 +616,8 @@ struct PlaceDetailView: View {
                         .scaledToFit()
                         .frame(width: 150, height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.accent)
-
+                        .foregroundColor(themeManager.foregroundColor)
+                    
                     // Explanation
                     Text(item.explanation)
                         .multilineTextAlignment(.center)
@@ -598,25 +629,25 @@ struct PlaceDetailView: View {
                         .foregroundColor(themeManager.bodyText)
                     
                     // three images
-//                    if !imageNames.isEmpty {
-//                        ScrollView(.horizontal, showsIndicators: false) {
-//                            HStack(spacing: 12) {
-//                                ForEach(imageNames, id: \.self) { name in
-//                                    Image(name)
-//                                        .resizable()
-//                                        .scaledToFill()
-//                                        .frame(width: 140, height: 140)
-//                                        .clipped()
-//                                        .cornerRadius(8)
-//                                }
-//                            }
-//                            .padding(.horizontal)
-//                        }
-//                        .frame(height: 160)
-//                    }
+                    //                    if !imageNames.isEmpty {
+                    //                        ScrollView(.horizontal, showsIndicators: false) {
+                    //                            HStack(spacing: 12) {
+                    //                                ForEach(imageNames, id: \.self) { name in
+                    //                                    Image(name)
+                    //                                        .resizable()
+                    //                                        .scaledToFill()
+                    //                                        .frame(width: 140, height: 140)
+                    //                                        .clipped()
+                    //                                        .cornerRadius(8)
+                    //                                }
+                    //                            }
+                    //                            .padding(.horizontal)
+                    //                        }
+                    //                        .frame(height: 160)
+                    //                    }
                     
                     VStack(spacing: 24) {
-                      // top two
+                        // top two
                         HStack(spacing: 40) {
                             ForEach(iconItems[1...2]) { item in
                                 VStack(spacing: 8) {
@@ -659,12 +690,14 @@ struct PlaceDetailView: View {
                 }
             }
             .padding()
-            .onAppear {
-                fetchItem()
-            }
+            
         }
+        .onAppear { // where should i put this?
+            fetchItem()
+        }
+        .navigationBarBackButtonHidden(true)
     }
-
+    
     private func fetchItem() {
         let db = Firestore.firestore()
         db.collection("places").document(documentName).getDocument { snapshot, error in
@@ -694,11 +727,21 @@ struct GemstoneDetailView: View {
     
     let documentName: String
     @State private var item: RecommendationItem?
-
+    
     var body: some View {
         ZStack{
             AppBackgroundView()
                 .environmentObject(starManager)
+            
+            CustomBackButton(
+                iconSize: 18,
+                paddingSize: 8,
+                backgroundColor: Color.black.opacity(0.3),
+                iconColor: themeManager.foregroundColor,
+                topPadding: 44,
+                horizontalPadding: 24
+            )
+            
             VStack(spacing: 20) {
                 // Gemstone
                 Text("Gemstone")
@@ -729,7 +772,7 @@ struct GemstoneDetailView: View {
                         .scaledToFit()
                         .frame(width: 150, height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.accent)
+                        .foregroundColor(themeManager.foregroundColor)
                     
                     // Explanation
                     Text(item.explanation)
@@ -751,8 +794,9 @@ struct GemstoneDetailView: View {
                 fetchItem()
             }
         }
+        .navigationBarBackButtonHidden(true)
     }
-
+    
     private func fetchItem() {
         let db = Firestore.firestore()
         db.collection("gemstones").document(documentName).getDocument { snapshot, error in
@@ -779,11 +823,20 @@ struct ColorDetailView: View {
     
     let documentName: String
     @State private var item: RecommendationItem?
-
+    
     var body: some View {
         ZStack{
             AppBackgroundView()
                 .environmentObject(starManager)
+            
+            CustomBackButton(
+                iconSize: 18,
+                paddingSize: 8,
+                backgroundColor: Color.black.opacity(0.3),
+                iconColor: themeManager.foregroundColor,
+                topPadding: 44,
+                horizontalPadding: 24
+            )
             
             VStack(spacing: 20) {
                 // Color
@@ -815,7 +868,7 @@ struct ColorDetailView: View {
                         .scaledToFit()
                         .frame(width: 150, height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.accent)
+                        .foregroundColor(themeManager.foregroundColor)
                     
                     // Explanation
                     Text(item.explanation)
@@ -836,8 +889,9 @@ struct ColorDetailView: View {
                 fetchItem()
             }
         }
+        .navigationBarBackButtonHidden(true)
     }
-
+    
     private func fetchItem() {
         let db = Firestore.firestore()
         db.collection("colors").document(documentName).getDocument { snapshot, error in
@@ -864,11 +918,21 @@ struct ScentDetailView: View {
     
     let documentName: String
     @State private var item: RecommendationItem?
-
+    
     var body: some View {
         ZStack{
             AppBackgroundView()
                 .environmentObject(starManager)
+            
+            CustomBackButton(
+                iconSize: 18,
+                paddingSize: 8,
+                backgroundColor: Color.black.opacity(0.3),
+                iconColor: themeManager.foregroundColor,
+                topPadding: 44,
+                horizontalPadding: 24
+            )
+            
             VStack(spacing: 20) {
                 // Scent
                 Text("Scent")
@@ -899,7 +963,7 @@ struct ScentDetailView: View {
                         .scaledToFit()
                         .frame(width: 150, height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.accent)
+                        .foregroundColor(themeManager.foregroundColor)
                     
                     // Explanation
                     Text(item.explanation)
@@ -920,8 +984,9 @@ struct ScentDetailView: View {
                 fetchItem()
             }
         }
+        .navigationBarBackButtonHidden(true)
     }
-
+    
     private func fetchItem() {
         let db = Firestore.firestore()
         db.collection("scents").document(documentName).getDocument { snapshot, error in
@@ -948,11 +1013,20 @@ struct ActivityDetailView: View {
     
     let documentName: String
     @State private var item: RecommendationItem?
-
+    
     var body: some View {
         ZStack{
             AppBackgroundView()
                 .environmentObject(starManager)
+            
+            CustomBackButton(
+                iconSize: 18,
+                paddingSize: 8,
+                backgroundColor: Color.black.opacity(0.3),
+                iconColor: themeManager.foregroundColor,
+                topPadding: 44,
+                horizontalPadding: 24
+            )
             
             VStack(spacing: 20) {
                 // Activity
@@ -984,7 +1058,7 @@ struct ActivityDetailView: View {
                         .scaledToFit()
                         .frame(width: 150, height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.accent)
+                        .foregroundColor(themeManager.foregroundColor)
                     
                     // Explanation
                     Text(item.explanation)
@@ -1005,8 +1079,9 @@ struct ActivityDetailView: View {
                 fetchItem()
             }
         }
+        .navigationBarBackButtonHidden(true)
     }
-
+    
     private func fetchItem() {
         let db = Firestore.firestore()
         db.collection("activities").document(documentName).getDocument { snapshot, error in
@@ -1033,11 +1108,20 @@ struct CareerDetailView: View {
     
     let documentName: String
     @State private var item: RecommendationItem?
-
+    
     var body: some View {
         ZStack{
             AppBackgroundView()
                 .environmentObject(starManager)
+            
+            CustomBackButton(
+                iconSize: 18,
+                paddingSize: 8,
+                backgroundColor: Color.black.opacity(0.3),
+                iconColor: themeManager.foregroundColor,
+                topPadding: 44,
+                horizontalPadding: 24
+            )
             
             VStack(spacing: 20) {
                 // Career
@@ -1068,7 +1152,7 @@ struct CareerDetailView: View {
                         .scaledToFit()
                         .frame(width: 150, height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.accent)
+                        .foregroundColor(themeManager.foregroundColor)
                     
                     // Explanation
                     Text(item.explanation)
@@ -1089,8 +1173,9 @@ struct CareerDetailView: View {
                 fetchItem()
             }
         }
+        .navigationBarBackButtonHidden(true)
     }
-
+    
     private func fetchItem() {
         let db = Firestore.firestore()
         db.collection("careers").document(documentName).getDocument { snapshot, error in
@@ -1118,11 +1203,20 @@ struct RelationshipDetailView: View {
     
     let documentName: String
     @State private var item: RecommendationItem?
-
+    
     var body: some View {
         ZStack{
             AppBackgroundView()
                 .environmentObject(starManager)
+            
+            CustomBackButton(
+                iconSize: 18,
+                paddingSize: 8,
+                backgroundColor: Color.black.opacity(0.3),
+                iconColor: themeManager.foregroundColor,
+                topPadding: 44,
+                horizontalPadding: 24
+            )
             
             VStack(spacing: 20) {
                 // Relationship
@@ -1154,7 +1248,7 @@ struct RelationshipDetailView: View {
                         .scaledToFit()
                         .frame(width: 150, height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.accent)
+                        .foregroundColor(themeManager.foregroundColor)
                     
                     // Explanation
                     Text(item.explanation)
@@ -1178,8 +1272,9 @@ struct RelationshipDetailView: View {
                 fetchItem()
             }
         }
+        .navigationBarBackButtonHidden(true)
     }
-
+    
     private func fetchItem() {
         let db = Firestore.firestore()
         db.collection("relationships").document(documentName).getDocument { snapshot, error in
@@ -1196,6 +1291,41 @@ struct RelationshipDetailView: View {
             } catch {
                 print("❌ 解码失败: \(error)")
             }
+        }
+    }
+}
+
+
+
+
+
+// Back button
+
+struct CustomBackButton: View {
+    @Environment(\.dismiss) private var dismiss
+    var iconSize: CGFloat = 20
+    var paddingSize: CGFloat = 10
+    var backgroundColor: Color = Color.black.opacity(0.3)
+    var iconColor: Color = .white
+    var topPadding: CGFloat = 44
+    var horizontalPadding: CGFloat = 24
+    
+    var body: some View {
+        VStack {
+            HStack {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: iconSize, weight: .semibold))
+                        .foregroundColor(iconColor)
+                        .padding(paddingSize)
+                        .background(backgroundColor)
+                        .clipShape(Circle())
+                }
+                Spacer()
+            }
+            .padding(.top, topPadding)
+            .padding(.horizontal, horizontalPadding)
+            Spacer()
         }
     }
 }
@@ -1221,7 +1351,7 @@ class OnboardingViewModel: ObservableObject {
     @Published var currentCoordinate: CLLocationCoordinate2D?
     @Published var recommendations: [String: String] = [:]
     @Published var dailyMantra: String = ""
-
+    
 }
 
 import SwiftUI
@@ -1229,68 +1359,68 @@ import SwiftUI
 struct OnboardingOpeningPage: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
                 let minLength = min(geometry.size.width, geometry.size.height)
-
+                
                 ZStack {
                     AppBackgroundView()
                         .environmentObject(starManager)
-
+                    
                     VStack(spacing: minLength * 0.04) {
                         Spacer()
-
+                        
                         Text("Aligna")
                             .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.12))
                             .foregroundColor(themeManager.foregroundColor)
-
+                        
                         Text("FIND YOUR FLOW")
                             .font(.subheadline)
                             .foregroundColor(themeManager.foregroundColor.opacity(0.7))
-
+                        
                         Image("openingSymbol") // 请确保这个图标已加入 Assets 中，命名为 openingSymbol
                             .resizable()
                             .scaledToFit()
                             .frame(width: minLength * 0.35)
-
+                        
                         Spacer()
-
+                        
                         // Sign Up 按钮
                         NavigationLink(destination: RegisterPageView()
                             .environmentObject(starManager)
                             .environmentObject(themeManager)) {
-                            Text("Sign Up")
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.white.opacity(0.2))
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                                .padding(.horizontal, minLength * 0.1)
-                        }
-
+                                Text("Sign Up")
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.white.opacity(0.2))
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
+                                    .padding(.horizontal, minLength * 0.1)
+                            }
+                        
                         // Log In 按钮
                         NavigationLink(destination: AccountPageView()
                             .environmentObject(starManager)
                             .environmentObject(themeManager)
                             .environmentObject(OnboardingViewModel())) {
-                            Text("Log In")
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(themeManager.foregroundColor.opacity(0.6), lineWidth: 1)
-                                )
-                                .foregroundColor(themeManager.foregroundColor)
-                                .padding(.horizontal, minLength * 0.1)
-                        }
-
+                                Text("Log In")
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(themeManager.foregroundColor.opacity(0.6), lineWidth: 1)
+                                    )
+                                    .foregroundColor(themeManager.foregroundColor)
+                                    .padding(.horizontal, minLength * 0.1)
+                            }
+                        
                         Text("Welcome to the Journal of Aligna")
                             .font(.footnote)
                             .foregroundColor(themeManager.foregroundColor.opacity(0.6))
                             .padding(.top, 10)
-
+                        
                         Spacer()
                     }
                     .padding(.bottom, geometry.size.height * 0.05)
@@ -1314,23 +1444,23 @@ struct RegisterPageView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var viewModel: OnboardingViewModel
-
+    
     @State private var email = ""
     @State private var password = ""
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var navigateToOnboarding = false
     @State private var currentNonce: String? = nil
-
+    
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
                 let minLength = min(geometry.size.width, geometry.size.height)
-
+                
                 ZStack {
                     AppBackgroundView()
                         .environmentObject(starManager)
-
+                    
                     VStack {
                         HStack {
                             Button(action: { dismiss() }) {
@@ -1340,17 +1470,17 @@ struct RegisterPageView: View {
                             }
                             .padding(.leading, geometry.size.width * 0.05)
                             .padding(.top, geometry.size.height * 0.05)
-
+                            
                             Spacer()
                         }
-
+                        
                         Spacer()
-
+                        
                         VStack(spacing: 20) {
                             Text("Create Account")
                                 .font(.custom("PlayfairDisplay-Regular", size: 34))
                                 .foregroundColor(themeManager.foregroundColor)
-
+                            
                             TextField("Email", text: $email)
                                 .textContentType(.emailAddress)
                                 .keyboardType(.emailAddress)
@@ -1358,13 +1488,13 @@ struct RegisterPageView: View {
                                 .background(Color.white.opacity(0.1))
                                 .cornerRadius(12)
                                 .foregroundColor(themeManager.foregroundColor)
-
+                            
                             SecureField("Password", text: $password)
                                 .padding()
                                 .background(Color.white.opacity(0.1))
                                 .cornerRadius(12)
                                 .foregroundColor(themeManager.foregroundColor)
-
+                            
                             Button(action: {
                                 registerWithEmailPassword()
                             }) {
@@ -1376,12 +1506,12 @@ struct RegisterPageView: View {
                                     .foregroundColor(.black)
                                     .cornerRadius(12)
                             }
-
+                            
                             VStack(spacing: minLength * 0.025) {
                                 Text("Or register with")
                                     .font(.footnote)
                                     .foregroundColor(themeManager.foregroundColor.opacity(0.6))
-
+                                
                                 HStack(spacing: minLength * 0.08) {
                                     Button(action: {
                                         handleGoogleLogin(viewModel: viewModel, onSuccess: {
@@ -1390,7 +1520,7 @@ struct RegisterPageView: View {
                                             alertMessage = message
                                             showAlert = true
                                         })
-
+                                        
                                     }) {
                                         Image("googleIcon")
                                             .resizable()
@@ -1399,7 +1529,7 @@ struct RegisterPageView: View {
                                             .background(Color.white.opacity(0.1))
                                             .clipShape(Circle())
                                     }
-
+                                    
                                     SignInWithAppleButton(
                                         .signUp,
                                         onRequest: { request in
@@ -1424,7 +1554,7 @@ struct RegisterPageView: View {
                             }
                         }
                         .padding(.horizontal, geometry.size.width * 0.1)
-
+                        
                         Spacer()
                     }
                 }
@@ -1440,14 +1570,14 @@ struct RegisterPageView: View {
             }
         }
     }
-
+    
     private func registerWithEmailPassword() {
         guard !email.isEmpty, !password.isEmpty else {
             alertMessage = "Please fill in all fields."
             showAlert = true
             return
         }
-
+        
         Auth.auth().createUser(withEmail: email, password: password) { result, error in
             if let error = error {
                 // 更人性化的错误提示
@@ -1468,7 +1598,7 @@ struct RegisterPageView: View {
                 showAlert = true
                 return
             }
-
+            
             result?.user.sendEmailVerification { err in
                 if let err = err {
                     alertMessage = "Failed to send verification email: \(err.localizedDescription)"
@@ -1489,7 +1619,7 @@ struct RegisterPageView: View {
 
 struct OnboardingStep1: View {
     @ObservedObject var viewModel: OnboardingViewModel
-
+    
     var body: some View {
         VStack(spacing: 20) {
             Text("Your Nickname")
@@ -1558,7 +1688,7 @@ struct PlaceResult: Identifiable, Hashable {
     static func == (lhs: PlaceResult, rhs: PlaceResult) -> Bool {
         lhs.id == rhs.id
     }
-
+    
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
         hasher.combine(name)
@@ -1573,14 +1703,14 @@ import CoreLocation
 
 struct OnboardingStep3: View {
     @ObservedObject var viewModel: OnboardingViewModel
-
+    
     @State private var birthSearch = ""
     @State private var birthResults: [PlaceResult] = []
     @State private var didSelectBirth = false
-
+    
     @StateObject private var locationManager = LocationManager()
     @State private var didResolveCurrent = false
-
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -1588,7 +1718,7 @@ struct OnboardingStep3: View {
                     // 出生地选择
                     Group {
                         Text("Place of Birth").font(.title)
-
+                        
                         TextField("Your Birth Place", text: $birthSearch)
                             .textFieldStyle(.roundedBorder)
                             .onChange(of: birthSearch) { _, newVal in
@@ -1597,12 +1727,12 @@ struct OnboardingStep3: View {
                                 }
                                 didSelectBirth = false
                             }
-
+                        
                         if !viewModel.birthPlace.isEmpty {
                             Text("✓ Selected: \(viewModel.birthPlace)")
                                 .foregroundColor(.green)
                         }
-
+                        
                         ForEach(birthResults) { result in
                             Button {
                                 viewModel.birthPlace = result.name
@@ -1623,13 +1753,13 @@ struct OnboardingStep3: View {
                             }
                         }
                     }
-
+                    
                     Divider().padding(.vertical)
-
+                    
                     // 当前位置
                     Group {
                         Text("Current Place of Living").font(.title)
-
+                        
                         Button("📍 获取当前位置") {
                             locationManager.requestLocation()
                             didResolveCurrent = false // 允许重新解析
@@ -1637,7 +1767,7 @@ struct OnboardingStep3: View {
                         .padding()
                         .background(Color(hex: "#E6D9BD").opacity(0.3))
                         .cornerRadius(10)
-
+                        
                         if let coord = locationManager.currentLocation, !didResolveCurrent {
                             Text("正在反向解析地址...")
                                 .onAppear {
@@ -1650,13 +1780,13 @@ struct OnboardingStep3: View {
                                     }
                                 }
                         }
-
+                        
                         if !viewModel.currentPlace.isEmpty {
                             Text("✓ 当前所在地: \(viewModel.currentPlace)")
                                 .foregroundColor(.green)
                         }
                     }
-
+                    
                     NavigationLink("NEXT") {
                         OnboardingFinalStep(viewModel: viewModel)
                     }
@@ -1667,12 +1797,12 @@ struct OnboardingStep3: View {
             .navigationTitle("地点")
         }
     }
-
+    
     // MARK: - 反向地理编码
     private func getAddressFromCoordinate(_ coordinate: CLLocationCoordinate2D, completion: @escaping (String?) -> Void) {
         let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
         let geocoder = CLGeocoder()
-
+        
         geocoder.reverseGeocodeLocation(location) { placemarks, error in
             if let placemark = placemarks?.first {
                 let city = placemark.locality ?? placemark.administrativeArea ?? placemark.name
@@ -1683,20 +1813,20 @@ struct OnboardingStep3: View {
             }
         }
     }
-
+    
     // MARK: - 出生地搜索
     private func performBirthSearch(query: String) {
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = query
         request.resultTypes = [.address, .pointOfInterest]
-
+        
         let search = MKLocalSearch(request: request)
         search.start { response, error in
             guard let items = response?.mapItems else {
                 print("❌ Birth search failed: \(error?.localizedDescription ?? "Unknown error")")
                 return
             }
-
+            
             let results = items.compactMap { item in
                 PlaceResult(
                     name: item.name ?? "",
@@ -1704,7 +1834,7 @@ struct OnboardingStep3: View {
                     coordinate: item.placemark.coordinate
                 )
             }
-
+            
             DispatchQueue.main.async {
                 self.birthResults = results
             }
@@ -1717,17 +1847,17 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     @Published var currentLocation: CLLocationCoordinate2D?
     @Published var locationStatus: CLAuthorizationStatus?
-
+    
     override init() {
         super.init()
         manager.delegate = self
     }
-
+    
     func requestLocation() {
         manager.requestWhenInUseAuthorization()
         manager.startUpdatingLocation()
     }
-
+    
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         if let location = locations.first {
             DispatchQueue.main.async {
@@ -1736,14 +1866,14 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
             manager.stopUpdatingLocation()
         }
     }
-
+    
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         self.locationStatus = manager.authorizationStatus
         if locationStatus == .authorizedWhenInUse || locationStatus == .authorizedAlways {
             manager.startUpdatingLocation()
         }
     }
-
+    
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         print("❌ 获取位置失败: \(error.localizedDescription)")
     }
@@ -1766,7 +1896,7 @@ struct OnboardingFinalStep: View {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding = false
     @State private var navigateToHome = false
     @State private var isLoading = false
-
+    
     
     var body: some View {
         VStack(spacing: 15) {
@@ -1800,98 +1930,98 @@ struct OnboardingFinalStep: View {
     
     @State private var recommendation: [String: String] = [:]
     @State private var mantra: String = ""
-
+    
     private func uploadUserInfo() {
         print("🚀 uploadUserInfo triggered")
-
-           guard let userId = Auth.auth().currentUser?.uid else {
-               print("❌ 依然无法获取 UID")
-               return
-           }
-
-           print("📡 starting Firestore setData...")
-
-            let db = Firestore.firestore()
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy-MM-dd"
-            let timeFormatter = DateFormatter()
-            timeFormatter.dateFormat = "HH:mm"
-
-            let birthDateString = dateFormatter.string(from: viewModel.birth_date)
-            let birthTimeString = timeFormatter.string(from: viewModel.birth_time)
-            let lat = viewModel.currentCoordinate?.latitude ?? 0
-            let lng = viewModel.currentCoordinate?.longitude ?? 0
-            let data: [String: Any] = [
-               "uid": userId,
-               "nickname": viewModel.nickname,
-               "gender": viewModel.gender,
-               "birthDate": birthDateString,
-               "birthTime": birthTimeString,
-               "birthPlace": viewModel.birthPlace,
-               "currentPlace": viewModel.currentPlace,
-               "birthLat": viewModel.birthCoordinate?.latitude ?? 0,
-               "birthLng": viewModel.birthCoordinate?.longitude ?? 0,
-               "currentLat": lat,
-               "currentLng": lng,
-               "createdAt": Timestamp()
-           ]
-
-            db.collection("users").addDocument(data: data) { error in
-               if let error = error {
-                   print("❌ Firebase 上传失败: \(error)")
-               } else {
-                   print("✅ Firebase 上传成功")
-                   hasCompletedOnboarding = true
-                   navigateToHome = true
-               }
-           }
-
         
-
+        guard let userId = Auth.auth().currentUser?.uid else {
+            print("❌ 依然无法获取 UID")
+            return
+        }
+        
+        print("📡 starting Firestore setData...")
+        
+        let db = Firestore.firestore()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "HH:mm"
+        
+        let birthDateString = dateFormatter.string(from: viewModel.birth_date)
+        let birthTimeString = timeFormatter.string(from: viewModel.birth_time)
+        let lat = viewModel.currentCoordinate?.latitude ?? 0
+        let lng = viewModel.currentCoordinate?.longitude ?? 0
+        let data: [String: Any] = [
+            "uid": userId,
+            "nickname": viewModel.nickname,
+            "gender": viewModel.gender,
+            "birthDate": birthDateString,
+            "birthTime": birthTimeString,
+            "birthPlace": viewModel.birthPlace,
+            "currentPlace": viewModel.currentPlace,
+            "birthLat": viewModel.birthCoordinate?.latitude ?? 0,
+            "birthLng": viewModel.birthCoordinate?.longitude ?? 0,
+            "currentLat": lat,
+            "currentLng": lng,
+            "createdAt": Timestamp()
+        ]
+        
+        db.collection("users").addDocument(data: data) { error in
+            if let error = error {
+                print("❌ Firebase 上传失败: \(error)")
+            } else {
+                print("✅ Firebase 上传成功")
+                hasCompletedOnboarding = true
+                navigateToHome = true
+            }
+        }
+        
+        
+        
         let payload: [String: Any] = [
             "birth_date": birthDateString,
             "birth_time": birthTimeString,
             "latitude": lat,
             "longitude": lng
         ]
-
+        
         guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
             print("❌ 无效的 FastAPI URL")
             return
         }
-
+        
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
+        
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: payload)
         } catch {
             print("❌ JSON 序列化失败: \(error)")
             return
         }
-
+        
         print("📡 正在发送请求到 FastAPI...")
-
+        
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("❌ FastAPI 请求失败: \(error.localizedDescription)")
                 return
             }
-
+            
             guard let data = data, var rawString = String(data: data, encoding: .utf8) else {
                 print("❌ FastAPI 无响应数据或解码失败")
                 return
             }
-
+            
             print("📩 FastAPI 原始返回: \(rawString)")
-
-
+            
+            
             guard let cleanedData = rawString.data(using: .utf8) else {
                 print("❌ 字符串转 Data 失败")
                 return
             }
-
+            
             do {
                 if let parsed = try JSONSerialization.jsonObject(with: cleanedData) as? [String: Any],
                    let recs = parsed["recommendations"] as? [String: String],
@@ -1908,7 +2038,7 @@ struct OnboardingFinalStep: View {
                         let dateFormatter = DateFormatter()
                         dateFormatter.dateFormat = "yyyy-MM-dd"
                         let createdAt = dateFormatter.string(from: Date())
-
+                        
                         // 🗂️ 构建推荐结果 + UID + createdAt
                         var recommendationData: [String: Any] = recs // 包含8类推荐
                         self.mantra = mantraText
@@ -1938,7 +2068,7 @@ struct OnboardingFinalStep: View {
             }
         }.resume()
     }
-
+    
 }
 
 func firebaseCollectionName(for category: String) -> String {
@@ -1967,24 +2097,24 @@ struct AccountPageView: View {
     @EnvironmentObject var viewModel: OnboardingViewModel
     
     @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
-
+    
     @State private var email = ""
     @State private var password = ""
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var currentNonce: String? = nil
     @State private var navigateToHome = false
-
-
-
+    
+    
+    
     var body: some View {
         GeometryReader { geometry in
             let minLength = min(geometry.size.width, geometry.size.height)
-
+            
             ZStack {
                 AppBackgroundView()
                     .environmentObject(starManager)
-
+                
                 VStack {
                     HStack {
                         Button(action: {
@@ -1996,21 +2126,21 @@ struct AccountPageView: View {
                         }
                         .padding(.leading, geometry.size.width * 0.05)
                         .padding(.top, geometry.size.height * 0.05)
-
+                        
                         Spacer()
                     }
-
+                    
                     Spacer()
                 }
-
+                
                 VStack(spacing: minLength * 0.03) {
                     Text("Account")
                         .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.09))
                         .foregroundColor(themeManager.foregroundColor)
                         .padding(.top, geometry.size.height * 0.07)
-
+                    
                     Spacer()
-
+                    
                     VStack(spacing: minLength * 0.04) {
                         TextField("", text: $email)
                             .keyboardType(.emailAddress)
@@ -2023,7 +2153,7 @@ struct AccountPageView: View {
                                 Text("Email")
                                     .foregroundColor(themeManager.foregroundColor.opacity(0.4))
                             }
-
+                        
                         SecureField("", text: $password)
                             .padding()
                             .background(Color.white.opacity(0.1))
@@ -2033,7 +2163,7 @@ struct AccountPageView: View {
                                 Text("Password")
                                     .foregroundColor(themeManager.foregroundColor.opacity(0.4))
                             }
-
+                        
                         Button(action: {
                             if email.isEmpty || password.isEmpty {
                                 alertMessage = "Please enter both email and password."
@@ -2050,15 +2180,15 @@ struct AccountPageView: View {
                                 .foregroundColor(.black)
                                 .cornerRadius(10)
                         }
-
+                        
                         // 社交登录按钮区域
                         VStack(spacing: minLength * 0.025) {
                             
-
+                            
                             Text("Or login with")
                                 .font(.footnote)
                                 .foregroundColor(themeManager.foregroundColor.opacity(0.6))
-
+                            
                             HStack(spacing: minLength * 0.08) {
                                 // Google 登录按钮
                                 Button(action: {
@@ -2070,7 +2200,7 @@ struct AccountPageView: View {
                                             navigateToHome = true
                                             
                                         }
-
+                                        
                                     }, onError: { message in
                                         alertMessage = message
                                         showAlert = true
@@ -2085,7 +2215,7 @@ struct AccountPageView: View {
                                         .background(Color.white.opacity(0.1))
                                         .clipShape(Circle())
                                 }
-
+                                
                                 // Apple ID 登录按钮
                                 SignInWithAppleButton(
                                     .signIn,
@@ -2108,28 +2238,28 @@ struct AccountPageView: View {
                                         })
                                     }
                                 )
-
+                                
                                 .frame(width: 140, height: 45)
                                 .signInWithAppleButtonStyle(themeManager.foregroundColor == .black ? .white : .black)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
-
+                                
                                 
                             }
                         }
-
+                        
                         // 注册和忘记密码
                         HStack {
                             NavigationLink(destination:
-                                RegisterPageView()
-                                    .environmentObject(starManager)
-                                    .environmentObject(themeManager)
+                                            RegisterPageView()
+                                .environmentObject(starManager)
+                                .environmentObject(themeManager)
                             ) {
                                 Text("Register")
                                     .foregroundColor(themeManager.foregroundColor)
                             }
-
+                            
                             Spacer()
-
+                            
                             Button("Forgot Password?") {
                                 // 添加找回密码逻辑
                             }
@@ -2138,7 +2268,7 @@ struct AccountPageView: View {
                         .font(.footnote)
                     }
                     .padding(.horizontal, geometry.size.width * 0.1)
-
+                    
                     Spacer()
                 }
             }
@@ -2168,47 +2298,47 @@ import GoogleSignInSwift
 
 func handleGoogleLogin(viewModel: OnboardingViewModel, onSuccess: @escaping () -> Void, onError: @escaping (String) -> Void) {
     print("🔍 准备执行 Google 登录")
-
+    
     guard let clientID = FirebaseApp.app()?.options.clientID else {
         onError("Missing Firebase client ID.")
         return
     }
-
+    
     let config = GIDConfiguration(clientID: clientID)
-
+    
     guard let rootVC = UIApplication.shared.connectedScenes
         .compactMap({ ($0 as? UIWindowScene)?.keyWindow?.rootViewController }).first else {
         onError("No root view controller found.")
         return
     }
-
+    
     GIDSignIn.sharedInstance.configuration = config
     GIDSignIn.sharedInstance.signIn(withPresenting: rootVC) { result, error in
         if let error = error {
             onError("Google Sign-In failed: \(error.localizedDescription)")
             return
         }
-
+        
         guard let user = result?.user,
               let idToken = user.idToken?.tokenString else {
             onError("Failed to get Google credentials.")
             return
         }
-
+        
         let accessToken = user.accessToken.tokenString
         let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
-
+        
         Auth.auth().signIn(with: credential) { authResult, error in
             if let error = error {
                 if let errCode = AuthErrorCode(rawValue: (error as NSError).code), errCode == .accountExistsWithDifferentCredential {
                     onError("This email is already registered with a different method. Please use your original login method.")
                     return
                 }
-
+                
                 onError("Login failed: \(error.localizedDescription)")
                 return
             }
-
+            
             print("✅ Google 登录成功")
             onSuccess()
         }
@@ -2222,24 +2352,24 @@ func handleAppleLogin(
     onError: @escaping (String) -> Void
 ) {
     print("🔍 开始处理 Apple 登录结果")
-
+    
     switch result {
     case .success(let authResults):
         print("✅ Apple 授权成功")
-
+        
         guard let appleIDCredential = authResults.credential as? ASAuthorizationAppleIDCredential,
               let identityToken = appleIDCredential.identityToken,
               let tokenString = String(data: identityToken, encoding: .utf8) else {
             onError("Apple login failed: Cannot retrieve token.")
             return
         }
-
+        
         let credential = OAuthProvider.credential(
             withProviderID: "apple.com",
             idToken: tokenString,
             rawNonce: rawNonce
         )
-
+        
         Auth.auth().signIn(with: credential) { authResult, error in
             if let error = error {
                 if let errCode = AuthErrorCode(rawValue: (error as NSError).code),
@@ -2247,15 +2377,15 @@ func handleAppleLogin(
                     onError("This Apple ID email is already used with another login method. Please use the original method.")
                     return
                 }
-
+                
                 onError("Apple login failed: \(error.localizedDescription)")
                 return
             }
-
+            
             print("✅ Apple 登录成功")
             onSuccess()
         }
-
+        
     case .failure(let error):
         onError("Apple authorization failed: \(error.localizedDescription)")
     }
@@ -2278,7 +2408,7 @@ struct UserInfo: Codable {
 struct AccountDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     @State private var userInfo = UserInfo(nickname: "", birth_date: "", birthPlace: "", birth_time: "", currentPlace: "")
     @State private var isLoading = true
     @State private var errorMessage = ""
@@ -2286,17 +2416,17 @@ struct AccountDetailView: View {
     @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
     @State private var showLogoutAlert = false
     @State private var navigateToOnboarding = false
-
+    
     var body: some View {
         GeometryReader { geometry in
             let width = geometry.size.width
             let height = geometry.size.height
             let minLength = min(width, height)
-
+            
             ZStack {
                 AppBackgroundView()
                     .environmentObject(starManager)
-
+                
                 if isLoading {
                     ProgressView("Loading...")
                         .foregroundColor(themeManager.foregroundColor)
@@ -2311,12 +2441,12 @@ struct AccountDetailView: View {
                             .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.07))
                             .foregroundColor(themeManager.foregroundColor)
                             .padding(.top, height * 0.04)
-
+                        
                         VStack(alignment: .leading, spacing: height * 0.04) {
                             Text("Information")
                                 .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.06))
                                 .foregroundColor(themeManager.foregroundColor)
-
+                            
                             infoRow(title: "Date of Birth", value: userInfo.birth_date, width: width)
                             infoRow(title: "Place of Birth", value: userInfo.birthPlace, width: width)
                             infoRow(title: "Time of Birth", value: userInfo.birth_time, width: width)
@@ -2330,7 +2460,7 @@ struct AccountDetailView: View {
                                 .stroke(themeManager.foregroundColor.opacity(0.7), lineWidth: 1)
                         )
                         .padding(.horizontal, width * 0.1)
-
+                        
                         CollapsibleSection(title: "Preference", width: width) {
                             Text("Here you can show user's preferences.")
                                 .foregroundColor(.white)
@@ -2338,7 +2468,7 @@ struct AccountDetailView: View {
                                 .background(Color.gray.opacity(0.3))
                                 .cornerRadius(10)
                         }
-
+                        
                         CollapsibleSection(title: "Setting", width: width) {
                             Text("Here you can show setting options.")
                                 .foregroundColor(.white)
@@ -2359,8 +2489,8 @@ struct AccountDetailView: View {
                         }
                         .padding(.horizontal, width * 0.1)
                         .padding(.bottom, 20)
-
-
+                        
+                        
                         Spacer()
                     }
                 }
@@ -2393,14 +2523,14 @@ struct AccountDetailView: View {
             print("❌ 登出失败: \(error.localizedDescription)")
         }
     }
-
+    
     @ViewBuilder
     private func infoRow(title: String, value: String, width: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.subheadline)
                 .foregroundColor(themeManager.foregroundColor.opacity(0.6))
-
+            
             Text(value.isEmpty ? "-" : value)
                 .font(.body)
                 .foregroundColor(.black)
@@ -2409,14 +2539,14 @@ struct AccountDetailView: View {
                 .cornerRadius(10)
         }
     }
-
+    
     private func loadUserInfo() {
         guard let uid = Auth.auth().currentUser?.uid else {
             errorMessage = "未登录用户"
             isLoading = false
             return
         }
-
+        
         let db = Firestore.firestore()
         db.collection("users")
             .whereField("uid", isEqualTo: uid)
@@ -2428,15 +2558,15 @@ struct AccountDetailView: View {
                         isLoading = false
                         return
                     }
-
+                    
                     guard let document = snapshot?.documents.first else {
                         errorMessage = "未找到该用户的信息"
                         isLoading = false
                         return
                     }
-
+                    
                     let data = document.data()
-
+                    
                     self.userInfo = UserInfo(
                         nickname: data["nickname"] as? String ?? "",
                         birth_date: data["birthDate"] as? String ?? "",
@@ -2444,7 +2574,7 @@ struct AccountDetailView: View {
                         birth_time: data["birthTime"] as? String ?? "",
                         currentPlace: data["currentPlace"] as? String ?? ""
                     )
-
+                    
                     isLoading = false
                 }
             }
@@ -2456,13 +2586,13 @@ struct CollapsibleSection<Content: View>: View {
     let content: Content
     let width: CGFloat
     @State private var isExpanded = false
-
+    
     init(title: String, width: CGFloat, @ViewBuilder content: () -> Content) {
         self.title = title
         self.content = content()
         self.width = width
     }
-
+    
     var body: some View {
         DisclosureGroup(isExpanded: $isExpanded) {
             content
@@ -2494,10 +2624,10 @@ import CryptoKit
 func randomNonceString(length: Int = 32) -> String {
     precondition(length > 0)
     let charset: Array<Character> =
-        Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+    Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
     var result = ""
     var remainingLength = length
-
+    
     while remainingLength > 0 {
         let randoms: [UInt8] = (0..<16).map { _ in
             var random: UInt8 = 0
@@ -2507,7 +2637,7 @@ func randomNonceString(length: Int = 32) -> String {
             }
             return random
         }
-
+        
         randoms.forEach { random in
             if remainingLength == 0 { return }
             if random < charset.count {
@@ -2516,7 +2646,7 @@ func randomNonceString(length: Int = 32) -> String {
             }
         }
     }
-
+    
     return result
 }
 
@@ -2546,13 +2676,13 @@ import AVFoundation
 
 class SoundPlayer: ObservableObject {
     var player: AVAudioPlayer?
-
+    
     func playSound(named soundName: String) {
         guard let url = Bundle.main.url(forResource: soundName, withExtension: "wav") else {
             print("❌ 找不到音频文件：\(soundName).wav")
             return
         }
-
+        
         do {
             player = try AVAudioPlayer(contentsOf: url)
             player?.play()

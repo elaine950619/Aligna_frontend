@@ -30,6 +30,11 @@ final class DailyViewModel: ObservableObject {
     }()
     
     func load(for date: Date) {
+        DispatchQueue.main.async {
+            self.mantra = ""
+            self.items.removeAll()
+        }
+        
         guard let userId = Auth.auth().currentUser?.uid else {
             print("❌ 依然无法获取 UID")
             return
@@ -66,7 +71,11 @@ final class DailyViewModel: ObservableObject {
     private func fetchDetails(pairs: [(String,String)]) {
         items.removeAll()
         for (category, docName) in pairs where !docName.isEmpty {
-            let colName = category.lowercased() + "s"   // “places”, “colors”, …
+            var colName = category.lowercased() + "s"   // “places”, “colors”, …
+            if colName == "activitys" {
+                colName = "activities"
+            }
+            
             db.collection(colName).document(docName)
                 .getDocument { snapshot, err in
                     if let err = err {
