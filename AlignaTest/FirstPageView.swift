@@ -756,6 +756,7 @@ struct GemstoneDetailView: View {
                         .font(.custom("PlayfairDisplay-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
                         .bold()
+                        .glow(color: themeManager.primaryText, radius: 6)
                     
                     // Description
                     Text(item.description)
@@ -908,6 +909,7 @@ struct ColorDetailView: View {
                         .font(.custom("PlayfairDisplay-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
                         .bold()
+                        .glow(color: themeManager.primaryText, radius: 6)
                     
                     // Description
                     Text(item.description)
@@ -1003,6 +1005,7 @@ struct ScentDetailView: View {
                         .font(.custom("PlayfairDisplay-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
                         .bold()
+                        .glow(color: themeManager.primaryText, radius: 6)
                     
                     // Description
                     Text(item.description)
@@ -1098,6 +1101,7 @@ struct ActivityDetailView: View {
                         .font(.custom("PlayfairDisplay-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
                         .bold()
+                        .glow(color: themeManager.primaryText, radius: 6)
                     
                     // Description
                     Text(item.description)
@@ -1189,9 +1193,11 @@ struct CareerDetailView: View {
                 if let item = item {
                     // Title
                     Text(item.title)
-                        .font(.largeTitle)
                         .multilineTextAlignment(.center)
-                        .padding(.top)
+                        .font(.custom("PlayfairDisplay-Regular", size: 36))
+                        .foregroundColor(themeManager.primaryText)
+                        .bold()
+                        .glow(color: themeManager.primaryText, radius: 6)
                     
                     // Description
                     Text(item.description)
@@ -1280,6 +1286,7 @@ struct RelationshipDetailView: View {
                     .foregroundColor(themeManager.watermark)
                     .font(.custom("PlayfairDisplay-Regular", size: 36))
                     .bold()
+                    .glow(color: themeManager.primaryText, radius: 6)
                 
                 if let item = item {
                     // Title
