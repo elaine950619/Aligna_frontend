@@ -591,7 +591,6 @@ struct PlaceDetailView: View {
                     .foregroundColor(themeManager.watermark)
                     .font(.custom("PlayfairDisplay-Regular", size: 36))
                     .bold()
-//                    .glow(color: themeManager.watermark, radius: 6)
                 
                 if let item = item {
                     // Title
@@ -600,6 +599,7 @@ struct PlaceDetailView: View {
                         .font(.custom("PlayfairDisplay-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
                         .bold()
+                        .glow(color: themeManager.primaryText, radius: 6)
                     
                     // Description
                     Text(item.description)
@@ -814,6 +814,62 @@ struct GemstoneDetailView: View {
                 print("❌ 解码失败: \(error)")
             }
         }
+    }
+}
+
+struct BreathingCircle: View {
+    let color: Color
+    let size: CGFloat      // overall diameter
+    let duration: Double   // one full in-out cycle
+
+    @State private var scale: CGFloat = 1
+
+    var body: some View {
+        ZStack {
+            // Outer ring that expands/fades
+            Circle()
+                .stroke(color, lineWidth: size * 0.1)
+                .frame(width: size, height: size)
+                .scaleEffect(scale)
+                .opacity(Double(2 - scale))  // fades out as it expands
+
+            // Solid center dot
+            Circle()
+                .fill(color)
+                .frame(width: size * 0.6, height: size * 0.6)
+        }
+        .onAppear {
+            // toggle `scale` between 1 and 1.3 forever
+            withAnimation(
+                Animation.easeInOut(duration: duration)
+                    .repeatForever(autoreverses: true)
+            ) {
+                scale = 1.3
+            }
+        }
+    }
+}
+
+struct SetColorButton: View {
+    let action: ()->Void
+
+    var body: some View {
+        Button(action: action) {
+            Text("Set as Today’s Color")
+                .font(.system(size: 14, weight: .medium))
+                .frame(maxWidth: .infinity)
+                .frame(height: 53)
+                .background(.ultraThinMaterial)        // frosted-glass
+                .background(Color("ForestGreen"))       // your accent color
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
