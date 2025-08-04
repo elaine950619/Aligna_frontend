@@ -4,7 +4,7 @@ struct DecorativeRings: View {
     @State private var outerAngle: Double = 0
     @State private var middleAngle: Double = 0
     @State private var innerAngle: Double = 0
-
+    
     var body: some View {
         ZStack {
             // Outer ring
@@ -17,7 +17,7 @@ struct DecorativeRings: View {
                         outerAngle = 360
                     }
                 }
-
+            
             // Middle ring
             Circle()
                 .stroke(Color(hex: "#D4A574").opacity(0.10), lineWidth: 1)
@@ -28,7 +28,7 @@ struct DecorativeRings: View {
                         middleAngle = -360
                     }
                 }
-
+            
             // Inner ring
             Circle()
                 .stroke(Color(hex: "#D4A574").opacity(0.08), lineWidth: 1)
@@ -46,12 +46,12 @@ struct DecorativeRings: View {
 struct AppBackgroundView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @State private var visible = false  // ✅ 控制本地动画状态
-
+    
     private var isNight: Bool {
         let hour = Calendar.current.component(.hour, from: Date())
         return hour < 7 || hour >= 22
     }
-
+    
     var body: some View {
         GeometryReader { geo in
             ZStack {
@@ -77,14 +77,14 @@ struct AppBackgroundView: View {
                         .scaledToFill()
                         .ignoresSafeArea()
                 }
-
+                
                 if isNight {
                     Color.clear.task {
                         // 只在第一次布局完成时生成星星
                         if starManager.stars.isEmpty {
                             starManager.generateStars(in: geo.size)
                         }
-
+                        
                         // ✅ 启动闪烁动画
                         withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
                             visible = true

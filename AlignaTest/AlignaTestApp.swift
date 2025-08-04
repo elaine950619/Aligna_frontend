@@ -50,7 +50,7 @@ struct AlignaTestApp: App {
                         .environmentObject(onboardingViewModel)
                 } else {
                     NavigationStack {
-                        OnboardingStep1(viewModel: onboardingViewModel)
+                        OnboardingOpeningPage()
                     }
                     .environmentObject(starManager)
                     .environmentObject(themeManager)

@@ -6,8 +6,11 @@ struct FirstPageView: View {
     @EnvironmentObject var viewModel: OnboardingViewModel
     
     @AppStorage("lastRecommendationDate") var lastRecommendationDate: String = ""
+    @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
+
     @StateObject private var locationManager = LocationManager()
-  
+    @State private var recommendationTitles: [String: String] = [:]
+    
     @State private var selectedDate = Date()
 
     var body: some View {
@@ -52,27 +55,31 @@ struct FirstPageView: View {
                                             .foregroundColor(.black)
                                     )
                             }
-//                            .padding(.horizontal, geometry.size.width * 0.05)
+                            .padding(.horizontal, geometry.size.width * 0.05)
 
                             Spacer()
 
                             HStack(spacing: geometry.size.width * 0.04) {
-                                NavigationLink(destination: SettingPageView()) {
-                                    Image("setting")
-                                        .resizable()
-                                        .renderingMode(.template)
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 28, height: 28)
-                                        .foregroundColor(themeManager.foregroundColor)
-                                }
-
-                                NavigationLink(destination: AccountPageView()) {
-                                    Image("account")
-                                        .resizable()
-                                        .renderingMode(.template)
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 28, height: 28)
-                                        .foregroundColor(themeManager.foregroundColor)
+                                if isLoggedIn {
+                                    NavigationLink(destination: AccountDetailView()
+                                        .environmentObject(starManager)
+                                        .environmentObject(themeManager)) {
+                                        Image("account")
+                                            .resizable()
+                                            .renderingMode(.template)
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 28, height: 28)
+                                            .foregroundColor(themeManager.foregroundColor)
+                                    }
+                                } else {
+                                    NavigationLink(destination: AccountDetailView()) {
+                                        Image("account")
+                                            .resizable()
+                                            .renderingMode(.template)
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 28, height: 28)
+                                            .foregroundColor(themeManager.foregroundColor)
+                                    }
                                 }
                             }
                             .padding(.horizontal, geometry.size.width * 0.05)
@@ -89,17 +96,6 @@ struct FirstPageView: View {
                             .padding(.horizontal, geometry.size.width * 0.1)
 
                         Spacer()
-                        // Jornaling button
-//                        NavigationLink {
-//                            JournalView(date: selectedDate)
-//                        } label: {
-//                            Text("Have something to say?")
-//                              .font(.subheadline)
-//                              .padding(.vertical, 8)
-//                              .padding(.horizontal, 16)
-//                              .background(Capsule().fill(accent.opacity(0.2)))
-//                              .foregroundColor(accent)
-//                        }
 
                         VStack(spacing: minLength * 0.05) {
                             if viewModel.recommendations.isEmpty {
@@ -114,14 +110,14 @@ struct FirstPageView: View {
                                 
                                 
                                 LazyVGrid(columns: columns, spacing: geometry.size.height * 0.03) {
-                                    navItemView(icon: "icon_place", title: "Place", geometry: geometry)
-                                    navItemView(icon: "icon_gemstone", title: "Gemstone", geometry: geometry)
-                                    navItemView(icon: "icon_color", title: "Color", geometry: geometry)
-                                    navItemView(icon: "icon_scent", title: "Scent", geometry: geometry)
-                                    navItemView(icon: "icon_activity", title: "Activity", geometry: geometry)
-                                    navItemView(icon: "icon_sound", title: "Sound", geometry: geometry)
-                                    navItemView(icon: "icon_career", title: "Career", geometry: geometry)
-                                    navItemView(icon: "icon_relationship", title: "Relationship", geometry: geometry)
+                                    navItemView(title: "Place", geometry: geometry)
+                                    navItemView(title: "Gemstone", geometry: geometry)
+                                    navItemView(title: "Color", geometry: geometry)
+                                    navItemView(title: "Scent", geometry: geometry)
+                                    navItemView(title: "Activity", geometry: geometry)
+                                    navItemView(title: "Sound", geometry: geometry)
+                                    navItemView(title: "Career", geometry: geometry)
+                                    navItemView(title: "Relationship", geometry: geometry)
                                 }
                                 .padding(.horizontal, geometry.size.width * 0.05)
                             }
@@ -139,11 +135,15 @@ struct FirstPageView: View {
                     let dateFormatter = DateFormatter()
                     dateFormatter.dateFormat = "yyyy-MM-dd"
                     let today = dateFormatter.string(from: Date())
+
+                    print("🧠 当前推荐：\(viewModel.recommendations)")
                     
-                    print("🧠 当前推荐：\(viewModel.recommendations)") // ✅ 如果是空的，就是没传过来
                     if viewModel.recommendations.isEmpty || lastRecommendationDate != today {
                         locationManager.requestLocation()
                         fetchAndSaveRecommendationIfNeeded()
+                    } else {
+                        // ✅ 登录后推荐已存在时也补充 fetch 标题
+                        fetchAllRecommendationTitles()
                     }
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height)
@@ -151,6 +151,26 @@ struct FirstPageView: View {
         }
         .navigationViewStyle(.stack)
     }
+    private func fetchAllRecommendationTitles() {
+        for (category, documentName) in viewModel.recommendations {
+            let collection = firebaseCollectionName(for: category)
+            let db = Firestore.firestore()
+
+            db.collection(collection).document(documentName).getDocument { snapshot, error in
+                if let error = error {
+                    print("❌ 加载 \(category) 标题失败: \(error)")
+                    return
+                }
+
+                if let data = snapshot?.data(), let title = data["title"] as? String {
+                    DispatchQueue.main.async {
+                        recommendationTitles[category] = title
+                    }
+                }
+            }
+        }
+    }
+
     
     private func fetchAndSaveRecommendationIfNeeded() {
         guard let userId = Auth.auth().currentUser?.uid else {
@@ -247,6 +267,11 @@ struct FirstPageView: View {
                         viewModel.dailyMantra = mantra
                         lastRecommendationDate = today
 
+                        // ⏱ 添加这句代码，确保写入后再 fetch title
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            fetchAllRecommendationTitles()
+                        }
+
                         var recommendationData: [String: Any] = recs
                         recommendationData["uid"] = userId
                         recommendationData["createdAt"] = today
@@ -261,6 +286,7 @@ struct FirstPageView: View {
                             }
                         }
                     }
+
                 }
             } catch {
                 print("❌ FastAPI 响应解析失败: \(error)")
@@ -270,22 +296,33 @@ struct FirstPageView: View {
 
 
 
-    private func navItemView(icon: String, title: String, geometry: GeometryProxy) -> some View {
+    private func navItemView(title: String, geometry: GeometryProxy) -> some View {
         let documentName = viewModel.recommendations[title] ?? ""
 
         return Group {
             if !documentName.isEmpty {
                 NavigationLink(destination:
-                       viewForCategory(title: title, documentName: documentName)
-                    ) {
-                    VStack(spacing: 8) {
-                        Image(icon)
+                    viewForCategory(title: title, documentName: documentName)
+                ) {
+                    VStack(spacing: 6) {
+                        // 图标图像
+                        Image(documentName)
                             .resizable()
-                            .renderingMode(.template)
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: geometry.size.width * 0.20)
+                            .scaledToFit()
                             .foregroundColor(themeManager.foregroundColor)
+                            .frame(width: geometry.size.width * 0.20)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .shadow(radius: 2)
+                        
+                        // 推荐名称（小字体）
+                        Text(recommendationTitles[title] ?? "")
+                            .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.035))
+                            .foregroundColor(themeManager.foregroundColor.opacity(0.8))
+                            .multilineTextAlignment(.center)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
 
+                        // 类别标题
                         Text(title)
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.055))
                             .foregroundColor(themeManager.foregroundColor)
@@ -295,13 +332,16 @@ struct FirstPageView: View {
                 Button {
                     print("⚠️ 无法进入 '\(title)'，推荐结果尚未加载")
                 } label: {
-                    VStack(spacing: 8) {
-                        Image(icon)
+                    VStack(spacing: 6) {
+                        Image(systemName: "questionmark.square.dashed")
                             .resizable()
-                            .renderingMode(.template)
-                            .aspectRatio(contentMode: .fit)
+                            .scaledToFit()
                             .frame(width: geometry.size.width * 0.20)
-                            .foregroundColor(themeManager.foregroundColor)
+                            .foregroundColor(themeManager.foregroundColor.opacity(0.4))
+
+                        Text("Loading")
+                            .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.035))
+                            .foregroundColor(themeManager.foregroundColor.opacity(0.5))
 
                         Text(title)
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.055))
@@ -311,13 +351,14 @@ struct FirstPageView: View {
             }
         }
     }
+
+
     
     @ViewBuilder
     private func viewForCategory(title: String, documentName: String) -> some View {
         switch title {
         case "Place":
             PlaceDetailView(documentName: documentName)
-//            imageNames:
         case "Gemstone":
             GemstoneDetailView(documentName: documentName)
         case "Color":
@@ -377,6 +418,8 @@ struct FirstPageView: View {
                 DispatchQueue.main.async {
                     self.viewModel.recommendations = recs
                     self.viewModel.dailyMantra = fetchedMantra
+                    fetchAllRecommendationTitles()
+
                     print("✅ 成功加载今日推荐：\(recs)")
                 }
             }
@@ -1162,6 +1205,7 @@ struct RelationshipDetailView: View {
 
 
 
+
 import FirebaseFirestore
 import FirebaseAuth
 import MapKit
@@ -1179,6 +1223,269 @@ class OnboardingViewModel: ObservableObject {
     @Published var dailyMantra: String = ""
 
 }
+
+import SwiftUI
+
+struct OnboardingOpeningPage: View {
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+
+    var body: some View {
+        NavigationStack {
+            GeometryReader { geometry in
+                let minLength = min(geometry.size.width, geometry.size.height)
+
+                ZStack {
+                    AppBackgroundView()
+                        .environmentObject(starManager)
+
+                    VStack(spacing: minLength * 0.04) {
+                        Spacer()
+
+                        Text("Aligna")
+                            .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.12))
+                            .foregroundColor(themeManager.foregroundColor)
+
+                        Text("FIND YOUR FLOW")
+                            .font(.subheadline)
+                            .foregroundColor(themeManager.foregroundColor.opacity(0.7))
+
+                        Image("openingSymbol") // 请确保这个图标已加入 Assets 中，命名为 openingSymbol
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: minLength * 0.35)
+
+                        Spacer()
+
+                        // Sign Up 按钮
+                        NavigationLink(destination: RegisterPageView()
+                            .environmentObject(starManager)
+                            .environmentObject(themeManager)) {
+                            Text("Sign Up")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.white.opacity(0.2))
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                                .padding(.horizontal, minLength * 0.1)
+                        }
+
+                        // Log In 按钮
+                        NavigationLink(destination: AccountPageView()
+                            .environmentObject(starManager)
+                            .environmentObject(themeManager)
+                            .environmentObject(OnboardingViewModel())) {
+                            Text("Log In")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(themeManager.foregroundColor.opacity(0.6), lineWidth: 1)
+                                )
+                                .foregroundColor(themeManager.foregroundColor)
+                                .padding(.horizontal, minLength * 0.1)
+                        }
+
+                        Text("Welcome to the Journal of Aligna")
+                            .font(.footnote)
+                            .foregroundColor(themeManager.foregroundColor.opacity(0.6))
+                            .padding(.top, 10)
+
+                        Spacer()
+                    }
+                    .padding(.bottom, geometry.size.height * 0.05)
+                }
+            }
+        }
+        .onAppear {
+            starManager.animateStar = true
+            themeManager.updateTheme()
+        }
+        .navigationBarBackButtonHidden(true)
+    }
+}
+
+import SwiftUI
+import FirebaseAuth
+import AuthenticationServices
+
+struct RegisterPageView: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var viewModel: OnboardingViewModel
+
+    @State private var email = ""
+    @State private var password = ""
+    @State private var showAlert = false
+    @State private var alertMessage = ""
+    @State private var navigateToOnboarding = false
+    @State private var currentNonce: String? = nil
+
+    var body: some View {
+        NavigationStack {
+            GeometryReader { geometry in
+                let minLength = min(geometry.size.width, geometry.size.height)
+
+                ZStack {
+                    AppBackgroundView()
+                        .environmentObject(starManager)
+
+                    VStack {
+                        HStack {
+                            Button(action: { dismiss() }) {
+                                Image(systemName: "chevron.left")
+                                    .font(.title2)
+                                    .foregroundColor(themeManager.foregroundColor)
+                            }
+                            .padding(.leading, geometry.size.width * 0.05)
+                            .padding(.top, geometry.size.height * 0.05)
+
+                            Spacer()
+                        }
+
+                        Spacer()
+
+                        VStack(spacing: 20) {
+                            Text("Create Account")
+                                .font(.custom("PlayfairDisplay-Regular", size: 34))
+                                .foregroundColor(themeManager.foregroundColor)
+
+                            TextField("Email", text: $email)
+                                .textContentType(.emailAddress)
+                                .keyboardType(.emailAddress)
+                                .padding()
+                                .background(Color.white.opacity(0.1))
+                                .cornerRadius(12)
+                                .foregroundColor(themeManager.foregroundColor)
+
+                            SecureField("Password", text: $password)
+                                .padding()
+                                .background(Color.white.opacity(0.1))
+                                .cornerRadius(12)
+                                .foregroundColor(themeManager.foregroundColor)
+
+                            Button(action: {
+                                registerWithEmailPassword()
+                            }) {
+                                Text("Register & Send Email")
+                                    .font(.headline)
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(themeManager.foregroundColor)
+                                    .foregroundColor(.black)
+                                    .cornerRadius(12)
+                            }
+
+                            VStack(spacing: minLength * 0.025) {
+                                Text("Or register with")
+                                    .font(.footnote)
+                                    .foregroundColor(themeManager.foregroundColor.opacity(0.6))
+
+                                HStack(spacing: minLength * 0.08) {
+                                    Button(action: {
+                                        handleGoogleLogin(viewModel: viewModel, onSuccess: {
+                                            navigateToOnboarding = true
+                                        }, onError: { message in
+                                            alertMessage = message
+                                            showAlert = true
+                                        })
+
+                                    }) {
+                                        Image("googleIcon")
+                                            .resizable()
+                                            .frame(width: 30, height: 30)
+                                            .padding()
+                                            .background(Color.white.opacity(0.1))
+                                            .clipShape(Circle())
+                                    }
+
+                                    SignInWithAppleButton(
+                                        .signUp,
+                                        onRequest: { request in
+                                            let nonce = randomNonceString()
+                                            currentNonce = nonce
+                                            request.requestedScopes = [.fullName, .email]
+                                            request.nonce = sha256(nonce)
+                                        },
+                                        onCompletion: { result in
+                                            handleAppleLogin(result: result, rawNonce: currentNonce ?? "", onSuccess: {
+                                                navigateToOnboarding = true
+                                            }, onError: { message in
+                                                alertMessage = message
+                                                showAlert = true
+                                            })
+                                        }
+                                    )
+                                    .frame(width: 140, height: 45)
+                                    .signInWithAppleButtonStyle(themeManager.foregroundColor == .black ? .white : .black)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                }
+                            }
+                        }
+                        .padding(.horizontal, geometry.size.width * 0.1)
+
+                        Spacer()
+                    }
+                }
+                .alert(isPresented: $showAlert) {
+                    Alert(title: Text("Notice"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+                }
+                .navigationDestination(isPresented: $navigateToOnboarding) {
+                    OnboardingStep1(viewModel: viewModel)
+                        .environmentObject(starManager)
+                        .environmentObject(themeManager)
+                }
+                .navigationBarBackButtonHidden(true)
+            }
+        }
+    }
+
+    private func registerWithEmailPassword() {
+        guard !email.isEmpty, !password.isEmpty else {
+            alertMessage = "Please fill in all fields."
+            showAlert = true
+            return
+        }
+
+        Auth.auth().createUser(withEmail: email, password: password) { result, error in
+            if let error = error {
+                // 更人性化的错误提示
+                if let errCode = AuthErrorCode(rawValue: error._code) {
+                    switch errCode.code {
+                    case .emailAlreadyInUse:
+                        alertMessage = "This email is already in use."
+                    case .invalidEmail:
+                        alertMessage = "Please enter a valid email address."
+                    case .weakPassword:
+                        alertMessage = "Password should be at least 6 characters."
+                    default:
+                        alertMessage = error.localizedDescription
+                    }
+                } else {
+                    alertMessage = error.localizedDescription
+                }
+                showAlert = true
+                return
+            }
+
+            result?.user.sendEmailVerification { err in
+                if let err = err {
+                    alertMessage = "Failed to send verification email: \(err.localizedDescription)"
+                    showAlert = true
+                } else {
+                    alertMessage = "✅ Verification email sent. Please check your inbox."
+                    showAlert = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        navigateToOnboarding = true
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 
 struct OnboardingStep1: View {
     @ObservedObject var viewModel: OnboardingViewModel
@@ -1458,27 +1765,35 @@ struct OnboardingFinalStep: View {
     @ObservedObject var viewModel: OnboardingViewModel
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding = false
     @State private var navigateToHome = false
+    @State private var isLoading = false
+
     
     var body: some View {
         VStack(spacing: 15) {
-            Text("Confirm Your Information").font(.title)
-            Text("Nickname: \(viewModel.nickname)")
-            Text("Gender: \(viewModel.gender)")
-            Text("Birthday: \(viewModel.birth_date.formatted(date: .abbreviated, time: .omitted))")
-            Text("Time: \(viewModel.birth_time.formatted(date: .omitted, time: .shortened))")
-            Text("Place of Birth: \(viewModel.birthPlace)")
-            Text("Current Place of Living: \(viewModel.currentPlace)")
-            
-            Button("Confirm") {
-                print("button pressed")
-                uploadUserInfo()
+            if isLoading {
+                ProgressView("Loading, please wait...")
+                    .font(.title2)
+                    .padding()
+            } else {
+                Text("Confirm Your Information").font(.title)
+                Text("Nickname: \(viewModel.nickname)")
+                Text("Gender: \(viewModel.gender)")
+                Text("Birthday: \(viewModel.birth_date.formatted(date: .abbreviated, time: .omitted))")
+                Text("Time: \(viewModel.birth_time.formatted(date: .omitted, time: .shortened))")
+                Text("Place of Birth: \(viewModel.birthPlace)")
+                Text("Current Place of Living: \(viewModel.currentPlace)")
+                
+                Button("Confirm") {
+                    isLoading = true
+                    uploadUserInfo()
+                }
+                .padding()
             }
-            
-            .padding()
         }
         .navigationDestination(isPresented: $navigateToHome) {
-                FirstPageView()
-                    .environmentObject(viewModel)
+            FirstPageView()
+                .environmentObject(viewModel)
+                .navigationBarBackButtonHidden(true)
         }
         .navigationTitle("完成")
     }
@@ -1488,17 +1803,6 @@ struct OnboardingFinalStep: View {
 
     private func uploadUserInfo() {
         print("🚀 uploadUserInfo triggered")
-        if Auth.auth().currentUser == nil {
-               Auth.auth().signInAnonymously { result, error in
-                   if let error = error {
-                       print("❌ 匿名登录失败: \(error)")
-                   } else {
-                       print("✅ 匿名登录成功")
-                       uploadUserInfo() // 登录成功后再调用一次
-                   }
-               }
-               return
-           }
 
            guard let userId = Auth.auth().currentUser?.uid else {
                print("❌ 依然无法获取 UID")
@@ -1612,6 +1916,8 @@ struct OnboardingFinalStep: View {
                         recommendationData["createdAt"] = createdAt
                         recommendationData["mantra"] = mantraText
                         
+                        self.isLoading = false
+                        
                         // ☁️ 写入到 Firestore 的 daily_recommendation 集合
                         let db = Firestore.firestore()
                         db.collection("daily_recommendation").addDocument(data: recommendationData) { error in
@@ -1659,13 +1965,15 @@ struct AccountPageView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var viewModel: OnboardingViewModel
+    
+    @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
 
     @State private var email = ""
     @State private var password = ""
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var currentNonce: String? = nil
-    @State private var navigateToDetail = false
+    @State private var navigateToHome = false
 
 
 
@@ -1754,14 +2062,19 @@ struct AccountPageView: View {
                             HStack(spacing: minLength * 0.08) {
                                 // Google 登录按钮
                                 Button(action: {
-                                    handleGoogleLogin(viewModel: viewModel) {
+                                    handleGoogleLogin(viewModel: viewModel, onSuccess: {
                                         // 登录 & 写入成功后跳转页面
                                         // e.g., dismiss() 或 navigateToHome = true
                                         DispatchQueue.main.async {
-                                            navigateToDetail = true
+                                            isLoggedIn = true
+                                            navigateToHome = true
+                                            
                                         }
 
-                                    }
+                                    }, onError: { message in
+                                        alertMessage = message
+                                        showAlert = true
+                                    })
                                     print("Google login tapped")
                                     // Google 登录逻辑
                                 }) {
@@ -1783,12 +2096,16 @@ struct AccountPageView: View {
                                         request.nonce = sha256(nonce)
                                     },
                                     onCompletion: { result in
-                                        handleAppleLogin(result: result, rawNonce: currentNonce ?? "") {
+                                        handleAppleLogin(result: result, rawNonce: currentNonce ?? "", onSuccess: {
                                             // 登录完成后的跳转逻辑
                                             DispatchQueue.main.async {
-                                                navigateToDetail = true
+                                                isLoggedIn = true
+                                                navigateToHome = true
                                             }
-                                        }
+                                        }, onError: { message in
+                                            alertMessage = message
+                                            showAlert = true
+                                        })
                                     }
                                 )
 
@@ -1796,26 +2113,7 @@ struct AccountPageView: View {
                                 .signInWithAppleButtonStyle(themeManager.foregroundColor == .black ? .white : .black)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
 
-                                // Facebook 登录按钮
-                                Button(action: {
-                                    handleTwitterLogin {
-                                        // 登录完成后的跳转逻辑
-                                        DispatchQueue.main.async {
-                                            navigateToDetail = true
-                                        }
-
-                                    }
-                                    print("Twitter login tapped")
-                                    
-                                    
-                                }) {
-                                    Image("twitterIcon")
-                                        .resizable()
-                                        .frame(width: 30, height: 30)
-                                        .padding()
-                                        .background(Color.white.opacity(0.1))
-                                        .clipShape(Circle())
-                                }
+                                
                             }
                         }
 
@@ -1844,10 +2142,11 @@ struct AccountPageView: View {
                     Spacer()
                 }
             }
-            .navigationDestination(isPresented: $navigateToDetail) {
-                AccountDetailView()
+            .navigationDestination(isPresented: $navigateToHome) {
+                FirstPageView()
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
+                    .navigationBarBackButtonHidden(true)
             }
             .onAppear {
                 starManager.animateStar = true
@@ -1867,82 +2166,71 @@ import FirebaseFirestore
 import GoogleSignIn
 import GoogleSignInSwift
 
-func handleGoogleLogin(viewModel: OnboardingViewModel, completion: @escaping () -> Void) {
+func handleGoogleLogin(viewModel: OnboardingViewModel, onSuccess: @escaping () -> Void, onError: @escaping (String) -> Void) {
     print("🔍 准备执行 Google 登录")
-    
-    guard let firebaseApp = FirebaseApp.app() else {
-        print("❌ FirebaseApp 未初始化")
-        return
-    }
-    
+
     guard let clientID = FirebaseApp.app()?.options.clientID else {
-        print("❌ 未获取到 Firebase clientID")
+        onError("Missing Firebase client ID.")
         return
     }
-    print("✅ 成功获取到 clientID：\(clientID)")
+
     let config = GIDConfiguration(clientID: clientID)
 
     guard let rootVC = UIApplication.shared.connectedScenes
         .compactMap({ ($0 as? UIWindowScene)?.keyWindow?.rootViewController }).first else {
-        print("❌ 未找到 RootViewController")
+        onError("No root view controller found.")
         return
     }
 
     GIDSignIn.sharedInstance.configuration = config
-    print("📤 开始 Google 登录流程")
-
     GIDSignIn.sharedInstance.signIn(withPresenting: rootVC) { result, error in
         if let error = error {
-            print("❌ Google 登录失败: \(error.localizedDescription)")
+            onError("Google Sign-In failed: \(error.localizedDescription)")
             return
         }
 
-        print("✅ Google 登录回调成功，准备获取凭证")
         guard let user = result?.user,
               let idToken = user.idToken?.tokenString else {
-            print("❌ 无法获取 Google ID Token")
+            onError("Failed to get Google credentials.")
             return
         }
 
         let accessToken = user.accessToken.tokenString
-        print("🔑 Google ID Token 和 Access Token 获取成功")
-
         let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
 
-        if let currentUser = Auth.auth().currentUser, currentUser.isAnonymous {
-            print("🔄 正在合并匿名账户与 Google 账户")
-            currentUser.link(with: credential) { authResult, error in
-                if let error = error {
-                    print("❌ 合并失败: \(error.localizedDescription)")
-                } else {
-                    print("✅ 合并成功")
-                    completion()
+        Auth.auth().signIn(with: credential) { authResult, error in
+            if let error = error {
+                if let errCode = AuthErrorCode(rawValue: (error as NSError).code), errCode == .accountExistsWithDifferentCredential {
+                    onError("This email is already registered with a different method. Please use your original login method.")
+                    return
                 }
+
+                onError("Login failed: \(error.localizedDescription)")
+                return
             }
-        } else {
-            print("🔑 使用 Google 凭证直接登录")
-            Auth.auth().signIn(with: credential) { authResult, error in
-                if let error = error {
-                    print("❌ 登录失败: \(error.localizedDescription)")
-                } else {
-                    print("✅ 登录成功")
-                    completion()
-                }
-            }
+
+            print("✅ Google 登录成功")
+            onSuccess()
         }
     }
 }
 
-func handleAppleLogin(result: Result<ASAuthorization, Error>, rawNonce: String, completion: @escaping () -> Void) {
+func handleAppleLogin(
+    result: Result<ASAuthorization, Error>,
+    rawNonce: String,
+    onSuccess: @escaping () -> Void,
+    onError: @escaping (String) -> Void
+) {
     print("🔍 开始处理 Apple 登录结果")
 
     switch result {
     case .success(let authResults):
         print("✅ Apple 授权成功")
+
         guard let appleIDCredential = authResults.credential as? ASAuthorizationAppleIDCredential,
               let identityToken = appleIDCredential.identityToken,
               let tokenString = String(data: identityToken, encoding: .utf8) else {
-            print("❌ Apple 登录失败: 无法获取 token")
+            onError("Apple login failed: Cannot retrieve token.")
             return
         }
 
@@ -1952,86 +2240,26 @@ func handleAppleLogin(result: Result<ASAuthorization, Error>, rawNonce: String, 
             rawNonce: rawNonce
         )
 
-        if let currentUser = Auth.auth().currentUser, currentUser.isAnonymous {
-            print("🔄 合并匿名账户与 Apple 账户")
-            currentUser.link(with: credential) { authResult, error in
-                if let error = error {
-                    print("❌ 合并失败: \(error.localizedDescription)")
-                } else {
-                    print("✅ 合并成功")
-                    completion()
+        Auth.auth().signIn(with: credential) { authResult, error in
+            if let error = error {
+                if let errCode = AuthErrorCode(rawValue: (error as NSError).code),
+                   errCode == .accountExistsWithDifferentCredential {
+                    onError("This Apple ID email is already used with another login method. Please use the original method.")
+                    return
                 }
+
+                onError("Apple login failed: \(error.localizedDescription)")
+                return
             }
-        } else {
-            print("🔑 Apple 登录中")
-            Auth.auth().signIn(with: credential) { authResult, error in
-                if let error = error {
-                    print("❌ 登录失败: \(error.localizedDescription)")
-                } else {
-                    print("✅ 登录成功")
-                    completion()
-                }
-            }
+
+            print("✅ Apple 登录成功")
+            onSuccess()
         }
 
     case .failure(let error):
-        print("❌ Apple 登录授权失败: \(error.localizedDescription)")
+        onError("Apple authorization failed: \(error.localizedDescription)")
     }
 }
-
-
-import FirebaseAuth
-
-func handleTwitterLogin(completion: @escaping () -> Void) {
-    print("🔍 [handleTwitterLogin] 准备初始化 Twitter 登录流程")
-
-    let provider = OAuthProvider(providerID: "twitter.com")
-    print("🔧 Twitter Provider 已创建: \(provider)")
-
-    provider.getCredentialWith(nil) { credential, error in
-        print("📡 Twitter getCredentialWith 回调触发")
-
-        if let error = error {
-            print("❌ 获取 Twitter 凭证失败: \(error.localizedDescription)")
-            return
-        }
-
-        guard let credential = credential else {
-            print("❌ Twitter 凭证为空，登录终止")
-            return
-        }
-
-        print("🔑 Twitter 凭证获取成功: \(credential.provider)")
-
-        let currentUser = Auth.auth().currentUser
-        print("👤 当前用户状态: \(currentUser?.uid ?? "无用户"), 匿名: \(currentUser?.isAnonymous == true)")
-
-        if let user = currentUser, user.isAnonymous {
-            print("🔄 正在尝试合并匿名用户与 Twitter 登录")
-            user.link(with: credential) { authResult, error in
-                if let error = error {
-                    print("❌ Twitter 合并失败: \(error.localizedDescription)")
-                } else {
-                    print("✅ Twitter 合并成功: \(authResult?.user.uid ?? "未知 UID")")
-                    completion()
-                }
-            }
-        } else {
-            print("🚀 正常登录流程 - 使用 Twitter 凭证登录")
-            Auth.auth().signIn(with: credential) { authResult, error in
-                if let error = error {
-                    print("❌ Twitter 登录失败: \(error.localizedDescription)")
-                } else {
-                    print("✅ Twitter 登录成功: \(authResult?.user.uid ?? "未知 UID")")
-                    completion()
-                }
-            }
-        }
-    }
-
-    print("📨 已触发 getCredentialWith 调用，等待回调...")
-}
-
 
 
 
@@ -2040,6 +2268,7 @@ import FirebaseAuth
 import FirebaseFirestore
 
 struct UserInfo: Codable {
+    var nickname: String
     var birth_date: String
     var birthPlace: String
     var birth_time: String
@@ -2050,9 +2279,13 @@ struct AccountDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
 
-    @State private var userInfo = UserInfo(birth_date: "", birthPlace: "", birth_time: "", currentPlace: "")
+    @State private var userInfo = UserInfo(nickname: "", birth_date: "", birthPlace: "", birth_time: "", currentPlace: "")
     @State private var isLoading = true
     @State private var errorMessage = ""
+    
+    @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
+    @State private var showLogoutAlert = false
+    @State private var navigateToOnboarding = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -2074,10 +2307,10 @@ struct AccountDetailView: View {
                         .padding()
                 } else {
                     VStack(spacing: height * 0.04) {
-                        Text("Account")
-                            .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.10))
+                        Text("Welcome, \(userInfo.nickname)")
+                            .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.07))
                             .foregroundColor(themeManager.foregroundColor)
-                            .padding(.top, height * 0.05)
+                            .padding(.top, height * 0.04)
 
                         VStack(alignment: .leading, spacing: height * 0.04) {
                             Text("Information")
@@ -2087,7 +2320,6 @@ struct AccountDetailView: View {
                             infoRow(title: "Date of Birth", value: userInfo.birth_date, width: width)
                             infoRow(title: "Place of Birth", value: userInfo.birthPlace, width: width)
                             infoRow(title: "Time of Birth", value: userInfo.birth_time, width: width)
-                            infoRow(title: "Current Location", value: userInfo.currentPlace, width: width)
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
@@ -2099,15 +2331,66 @@ struct AccountDetailView: View {
                         )
                         .padding(.horizontal, width * 0.1)
 
+                        CollapsibleSection(title: "Preference", width: width) {
+                            Text("Here you can show user's preferences.")
+                                .foregroundColor(.white)
+                                .padding()
+                                .background(Color.gray.opacity(0.3))
+                                .cornerRadius(10)
+                        }
+
+                        CollapsibleSection(title: "Setting", width: width) {
+                            Text("Here you can show setting options.")
+                                .foregroundColor(.white)
+                                .padding()
+                                .background(Color.gray.opacity(0.3))
+                                .cornerRadius(10)
+                        }
+                        
+                        Button(action: {
+                            showLogoutAlert = true
+                        }) {
+                            Text("Log Out")
+                                .foregroundColor(.red)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Color.white.opacity(0.1))
+                                .cornerRadius(10)
+                        }
+                        .padding(.horizontal, width * 0.1)
+                        .padding(.bottom, 20)
+
+
                         Spacer()
                     }
                 }
+            }
+            .alert("Are you sure you want to log out?", isPresented: $showLogoutAlert) {
+                Button("Log Out", role: .destructive) {
+                    handleLogout()
+                }
+                Button("Cancel", role: .cancel) {}
             }
             .onAppear {
                 starManager.animateStar = true
                 themeManager.updateTheme()
                 loadUserInfo()
             }
+            .navigationDestination(isPresented: $navigateToOnboarding) {
+                OnboardingOpeningPage()
+            }
+            
+        }
+    }
+    
+    private func handleLogout() {
+        do {
+            try Auth.auth().signOut()
+            isLoggedIn = false
+            navigateToOnboarding = true
+            print("✅ 用户已登出")
+        } catch {
+            print("❌ 登出失败: \(error.localizedDescription)")
         }
     }
 
@@ -2135,33 +2418,68 @@ struct AccountDetailView: View {
         }
 
         let db = Firestore.firestore()
-        let docRef = db.collection("users").document(uid)
+        db.collection("users")
+            .whereField("uid", isEqualTo: uid)
+            .limit(to: 1)
+            .getDocuments { snapshot, error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        errorMessage = "获取失败: \(error.localizedDescription)"
+                        isLoading = false
+                        return
+                    }
 
-        docRef.getDocument { document, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    errorMessage = "获取失败: \(error.localizedDescription)"
+                    guard let document = snapshot?.documents.first else {
+                        errorMessage = "未找到该用户的信息"
+                        isLoading = false
+                        return
+                    }
+
+                    let data = document.data()
+
+                    self.userInfo = UserInfo(
+                        nickname: data["nickname"] as? String ?? "",
+                        birth_date: data["birthDate"] as? String ?? "",
+                        birthPlace: data["birthPlace"] as? String ?? "",
+                        birth_time: data["birthTime"] as? String ?? "",
+                        currentPlace: data["currentPlace"] as? String ?? ""
+                    )
+
                     isLoading = false
-                    return
                 }
-
-                guard let document = document, document.exists,
-                      let data = document.data() else {
-                    errorMessage = "未找到用户信息"
-                    isLoading = false
-                    return
-                }
-
-                self.userInfo = UserInfo(
-                    birth_date: data["birth_date"] as? String ?? "",
-                    birthPlace: data["birthPlace"] as? String ?? "",
-                    birth_time: data["birth_time"] as? String ?? "",
-                    currentPlace: data["currentPlace"] as? String ?? ""
-                )
-
-                isLoading = false
             }
+    }
+}
+
+struct CollapsibleSection<Content: View>: View {
+    let title: String
+    let content: Content
+    let width: CGFloat
+    @State private var isExpanded = false
+
+    init(title: String, width: CGFloat, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+        self.width = width
+    }
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $isExpanded) {
+            content
+        } label: {
+            Text(title)
+                .font(.headline)
+                .foregroundColor(.white)
         }
+        .padding()
+        .frame(width: width * 0.8)
+        .background(Color.black.opacity(0.2))
+        .cornerRadius(15)
+        .overlay(
+            RoundedRectangle(cornerRadius: 15)
+                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+        )
+        .animation(.easeInOut, value: isExpanded)
     }
 }
 
@@ -2265,17 +2583,8 @@ extension Color {
 }
 
 #Preview {
-    FirstPageView()
-        .environmentObject(StarAnimationManager())
-        .environmentObject(ThemeManager())
-        .environmentObject(OnboardingViewModel())
+    OnboardingFinalStep(viewModel: OnboardingViewModel())
 }
 
 
 
-struct ContentView_Previews:
-    PreviewProvider {
-        static var previews: some View {
-            OnboardingFinalStep(viewModel: OnboardingViewModel())
-        }
-}
