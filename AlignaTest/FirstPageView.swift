@@ -41,22 +41,6 @@ struct FirstPageView: View {
                             }
                             .padding(.horizontal, geometry.size.width * 0.05)
                             
-                            NavigationLink(
-                                destination: JournalView(date: selectedDate)
-                                    .environmentObject(starManager)
-                                    .environmentObject(themeManager)
-                            ) {
-                                Rectangle()
-                                    .fill(themeManager.foregroundColor)
-                                    .frame(width: 20, height: 20)
-                                    .overlay(
-                                        Text("+")
-                                            .font(.caption)
-                                            .foregroundColor(.black)
-                                    )
-                            }
-//                            .padding(.horizontal, geometry.size.width * 0.05)
-                            
                             Spacer()
                             
                             HStack(spacing: geometry.size.width * 0.04) {
@@ -84,6 +68,23 @@ struct FirstPageView: View {
                             }
                             .padding(.horizontal, geometry.size.width * 0.05)
                         }
+                        
+                        NavigationLink(
+                            destination: JournalView(date: selectedDate)
+                                .environmentObject(starManager)
+                                .environmentObject(themeManager)
+                        ) {
+                            Rectangle()
+                                .fill(themeManager.foregroundColor)
+                                .frame(width: 20, height: 20)
+                                .overlay(
+                                    Text("+")
+                                        .font(.caption)
+                                        .foregroundColor(.black)
+                                )
+                        }
+                        .offset(x:  geometry.size.width * 0.23, y: geometry.size.width * 0.09)
+//                        .padding(.horizontal, geometry.size.width * 0.05)
                         
                         Text("Aligna")
                             .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.13))
@@ -820,32 +821,34 @@ struct GemstoneDetailView: View {
 
 struct BreathingCircle: View {
     let color: Color
-    let size: CGFloat      // overall diameter
+    let diameter: CGFloat      // overall diameter
     let duration: Double   // one full in-out cycle
 
-    @State private var scale: CGFloat = 1
+    @State private var animateRing = false
 
     var body: some View {
         ZStack {
             // Outer ring that expands/fades
             Circle()
-                .stroke(color, lineWidth: size * 0.1)
-                .frame(width: size, height: size)
-                .scaleEffect(scale)
-                .opacity(Double(2 - scale))  // fades out as it expands
+                .stroke(color, lineWidth: diameter * 0.03)
+                .frame(width: diameter, height: diameter)
+                .scaleEffect(animateRing ? 1.0 : 0.7)
+                .opacity(animateRing ? 0.0 : 1.0)  // fades out as it expands
 
             // Solid center dot
             Circle()
                 .fill(color)
-                .frame(width: size * 0.6, height: size * 0.6)
+                .frame(width: diameter * 0.8, height: diameter * 0.8)
+                .scaleEffect(animateRing ? 0.8 : 1.0)
+                .opacity(animateRing ? 0.5 : 1.0)
         }
         .onAppear {
-            // toggle `scale` between 1 and 1.3 forever
+            // loop forever, no reverse (so ring just pops, fades, then pops again)
             withAnimation(
                 Animation.easeInOut(duration: duration)
                     .repeatForever(autoreverses: true)
             ) {
-                scale = 1.3
+                animateRing = true
             }
         }
     }
@@ -880,6 +883,20 @@ struct ColorDetailView: View {
     
     let documentName: String
     @State private var item: RecommendationItem?
+    
+    // color mapping
+    private let colorHexMapping: [String:String] = [
+        "amber":     "#FFBF00",
+        "cream":     "#FFFDD0",
+        "forest_green":"#228B22",
+        "ice_blue":  "#ADD8E6",
+        "indigo":    "#4B0082",
+        "rose":      "#FF66CC",
+        "sage_green":"#9EB49F",
+        "silver_white":"#C0C0C0",
+        "slate_blue":"#6A5ACD",
+        "teal":      "#008080"
+    ]
     
     var body: some View {
         ZStack{
@@ -919,14 +936,15 @@ struct ColorDetailView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .foregroundColor(themeManager.descriptionText)
                     
-                    // Image
-                    Image(documentName) // assumes .png in Assets
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 150, height: 150)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.foregroundColor)
+                    // breathing circle
+                    if let hex = colorHexMapping[item.name] {
+                        BreathingCircle(
+                            color: Color(hex: hex),
+                            diameter: 230,
+                            duration: 4
+                        )
+                        .padding(.top, 32)
+                    }
                     
                     // Explanation
                     Text(item.explanation)
@@ -937,6 +955,17 @@ struct ColorDetailView: View {
                         .font(.custom("PlayfairDisplay-Regular", size: 14))
                         .fixedSize(horizontal: false, vertical: true)
                         .foregroundColor(themeManager.bodyText)
+                    
+                    // Image
+                    Image(documentName) // assumes .png in Assets
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 150, height: 150)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .foregroundColor(themeManager.foregroundColor)
+                    
+                    // button
                 } else {
                     ProgressView("Loading...")
                         .padding(.top, 100)
