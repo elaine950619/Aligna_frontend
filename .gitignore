@@ -24,3 +24,9 @@ Pods/
 Carthage/Build/
 
 AlignaTest.zip
+.DS_Store
+**/.DS_Store
+xcuserdata/
+*.xcuserstate
+.idea/
+DerivedData/
