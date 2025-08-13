@@ -6,6 +6,8 @@ struct RecommendationItem: Codable {
     var title: String
     var description: String
     var explanation: String
+    let about: String?
+    let notice: String?
 }
 
 struct RecommendationDetailView: View {

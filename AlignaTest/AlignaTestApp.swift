@@ -17,7 +17,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         FirebaseApp.configure()
         return true
     }
-
+    
     func application(_ app: UIApplication,
                      open url: URL,
                      options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
@@ -36,6 +36,7 @@ struct AlignaTestApp: App {
     @StateObject var starManager = StarAnimationManager()
     @StateObject var themeManager = ThemeManager()
     @StateObject var onboardingViewModel = OnboardingViewModel()
+    @StateObject var soundPlayer = SoundPlayer()
     
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding = false
@@ -43,19 +44,19 @@ struct AlignaTestApp: App {
     
     var body: some Scene {
         WindowGroup {
-            if hasCompletedOnboarding {
+            Group {
+                if hasCompletedOnboarding {
                     FirstPageView()
-                        .environmentObject(starManager)
-                        .environmentObject(themeManager)
-                        .environmentObject(onboardingViewModel)
                 } else {
                     NavigationStack {
                         OnboardingOpeningPage()
                     }
-                    .environmentObject(starManager)
-                    .environmentObject(themeManager)
-                    .environmentObject(onboardingViewModel)
                 }
+            }
+            .environmentObject(starManager)
+            .environmentObject(themeManager)
+            .environmentObject(onboardingViewModel)
+            .environmentObject(soundPlayer)
         }
     }
 }

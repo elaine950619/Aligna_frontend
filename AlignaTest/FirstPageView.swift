@@ -12,6 +12,7 @@ struct FirstPageView: View {
     @State private var recommendationTitles: [String: String] = [:]
     
     @State private var selectedDate = Date()
+    @State private var showWelcome = true
     
     var body: some View {
         NavigationStack {
@@ -30,14 +31,10 @@ struct FirstPageView: View {
                                     .environmentObject(starManager)
                                     .environmentObject(themeManager)
                             ) {
-                                Rectangle()
-                                    .fill(themeManager.foregroundColor)
-                                    .frame(width: 20, height: 20)
-                                    .overlay(
-                                        Text("T")
-                                            .font(.caption)
-                                            .foregroundColor(.black)
-                                    )
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(themeManager.foregroundColor)
+                                    .frame(width: 28, height: 28)
                             }
                             .padding(.horizontal, geometry.size.width * 0.05)
                             
@@ -84,7 +81,7 @@ struct FirstPageView: View {
                                 )
                         }
                         .offset(x:  geometry.size.width * 0.23, y: geometry.size.width * 0.09)
-//                        .padding(.horizontal, geometry.size.width * 0.05)
+                        //                        .padding(.horizontal, geometry.size.width * 0.05)
                         
                         Text("Aligna")
                             .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.13))
@@ -125,7 +122,7 @@ struct FirstPageView: View {
                             }
                         }
                         
-//                        Spacer()
+                        //                        Spacer()
                         Spacer().frame(height: geometry.size.height * 0.03)
                     }
                     .padding(.top, 16)
@@ -368,7 +365,10 @@ struct FirstPageView: View {
         case "Scent":
             ScentDetailView(documentName: documentName)
         case "Activity":
-            ActivityDetailView(documentName: documentName)
+            ActivityDetailView(
+                documentName: documentName,
+                soundDocumentName: viewModel.recommendations["Sound"] ?? ""
+            )
         case "Sound":
             SoundDetailView(documentName: documentName)
         case "Career":
@@ -428,22 +428,270 @@ struct FirstPageView: View {
     }
 }
 
+struct PlayPauseButton: View {
+    let isPlaying: Bool
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                .font(.system(size: 20, weight: .bold))
+                .frame(width: 56, height: 56)
+                .background(.ultraThinMaterial)
+                .overlay(Circle().stroke(Color.white.opacity(0.2), lineWidth: 2))
+                .clipShape(Circle())
+                .foregroundColor(Color(hex: "#E6D7C3"))
+        }.buttonStyle(.plain)
+    }
+}
+
+struct RoundGlyphButton: View {
+    let system: String
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: system)
+                .font(.system(size: 16, weight: .semibold))
+                .frame(width: 36, height: 36)
+                .foregroundColor(Color.white.opacity(0.8))
+        }.buttonStyle(.plain)
+    }
+}
+
+struct ProgressBar: View {
+    let progress: Double
+    let fill: LinearGradient
+    var body: some View {
+        ZStack(alignment: .leading) {
+            Capsule().fill(Color.white.opacity(0.12))
+            Capsule()
+                .fill(fill)
+                .frame(width: max(0, min(1, progress)) * 320, height: 8)
+        }
+        .frame(height: 8)
+        .clipShape(Capsule())
+    }
+}
+
+struct VinylRecord: View {
+    let isRotating: Bool
+    let centerImageName: String
+    
+    var body: some View {
+        ZStack {
+            // The vinyl disc
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [.black.opacity(0.9), .black],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 140
+                    )
+                )
+                .frame(width: 260, height: 260)
+                .overlay(
+                    Circle()
+                        .stroke(Color.gray.opacity(0.3), lineWidth: 2)
+                )
+            
+            // The center label
+            Image(centerImageName)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 80, height: 80)
+                .clipShape(Circle())
+                .overlay(Circle().stroke(Color.white.opacity(0.15), lineWidth: 2))
+        }
+        // Rotate the *entire* ZStack
+        .rotationEffect(.degrees(isRotating ? 360 : 0))
+        .animation(
+            isRotating
+            ? .linear(duration: 5).repeatForever(autoreverses: false)
+            : .default,
+            value: isRotating
+        )
+    }
+}
+
 import SwiftUI
-import FirebaseFirestore
 import AVFoundation
+
+struct PlayerPopup: View {
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var soundPlayer: SoundPlayer
+    
+    let documentName: String
+    let dismiss: () -> Void
+    
+    @State private var isPlaying = false
+    @State private var isRotating = false
+    @State private var progress: Double = 0
+    @State private var duration: TimeInterval = 0
+    @State private var currentTime: TimeInterval = 0
+    @State private var timer: Timer?
+    
+    var body: some View {
+        ZStack {
+            AppBackgroundView()
+                .environmentObject(starManager)
+            
+            // Glassy background for the sheet content
+            RoundedRectangle(cornerRadius: 24)
+                .fill(.ultraThinMaterial)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 18) {
+                // Handle + Title
+                Capsule()
+                    .fill(Color.white.opacity(0.25))
+                    .frame(width: 36, height: 4)
+                    .padding(.top, 8)
+                
+                Text("Now Playing")
+                    .font(.custom("PlayfairDisplay-Regular", size: 18))
+                    .foregroundColor(themeManager.primaryText.opacity(0.8))
+                
+                // Vinyl
+                VinylRecord(isRotating: isRotating, centerImageName: documentName)
+                    .frame(height: 260)
+                
+                // Title / subtitle
+                VStack(spacing: 4) {
+                    Text(documentName.replacingOccurrences(of: "_", with: " ").capitalized)
+                        .font(.custom("PlayfairDisplay-SemiBold", size: 20))
+                        .foregroundColor(Color(hex:"#E6D7C3"))
+                    Text("White Noise • Nature Sounds")
+                        .font(.custom("PlayfairDisplay-Regular", size: 13))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                
+                // Controls
+                HStack(spacing: 22) {
+                    RoundGlyphButton(system: "shuffle") {}
+                    RoundGlyphButton(system: "backward.end.fill") {}
+                    PlayPauseButton(isPlaying: isPlaying) { togglePlay() }
+                    RoundGlyphButton(system: "forward.end.fill") {}
+                    RoundGlyphButton(system: "list.bullet") {}
+                }
+                .padding(.top, 6)
+                
+                // Progress + times
+                VStack(spacing: 10) {
+                    ProgressBar(
+                        progress: progress,
+                        fill: LinearGradient(
+                            colors: [Color.white.opacity(0.85), Color(hex:"#E6D7C3")],
+                            startPoint: .leading, endPoint: .trailing
+                        )
+                    )
+                    .frame(width: 320, height: 8)
+                    
+                    HStack {
+                        Text(timeString(currentTime))
+                        Spacer()
+                        Text(timeString(duration))
+                    }
+                    .font(.custom("PlayfairDisplay-Regular", size: 13))
+                    .foregroundColor(.white.opacity(0.75))
+                    .frame(width: 320)
+                }
+                
+                // Close
+                Button("Close") { dismiss() }
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(.white.opacity(0.9))
+                    .padding(.top, 6)
+                
+                Spacer(minLength: 8)
+            }
+            .padding(.horizontal, 16)
+        }
+        .onAppear { prepareAndStartIfNeeded() }
+        .onDisappear { stopTimer() }
+    }
+    
+    // MARK: - Playback
+    private func prepareAndStartIfNeeded() {
+        if soundPlayer.player == nil {
+            soundPlayer.playSound(named: documentName)
+        } else {
+            soundPlayer.player?.play()
+        }
+        isPlaying = true
+        isRotating = true
+        duration = soundPlayer.player?.duration ?? 0
+        startTimer()
+    }
+    
+    private func togglePlay() {
+        if isPlaying {
+            soundPlayer.player?.pause()
+            isPlaying = false
+            isRotating = false
+            // keep timer to update position if you like, or stop:
+            // stopTimer()
+        } else {
+            if soundPlayer.player == nil {
+                soundPlayer.playSound(named: documentName)
+            } else {
+                soundPlayer.player?.play()
+            }
+            isPlaying = true
+            isRotating = true
+            duration = soundPlayer.player?.duration ?? 0
+            startTimer()
+        }
+    }
+    
+    private func startTimer() {
+        stopTimer()
+        timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in
+            guard let p = soundPlayer.player else { return }
+            currentTime = p.currentTime
+            duration = p.duration
+            progress = duration > 0 ? p.currentTime / duration : 0
+            if !p.isPlaying {
+                isPlaying = false
+                isRotating = false
+            }
+        }
+    }
+    
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
+    }
+    
+    private func timeString(_ t: TimeInterval) -> String {
+        let m = Int(t) / 60
+        let s = Int(t) % 60
+        return String(format: "%d:%02d", m, s)
+    }
+}
 
 struct SoundDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var soundPlayer: SoundPlayer
     
     let documentName: String
     @State private var item: RecommendationItem?
-    @StateObject private var soundPlayer = SoundPlayer()
+    @State private var showPlayer = false
     
     var body: some View {
         ZStack{
             AppBackgroundView()
                 .environmentObject(starManager)
+            
+            CustomBackButton(
+                iconSize: 18,
+                paddingSize: 8,
+                backgroundColor: Color.black.opacity(0.3),
+                iconColor: themeManager.foregroundColor,
+                topPadding: 44,
+                horizontalPadding: 24
+            )
             
             VStack(spacing: 20) {
                 // Sound
@@ -468,29 +716,31 @@ struct SoundDetailView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .foregroundColor(themeManager.descriptionText)
                     
-                    // Image + Play Button Side by Side
-                    HStack(alignment: .center, spacing: 20) {
-                        Image(documentName) // assumes .png in assets with name matching documentName
-                            .renderingMode(.template)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 150, height: 150)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .foregroundColor(themeManager.accent)
-                        
-                        Button(action: {
-                            soundPlayer.playSound(named: documentName)
-                        }) {
-                            VStack {
-                                Image(systemName: "play.circle.fill")
-                                    .resizable()
-                                    .frame(width: 50, height: 50)
-                                Text("Play")
-                                    .font(.subheadline)
-                            }
-                            .foregroundColor(.primary)
+                    // image
+                    Image(documentName)
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 150, height: 150)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .foregroundColor(themeManager.foregroundColor)
+                    
+                    Button {
+                        showPlayer = true
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(Color.white.opacity(0.10))
+                                .background(.ultraThinMaterial, in: Circle())
+                                .overlay(Circle().stroke(Color.white.opacity(0.20), lineWidth: 2))
+                                .frame(width: 56, height: 56)
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(Color(hex: "#E6D7C3"))
                         }
                     }
+                    .buttonStyle(.plain)
+                    .padding(.top, 28)
                     
                     // Explanation
                     Text(item.explanation)
@@ -511,7 +761,19 @@ struct SoundDetailView: View {
                 fetchItem()
             }
         }
+        .sheet(isPresented: $showPlayer) {
+            PlayerPopup(
+                documentName: documentName,              // pass through your asset name
+                dismiss: { showPlayer = false }          // allow the popup to close itself
+            )
+            // Nice, modern sheet presentation:
+            .presentationDetents([.fraction(0.6), .large]) // iOS 16+
+            .presentationDragIndicator(.visible)
+            .presentationCornerRadius(24)
+        }
+        .navigationBarBackButtonHidden(true)
     }
+    
     
     private func fetchItem() {
         let db = Firestore.firestore()
@@ -534,22 +796,22 @@ struct SoundDetailView: View {
 }
 
 struct Glow: ViewModifier {
-  var color: Color = .white
-  var radius: CGFloat = 8
-
-  func body(content: Content) -> some View {
-    content
-      // first, a tight glow…
-      .shadow(color: color.opacity(0.6), radius: radius, x: 0, y: 0)
-      // …then a wider, fainter glow
-      .shadow(color: color.opacity(0.4), radius: radius * 2, x: 0, y: 0)
-  }
+    var color: Color = .white
+    var radius: CGFloat = 8
+    
+    func body(content: Content) -> some View {
+        content
+        // first, a tight glow…
+            .shadow(color: color.opacity(0.6), radius: radius, x: 0, y: 0)
+        // …then a wider, fainter glow
+            .shadow(color: color.opacity(0.4), radius: radius * 2, x: 0, y: 0)
+    }
 }
 
 extension View {
-  func glow(color: Color = .white, radius: CGFloat = 8) -> some View {
-    self.modifier(Glow(color: color, radius: radius))
-  }
+    func glow(color: Color = .white, radius: CGFloat = 8) -> some View {
+        self.modifier(Glow(color: color, radius: radius))
+    }
 }
 
 struct IconItem: Identifiable {
@@ -650,7 +912,7 @@ struct PlaceDetailView: View {
                     VStack(spacing: 24) {
                         // top two
                         HStack(spacing: 40) {
-                            ForEach(iconItems[1...2]) { item in
+                            ForEach(iconItems[0...2]) { item in
                                 VStack(spacing: 8) {
                                     Image(item.imageName)
                                         .renderingMode(.template)
@@ -665,24 +927,8 @@ struct PlaceDetailView: View {
                                         .fixedSize(horizontal: true, vertical: true)
                                         .lineLimit(2)
                                 }
-                                .padding(.horizontal, 60)
+                                .padding(.horizontal, 24)
                             }
-                        }
-                        
-                        // bottom icon
-                        VStack(spacing: 8) {
-                            Image(iconItems[0].imageName)
-                                .renderingMode(.template)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 50, height: 50)
-                                .foregroundColor(themeManager.accent)
-                            Text(iconItems[0].title)
-                                .font(.custom("PlayfairDisplay-Regular", size: 16))
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(themeManager.accent)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .lineLimit(2)
                         }
                     }
                 } else {
@@ -823,9 +1069,9 @@ struct BreathingCircle: View {
     let color: Color
     let diameter: CGFloat      // overall diameter
     let duration: Double   // one full in-out cycle
-
+    
     @State private var animateRing = false
-
+    
     var body: some View {
         ZStack {
             // Outer ring that expands/fades
@@ -834,7 +1080,7 @@ struct BreathingCircle: View {
                 .frame(width: diameter, height: diameter)
                 .scaleEffect(animateRing ? 1.0 : 0.7)
                 .opacity(animateRing ? 0.0 : 1.0)  // fades out as it expands
-
+            
             // Solid center dot
             Circle()
                 .fill(color)
@@ -856,7 +1102,7 @@ struct BreathingCircle: View {
 
 struct SetColorButton: View {
     let action: ()->Void
-
+    
     var body: some View {
         Button(action: action) {
             Text("Set as Today’s Color")
@@ -956,15 +1202,6 @@ struct ColorDetailView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .foregroundColor(themeManager.bodyText)
                     
-                    // Image
-                    Image(documentName) // assumes .png in Assets
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 150, height: 150)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.foregroundColor)
-                    
                     // button
                 } else {
                     ProgressView("Loading...")
@@ -999,6 +1236,8 @@ struct ColorDetailView: View {
     }
 }
 
+
+
 struct ScentDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
@@ -1007,72 +1246,127 @@ struct ScentDetailView: View {
     @State private var item: RecommendationItem?
     
     var body: some View {
-        ZStack{
-            AppBackgroundView()
-                .environmentObject(starManager)
+        
+        NavigationStack {
             
-            CustomBackButton(
-                iconSize: 18,
-                paddingSize: 8,
-                backgroundColor: Color.black.opacity(0.3),
-                iconColor: themeManager.foregroundColor,
-                topPadding: 44,
-                horizontalPadding: 24
-            )
-            
-            VStack(spacing: 20) {
-                // Scent
-                Text("Scent")
-                    .foregroundColor(themeManager.watermark)
-                    .font(.custom("PlayfairDisplay-Regular", size: 36))
-                    .bold()
+            ZStack{
+                AppBackgroundView()
+                    .environmentObject(starManager)
                 
-                if let item = item {
-                    // Title
-                    Text(item.title)
-                        .multilineTextAlignment(.center)
-                        .font(.custom("PlayfairDisplay-Regular", size: 36))
-                        .foregroundColor(themeManager.primaryText)
-                        .bold()
-                        .glow(color: themeManager.primaryText, radius: 6)
+                ScrollView {
                     
-                    // Description
-                    Text(item.description)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .font(.custom("PlayfairDisplay-Italic", size: 17))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.descriptionText)
+                    CustomBackButton(
+                        iconSize: 18,
+                        paddingSize: 8,
+                        backgroundColor: Color.black.opacity(0.3),
+                        iconColor: themeManager.foregroundColor,
+                        topPadding: 44,
+                        horizontalPadding: 24
+                    )
                     
-                    // Image
-                    Image(documentName) // assumes .png in Assets
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 150, height: 150)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.foregroundColor)
-                    
-                    // Explanation
-                    Text(item.explanation)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .padding(.bottom)
-                        .italic()
-                        .font(.custom("PlayfairDisplay-Regular", size: 14))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.bodyText)
-                } else {
-                    ProgressView("Loading...")
-                        .padding(.top, 100)
+                    VStack(spacing: 20) {
+                        // Scent
+                        Text("Scent")
+                            .foregroundColor(themeManager.watermark)
+                            .font(.custom("PlayfairDisplay-Regular", size: 36))
+                            .bold()
+                        
+                        if let item = item {
+                            // Title
+                            Text(item.title)
+                                .multilineTextAlignment(.center)
+                                .font(.custom("PlayfairDisplay-Regular", size: 36))
+                                .foregroundColor(themeManager.primaryText)
+                                .bold()
+                                .glow(color: themeManager.primaryText, radius: 6)
+                            
+                            // Description
+                            Text(item.description)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                                .font(.custom("PlayfairDisplay-Italic", size: 17))
+                                .fixedSize(horizontal: false, vertical: true)
+                                .foregroundColor(themeManager.descriptionText)
+                            
+                            // Image
+                            Image(documentName) // assumes .png in Assets
+                                .renderingMode(.template)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 150, height: 150)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .foregroundColor(themeManager.foregroundColor)
+                            
+                            // Explanation
+                            Text(item.explanation)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                                .padding(.bottom)
+                                .italic()
+                                .font(.custom("PlayfairDisplay-Regular", size: 14))
+                                .fixedSize(horizontal: false, vertical: true)
+                                .foregroundColor(themeManager.bodyText)
+                            
+                            // about the scent
+                            if let about = item.about, !about.isEmpty {
+                                VStack(alignment: .center, spacing: 10) {
+                                    Text("About the Scent")
+                                        .font(.custom("PlayfairDisplay-Regular", size: 18))
+                                        .foregroundColor(themeManager.foregroundColor)
+                                        .bold()
+                                        .multilineTextAlignment(.center)
+                                    
+                                    Text(about)
+                                        .font(.custom("PlayfairDisplay-Italic", size: 15))
+                                        .foregroundColor(themeManager.foregroundColor)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .lineSpacing(3)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(16)
+                            }
+                            
+                            // usage note
+                            if let notice = item.notice, !notice.isEmpty {
+                                VStack(alignment: .center, spacing: 8) {
+                                    HStack(spacing: 8) {
+                                        Text("Usage Note")
+                                            .font(.custom("PlayfairDisplay-Regular", size: 14))
+                                            .foregroundColor(themeManager.accent)
+                                            .bold()
+                                            .multilineTextAlignment(.center)
+                                    }
+                                    
+                                    Text(notice)
+                                        .font(.custom("PlayfairDisplay-Regular", size: 12))
+                                        .foregroundColor(themeManager.foregroundColor)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .lineSpacing(2)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(14)
+                                .background(Color.black.opacity(0.20)) // subtle dark card
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(themeManager.accent.opacity(0.22), lineWidth: 1)
+                                )
+                                .padding(.horizontal, 12)
+                                .padding(.top, 8)
+                            }
+                        } else {
+                            ProgressView("Loading...")
+                                .padding(.top, 100)
+                        }
+                    }
+                    .padding()
+                    .onAppear {
+                        fetchItem()
+                    }
                 }
-            }
-            .padding()
-            .onAppear {
-                fetchItem()
+                .navigationBarBackButtonHidden(true)
             }
         }
-        .navigationBarBackButtonHidden(true)
     }
     
     private func fetchItem() {
@@ -1098,8 +1392,10 @@ struct ScentDetailView: View {
 struct ActivityDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var soundPlayer: SoundPlayer
     
     let documentName: String
+    let soundDocumentName: String
     @State private var item: RecommendationItem?
     
     var body: some View {
@@ -1148,6 +1444,23 @@ struct ActivityDetailView: View {
                         .frame(width: 150, height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .foregroundColor(themeManager.foregroundColor)
+                    
+                    Button(action: {
+                        soundPlayer.playSound(named: soundDocumentName)
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.white.opacity(0.10))
+                                .background(.ultraThinMaterial, in: Circle())
+                                .overlay(Circle().stroke(Color.white.opacity(0.20), lineWidth: 2))
+                                .frame(width: 56, height: 56)
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(Color(hex: "#E6D7C3"))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 28)
                     
                     // Explanation
                     Text(item.explanation)
