@@ -1,5 +1,217 @@
 import SwiftUI
 
+// MARK: - Helpers
+extension Color {
+    init(hex: String, opacity: Double = 1.0) {
+        var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "#", with: "")
+        var int: UInt64 = 0
+        Scanner(string: hexSanitized).scanHexInt64(&int)
+        let r, g, b: UInt64
+        switch hexSanitized.count {
+        case 6: (r, g, b) = ((int >> 16) & 0xFF, (int >> 8) & 0xFF, int & 0xFF)
+        default: (r, g, b) = (1, 1, 1)
+        }
+        self.init(.sRGB,
+                  red: Double(r) / 255,
+                  green: Double(g) / 255,
+                  blue: Double(b) / 255,
+                  opacity: opacity)
+    }
+}
+
+// Subtle text shimmer like your React “brand-title animate-text-shimmer”
+struct Shimmer: ViewModifier {
+    @State private var phase: CGFloat = -1
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                LinearGradient(
+                    colors: [.clear, .white.opacity(0.7), .clear],
+                    startPoint: .leading, endPoint: .trailing
+                )
+                .blendMode(.screen)
+                .mask(content)
+
+            )
+            .onAppear {
+                withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
+                    phase = 1.2
+                }
+            }
+    }
+}
+extension View { func shimmer() -> some View { modifier(Shimmer()) } }
+
+// MARK: - LoadingView
+struct LoadingView: View {
+    // same copy as React
+    @State private var loadingMessages = [
+        "Aligning with the cosmos",
+        "Reading celestial patterns",
+        "Gathering stellar insights",
+        "Preparing your journey"
+    ]
+    @State private var msgIndex = 0
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+
+    @State private var spinFast = false
+    @State private var spinSlow = false
+    @State private var pulse = false
+    @State private var dotPhase: CGFloat = 0
+    @State private var bounce = false
+    
+    @State private var showWelcome = false
+    @State private var currentLocation: String = "Your Current Location"
+    @State private var zodiacSign: String = ""
+    @State private var moonPhase: String = ""
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                AppBackgroundView()
+                    .environmentObject(starManager)
+
+                // === Nebula effects ===
+                // Blue nebula: top-1/4 left-1/3 w-96 h-96 blur-3xl scale(1.5) rgba(59,130,246,0.1)
+                Circle()
+                    .fill(Color(.sRGB, red: 59/255, green: 130/255, blue: 246/255, opacity: 0.10))
+                    .frame(width: 384, height: 384) // w-96 h-96
+                    .scaleEffect(1.5)
+                    .blur(radius: 48) // ~ blur-3xl
+                    .offset(x: geo.size.width * -0.17, y: geo.size.height * -0.25)
+
+                // Purple nebula: bottom-1/3 right-1/4 w-80 h-80 blur-3xl scale(1.2) rgba(168,85,247,0.1)
+                Circle()
+                    .fill(Color(.sRGB, red: 168/255, green: 85/255, blue: 247/255, opacity: 0.10))
+                    .frame(width: 320, height: 320) // w-80 h-80
+                    .scaleEffect(1.2)
+                    .blur(radius: 48)
+                    .offset(x: geo.size.width * 0.25, y: geo.size.height * 0.18)
+
+                // === Central radial glow: rgba(255,255,255,0.05) at center to transparent ===
+                RadialGradient(
+                    gradient: Gradient(colors: [Color.white.opacity(0.05), .clear]),
+                    center: .center,
+                    startRadius: 0,
+                    endRadius: min(geo.size.width, geo.size.height) * 0.5
+                )
+                .allowsHitTesting(false)
+
+                // === Main content ===
+                VStack(spacing: 32) {
+                    // Logo + pulse-gentle
+                    ZStack {
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 96, height: 96) // w-24 h-24
+                            .shadow(color: .white.opacity(0.35), radius: 24, x: 0, y: 8)
+                            .scaleEffect(pulse ? 1.04 : 1.0)
+                            .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: pulse)
+                            .overlay(
+                                Image("logoImage") // ⬅️ put the same asset name you use on iOS
+                                    .resizable()
+                                    .scaledToFit()
+                                    .padding(12) // p-3
+                            )
+                    }
+                    .onAppear { pulse = true }
+
+                    // Brand title + thin underline + shimmer
+                    VStack(spacing: 8) {
+                        Text("Aligna")
+                            .font(.custom("PlayfairDisplay-Regular", size: 40)) // ~ text-4xl
+                            .foregroundColor(.white)
+                            .shimmer()
+
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [.clear, .white.opacity(0.6), .clear],
+                                    startPoint: .leading, endPoint: .trailing
+                                )
+                            )
+                            .frame(width: 128, height: 1) // w-32 h-0.5
+                    }
+
+                    // Spinner (two rings) EXACT behavior
+                    ZStack {
+                        Circle()
+                            .stroke(Color.white.opacity(0.20), lineWidth: 2)
+                            .frame(width: 64, height: 64)
+
+                        // Fast ring (1s), “border-t-transparent” look via Trim arc
+                        Circle()
+                            .trim(from: 0, to: 0.25)
+                            .stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                            .frame(width: 64, height: 64)
+                            .rotationEffect(.degrees(spinFast ? 360 : 0))
+                            .animation(.linear(duration: 1.0).repeatForever(autoreverses: false), value: spinFast)
+
+                        // Slow ring (2s), semi-opaque
+                        Circle()
+                            .trim(from: 0, to: 0.25)
+                            .stroke(Color.white.opacity(0.4), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                            .frame(width: 48, height: 48)
+                            .rotationEffect(.degrees(spinSlow ? 360 : 0))
+                            .animation(.linear(duration: 2.0).repeatForever(autoreverses: false), value: spinSlow)
+                    }
+                    .onAppear { spinFast = true; spinSlow = true }
+
+                    // Loading text + bouncing dots (three)
+                    VStack(spacing: 12) {
+                        Text(loadingMessages[msgIndex])
+                            .foregroundColor(.white.opacity(0.9))
+                            .font(.system(size: 18))
+                            .id(msgIndex)
+                            .transition(.opacity)
+                            
+                        HStack(spacing: 6) {
+                            ForEach(0..<3) { i in
+                                Circle()
+                                    .fill(Color.white.opacity(0.6))
+                                    .frame(width: 8, height: 8)
+                                    .offset(y: bounce ? -6 : 0) // up by 6pt
+                                    .animation(
+                                        .easeInOut(duration: 0.5)
+                                            .repeatForever(autoreverses: true)
+                                            .delay(Double(i) * 0.15),   // nice cascade
+                                        value: bounce
+                                    )
+                            }
+                        }
+                        .padding(.top, 15)
+                    }
+                    .onAppear { bounce = true }
+                }
+                .frame(maxWidth: 480) // equivalent to max-w-md container
+                .padding(16)
+            }
+            .onAppear {
+                // Rotate messages every 2s
+                Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { _ in
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        msgIndex = (msgIndex + 1) % loadingMessages.count
+                    }
+                }
+                // drive dot bounce
+                withAnimation {
+                    dotPhase = 1
+                }
+            }
+        }
+    }
+
+    // mimic three “animate-bounce-dot-*” offsets
+    private func dotOffset(for i: Int) -> CGFloat {
+        // Stagger using index against an ever-toggling phase
+        let up = (Int(dotPhase) + i) % 2 == 0
+        return up ? -4 : 0
+    }
+}
+
+
+
 struct FirstPageView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
@@ -12,39 +224,56 @@ struct FirstPageView: View {
     @State private var recommendationTitles: [String: String] = [:]
     
     @State private var selectedDate = Date()
-    @State private var showWelcome = true
-    
+    @State private var isLoading = true
+
     var body: some View {
-        NavigationStack {
-            GeometryReader { geometry in
-                let minLength = min(geometry.size.width, geometry.size.height)
-                ZStack {
-                    // 背景组件
-                    AppBackgroundView()
-                        .environmentObject(starManager)
-                    
-                    VStack(spacing: minLength * 0.015) {
-                        // 顶部按钮
-                        HStack {
-                            NavigationLink(
-                                destination: ContentView()
-                                    .environmentObject(starManager)
-                                    .environmentObject(themeManager)
-                            ) {
-                                Image(systemName: "calendar")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(themeManager.foregroundColor)
-                                    .frame(width: 28, height: 28)
-                            }
-                            .padding(.horizontal, geometry.size.width * 0.05)
-                            
-                            Spacer()
-                            
-                            HStack(spacing: geometry.size.width * 0.04) {
-                                if isLoggedIn {
-                                    NavigationLink(destination: AccountDetailView()
+        if isLoading {
+            LoadingView()
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
+                        isLoading = false
+                    }
+                }
+        } else {
+            NavigationStack {
+                GeometryReader { geometry in
+                    let minLength = min(geometry.size.width, geometry.size.height)
+                    ZStack {
+                        // 背景组件
+                        AppBackgroundView()
+                            .environmentObject(starManager)
+                        
+                        VStack(spacing: minLength * 0.015) {
+                            // 顶部按钮
+                            HStack {
+                                NavigationLink(
+                                    destination: ContentView()
                                         .environmentObject(starManager)
-                                        .environmentObject(themeManager)) {
+                                        .environmentObject(themeManager)
+                                ) {
+                                    Image(systemName: "calendar")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(themeManager.foregroundColor)
+                                        .frame(width: 28, height: 28)
+                                }
+                                .padding(.horizontal, geometry.size.width * 0.05)
+                                
+                                Spacer()
+                                
+                                HStack(spacing: geometry.size.width * 0.04) {
+                                    if isLoggedIn {
+                                        NavigationLink(destination: AccountDetailView()
+                                            .environmentObject(starManager)
+                                            .environmentObject(themeManager)) {
+                                                Image("account")
+                                                    .resizable()
+                                                    .renderingMode(.template)
+                                                    .aspectRatio(contentMode: .fit)
+                                                    .frame(width: 28, height: 28)
+                                                    .foregroundColor(themeManager.foregroundColor)
+                                            }
+                                    } else {
+                                        NavigationLink(destination: AccountDetailView()) {
                                             Image("account")
                                                 .resizable()
                                                 .renderingMode(.template)
@@ -52,104 +281,97 @@ struct FirstPageView: View {
                                                 .frame(width: 28, height: 28)
                                                 .foregroundColor(themeManager.foregroundColor)
                                         }
-                                } else {
-                                    NavigationLink(destination: AccountDetailView()) {
-                                        Image("account")
-                                            .resizable()
-                                            .renderingMode(.template)
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 28, height: 28)
-                                            .foregroundColor(themeManager.foregroundColor)
                                     }
-                                }
-                            }
-                            .padding(.horizontal, geometry.size.width * 0.05)
-                        }
-                        
-                        NavigationLink(
-                            destination: JournalView(date: selectedDate)
-                                .environmentObject(starManager)
-                                .environmentObject(themeManager)
-                        ) {
-                            Rectangle()
-                                .fill(themeManager.foregroundColor)
-                                .frame(width: 20, height: 20)
-                                .overlay(
-                                    Text("+")
-                                        .font(.caption)
-                                        .foregroundColor(.black)
-                                )
-                        }
-                        .offset(x:  geometry.size.width * 0.23, y: geometry.size.width * 0.09)
-                        //                        .padding(.horizontal, geometry.size.width * 0.05)
-                        
-                        Text("Aligna")
-                            .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.13))
-                            .foregroundColor(themeManager.foregroundColor)
-                        
-                        Text(viewModel.dailyMantra)
-                            .font(Font.custom("PlayfairDisplay-Italic", size: minLength * 0.04))
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(themeManager.foregroundColor.opacity(0.7))
-                            .padding(.horizontal, geometry.size.width * 0.1)
-                            .fixedSize(horizontal: false, vertical: true)
-                        
-                        Spacer()
-                        
-                        VStack(spacing: minLength * 0.05) {
-                            if viewModel.recommendations.isEmpty {
-                                ProgressView("Loading your personalized guidance...")
-                                    .foregroundColor(themeManager.foregroundColor)
-                                    .padding()
-                            } else {
-                                let columns = [
-                                    GridItem(.flexible(), alignment: .center),
-                                    GridItem(.flexible(), alignment: .center)
-                                ]
-                                
-                                
-                                LazyVGrid(columns: columns, spacing: geometry.size.height * 0.001) {
-                                    navItemView(title: "Place", geometry: geometry)
-                                    navItemView(title: "Gemstone", geometry: geometry)
-                                    navItemView(title: "Color", geometry: geometry)
-                                    navItemView(title: "Scent", geometry: geometry)
-                                    navItemView(title: "Activity", geometry: geometry)
-                                    navItemView(title: "Sound", geometry: geometry)
-                                    navItemView(title: "Career", geometry: geometry)
-                                    navItemView(title: "Relationship", geometry: geometry)
                                 }
                                 .padding(.horizontal, geometry.size.width * 0.05)
                             }
+                            
+                            NavigationLink(
+                                destination: JournalView(date: selectedDate)
+                                    .environmentObject(starManager)
+                                    .environmentObject(themeManager)
+                            ) {
+                                Rectangle()
+                                    .fill(themeManager.foregroundColor)
+                                    .frame(width: 20, height: 20)
+                                    .overlay(
+                                        Text("+")
+                                            .font(.caption)
+                                            .foregroundColor(.black)
+                                    )
+                            }
+                            .offset(x:  geometry.size.width * 0.23, y: geometry.size.width * 0.09)
+                            //                        .padding(.horizontal, geometry.size.width * 0.05)
+                            
+                            Text("Aligna")
+                                .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.13))
+                                .foregroundColor(themeManager.foregroundColor)
+                            
+                            Text(viewModel.dailyMantra)
+                                .font(Font.custom("PlayfairDisplay-Italic", size: minLength * 0.04))
+                                .multilineTextAlignment(.center)
+                                .foregroundColor(themeManager.foregroundColor.opacity(0.7))
+                                .padding(.horizontal, geometry.size.width * 0.1)
+                                .fixedSize(horizontal: false, vertical: true)
+                            
+                            Spacer()
+                            
+                            VStack(spacing: minLength * 0.05) {
+                                if viewModel.recommendations.isEmpty {
+                                    ProgressView("Loading your personalized guidance...")
+                                        .foregroundColor(themeManager.foregroundColor)
+                                        .padding()
+                                } else {
+                                    let columns = [
+                                        GridItem(.flexible(), alignment: .center),
+                                        GridItem(.flexible(), alignment: .center)
+                                    ]
+                                    
+                                    
+                                    LazyVGrid(columns: columns, spacing: geometry.size.height * 0.001) {
+                                        navItemView(title: "Place", geometry: geometry)
+                                        navItemView(title: "Gemstone", geometry: geometry)
+                                        navItemView(title: "Color", geometry: geometry)
+                                        navItemView(title: "Scent", geometry: geometry)
+                                        navItemView(title: "Activity", geometry: geometry)
+                                        navItemView(title: "Sound", geometry: geometry)
+                                        navItemView(title: "Career", geometry: geometry)
+                                        navItemView(title: "Relationship", geometry: geometry)
+                                    }
+                                    .padding(.horizontal, geometry.size.width * 0.05)
+                                }
+                            }
+                            
+                            //                        Spacer()
+                            Spacer().frame(height: geometry.size.height * 0.03)
                         }
+                        .padding(.top, 16)
+                    }
+                    .onAppear {
+                        starManager.animateStar = true
+                        themeManager.updateTheme()
                         
-                        //                        Spacer()
-                        Spacer().frame(height: geometry.size.height * 0.03)
+                        let dateFormatter = DateFormatter()
+                        dateFormatter.dateFormat = "yyyy-MM-dd"
+                        let today = dateFormatter.string(from: Date())
+                        
+                        print("🧠 当前推荐：\(viewModel.recommendations)")
+                        
+                        if viewModel.recommendations.isEmpty || lastRecommendationDate != today {
+                            locationManager.requestLocation()
+                            fetchAndSaveRecommendationIfNeeded()
+                        } else {
+                            // ✅ 登录后推荐已存在时也补充 fetch 标题
+                            fetchAllRecommendationTitles()
+                        }
                     }
-                    .padding(.top, 16)
+                    .frame(width: geometry.size.width, height: geometry.size.height)
                 }
-                .onAppear {
-                    starManager.animateStar = true
-                    themeManager.updateTheme()
-                    
-                    let dateFormatter = DateFormatter()
-                    dateFormatter.dateFormat = "yyyy-MM-dd"
-                    let today = dateFormatter.string(from: Date())
-                    
-                    print("🧠 当前推荐：\(viewModel.recommendations)")
-                    
-                    if viewModel.recommendations.isEmpty || lastRecommendationDate != today {
-                        locationManager.requestLocation()
-                        fetchAndSaveRecommendationIfNeeded()
-                    } else {
-                        // ✅ 登录后推荐已存在时也补充 fetch 标题
-                        fetchAllRecommendationTitles()
-                    }
-                }
-                .frame(width: geometry.size.width, height: geometry.size.height)
             }
+            .navigationViewStyle(.stack)
         }
-        .navigationViewStyle(.stack)
     }
+    
     private func fetchAllRecommendationTitles() {
         for (category, documentName) in viewModel.recommendations {
             let collection = firebaseCollectionName(for: category)
@@ -169,7 +391,6 @@ struct FirstPageView: View {
             }
         }
     }
-    
     
     private func fetchAndSaveRecommendationIfNeeded() {
         guard let userId = Auth.auth().currentUser?.uid else {
@@ -426,6 +647,14 @@ struct FirstPageView: View {
                 }
             }
     }
+}
+
+#Preview("LoadingView (standalone)") {
+    LoadingView()
+        .environmentObject(StarAnimationManager())
+        .environmentObject(ThemeManager())
+        .ignoresSafeArea()
+        .frame(width: 390, height: 844) // iPhone 14/15-ish
 }
 
 struct PlayPauseButton: View {
@@ -965,12 +1194,319 @@ struct PlaceDetailView: View {
     }
 }
 
-import SwiftUI
-import FirebaseFirestore
+struct DailyAnchorView: View {
+    @EnvironmentObject var themeManager: ThemeManager
+    let text: String
+    
+    @State private var pulse = false
+    @State private var shimmer = false
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Top gradient divider
+            GradientHairline()
+                .frame(height: 1)
+                .padding(.horizontal, 8)
+                .opacity(0.9)
 
+            // ✦ Daily anchor ✦ label with soft halo
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                themeManager.foregroundColor.opacity(0.10),
+                                .clear
+                            ],
+                            center: .center,
+                            startRadius: 2,
+                            endRadius: 120
+                        )
+                    )
+                    .scaleEffect(pulse ? 1.1 : 1.0)
+                    .blur(radius: 18)
+                    .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: pulse)
+
+                Text("✦ Daily anchor ✦")
+                    .font(.custom("PlayfairDisplay-Regular", size: 18))
+                    .foregroundColor(themeManager.foregroundColor.opacity(0.9))
+                    .shadow(color: themeManager.foregroundColor.opacity(0.25), radius: 12, x: 0, y: 0)
+                    .shadow(color: themeManager.foregroundColor.opacity(0.12), radius: 24, x: 0, y: 0)
+            }
+            .frame(height: 20)
+
+            // Quote block
+            ZStack {
+                // background soft plate
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.06),
+                                Color.white.opacity(0.02)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+                    .background(
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(
+                                RadialGradient(
+                                    colors: [Color.white.opacity(0.06), .clear],
+                                    center: .center,
+                                    startRadius: 2,
+                                    endRadius: 280
+                                )
+                            )
+                            .blur(radius: 10)
+                    )
+                    .opacity(0.9)
+                    
+                Text("“")
+                    .font(.custom("PlayfairDisplay-Bold", size: 28))
+                    .foregroundColor(Color.white.opacity(0.45))
+                    .rotationEffect(.degrees(shimmer ? 5 : 0))
+                    .opacity(shimmer ? 0.7 : 0.4)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .padding(8)
+                    .animation(.easeInOut(duration: 6).repeatForever(autoreverses: true), value: shimmer)
+
+                Text("”")
+                    .font(.custom("PlayfairDisplay-Bold", size: 28))
+                    .foregroundColor(Color.white.opacity(0.45))
+                    .rotationEffect(.degrees(shimmer ? 185 : 180))
+                    .opacity(shimmer ? 0.7 : 0.4)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                    .padding(8)
+                    .animation(.easeInOut(duration: 6).repeatForever(autoreverses: true).delay(3), value: shimmer)
+
+                // the quote text
+                Text("\(text)")
+                    .font(.custom("PlayfairDisplay-Italic", size: 19))
+                    .foregroundColor(Color(white: 0.94).opacity(0.9))
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(4)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .shadow(color: Color.white.opacity(0.18), radius: 10)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+
+            // Bottom gradient divider
+            GradientHairline()
+                .frame(height: 1)
+                .padding(.horizontal, 8)
+                .opacity(0.9)
+        }
+        .onAppear {
+            pulse = true
+            shimmer = true
+        }
+    }
+}
+
+// thin gradient line with transparent edges
+private struct GradientHairline: View {
+    var body: some View {
+        LinearGradient(
+            colors: [
+                .clear,
+                Color.white.opacity(0.25),
+                .clear
+            ],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+        .compositingGroup()
+    }
+}
+
+struct GradientButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 17, weight: .semibold))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(
+                LinearGradient(
+                    colors: [
+                        Color(hex: "#E8D3B0"),
+                        Color(hex: "#D4A574")
+                    ],
+                    startPoint: .topLeading, endPoint: .bottomTrailing
+                )
+                .opacity(configuration.isPressed ? 0.8 : 1)
+            )
+            .foregroundColor(.black.opacity(0.9))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .shadow(color: .black.opacity(0.15), radius: 14, x: 0, y: 8)
+            .padding(.horizontal, 2)
+    }
+}
+
+struct GlassCard<Content: View>: View {
+    @ViewBuilder var content: Content
+    var body: some View {
+        content
+            .padding(18)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(.white.opacity(0.18), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.18), radius: 24, x: 0, y: 14)
+    }
+}
+
+// MARK: - The prettier sheet
+
+struct GemLinkSheet: View {
+    let title: String
+    let linkURLString: String?
+    let stoneURLString: String?
+    let themeManager: ThemeManager
+    
+    @Environment(\.openURL) private var openURL
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        ZStack {
+            // soft halo background
+            RadialGradient(
+                colors: [themeManager.foregroundColor.opacity(0.18), .clear],
+                center: .top, startRadius: 10, endRadius: 400
+            )
+            .ignoresSafeArea()
+            
+            VStack(spacing: 16) {
+                Capsule()
+                    .fill(.secondary.opacity(0.4))
+                    .frame(width: 40, height: 5)
+                    .padding(.top, 6)
+                    .accessibilityHidden(true)
+                
+                GlassCard {
+                    VStack(spacing: 14) {
+                        // Icon + title
+                        HStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(LinearGradient(
+                                        colors: [themeManager.foregroundColor.opacity(0.25), .clear],
+                                        startPoint: .topLeading, endPoint: .bottomTrailing
+                                    ))
+                                    .frame(width: 40, height: 40)
+                                Image(systemName: "diamond.fill")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(themeManager.primaryText)
+                            }
+                            
+                            Text(title)
+                                .font(.custom("PlayfairDisplay-Regular", size: 22))
+                                .foregroundColor(themeManager.primaryText)
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.85)
+                                .multilineTextAlignment(.leading)
+                            Spacer(minLength: 0)
+                        }
+                        
+                        Divider().overlay(.white.opacity(0.25))
+                        
+                        // Primary button (Bracelet / Link)
+                        if let s = linkURLString, let url = URL(string: s) {
+                            Button {
+                                haptics()
+                                openURL(url)
+                                dismiss()
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "link")
+                                    Text("Open Bracelet")
+                                }
+                            }
+                            .buttonStyle(GradientButtonStyle())
+                        }
+                        
+                        // Secondary button (Stone)
+                        if let s = stoneURLString, let url = URL(string: s) {
+                            Button {
+                                haptics()
+                                openURL(url)
+                                dismiss()
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "sparkles")
+                                    Text("Open Stone")
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(themeManager.foregroundColor.opacity(0.12))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .stroke(.white.opacity(0.18), lineWidth: 1)
+                                )
+                            }
+                            .foregroundColor(themeManager.primaryText)
+                        }
+                        
+                        // Utility row (copy links)
+                        HStack(spacing: 12) {
+                            if let s = linkURLString {
+                                Button {
+                                    UIPasteboard.general.string = s
+                                    haptics()
+                                } label: {
+                                    Label("Copy bracelet URL", systemImage: "doc.on.doc")
+                                }
+                            }
+                            if let s = stoneURLString {
+                                Button {
+                                    UIPasteboard.general.string = s
+                                    haptics()
+                                } label: {
+                                    Label("Copy stone URL", systemImage: "doc.on.doc.fill")
+                                }
+                            }
+                        }
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                    }
+                }
+                
+                Button(role: .cancel) { dismiss() } label: {
+                    Text("Close")
+                        .font(.system(size: 16, weight: .regular))
+                        .padding(.vertical, 6)
+                        .padding(.bottom, 8)
+                }
+            }
+            .padding(.horizontal, 18)
+        }
+        // iOS 16+
+        .presentationDetents([.fraction(0.42), .medium])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
+        // iOS 17+: uncomment if available
+        // .presentationBackground(.ultraThinMaterial)
+    }
+    
+    private func haptics() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+}
 struct GemstoneDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
+    @Environment(\.openURL) private var openURL
+    @State private var showLinkSheet = false
     
     let documentName: String
     @State private var item: RecommendationItem?
@@ -1014,13 +1550,35 @@ struct GemstoneDetailView: View {
                         .foregroundColor(themeManager.descriptionText)
                     
                     // Image
-                    Image(documentName) // assumes .png in Assets
+                    Image(documentName)
                         .renderingMode(.template)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 150, height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .foregroundColor(themeManager.foregroundColor)
+                        .onTapGesture { showLinkSheet = true } // 👈 open the popup
+                        .sheet(isPresented: $showLinkSheet) {
+                            GemLinkSheet(
+                                title: item.title,
+                                linkURLString: item.link,
+                                stoneURLString: item.stone,
+                                themeManager: themeManager
+                            )
+                            // pick one grabber; we'll hide the system one and keep our custom capsule
+                            .presentationDragIndicator(.hidden)
+                            .presentationDetents([.fraction(0.34), .medium])
+                            .preferredColorScheme(.dark)                 // keeps it dark regardless of system
+                            // iOS 17+ only; harmless if you wrap with availability
+                            .presentationBackground(.ultraThinMaterial)  // nicer than plain white
+                        }
+                    
+                    // daily anchor
+                    if let anchor = item.anchor, !anchor.isEmpty {
+                        DailyAnchorView(text: anchor)
+                            .environmentObject(themeManager) // if not already in environment
+                            .padding(.top, 8)
+                    }
                     
                     // Explanation
                     Text(item.explanation)
@@ -3117,9 +3675,9 @@ extension Color {
     }
 }
 
-#Preview {
-    OnboardingFinalStep(viewModel: OnboardingViewModel())
-}
-
-
+//#Preview {
+//    OnboardingFinalStep(viewModel: OnboardingViewModel())
+//}
+//
+//
 

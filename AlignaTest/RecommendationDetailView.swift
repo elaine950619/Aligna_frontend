@@ -8,6 +8,9 @@ struct RecommendationItem: Codable {
     var explanation: String
     let about: String?
     let notice: String?
+    let anchor: String?
+    let link: String?
+    let stone: String?
 }
 
 struct RecommendationDetailView: View {
