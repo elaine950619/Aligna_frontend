@@ -11,6 +11,7 @@ struct RecommendationItem: Codable {
     let anchor: String?
     let link: String?
     let stone: String?
+    let candle: String?
 }
 
 struct RecommendationDetailView: View {

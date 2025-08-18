@@ -1,4 +1,78 @@
 import SwiftUI
+import Foundation
+import MapKit
+import CoreLocation
+
+func getAddressFromCoordinate(_ coordinate: CLLocationCoordinate2D,
+                              completion: @escaping (String?) -> Void) {
+    let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+    CLGeocoder().reverseGeocodeLocation(location) { placemarks, error in
+        guard error == nil else {
+            print("❌ 地址解析失败:", error!.localizedDescription)
+            completion(nil)
+            return
+        }
+        if let p = placemarks?.first {
+            // pick a friendly name
+            let city = p.locality ?? p.administrativeArea ?? p.name
+            completion(city)
+        } else {
+            completion(nil)
+        }
+    }
+}
+
+
+enum BootPhase {
+    case loading
+    case infoSplash
+    case main
+}
+
+func currentZodiacSign(for date: Date = Date()) -> String {
+    let cal = Calendar(identifier: .gregorian)
+    let (m, d) = (cal.component(.month, from: date), cal.component(.day, from: date))
+    switch (m, d) {
+    case (3,21...31),(4,1...19):  return "♈︎ Aries"
+    case (4,20...30),(5,1...20):  return "♉︎ Taurus"
+    case (5,21...31),(6,1...20):  return "♊︎ Gemini"
+    case (6,21...30),(7,1...22):  return "♋︎ Cancer"
+    case (7,23...31),(8,1...22):  return "♌︎ Leo"
+    case (8,23...31),(9,1...22):  return "♍︎ Virgo"
+    case (9,23...30),(10,1...22): return "♎︎ Libra"
+    case (10,23...31),(11,1...21):return "♏︎ Scorpio"
+    case (11,22...30),(12,1...21):return "♐︎ Sagittarius"
+    case (12,22...31),(1,1...19): return "♑︎ Capricorn"
+    case (1,20...31),(2,1...18):  return "♒︎ Aquarius"
+    default:                      return "♓︎ Pisces"
+    }
+}
+
+/// quick-and-pleasant moon phase label (like your React demo)
+func currentMoonPhaseLabel(for date: Date = Date()) -> String {
+    // Simple ~29.53 day cycle approximation
+    let synodic: Double = 29.53058867
+    // Anchor: 2000-01-06 18:14 UTC is a known new moon (approx). Good enough for a splash.
+    let anchor = DateComponents(
+        calendar: Calendar(identifier: .gregorian),
+        timeZone: .init(secondsFromGMT: 0),
+        year: 2000, month: 1, day: 6, hour: 18, minute: 14
+    ).date!
+    
+    let days = date.timeIntervalSince(anchor) / 86400
+    let phase = (days - floor(days / synodic) * synodic) // [0, synodic)
+    switch phase {
+    case 0..<1.84566:  return "🌑 New Moon"
+    case 1.84566..<5.53699: return "🌒 Waxing Crescent"
+    case 5.53699..<9.22831: return "🌓 First Quarter"
+    case 9.22831..<12.91963: return "🌔 Waxing Gibbous"
+    case 12.91963..<16.61096: return "🌕 Full Moon"
+    case 16.61096..<20.30228: return "🌖 Waning Gibbous"
+    case 20.30228..<23.99361: return "🌗 Third Quarter"
+    case 23.99361..<27.68493: return "🌘 Waning Crescent"
+    default: return "🌑 New Moon"
+    }
+}
 
 // MARK: - Helpers
 extension Color {
@@ -44,7 +118,8 @@ extension View { func shimmer() -> some View { modifier(Shimmer()) } }
 
 // MARK: - LoadingView
 struct LoadingView: View {
-    // same copy as React
+    var onStartLoading: (() -> Void)? = nil
+    
     @State private var loadingMessages = [
         "Aligning with the cosmos",
         "Reading celestial patterns",
@@ -115,7 +190,10 @@ struct LoadingView: View {
                                     .padding(12) // p-3
                             )
                     }
-                    .onAppear { pulse = true }
+                    .onAppear {
+                        onStartLoading?()
+                        pulse = true
+                    }
 
                     // Brand title + thin underline + shimmer
                     VStack(spacing: 8) {
@@ -210,6 +288,106 @@ struct LoadingView: View {
     }
 }
 
+struct WelcomeSplashView: View {
+    let location: String
+    let zodiac: String
+    let moon: String
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    @State private var appear = false
+
+    var body: some View {
+        ZStack {
+            AppBackgroundView()
+                .environmentObject(starManager)
+            
+            RadialGradient(
+                colors: [Color.white.opacity(0.06), .clear],
+                center: .center,
+                startRadius: 0,
+                endRadius: 260
+            )
+            .allowsHitTesting(false)
+            
+            VStack{
+                
+            }
+
+            VStack(spacing: 22) {
+                // Logo in white circle with glow
+                ZStack {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 84, height: 84)
+                        .shadow(color: .white.opacity(0.35), radius: 22, x: 0, y: 8)
+                    Image("logoImage")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 56, height: 56)
+                }
+//                .padding(.top, 24)
+
+                
+                // Brand + hairline underline
+                VStack(spacing: 6) {
+                    Text("Aligna")
+                        .font(.custom("PlayfairDisplay-Regular", size: 34))
+                        .foregroundColor(.white)
+                    Rectangle()
+                        .fill(LinearGradient(
+                            colors: [.clear, .white.opacity(0.7), .clear],
+                            startPoint: .leading, endPoint: .trailing))
+                        .frame(width: 120, height: 1)
+                }
+
+                // Info rows (no card; just clean lines)
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 8) {
+                        Text("📍").font(.title3)
+                        Text(location)
+                            .foregroundColor(.white.opacity(0.9))
+                            .font(.title3)
+                    }
+                    Text(zodiac)
+                        .foregroundColor(.white.opacity(0.85))
+                        .font(.body)
+                    Text(moon)
+                        .foregroundColor(.white.opacity(0.75))
+                        .font(.body)
+                }
+                .padding(.top, 6)
+                .padding(.horizontal, 30)
+                .frame(maxWidth: 260, alignment: .leading)
+
+            }
+            .multilineTextAlignment(.leading)
+            .opacity(appear ? 1 : 0)
+            .offset(y: appear ? 0 : 12)
+            .animation(.easeOut(duration: 0.45), value: appear)
+        }
+        .onAppear { appear = true }
+    }
+
+    // MARK: - Row
+    private func infoRow(dot color: Color, text: String, sf: String) -> some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(color.opacity(0.9))
+                .frame(width: 10, height: 10)
+                .overlay(Circle().stroke(.white.opacity(0.35), lineWidth: 0.5))
+
+            Image(systemName: sf)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.white.opacity(0.85))
+
+            Text(text)
+                .foregroundColor(.white.opacity(0.85))
+                .font(.system(size: 16, weight: .regular))
+        }
+    }
+}
+
+
 
 
 struct FirstPageView: View {
@@ -224,56 +402,44 @@ struct FirstPageView: View {
     @State private var recommendationTitles: [String: String] = [:]
     
     @State private var selectedDate = Date()
-    @State private var isLoading = true
-
-    var body: some View {
-        if isLoading {
-            LoadingView()
-                .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
-                        isLoading = false
-                    }
-                }
-        } else {
-            NavigationStack {
-                GeometryReader { geometry in
-                    let minLength = min(geometry.size.width, geometry.size.height)
-                    ZStack {
-                        // 背景组件
-                        AppBackgroundView()
-                            .environmentObject(starManager)
-                        
-                        VStack(spacing: minLength * 0.015) {
-                            // 顶部按钮
-                            HStack {
-                                NavigationLink(
-                                    destination: ContentView()
+    
+    @State private var bootPhase: BootPhase = .loading
+    @State private var splashLocation: String = "Your Current Location"
+    @State private var splashZodiac: String = ""
+    @State private var splashMoon: String = ""
+    
+    private var mainContent: some View {
+        NavigationStack {
+            GeometryReader { geometry in
+                let minLength = min(geometry.size.width, geometry.size.height)
+                ZStack {
+                    // 背景组件
+                    AppBackgroundView()
+                        .environmentObject(starManager)
+                    
+                    VStack(spacing: minLength * 0.015) {
+                        // 顶部按钮
+                        HStack {
+                            NavigationLink(
+                                destination: ContentView()
+                                    .environmentObject(starManager)
+                                    .environmentObject(themeManager)
+                                    .environmentObject(viewModel)
+                            ) {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(themeManager.foregroundColor)
+                                    .frame(width: 28, height: 28)
+                            }
+                            .padding(.horizontal, geometry.size.width * 0.05)
+                            
+                            Spacer()
+                            
+                            HStack(spacing: geometry.size.width * 0.04) {
+                                if isLoggedIn {
+                                    NavigationLink(destination: AccountDetailView()
                                         .environmentObject(starManager)
-                                        .environmentObject(themeManager)
-                                ) {
-                                    Image(systemName: "calendar")
-                                        .font(.system(size: 20))
-                                        .foregroundColor(themeManager.foregroundColor)
-                                        .frame(width: 28, height: 28)
-                                }
-                                .padding(.horizontal, geometry.size.width * 0.05)
-                                
-                                Spacer()
-                                
-                                HStack(spacing: geometry.size.width * 0.04) {
-                                    if isLoggedIn {
-                                        NavigationLink(destination: AccountDetailView()
-                                            .environmentObject(starManager)
-                                            .environmentObject(themeManager)) {
-                                                Image("account")
-                                                    .resizable()
-                                                    .renderingMode(.template)
-                                                    .aspectRatio(contentMode: .fit)
-                                                    .frame(width: 28, height: 28)
-                                                    .foregroundColor(themeManager.foregroundColor)
-                                            }
-                                    } else {
-                                        NavigationLink(destination: AccountDetailView()) {
+                                        .environmentObject(themeManager)) {
                                             Image("account")
                                                 .resizable()
                                                 .renderingMode(.template)
@@ -281,97 +447,180 @@ struct FirstPageView: View {
                                                 .frame(width: 28, height: 28)
                                                 .foregroundColor(themeManager.foregroundColor)
                                         }
-                                    }
-                                }
-                                .padding(.horizontal, geometry.size.width * 0.05)
-                            }
-                            
-                            NavigationLink(
-                                destination: JournalView(date: selectedDate)
-                                    .environmentObject(starManager)
-                                    .environmentObject(themeManager)
-                            ) {
-                                Rectangle()
-                                    .fill(themeManager.foregroundColor)
-                                    .frame(width: 20, height: 20)
-                                    .overlay(
-                                        Text("+")
-                                            .font(.caption)
-                                            .foregroundColor(.black)
-                                    )
-                            }
-                            .offset(x:  geometry.size.width * 0.23, y: geometry.size.width * 0.09)
-                            //                        .padding(.horizontal, geometry.size.width * 0.05)
-                            
-                            Text("Aligna")
-                                .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.13))
-                                .foregroundColor(themeManager.foregroundColor)
-                            
-                            Text(viewModel.dailyMantra)
-                                .font(Font.custom("PlayfairDisplay-Italic", size: minLength * 0.04))
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(themeManager.foregroundColor.opacity(0.7))
-                                .padding(.horizontal, geometry.size.width * 0.1)
-                                .fixedSize(horizontal: false, vertical: true)
-                            
-                            Spacer()
-                            
-                            VStack(spacing: minLength * 0.05) {
-                                if viewModel.recommendations.isEmpty {
-                                    ProgressView("Loading your personalized guidance...")
-                                        .foregroundColor(themeManager.foregroundColor)
-                                        .padding()
                                 } else {
-                                    let columns = [
-                                        GridItem(.flexible(), alignment: .center),
-                                        GridItem(.flexible(), alignment: .center)
-                                    ]
-                                    
-                                    
-                                    LazyVGrid(columns: columns, spacing: geometry.size.height * 0.001) {
-                                        navItemView(title: "Place", geometry: geometry)
-                                        navItemView(title: "Gemstone", geometry: geometry)
-                                        navItemView(title: "Color", geometry: geometry)
-                                        navItemView(title: "Scent", geometry: geometry)
-                                        navItemView(title: "Activity", geometry: geometry)
-                                        navItemView(title: "Sound", geometry: geometry)
-                                        navItemView(title: "Career", geometry: geometry)
-                                        navItemView(title: "Relationship", geometry: geometry)
+                                    NavigationLink(destination: AccountDetailView()) {
+                                        Image("account")
+                                            .resizable()
+                                            .renderingMode(.template)
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 28, height: 28)
+                                            .foregroundColor(themeManager.foregroundColor)
                                     }
-                                    .padding(.horizontal, geometry.size.width * 0.05)
                                 }
                             }
+                            .padding(.horizontal, geometry.size.width * 0.05)
+                        }
+                        
+                        NavigationLink(
+                            destination: JournalView(date: selectedDate)
+                                .environmentObject(starManager)
+                                .environmentObject(themeManager)
+                        ) {
+                            Rectangle()
+                                .fill(themeManager.foregroundColor)
+                                .frame(width: 20, height: 20)
+                                .overlay(
+                                    Text("+")
+                                        .font(.caption)
+                                        .foregroundColor(.black)
+                                )
+                        }
+                        .offset(x:  geometry.size.width * 0.23, y: geometry.size.width * 0.09)
+                        //                        .padding(.horizontal, geometry.size.width * 0.05)
+                        
+                        Text("Aligna")
+                            .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.13))
+                            .foregroundColor(themeManager.foregroundColor)
+                        
+                        Text(viewModel.dailyMantra)
+                            .font(Font.custom("PlayfairDisplay-Italic", size: minLength * 0.04))
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(themeManager.foregroundColor.opacity(0.7))
+                            .padding(.horizontal, geometry.size.width * 0.1)
+                            .fixedSize(horizontal: false, vertical: true)
+                        
+                        Spacer()
+                        
+                        VStack(spacing: minLength * 0.05) {
                             
-                            //                        Spacer()
-                            Spacer().frame(height: geometry.size.height * 0.03)
+                            let columns = [
+                                GridItem(.flexible(), alignment: .center),
+                                GridItem(.flexible(), alignment: .center)
+                            ]
+                            
+                            
+                            LazyVGrid(columns: columns, spacing: geometry.size.height * 0.001) {
+                                navItemView(title: "Place", geometry: geometry)
+                                navItemView(title: "Gemstone", geometry: geometry)
+                                navItemView(title: "Color", geometry: geometry)
+                                navItemView(title: "Scent", geometry: geometry)
+                                navItemView(title: "Activity", geometry: geometry)
+                                navItemView(title: "Sound", geometry: geometry)
+                                navItemView(title: "Career", geometry: geometry)
+                                navItemView(title: "Relationship", geometry: geometry)
+                            }
+                            .padding(.horizontal, geometry.size.width * 0.05)
                         }
-                        .padding(.top, 16)
+                        
+                        //                        Spacer()
+                        Spacer().frame(height: geometry.size.height * 0.03)
                     }
-                    .onAppear {
-                        starManager.animateStar = true
-                        themeManager.updateTheme()
-                        
-                        let dateFormatter = DateFormatter()
-                        dateFormatter.dateFormat = "yyyy-MM-dd"
-                        let today = dateFormatter.string(from: Date())
-                        
-                        print("🧠 当前推荐：\(viewModel.recommendations)")
-                        
-                        if viewModel.recommendations.isEmpty || lastRecommendationDate != today {
-                            locationManager.requestLocation()
-                            fetchAndSaveRecommendationIfNeeded()
-                        } else {
-                            // ✅ 登录后推荐已存在时也补充 fetch 标题
-                            fetchAllRecommendationTitles()
-                        }
-                    }
-                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .padding(.top, 16)
                 }
+                .onAppear {
+                    starManager.animateStar = true
+                    themeManager.updateTheme()
+                    
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateFormat = "yyyy-MM-dd"
+                    let today = dateFormatter.string(from: Date())
+                    
+                    print("🧠 当前推荐：\(viewModel.recommendations)")
+                    
+                    if viewModel.recommendations.isEmpty || lastRecommendationDate != today {
+                        locationManager.requestLocation()
+                        fetchAndSaveRecommendationIfNeeded()
+                    } else {
+                        // ✅ 登录后推荐已存在时也补充 fetch 标题
+                        fetchAllRecommendationTitles()
+                    }
+                }
+                .frame(width: geometry.size.width, height: geometry.size.height)
             }
-            .navigationViewStyle(.stack)
         }
+        .navigationViewStyle(.stack)
     }
     
+    private func startInitialLoad() {
+        // kick off location so we can resolve a nice city name for the splash
+        locationManager.requestLocation()
+
+        // Kick off your usual recommendation flow.
+        // (It currently runs inside `fetchAndSaveRecommendationIfNeeded()` when main appears.
+        // We can trigger it here so the main page shows only after data is ready.)
+        // You can call your function directly if it doesn’t rely on being in main.
+        fetchAndSaveRecommendationIfNeeded()
+
+        // Wait until recommendations arrive (or timeout), then compute splash info.
+        waitUntilRecommendationsReady(timeout: 12) {
+            resolveSplashInfoAndAdvance()
+        }
+    }
+
+    /// Polls viewModel.recommendations until non-empty (or timeout)
+    private func waitUntilRecommendationsReady(timeout: TimeInterval = 12, poll: TimeInterval = 0.2, onReady: @escaping () -> Void) {
+        let start = Date()
+        func check() {
+            if !viewModel.recommendations.isEmpty {
+                onReady()
+                return
+            }
+            if Date().timeIntervalSince(start) > timeout {
+                // Timeout: still move on (you can choose to stay on loading if you prefer)
+                onReady()
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + poll, execute: check)
+        }
+        check()
+    }
+
+    private func resolveSplashInfoAndAdvance() {
+        // Compute zodiac/moon locally (fast)
+        splashZodiac = currentZodiacSign()
+        splashMoon   = currentMoonPhaseLabel()
+
+        // Resolve a friendly city name if we have coordinates now
+        if let coord = locationManager.currentLocation {
+            getAddressFromCoordinate(coord) { place in
+                splashLocation = place ?? "Your Current Location"
+                withAnimation(.easeInOut) { bootPhase = .infoSplash }
+            }
+        } else {
+            splashLocation = "Your Current Location"
+            withAnimation(.easeInOut) { bootPhase = .infoSplash }
+        }
+    }
+
+
+
+    var body: some View {
+        switch bootPhase {
+        case .loading:
+            LoadingView(onStartLoading: {
+                startInitialLoad()
+            })
+            .ignoresSafeArea()
+
+        case .infoSplash:
+            WelcomeSplashView(location: splashLocation,
+                              zodiac: splashZodiac,
+                              moon: splashMoon)
+            .environmentObject(starManager)
+            .environmentObject(themeManager)
+            .onAppear {
+                // Show the splash briefly, then go main
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    withAnimation(.easeInOut) { bootPhase = .main }
+                }
+            }
+            .ignoresSafeArea()
+
+        case .main:
+            mainContent // (extract your existing NavigationStack content into a computed var)
+        }
+    }
+
     private func fetchAllRecommendationTitles() {
         for (category, documentName) in viewModel.recommendations {
             let collection = firebaseCollectionName(for: category)
@@ -649,15 +898,18 @@ struct FirstPageView: View {
     }
 }
 
-#Preview("LoadingView (standalone)") {
-    LoadingView()
-        .environmentObject(StarAnimationManager())
-        .environmentObject(ThemeManager())
-        .ignoresSafeArea()
-        .frame(width: 390, height: 844) // iPhone 14/15-ish
+
+#Preview("Welcome Splash") {
+    WelcomeSplashView(
+        location: "San Francisco",
+        zodiac: currentZodiacSign(),
+        moon: currentMoonPhaseLabel()
+    )
+    .environmentObject(StarAnimationManager())
+    .environmentObject(ThemeManager())
+    .ignoresSafeArea()
+    .frame(width: 390, height: 844) // optional
 }
-
-
 
 
 
@@ -1161,20 +1413,20 @@ struct OnboardingStep3: View {
     }
     
     // MARK: - 反向地理编码
-    private func getAddressFromCoordinate(_ coordinate: CLLocationCoordinate2D, completion: @escaping (String?) -> Void) {
-        let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
-        let geocoder = CLGeocoder()
-        
-        geocoder.reverseGeocodeLocation(location) { placemarks, error in
-            if let placemark = placemarks?.first {
-                let city = placemark.locality ?? placemark.administrativeArea ?? placemark.name
-                completion(city)
-            } else {
-                print("❌ 地址解析失败: \(error?.localizedDescription ?? "未知错误")")
-                completion(nil)
-            }
-        }
-    }
+//    private func getAddressFromCoordinate(_ coordinate: CLLocationCoordinate2D, completion: @escaping (String?) -> Void) {
+//        let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+//        let geocoder = CLGeocoder()
+//        
+//        geocoder.reverseGeocodeLocation(location) { placemarks, error in
+//            if let placemark = placemarks?.first {
+//                let city = placemark.locality ?? placemark.administrativeArea ?? placemark.name
+//                completion(city)
+//            } else {
+//                print("❌ 地址解析失败: \(error?.localizedDescription ?? "未知错误")")
+//                completion(nil)
+//            }
+//        }
+//    }
     
     // MARK: - 出生地搜索
     private func performBirthSearch(query: String) {

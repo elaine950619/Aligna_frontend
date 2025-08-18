@@ -853,6 +853,7 @@ struct GemLinkSheet: View {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 }
+
 struct GemstoneDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
@@ -1146,67 +1147,200 @@ struct ColorDetailView: View {
 }
 
 
+struct ScentLinkSheet: View {
+    let title: String
+    let linkURLString: String?
+    let candleURLString: String?
+    let themeManager: ThemeManager
+
+    @Environment(\.openURL) private var openURL
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            RadialGradient(
+                colors: [themeManager.foregroundColor.opacity(0.18), .clear],
+                center: .top, startRadius: 10, endRadius: 400
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                Capsule()
+                    .fill(.secondary.opacity(0.4))
+                    .frame(width: 40, height: 5)
+                    .padding(.top, 6)
+                    .accessibilityHidden(true)
+
+                GlassCard {
+                    VStack(spacing: 14) {
+                        // Title row
+                        HStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(LinearGradient(
+                                        colors: [themeManager.foregroundColor.opacity(0.25), .clear],
+                                        startPoint: .topLeading, endPoint: .bottomTrailing
+                                    ))
+                                    .frame(width: 40, height: 40)
+                                Image(systemName: "leaf.fill")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(themeManager.primaryText)
+                            }
+
+                            Text(title)
+                                .font(.custom("PlayfairDisplay-Regular", size: 22))
+                                .foregroundColor(themeManager.primaryText)
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.85)
+                                .multilineTextAlignment(.leading)
+                            Spacer(minLength: 0)
+                        }
+
+                        Divider().overlay(.white.opacity(0.25))
+
+                        // Primary button: Link
+                        if let s = linkURLString, let url = URL(string: s) {
+                            Button {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                openURL(url)
+                                dismiss()
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "link")
+                                    Text("Open Link")
+                                }
+                            }
+                            .buttonStyle(GradientButtonStyle())
+                        }
+
+                        // Secondary button: Candle
+                        if let s = candleURLString, let url = URL(string: s) {
+                            Button {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                openURL(url)
+                                dismiss()
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "flame.fill") // candle icon substitute
+                                    Text("Open Candle")
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(themeManager.foregroundColor.opacity(0.12))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .stroke(.white.opacity(0.18), lineWidth: 1)
+                                )
+                            }
+                            .foregroundColor(themeManager.primaryText)
+                        }
+
+                        // Utility row
+                        HStack(spacing: 12) {
+                            if let s = linkURLString {
+                                Button {
+                                    UIPasteboard.general.string = s
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                } label: { Label("Copy link URL", systemImage: "doc.on.doc") }
+                            }
+                            if let s = candleURLString {
+                                Button {
+                                    UIPasteboard.general.string = s
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                } label: { Label("Copy candle URL", systemImage: "doc.on.doc.fill") }
+                            }
+                        }
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                    }
+                }
+
+                Button(role: .cancel) { dismiss() } label: {
+                    Text("Close")
+                        .font(.system(size: 16, weight: .regular))
+                        .padding(.vertical, 6)
+                        .padding(.bottom, 8)
+                }
+            }
+            .padding(.horizontal, 18)
+        }
+        .presentationDetents([.fraction(0.42), .medium])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
+        // If you target iOS 17+, you can also add:
+        // .presentationBackground(.ultraThinMaterial)
+        .preferredColorScheme(.dark)
+    }
+}
+
+
 
 struct ScentDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
-    
+
     let documentName: String
     @State private var item: RecommendationItem?
-    
+    @State private var showLinkSheet = false
+
     var body: some View {
-        
         NavigationStack {
-            
-            ZStack{
+            ZStack {
                 AppBackgroundView()
                     .environmentObject(starManager)
-                
+
                 ScrollView {
-                    
                     CustomBackButton(
-                        iconSize: 18,
-                        paddingSize: 8,
+                        iconSize: 18, paddingSize: 8,
                         backgroundColor: Color.black.opacity(0.3),
                         iconColor: themeManager.foregroundColor,
-                        topPadding: 44,
-                        horizontalPadding: 24
+                        topPadding: 44, horizontalPadding: 24
                     )
-                    
+
                     VStack(spacing: 20) {
-                        // Scent
                         Text("Scent")
                             .foregroundColor(themeManager.watermark)
                             .font(.custom("PlayfairDisplay-Regular", size: 36))
                             .bold()
-                        
+
                         if let item = item {
-                            // Title
                             Text(item.title)
                                 .multilineTextAlignment(.center)
                                 .font(.custom("PlayfairDisplay-Regular", size: 36))
                                 .foregroundColor(themeManager.primaryText)
                                 .bold()
                                 .glow(color: themeManager.primaryText, radius: 6)
-                            
-                            // Description
+
                             Text(item.description)
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
                                 .font(.custom("PlayfairDisplay-Italic", size: 17))
                                 .fixedSize(horizontal: false, vertical: true)
                                 .foregroundColor(themeManager.descriptionText)
-                            
-                            // Image
-                            Image(documentName) // assumes .png in Assets
+
+                            Image(documentName)
                                 .renderingMode(.template)
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 150, height: 150)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                                 .foregroundColor(themeManager.foregroundColor)
-                            
-                            // Explanation
+                                .onTapGesture { showLinkSheet = true }
+                                .sheet(isPresented: $showLinkSheet) {  
+                                    ScentLinkSheet(
+                                        title: item.title,
+                                        linkURLString: item.link,        // expects `link` on RecommendationItem
+                                        candleURLString: item.candle,    // expects `candle` on RecommendationItem
+                                        themeManager: themeManager
+                                    )
+                                    .presentationDragIndicator(.hidden)
+                                    .presentationDetents([.fraction(0.34), .medium])
+                                    .preferredColorScheme(.dark)
+                                }
+
                             Text(item.explanation)
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
@@ -1215,8 +1349,7 @@ struct ScentDetailView: View {
                                 .font(.custom("PlayfairDisplay-Regular", size: 14))
                                 .fixedSize(horizontal: false, vertical: true)
                                 .foregroundColor(themeManager.bodyText)
-                            
-                            // about the scent
+
                             if let about = item.about, !about.isEmpty {
                                 VStack(alignment: .center, spacing: 10) {
                                     Text("About the Scent")
@@ -1224,7 +1357,7 @@ struct ScentDetailView: View {
                                         .foregroundColor(themeManager.foregroundColor)
                                         .bold()
                                         .multilineTextAlignment(.center)
-                                    
+
                                     Text(about)
                                         .font(.custom("PlayfairDisplay-Italic", size: 15))
                                         .foregroundColor(themeManager.foregroundColor)
@@ -1234,8 +1367,7 @@ struct ScentDetailView: View {
                                 }
                                 .padding(16)
                             }
-                            
-                            // usage note
+
                             if let notice = item.notice, !notice.isEmpty {
                                 VStack(alignment: .center, spacing: 8) {
                                     HStack(spacing: 8) {
@@ -1245,7 +1377,6 @@ struct ScentDetailView: View {
                                             .bold()
                                             .multilineTextAlignment(.center)
                                     }
-                                    
                                     Text(notice)
                                         .font(.custom("PlayfairDisplay-Regular", size: 12))
                                         .foregroundColor(themeManager.foregroundColor)
@@ -1254,7 +1385,7 @@ struct ScentDetailView: View {
                                         .multilineTextAlignment(.center)
                                 }
                                 .padding(14)
-                                .background(Color.black.opacity(0.20)) // subtle dark card
+                                .background(Color.black.opacity(0.20))
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
@@ -1269,15 +1400,14 @@ struct ScentDetailView: View {
                         }
                     }
                     .padding()
-                    .onAppear {
-                        fetchItem()
-                    }
+                    .onAppear { fetchItem() }
                 }
                 .navigationBarBackButtonHidden(true)
             }
         }
     }
-    
+
+    // If you don't already have this:
     private func fetchItem() {
         let db = Firestore.firestore()
         db.collection("scents").document(documentName).getDocument { snapshot, error in
@@ -1297,6 +1427,7 @@ struct ScentDetailView: View {
         }
     }
 }
+
 
 struct ActivityDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager

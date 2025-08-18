@@ -10,38 +10,42 @@ import SwiftUI
 // Tiny row view to offload icon + text layout
 struct SuggestionRow: View {
     let item: SuggestionItem
-    
+    @EnvironmentObject var viewModel: OnboardingViewModel
+    @EnvironmentObject var themeManager: ThemeManager
+
+    private var iconName: String {
+        // Prefer the same asset used on FirstPageView; fall back to item.assetName
+        viewModel.recommendations[item.category] ?? item.assetName
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // category
             Text(item.category)
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .foregroundColor(.secondary)
                 .textCase(.uppercase)
-            
-            // icon, title
+
             HStack {
-                // try your real asset first
-                if let ui = UIImage(named: item.assetName) {
-                    Image(uiImage: ui)
+                if !iconName.isEmpty, UIImage(named: iconName) != nil {
+                    Image(iconName)
                         .resizable()
+                        .renderingMode(.template)                   // same as FirstPageView
+                        .foregroundColor(themeManager.accent)
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 24, height: 24)
-                        .foregroundColor(.accentColor)
+                    
                 } else {
-                    // fallback
-                    Image(systemName: "photo")
+                    Image(systemName: "questionmark.square.dashed")
                         .frame(width: 24, height: 24)
                         .foregroundColor(.secondary)
                 }
-                
+
                 Text(item.title)
                     .font(.subheadline).bold()
-                
                 Spacer()
             }
-            
+
             Text(item.description)
                 .font(.footnote)
                 .foregroundColor(.secondary)
@@ -51,7 +55,6 @@ struct SuggestionRow: View {
         .frame(maxWidth: .infinity)
         .background(Color(.secondarySystemBackground))
         .cornerRadius(20)
-        //    .clipShape(Capsule())
     }
 }
 
@@ -88,6 +91,7 @@ struct ContentView: View {
     @StateObject private var dailyVM = DailyViewModel()
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var viewModel: OnboardingViewModel
     
     var body: some View {
         NavigationStack {
