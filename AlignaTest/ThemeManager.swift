@@ -14,7 +14,7 @@ class ThemeManager: ObservableObject {
 
     func updateTheme() {
         let hour = Calendar.current.component(.hour, from: Date())
-        isNight = /*hour < 7 || hour >= 22*/ true
+        isNight = hour < 7 || hour >= 22
     }
     
 //    // MARK: – Backgrounds
