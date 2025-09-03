@@ -49,12 +49,14 @@ struct RootRouter: View {
                 .environmentObject(starManager)
                 .environmentObject(themeManager)
                 .environmentObject(onboardingViewModel)
+                .preferredColorScheme(themeManager.isNight ? .dark : .light)
             } else {
                 // 已登录 → 首页
                 FirstPageView()
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
                     .environmentObject(onboardingViewModel)
+                    .preferredColorScheme(themeManager.isNight ? .dark : .light)
             }
         }
         .onAppear {

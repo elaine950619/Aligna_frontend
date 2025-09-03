@@ -43,7 +43,7 @@ struct AppBackgroundView: View {
     private var resolvedNight: Bool {
         if alwaysNight { return true }
         let hour = Calendar.current.component(.hour, from: Date())
-        return hour < 7 || hour >= 22
+        return /*hour < 7 || hour >= 22*/true
     }
 
     var body: some View {
