@@ -499,7 +499,7 @@ struct FirstPageView: View {
                             ]
                             
                             
-                            LazyVGrid(columns: columns, spacing: geometry.size.height * 0.001) {
+                            LazyVGrid(columns: columns, spacing: geometry.size.height * 0.03) {
                                 navItemView(title: "Place", geometry: geometry)
                                 navItemView(title: "Gemstone", geometry: geometry)
                                 navItemView(title: "Color", geometry: geometry)
@@ -786,45 +786,47 @@ struct FirstPageView: View {
                 NavigationLink(destination:
                                 viewForCategory(title: title, documentName: documentName)
                 ) {
-                    VStack(spacing: 6) {
+                    VStack(spacing: 2) {   // ⬅️ tighter spacing
                         // 图标图像
                         SafeImage(name: documentName, renderingMode: .template, contentMode: .fit)
                             .foregroundColor(themeManager.foregroundColor)
-                            .frame(width: geometry.size.width * 0.20)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .shadow(radius: 2)
+                            .frame(width: geometry.size.width * 0.18)  // slightly smaller to balance text
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .shadow(radius: 1.5)
                         
-                        // 推荐名称（小字体）
+                        // 推荐名称（小字体，紧贴图标）
                         Text(recommendationTitles[title] ?? "")
-                            .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.035))
+                            .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.033))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.8))
                             .multilineTextAlignment(.center)
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
+                            .padding(.top, 0.2) // ⬅️ subtle spacing only
                         
-                        // 类别标题
+                        // 类别标题（和上面稍微拉开）
                         Text(title)
-                            .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.055))
+                            .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.05))
                             .foregroundColor(themeManager.foregroundColor)
+                            .padding(.top, 2) // ⬅️ tighter than before
                     }
                 }
             } else {
                 Button {
                     print("⚠️ 无法进入 '\(title)'，推荐结果尚未加载")
                 } label: {
-                    VStack(spacing: 6) {
+                    VStack(spacing: 2) {
                         Image(systemName: "questionmark.square.dashed")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: geometry.size.width * 0.20)
+                            .frame(width: geometry.size.width * 0.18)
                             .foregroundColor(themeManager.foregroundColor.opacity(0.4))
                         
                         Text("Loading")
-                            .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.035))
+                            .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.033))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.5))
                         
                         Text(title)
-                            .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.055))
+                            .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.05))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.5))
                     }
                 }

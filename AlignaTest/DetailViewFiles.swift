@@ -714,6 +714,47 @@ struct GlassCard<Content: View>: View {
     }
 }
 
+import SwiftUI
+
+struct ClickHint: View {
+    @Binding var isVisible: Bool
+    var label: String = "Click"
+
+    @State private var pulse = false
+    @State private var ripple = false
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .strokeBorder(.white.opacity(0.35), lineWidth: 2)
+                .frame(width: 44, height: 44)
+                .scaleEffect(ripple ? 1.35 : 0.9)
+                .opacity(ripple ? 0.0 : 0.9)
+                .animation(.easeOut(duration: 1.2).repeatForever(autoreverses: false), value: ripple)
+
+            HStack(spacing: 6) {
+                // Use a cursor symbol if available; otherwise just text is fine
+                Image(systemName: "cursorarrow") // “cursorarrow.click” exists on newer OS; this one is safer
+                    .font(.system(size: 15, weight: .semibold))
+                Text(label)
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(Capsule().strokeBorder(.white.opacity(0.35), lineWidth: 1))
+            .shadow(color: .black.opacity(0.35), radius: 8, x: 0, y: 4)
+            .scaleEffect(pulse ? 1.05 : 0.95)
+            .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: pulse)
+        }
+        .foregroundStyle(.white)
+        .opacity(isVisible ? 1 : 0)
+        .allowsHitTesting(false)
+        .onAppear { pulse = true; ripple = true }
+        .accessibilityHidden(true)
+    }
+}
+
 // MARK: - The prettier sheet
 
 struct GemLinkSheet: View {
@@ -858,119 +899,106 @@ struct GemstoneDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.openURL) private var openURL
+
     @State private var showLinkSheet = false
-    
-    let documentName: String
     @State private var item: RecommendationItem?
-    
+
+    // Persisted click counter for the gemstone “click” hint
+    @AppStorage("aligna.gem.click.count") private var gemClickCount: Int = 0
+    private var showGemClickHint: Bool { gemClickCount < 3 }
+
+    let documentName: String
+
     var body: some View {
-        ZStack{
-            AppBackgroundView()
-                .environmentObject(starManager)
-            
-            CustomBackButton(
-                iconSize: 18,
-                paddingSize: 8,
-                backgroundColor: Color.black.opacity(0.3),
-                iconColor: themeManager.foregroundColor,
-                topPadding: 44,
-                horizontalPadding: 24
-            )
-            
+        ZStack {
+            AppBackgroundView().environmentObject(starManager)
+
             VStack(spacing: 20) {
-                // Gemstone
                 Text("Gemstone")
                     .foregroundColor(themeManager.watermark)
                     .font(.custom("PlayfairDisplay-Regular", size: 36))
                     .bold()
-                
+
                 if let item = item {
-                    // Title
                     Text(item.title)
                         .multilineTextAlignment(.center)
                         .font(.custom("PlayfairDisplay-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
                         .bold()
                         .glow(color: themeManager.primaryText, radius: 6)
-                    
-                    // Description
+
                     Text(item.description)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                         .font(.custom("PlayfairDisplay-Italic", size: 17))
-                        .fixedSize(horizontal: false, vertical: true)
                         .foregroundColor(themeManager.descriptionText)
-                    
-                    // Image
-                    Image(documentName)
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 150, height: 150)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.foregroundColor)
-                        .onTapGesture { showLinkSheet = true } // 👈 open the popup
-                        .sheet(isPresented: $showLinkSheet) {
-                            GemLinkSheet(
-                                title: item.title,
-                                linkURLString: item.link,
-                                stoneURLString: item.stone,
-                                themeManager: themeManager
-                            )
-                            // pick one grabber; we'll hide the system one and keep our custom capsule
-                            .presentationDragIndicator(.hidden)
-                            .presentationDetents([.fraction(0.34), .medium])
-                            .preferredColorScheme(.dark)                 // keeps it dark regardless of system
-                            // iOS 17+ only; harmless if you wrap with availability
-                            .presentationBackground(.ultraThinMaterial)  // nicer than plain white
-                        }
-                    
-                    // daily anchor
+
+                    // Gem image with click hint overlay in bottom-right corner
+                    ZStack(alignment: .bottomTrailing) {
+                        Image(documentName)
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 150, height: 150)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .foregroundColor(themeManager.foregroundColor)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                // treat as a "click"
+                                gemClickCount = min(gemClickCount + 1, 3) // cap at 3
+                                showLinkSheet = true
+                            }
+
+                        ClickHint(isVisible: .constant(showGemClickHint), label: "Click")
+                            .offset(x: 6, y: 6) // tweak to match your video’s corner placement
+                    }
+                    .sheet(isPresented: $showLinkSheet) {
+                        GemLinkSheet(
+                            title: item.title,
+                            linkURLString: item.link,
+                            stoneURLString: item.stone,
+                            themeManager: themeManager
+                        )
+                        .presentationDragIndicator(.hidden)
+                        .presentationDetents([.fraction(0.34), .medium])
+                        .preferredColorScheme(.dark)
+                        .presentationBackground(.ultraThinMaterial)
+                    }
+
                     if let anchor = item.anchor, !anchor.isEmpty {
                         DailyAnchorView(text: anchor)
-                            .environmentObject(themeManager) // if not already in environment
+                            .environmentObject(themeManager)
                             .padding(.top, 8)
                     }
-                    
-                    // Explanation
+
                     Text(item.explanation)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                         .padding(.bottom)
                         .italic()
                         .font(.custom("PlayfairDisplay-Regular", size: 14))
-                        .fixedSize(horizontal: false, vertical: true)
                         .foregroundColor(themeManager.bodyText)
-                    
                 } else {
-                    ProgressView("Loading...")
-                        .padding(.top, 100)
+                    ProgressView("Loading...").padding(.top, 100)
                 }
             }
             .padding()
-            .onAppear {
-                fetchItem()
-            }
+            .onAppear { fetchItem() }
         }
         .navigationBarBackButtonHidden(true)
     }
-    
+
     private func fetchItem() {
         let db = Firestore.firestore()
         db.collection("gemstones").document(documentName).getDocument { snapshot, error in
-            if let error = error {
-                print("❌ 获取 Firebase 数据失败: \(error)")
-                return
-            }
+            if let error = error { print("❌ Firebase error: \(error)"); return }
             do {
                 if let data = try snapshot?.data(as: RecommendationItem.self) {
                     self.item = data
                 } else {
-                    print("❌ 文档未找到或解码失败")
+                    print("❌ Doc not found / decode failed")
                 }
-            } catch {
-                print("❌ 解码失败: \(error)")
-            }
+            } catch { print("❌ Decode failed: \(error)") }
         }
     }
 }

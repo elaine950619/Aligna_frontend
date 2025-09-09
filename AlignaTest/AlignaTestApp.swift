@@ -6,12 +6,22 @@ import FirebaseCore
 import FirebaseAuth
 import UIKit
 import GoogleSignIn
+import AVFoundation
 
 // MARK: - AppDelegate（Firebase + Google 回调）
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         FirebaseApp.configure()
+
+        // 可选：设置音频会话，避免被静音开关/打断（按需修改类别/选项）
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print("⚠️ AVAudioSession 配置失败: \(error)")
+        }
+
         return true
     }
 
@@ -29,6 +39,7 @@ struct RootRouter: View {
     @StateObject private var starManager = StarAnimationManager()
     @StateObject private var themeManager = ThemeManager()
     @StateObject private var onboardingViewModel = OnboardingViewModel()
+    @StateObject private var soundPlayer = SoundPlayer()        // ✅ 新增：全局音频播放器
 
     // 路由状态
     @State private var isReady = false
@@ -38,9 +49,12 @@ struct RootRouter: View {
         Group {
             if !isReady {
                 ZStack {
-                    AppBackgroundView().environmentObject(starManager)
+                    AppBackgroundView()
+                        .environmentObject(starManager)
+                        .environmentObject(themeManager)
                     ProgressView("Loading…")
                 }
+                .environmentObject(soundPlayer) // ✅ 注入，保证任意子层都能拿到
             } else if !isAuthenticated {
                 // 未登录 → 开场页
                 NavigationStack {
@@ -49,6 +63,7 @@ struct RootRouter: View {
                 .environmentObject(starManager)
                 .environmentObject(themeManager)
                 .environmentObject(onboardingViewModel)
+                .environmentObject(soundPlayer)  // ✅ 注入
                 .preferredColorScheme(themeManager.isNight ? .dark : .light)
             } else {
                 // 已登录 → 首页
@@ -56,6 +71,7 @@ struct RootRouter: View {
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
                     .environmentObject(onboardingViewModel)
+                    .environmentObject(soundPlayer)  // ✅ 注入
                     .preferredColorScheme(themeManager.isNight ? .dark : .light)
             }
         }
