@@ -46,6 +46,14 @@ final class ThemeManager: ObservableObject {
     var preferredColorScheme: ColorScheme? {
         isNight ? .dark : .light
     }
+    
+    // card/panel behind the calendar
+    var panelFill: Color { isNight ? Color.white.opacity(0.04)
+                                   : Color.black.opacity(0.06) }
+    var panelStrokeHi: Color { isNight ? Color.white.opacity(0.12)
+                                       : Color.black.opacity(0.18) }
+    var panelStrokeLo: Color { isNight ? Color.white.opacity(0.04)
+                                       : Color.black.opacity(0.07) }
 
     // 当前选择
     @Published var selected: ThemeOption = .system {
@@ -100,6 +108,6 @@ final class ThemeManager: ObservableObject {
     // 08:00–19:59 白天；20:00–次日 07:59 夜间
     private static func isNightByClock() -> Bool {
         let hour = Calendar.current.component(.hour, from: Date())
-        return hour < 8 || hour >= 20
+        return hour < 8 || hour >= 20;
     }
 }

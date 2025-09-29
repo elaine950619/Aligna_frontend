@@ -7,9 +7,50 @@
 
 import SwiftUI
 
+struct NoDataMessage: View {
+    @EnvironmentObject var themeManager: ThemeManager
+    let date: Date
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "calendar.badge.exclamationmark")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(themeManager.accent)
+
+            Text("No data available for this day")
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundColor(themeManager.primaryText)
+
+            Text(DateFormatter.appLong.string(from: date))
+                .font(.footnote)
+                .foregroundColor(themeManager.descriptionText)
+        }
+        .padding(.vertical, 18)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white.opacity(themeManager.isNight ? 0.04 : 0.10))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.white.opacity(0.10), lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
+    }
+}
+
+extension DateFormatter {
+    static let appLong: DateFormatter = {
+        let df = DateFormatter()
+        df.dateStyle = .medium
+        return df
+    }()
+}
+
 private struct TimelineHeader: View {
     var title: String = "Timeline"
     var onBack: () -> Void
+    @EnvironmentObject var themeManager: ThemeManager
 
     var body: some View {
         GeometryReader { geo in
@@ -23,7 +64,7 @@ private struct TimelineHeader: View {
                 VStack(spacing: 12) {
                     Text(title)
                         .font(.system(size: 34, weight: .bold, design: .serif))
-                        .foregroundColor(.white.opacity(0.95))
+                        .foregroundColor(themeManager.primaryText)  
                         .kerning(0.5)
 
                     // subtle underline "glow"
@@ -126,12 +167,6 @@ struct SuggestionRow: View {
                     .tracking(0.7)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-//                    .background(
-//                        Capsule().fill(Color.white.opacity(0.10))
-//                    )
-//                    .overlay(
-//                        Capsule().stroke(Color.white.opacity(0.15), lineWidth: 0.8)
-//                    )
                     .foregroundColor(themeManager.accent)
             }
 
@@ -216,30 +251,30 @@ struct ContentView: View {
                 ScrollView(showsIndicators: false) {
                     TimelineHeader(title: "Timeline") { dismiss() }
                                             .padding(.bottom, 8)
+                                            .foregroundColor(themeManager.foregroundColor)
                     
                     VStack(spacing: 24) {
-                        // make room for the header
-//                        Spacer().frame(height: 96)    try 88–104 to taste
-                        
+
                         CalendarView(
                             selectedDate: $selectedDate,
-                            accentColor: .accentColor
+                            accentColor: themeManager.accent          // use your themed accent
                         )
-                        .padding(8)
+                        .padding(12)
                         .background(
                             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                                .fill(Color.white.opacity(0.04))
+                                .fill(themeManager.panelFill)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 28, style: .continuous)
                                         .stroke(
                                             LinearGradient(
-                                                colors: [.white.opacity(0.12), .white.opacity(0.04)],
+                                                colors: [themeManager.panelStrokeHi, themeManager.panelStrokeLo],
                                                 startPoint: .topLeading, endPoint: .bottomTrailing
                                             ),
-                                            lineWidth: 3
+                                            lineWidth: 1.5
                                         )
                                 )
                         )
+                        .shadow(color: .black.opacity(themeManager.isNight ? 0.12 : 0.10), radius: 10, y: 6)
                         .cornerRadius(20)
                         .onAppear {
                             if enableLoading { dailyVM.load(for: selectedDate) }
@@ -250,45 +285,45 @@ struct ContentView: View {
                         .padding(.horizontal, 16)
                         
                         Group {
-                            if dailyVM.mantra.isEmpty {
-                                Text("Your daily mantra will appear here.")
-                                    .italic()
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-                            } else {
-                                Text(dailyVM.mantra)
-                                    .italic()
-                                    .padding(.horizontal)
-//                                    .colorInvert()
-                            }
+                            Text(dailyVM.mantra.isEmpty
+                                 ? "Your daily mantra will appear here."
+                                 : dailyVM.mantra)
+                                .italic()
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                                // use existing theme colors (no new palette)
+                                .foregroundColor(
+                                    dailyVM.mantra.isEmpty
+                                    ? themeManager.descriptionText.opacity(0.9)       // placeholder = muted
+                                    : (themeManager.isNight
+                                        ? themeManager.primaryText.opacity(0.9)       // night = bright cream
+                                        : themeManager.primaryText.opacity(0.8))      // light = warm brown, softened
+                                )
                         }
                         .id(selectedDate)
                         
-                        // one‑column grid of full‑width capsules
-                        LazyVGrid(columns: [GridItem(.flexible())], spacing: 12) {
-                            ForEach(allCategories, id: \.self) { category in
-                                if let item = dailyVM.items.first(where: { $0.category == category }) {
-                                    // real data
+                        // Build an ordered list of items for the categories you care about
+                        let dayItems: [SuggestionItem] = allCategories.compactMap { cat in
+                            dailyVM.items.first(where: { $0.category == cat })
+                        }
+
+                        // If there are NO items (and optionally no mantra), show the message
+                        if dayItems.isEmpty /* && dailyVM.mantra.isEmpty */ {
+                            NoDataMessage(date: selectedDate)
+                                .environmentObject(themeManager)
+                        } else {
+                            // Show only the items that exist — no placeholders
+                            LazyVGrid(columns: [GridItem(.flexible())], spacing: 12) {
+                                ForEach(dayItems, id: \.id) { item in
                                     SuggestionRow(item: item)
-                                } else {
-                                    // placeholder skeleton
-                                    PlaceholderRow(category: category)
-                                        .redacted(reason: .placeholder)  // iOS 15+ greyed-out look
                                 }
                             }
+                            .padding(.horizontal, 16)
                         }
-                        .padding(.horizontal, 16)  // outer margin
                     }
                     .padding(.top)
                 }
-//                .safeAreaPadding(.top, headerHeight)
             }
-//            .safeAreaInset(edge: .top, spacing: -20) {
-//
-//                TimelineHeader(title: "Timeline") { dismiss() }
-//            }
-
             .toolbar(.hidden, for: .navigationBar)
         }
     }

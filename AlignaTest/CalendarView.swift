@@ -65,6 +65,8 @@ struct DayCell: View {
     let accent: Color
     let tap: ()->Void
 
+    @EnvironmentObject var themeManager: ThemeManager   // ← add
+
     var body: some View {
         if let date {
             let day   = Calendar.current.component(.day, from: date)
@@ -73,7 +75,7 @@ struct DayCell: View {
             Button(action: tap) {
                 VStack(spacing: 1) {
                     ZStack {
-                        // Only moon icon, no background circle
+                        // gold moon stays as-is
                         Image(systemName: moonSymbol(for: phase))
                             .font(.system(size: 22))
                             .foregroundStyle(
@@ -81,21 +83,21 @@ struct DayCell: View {
                                                startPoint: .topLeading, endPoint: .bottomTrailing)
                             )
 
+                        // selection ring uses your accent
                         Circle()
                             .stroke(isSelected ? accent : .clear, lineWidth: 2)
                             .frame(width: 36, height: 36)
                     }
 
-                    // day label BELOW
+                    // day label uses your theme primary text
                     Text("\(day)")
                         .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.9))
+                        .foregroundColor(themeManager.primaryText.opacity(0.9))   // ← was white
                 }
                 .frame(width: 44)
             }
             .buttonStyle(.plain)
         } else {
-            // empty slot filler
             VStack(spacing: 6) {
                 Color.clear.frame(width: 36, height: 36)
                 Text(" ").font(.system(size: 11))
@@ -110,46 +112,47 @@ struct DayCell: View {
 struct CalendarView: View {
     @Binding var selectedDate: Date
     var accentColor: Color = .accentColor
-    
+
+    @EnvironmentObject var themeManager: ThemeManager    // ← add
+
     @State private var displayMonth: Date = Date()
     private let calendar = Calendar.current
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 7)
-    
+
     var body: some View {
         VStack(spacing: 16) {
-            // Header with chevrons
+            // Header
             HStack {
                 Button { prevMonth() } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.85))
+                        .foregroundColor(themeManager.foregroundColor)          // ← was white
                         .padding(8)
-//                        .background(Circle().fill(Color.white.opacity(0.06)))
                 }
                 Spacer()
                 Text(monthTitle)
                     .font(.system(size: 22, weight: .bold, design: .serif))
-                    .foregroundColor(.white.opacity(0.95))
+                    .foregroundColor(themeManager.primaryText)                  // ← was white
                 Spacer()
                 Button { nextMonth() } label: {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.85))
+                        .foregroundColor(themeManager.foregroundColor)          // ← was white
                         .padding(8)
                         .background(Circle().fill(Color.white.opacity(0.06)))
                 }
             }
-            
-            // Weekday row “Su Mo …”
+
+            // Weekday row
             HStack {
                 ForEach(shortWeekdaySymbols, id: \.self) { wd in
                     Text(wd)
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.65))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.9)) // ← was white
                         .frame(maxWidth: .infinity)
                 }
             }
-            
+
             // Grid
             LazyVGrid(columns: columns, spacing: 2) {
                 ForEach(Array(makeCalendarGrid(for: displayMonth).enumerated()), id: \.offset) { _, d in
@@ -160,20 +163,11 @@ struct CalendarView: View {
                     ) {
                         if let d { selectedDate = d }
                     }
+                    .environmentObject(themeManager)   // ← pass through
                 }
             }
         }
         .padding(4)
-//        .background(
-//            RoundedRectangle(cornerRadius: 28, style: .continuous)
-//                .fill(Color.white.opacity(0.04))
-//                .overlay(
-//                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-//                        .stroke(LinearGradient(colors: [.white.opacity(0.12), .white.opacity(0.04)],
-//                                               startPoint: .topLeading, endPoint: .bottomTrailing),
-//                                lineWidth: 1)
-//                )
-//        )
     }
     
     private func prevMonth() { displayMonth = calendar.date(byAdding: .month, value: -1, to: displayMonth)! }

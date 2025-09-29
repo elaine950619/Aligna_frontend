@@ -1531,7 +1531,7 @@ struct OnboardingOpeningPage: View {
                             .font(.subheadline)
                             .foregroundColor(themeManager.fixedNightTextSecondary)
                         
-                        Image("openingSymbol")
+                        Image("LogoImage")
                             .resizable()
                             .scaledToFit()
                             .frame(width: minLength * 0.35)
