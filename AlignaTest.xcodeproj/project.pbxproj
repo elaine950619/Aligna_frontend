@@ -50,6 +50,19 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		B92EA4132E8A089A008FEE30 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		54DE58B02DC29A91008BE4B8 /* AlignaTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AlignaTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		54DE58BD2DC29A93008BE4B8 /* AlignaTestTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AlignaTestTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -58,6 +71,8 @@
 		54DE58DE2DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlayfairDisplay-Italic-VariableFont_wght.ttf"; sourceTree = "<group>"; };
 		54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlayfairDisplay-VariableFont_wght.ttf"; sourceTree = "<group>"; };
 		B925B2902E3D203800A0D2D8 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		B92EA3FA2E8A0899008FEE30 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		B92EA3FC2E8A0899008FEE30 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -138,6 +153,7 @@
 				54DE58B22DC29A91008BE4B8 /* AlignaTest */,
 				54DE58C02DC29A93008BE4B8 /* AlignaTestTests */,
 				54DE58CA2DC29A93008BE4B8 /* AlignaTestUITests */,
+				B92EA3F92E8A0899008FEE30 /* Frameworks */,
 				54DE58B12DC29A91008BE4B8 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -152,6 +168,15 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		B92EA3F92E8A0899008FEE30 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				B92EA3FA2E8A0899008FEE30 /* WidgetKit.framework */,
+				B92EA3FC2E8A0899008FEE30 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -162,6 +187,7 @@
 				54DE58AC2DC29A91008BE4B8 /* Sources */,
 				54DE58AD2DC29A91008BE4B8 /* Frameworks */,
 				54DE58AE2DC29A91008BE4B8 /* Resources */,
+				B92EA4132E8A089A008FEE30 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
@@ -242,7 +268,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1630;
+				LastSwiftUpdateCheck = 1640;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
 					54DE58AF2DC29A91008BE4B8 = {

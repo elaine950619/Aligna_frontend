@@ -203,7 +203,7 @@ struct ContentView: View {
     @EnvironmentObject var viewModel: OnboardingViewModel
     
     @Environment(\.dismiss) private var dismiss
-    @State private var headerHeight: CGFloat = 0
+//    @State private var headerHeight: CGFloat = 0
     
     
     var body: some View {
@@ -214,6 +214,8 @@ struct ContentView: View {
         
                 
                 ScrollView(showsIndicators: false) {
+                    TimelineHeader(title: "Timeline") { dismiss() }
+                                            .padding(.bottom, 8)
                     
                     VStack(spacing: 24) {
                         // make room for the header
@@ -280,12 +282,12 @@ struct ContentView: View {
                     }
                     .padding(.top)
                 }
-                .safeAreaPadding(.top, headerHeight)
+//                .safeAreaPadding(.top, headerHeight)
             }
-            .safeAreaInset(edge: .top, spacing: -20) {
-                
-                TimelineHeader(title: "Timeline") { dismiss() }
-            }
+//            .safeAreaInset(edge: .top, spacing: -20) {
+//
+//                TimelineHeader(title: "Timeline") { dismiss() }
+//            }
 
             .toolbar(.hidden, for: .navigationBar)
         }

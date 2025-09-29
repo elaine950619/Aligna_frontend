@@ -2,32 +2,75 @@ import SwiftUI
 import Foundation
 import MapKit
 import CoreLocation
+import Combine
+import WidgetKit
 
-func getAddressFromCoordinate(_ coordinate: CLLocationCoordinate2D,
-                              completion: @escaping (String?) -> Void) {
+
+func getAddressFromCoordinate(
+    _ coordinate: CLLocationCoordinate2D,
+    preferredLocale: Locale = Locale(identifier: "en_US"),
+    completion: @escaping (String?) -> Void
+) {
+    let geocoder = CLGeocoder()
     let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
-    CLGeocoder().reverseGeocodeLocation(location) { placemarks, error in
-        guard error == nil else {
-            print("❌ 地址解析失败:", error!.localizedDescription)
-            completion(nil)
-            return
+
+    func humanReadable(from p: CLPlacemark) -> String? {
+        // 优先城市 → 区/县 → 省/州（都不行再尝试 name/country）
+        let candidates: [String?] = [
+            p.locality,
+            p.subLocality,
+            p.administrativeArea,
+            p.subAdministrativeArea,
+            p.name,
+            p.country
+        ]
+
+        // 选出第一个非空且不是坐标串的
+        if let picked = candidates.compactMap({ $0?.trimmingCharacters(in: .whitespacesAndNewlines) })
+            .first(where: { !$0.isEmpty && !isCoordinateLikeString($0) }) {
+            return picked
         }
-        if let p = placemarks?.first {
-            // pick a friendly name
-            let city = p.locality ?? p.administrativeArea ?? p.name
-            completion(city)
-        } else {
+        return nil
+    }
+
+    func reverse(allowRetry: Bool) {
+        geocoder.reverseGeocodeLocation(location, preferredLocale: preferredLocale) { placemarks, error in
+            if let p = placemarks?.first, let name = humanReadable(from: p) {
+                completion(name)
+                return
+            }
+            // 对“无结果”重试一次（网络/缓存偶发）
+            if let e = error as? CLError, e.code == .geocodeFoundNoResult, allowRetry {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    reverse(allowRetry: false)
+                }
+                return
+            }
+            // 其它错误或仍无结果：返回 nil（调用方用 Unknown 等兜底）
             completion(nil)
         }
     }
+
+    reverse(allowRetry: true)
 }
+
+func isCoordinateLikeString(_ s: String) -> Bool {
+    let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
+    // 允许前后空格、正负号、小数；不做经纬度范围校验，仅用于“像不像坐标”的判定
+    let pattern = #"^\s*-?\d{1,3}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?\s*$"#
+    return trimmed.range(of: pattern, options: .regularExpression) != nil
+}
+
+
 
 
 enum BootPhase {
     case loading
     case infoSplash
+    case onboarding   // ← 新增：需要走新手引导
     case main
 }
+
 
 func currentZodiacSign(for date: Date = Date()) -> String {
     let cal = Calendar(identifier: .gregorian)
@@ -136,6 +179,7 @@ struct LoadingView: View {
     @State private var dotPhase: CGFloat = 0
     @State private var bounce = false
     
+    
     @State private var showWelcome = false
     @State private var currentLocation: String = "Your Current Location"
     @State private var zodiacSign: String = ""
@@ -175,19 +219,24 @@ struct LoadingView: View {
 
                 // === Main content ===
                 VStack(spacing: 32) {
-                    // Logo + pulse-gentle
+                    let disk: CGFloat = 96
+                    // Logo
                     ZStack {
                         Circle()
                             .fill(Color.white)
                             .frame(width: 96, height: 96) // w-24 h-24
                             .shadow(color: .white.opacity(0.35), radius: 24, x: 0, y: 8)
-                            .scaleEffect(pulse ? 1.04 : 1.0)
-                            .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: pulse)
+//                            .scaleEffect(pulse ? 1.04 : 1.0)
+//                            .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: pulse)
                             .overlay(
-                                Image("logoImage") // ⬅️ put the same asset name you use on iOS
+                                Image("LogoImage")
                                     .resizable()
-                                    .scaledToFit()
-                                    .padding(12) // p-3
+                                    .renderingMode(.original)
+                                    .scaledToFill()
+                                    .frame(width: disk, height: disk) // bigger
+                                    .scaleEffect(1)
+                                    .mask(Circle())
+//                                    .overlay(Circle().stroke(.white.opacity(0.12), lineWidth: 1)) // optional rim
                             )
                     }
                     .onAppear {
@@ -277,6 +326,7 @@ struct LoadingView: View {
                     dotPhase = 1
                 }
             }
+            .preferredColorScheme(themeManager.preferredColorScheme)
         }
     }
 
@@ -308,22 +358,23 @@ struct WelcomeSplashView: View {
                 endRadius: 260
             )
             .allowsHitTesting(false)
-            
-            VStack{
-                
-            }
 
             VStack(spacing: 22) {
                 // Logo in white circle with glow
+                let disk: CGFloat = 96
                 ZStack {
                     Circle()
                         .fill(Color.white)
                         .frame(width: 84, height: 84)
                         .shadow(color: .white.opacity(0.35), radius: 22, x: 0, y: 8)
-                    Image("logoImage")
+                    Image("LogoImage")
                         .resizable()
-                        .scaledToFit()
-                        .frame(width: 56, height: 56)
+                        .renderingMode(.original)
+                        .scaledToFill()
+                        .frame(width: disk, height: disk) // bigger
+                        .scaleEffect(1)
+                        .mask(Circle())
+//                        .overlay(Circle().stroke(.white.opacity(0.12), lineWidth: 1))  //optional rim
                 }
 //                .padding(.top, 24)
 
@@ -397,6 +448,18 @@ struct FirstPageView: View {
     
     @AppStorage("lastRecommendationDate") var lastRecommendationDate: String = ""
     @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
+    @AppStorage("lastCurrentPlaceUpdate") var lastCurrentPlaceUpdate: String = ""
+    @AppStorage("todayFetchLock") private var todayFetchLock: String = ""  // 当天的拉取互斥锁
+    @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
+    @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
+    @State private var isFetchingToday: Bool = false
+
+    // 🔐 当天是否已经触发过一次“自动兜底重拉”
+    @AppStorage("todayAutoRefetchDone") private var todayAutoRefetchDone: String = ""
+    // 本次进程是否已经安排过 watchdog 计时器（避免重复安排）
+    @State private var autoRefetchScheduled = false
+
+
     
     @StateObject private var locationManager = LocationManager()
     @State private var recommendationTitles: [String: String] = [:]
@@ -437,7 +500,7 @@ struct FirstPageView: View {
                             
                             HStack(spacing: geometry.size.width * 0.04) {
                                 if isLoggedIn {
-                                    NavigationLink(destination: AccountDetailView()
+                                    NavigationLink(destination: AccountDetailView(viewModel: OnboardingViewModel())
                                         .environmentObject(starManager)
                                         .environmentObject(themeManager)) {
                                             Image("account")
@@ -448,7 +511,7 @@ struct FirstPageView: View {
                                                 .foregroundColor(themeManager.foregroundColor)
                                         }
                                 } else {
-                                    NavigationLink(destination: AccountDetailView()) {
+                                    NavigationLink(destination: AccountDetailView(viewModel: OnboardingViewModel())) {
                                         Image("account")
                                             .resizable()
                                             .renderingMode(.template)
@@ -519,43 +582,230 @@ struct FirstPageView: View {
                 }
                 .onAppear {
                     starManager.animateStar = true
-                    themeManager.updateTheme()
-                    
-                    let dateFormatter = DateFormatter()
-                    dateFormatter.dateFormat = "yyyy-MM-dd"
-                    let today = dateFormatter.string(from: Date())
-                    
-                    print("🧠 当前推荐：\(viewModel.recommendations)")
-                    
-                    if viewModel.recommendations.isEmpty || lastRecommendationDate != today {
-                        locationManager.requestLocation()
-                        fetchAndSaveRecommendationIfNeeded()
-                    } else {
-                        // ✅ 登录后推荐已存在时也补充 fetch 标题
-                        fetchAllRecommendationTitles()
-                    }
+                    themeManager.appBecameActive()
+                    // 首次拉取由 startInitialLoad() 统一调度；这里不再发拉取请求
+                    fetchAllRecommendationTitles()
                 }
+
                 .frame(width: geometry.size.width, height: geometry.size.height)
+                .preferredColorScheme(themeManager.preferredColorScheme)
             }
         }
         .navigationViewStyle(.stack)
     }
+
+    private func persistWidgetSnapshotFromViewModel() {
+//        // 你已有：viewModel.dailyMantra, recommendationTitles["Color"/"Place"/"Gemstone"/"Scent"]
+//        let snap = AlignaWidgetSnapshot(
+//            mantra: viewModel.dailyMantra.isEmpty ? "Find your flow." : viewModel.dailyMantra,
+//            colorTitle: recommendationTitles["Color"] ?? "Color",
+//            placeTitle: recommendationTitles["Place"] ?? "Place",
+//            gemstoneTitle: recommendationTitles["Gemstone"] ?? "Gemstone",
+//            scentTitle: recommendationTitles["Scent"] ?? "Scent"
+//        )
+//        AlignaWidgetStore.save(snap) // ↩︎ 写入 App Group + 刷新 Widget
+    }
+
     
+    // 冷启动只看“是否已登录 + 本地标记”来分流；不再在这里查 Firestore 决定是否强拉 Onboarding。
     private func startInitialLoad() {
-        // kick off location so we can resolve a nice city name for the splash
+        let user = Auth.auth().currentUser
+
+        // A) 未登录：展示 OnboardingOpeningPage（不是 Step1）
+        if user == nil {
+            // 清理可能残留的标记，确保进入的是 OpeningPage
+            shouldOnboardAfterSignIn = false
+            hasCompletedOnboarding = false
+            withAnimation(.easeInOut) { bootPhase = .onboarding } // ↓ 在 .onboarding 里会看到 OpeningPage
+            return
+        }
+
+        // B) 已登录 & 刚注册完需要走引导：进入 Step1
+        if shouldOnboardAfterSignIn && !hasCompletedOnboarding {
+            withAnimation(.easeInOut) { bootPhase = .onboarding } // ↓ 在 .onboarding 里会看到 Step1
+            return
+        }
+
+        // C) 其它情况：走正常首页启动
+        shouldOnboardAfterSignIn = false
+        proceedNormalBoot()
+    }
+    
+    // ====== FirstPageView 内新增 ======
+    private func hydrateBirthFromProfileIfNeeded(_ done: @escaping () -> Void) {
+        guard let uid = Auth.auth().currentUser?.uid else { done(); return }
+        let db = Firestore.firestore()
+        // 直接按固定 docId 查（配合上面的写入）
+        let ref = db.collection("users").document(uid)
+        ref.getDocument { snap, _ in
+            defer { done() }
+            guard let data = snap?.data() else { return }
+
+            // birth date
+            if let ts = data["birthday"] as? Timestamp {
+                viewModel.birth_date = ts.dateValue()
+            } else if let s = data["birthDate"] as? String, let d = ISO8601Calendar.date(from: s) {
+                viewModel.birth_date = d
+            }
+
+            // birth time
+            if let t = data["birthTime"] as? String, let d = timeToDateFlexible(t) {
+                viewModel.birth_time = d
+            }
+        }
+    }
+
+    // 原先 startInitialLoad 的主体逻辑移到这里（不修改其内容）
+    private func proceedNormalBoot() {
+        
+        startAutoRefetchWatchdog(delay: 8.0)
         locationManager.requestLocation()
 
-        // Kick off your usual recommendation flow.
-        // (It currently runs inside `fetchAndSaveRecommendationIfNeeded()` when main appears.
-        // We can trigger it here so the main page shows only after data is ready.)
-        // You can call your function directly if it doesn’t rely on being in main.
-        fetchAndSaveRecommendationIfNeeded()
+        let group = DispatchGroup()
 
-        // Wait until recommendations arrive (or timeout), then compute splash info.
-        waitUntilRecommendationsReady(timeout: 12) {
+        // FIX: 先把生日/时间从用户档案同步到 viewModel
+        group.enter()
+        hydrateBirthFromProfileIfNeeded { group.leave() }
+
+        group.enter()
+        ensureDailyCurrentPlaceSaved { group.leave() }
+
+        group.enter()
+        fetchAndSaveRecommendationIfNeeded()
+        waitUntilRecommendationsReady(timeout: 12) { group.leave() }
+
+        group.notify(queue: .main) {
             resolveSplashInfoAndAdvance()
         }
     }
+
+
+    private func ensureDailyCurrentPlaceSaved(completion: @escaping () -> Void) {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let today = df.string(from: Date())
+
+        // 当天已经写过了，直接过
+        if lastCurrentPlaceUpdate == today {
+            completion()
+            return
+        }
+
+        // 等待定位（最多等 8 秒）
+        let start = Date()
+        let waitLimit: TimeInterval = 8.0
+
+        func attempt() {
+            if let coord = locationManager.currentLocation {
+                // 有坐标 → 反地理解析城市名 → 写入 Firestore
+                getAddressFromCoordinate(coord) { city in
+                    let place = city ?? "Unknown"
+                    upsertUserCurrentPlace(place: place, coord: coord) { ok in
+                        if ok { lastCurrentPlaceUpdate = today }
+                        completion()
+                    }
+                }
+                return
+            }
+
+            // 超时兜底：没有坐标也尽量落一次（Unknown），不阻塞启动
+            if Date().timeIntervalSince(start) > waitLimit {
+                upsertUserCurrentPlace(place: "Unknown", coord: nil) { ok in
+                    if ok { lastCurrentPlaceUpdate = today }
+                    completion()
+                }
+                return
+            }
+
+            // 继续等
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { attempt() }
+        }
+
+        attempt()
+    }
+    private func upsertUserCurrentPlace(
+        place: String,
+        coord: CLLocationCoordinate2D?,
+        completion: @escaping (Bool) -> Void
+    ) {
+        guard let user = Auth.auth().currentUser else {
+            print("❌ 未登录，跳过写入 currentPlace")
+            completion(false)
+            return
+        }
+        let db = Firestore.firestore()
+
+        var fields: [String: Any] = ["currentPlace": place]
+        if let c = coord {
+            fields["currentLat"] = c.latitude
+            fields["currentLng"] = c.longitude
+        }
+
+        func write(to ref: DocumentReference) {
+            ref.setData(fields, merge: true) { err in
+                if let err = err {
+                    print("❌ 更新 currentPlace 失败：\(err.localizedDescription)")
+                    completion(false)
+                } else {
+                    print("✅ 已更新用户 currentPlace: \(place)")
+                    completion(true)
+                }
+            }
+        }
+
+        // 1) users 按 uid
+        db.collection("users").whereField("uid", isEqualTo: user.uid).limit(to: 1).getDocuments { s1, _ in
+            if let doc = s1?.documents.first { write(to: doc.reference); return }
+
+            // 2) user 按 uid
+            db.collection("user").whereField("uid", isEqualTo: user.uid).limit(to: 1).getDocuments { s2, _ in
+                if let doc2 = s2?.documents.first { write(to: doc2.reference); return }
+
+                // 3) users / user 按 email（如有）
+                if let email = user.email {
+                    db.collection("users").whereField("email", isEqualTo: email).limit(to: 1).getDocuments { s3, _ in
+                        if let d3 = s3?.documents.first { write(to: d3.reference); return }
+
+                        db.collection("user").whereField("email", isEqualTo: email).limit(to: 1).getDocuments { s4, _ in
+                            if let d4 = s4?.documents.first { write(to: d4.reference); return }
+
+                            // 4) 都没有 → 在 users 新建最小档案
+                            var payload = fields
+                            payload["uid"] = user.uid
+                            payload["email"] = email
+                            payload["createdAt"] = Timestamp()
+                            db.collection("users").addDocument(data: payload) { err in
+                                if let err = err {
+                                    print("❌ 创建用户文档失败：\(err.localizedDescription)")
+                                    completion(false)
+                                } else {
+                                    print("✅ 已创建用户文档并写入 currentPlace")
+                                    completion(true)
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // 没有 email：用 uid 最小化建档
+                    var payload = fields
+                    payload["uid"] = user.uid
+                    payload["createdAt"] = Timestamp()
+                    db.collection("users").addDocument(data: payload) { err in
+                        if let err = err {
+                            print("❌ 创建用户文档失败：\(err.localizedDescription)")
+                            completion(false)
+                        } else {
+                            print("✅ 已创建用户文档并写入 currentPlace")
+                            completion(true)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+
 
     /// Polls viewModel.recommendations until non-empty (or timeout)
     private func waitUntilRecommendationsReady(timeout: TimeInterval = 12, poll: TimeInterval = 0.2, onReady: @escaping () -> Void) {
@@ -601,7 +851,24 @@ struct FirstPageView: View {
                 startInitialLoad()
             })
             .ignoresSafeArea()
-
+            
+        case .onboarding:
+            NavigationStack {
+                if shouldOnboardAfterSignIn {
+                    // 注册后正式进入引导：Step1
+                    OnboardingStep1(viewModel: viewModel)
+                        .environmentObject(starManager)
+                        .environmentObject(themeManager)
+                        .navigationBarBackButtonHidden(true)
+                } else {
+                    // 冷启动未登录：先到 OpeningPage（包含 Sign Up / Log In）
+                    OnboardingOpeningPage()
+                        .environmentObject(starManager)
+                        .environmentObject(themeManager)
+                        .navigationBarBackButtonHidden(true)
+                }
+            }
+            
         case .infoSplash:
             WelcomeSplashView(location: splashLocation,
                               zodiac: splashZodiac,
@@ -623,158 +890,268 @@ struct FirstPageView: View {
 
     private func fetchAllRecommendationTitles() {
         let db = Firestore.firestore()
+
         for (rawCategory, rawDoc) in viewModel.recommendations {
-            // 1) 类别映射（白名单过滤）
-            guard let collection = firebaseCollectionName(for: rawCategory) else {
+            // 统一得到规范写法（如果已经是规范写法，也会直接返回自身）
+            guard let canon = canonicalCategory(from: rawCategory) ?? canonicalCategory(from: rawCategory.capitalized) ?? rawCategory as String? else {
                 print("⚠️ 跳过未知类别：\(rawCategory)")
                 continue
             }
-            // 2) 文档名清洗与校验
-            let documentName = sanitizeDocumentName(rawDoc)
-            guard !documentName.isEmpty else {
-                print("⚠️ 跳过空文档名（\(rawCategory)）")
+            guard let collection = firebaseCollectionName(for: canon) else {
+                print("⚠️ 未知集合映射：\(canon)")
                 continue
             }
-            // 3) Firestore 读取
+
+            let documentName = sanitizeDocumentName(rawDoc)
+            guard !documentName.isEmpty else {
+                print("⚠️ 跳过空文档名（\(canon)）")
+                continue
+            }
+
             db.collection(collection).document(documentName).getDocument { snapshot, error in
                 if let error = error {
-                    print("❌ 加载 \(rawCategory) 标题失败: \(error)")
+                    print("❌ 加载 \(canon) 标题失败: \(error)")
                     return
                 }
                 if let data = snapshot?.data(), let title = data["title"] as? String {
                     DispatchQueue.main.async {
-                        self.recommendationTitles[rawCategory] = title
+                        self.recommendationTitles[canon] = title // 以规范写法作键
                     }
                 } else {
-                    print("⚠️ \(rawCategory)/\(documentName) 无 title 字段或文档不存在")
+                    print("⚠️ \(canon)/\(documentName) 无 title 字段或文档不存在")
                 }
             }
         }
     }
-    
-    
-    
-    private func fetchAndSaveRecommendationIfNeeded() {
-        guard let userId = Auth.auth().currentUser?.uid else {
-            print("❌ 用户未登录，跳过获取推荐")
+
+    /// 启动“保底看门狗”：若 delay 秒后仍未拿到 mantra 或推荐，则强制走一次 FastAPI 重拉
+    private func startAutoRefetchWatchdog(delay: TimeInterval = 8.0) {
+        // 只安排一次定时器
+        guard !autoRefetchScheduled else { return }
+        autoRefetchScheduled = true
+        
+        let today = todayString()
+        // 当天已经触发过兜底，就不再重复
+        if todayAutoRefetchDone == today { return }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            // 条件：mantra 为空 或 推荐字典为空
+            let mantraEmpty = viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            let recsEmpty   = viewModel.recommendations.isEmpty
+            guard mantraEmpty || recsEmpty else {
+                print("🛡️ Watchdog: 数据已就绪，无需兜底")
+                return
+            }
+
+            print("🛡️ Watchdog 触发：超时仍未加载到数据，准备强制重拉 FastAPI")
+            forceRefetchDailyIfNotLocked()
+            todayAutoRefetchDone = today
+        }
+    }
+
+    /// 强制当日重拉（跳过“今日已有推荐”的判断），仍复用今日互斥锁与定位等待
+    private func forceRefetchDailyIfNotLocked() {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            print("❌ 未登录，无法强制重拉"); return
+        }
+        let today = todayString()
+        let docRef = todayDocRef(uid: uid, day: today)
+
+        // 若已有在途请求，就不再重复发
+        if todayFetchLock == today || isFetchingToday {
+            print("⏳ Watchdog: 今日请求已在进行中，跳过强制重拉")
             return
         }
-        
-        let db = Firestore.firestore()
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let today = dateFormatter.string(from: Date())
-        
-        db.collection("daily_recommendation")
-            .whereField("uid", isEqualTo: userId)
-            .whereField("createdAt", isEqualTo: today)
-            .getDocuments { snapshot, error in
-                if let error = error {
-                    print("❌ 查询推荐失败：\(error)")
-                    return
-                }
-                
-                guard let snapshot = snapshot else {
-                    print("❌ 查询 snapshot 为 nil")
-                    return
-                }
-                
-                if !snapshot.documents.isEmpty {
-                    print("📌 今日已有推荐，跳过生成")
-                    loadTodayRecommendation()
-                    lastRecommendationDate = today
-                    return
-                }
-                
-                // 👇 如果没有推荐，等定位获取后调用后端
-                if let coord = locationManager.currentLocation {
-                    fetchFromFastAPIAndSave(coord: coord, userId: userId, today: today)
-                } else {
-                    print("⏳ 等待定位完成后再发请求")
-                }
-            }
+
+        todayFetchLock = today
+        isFetchingToday = true
+
+        // 若还没拿到定位，先请求定位并复用统一的等待逻辑
+        if locationManager.currentLocation == nil {
+            locationManager.requestLocation()
+        }
+        waitForLocationThenRequest(uid: uid, today: today, docRef: docRef)
     }
+
     
-    private func fetchFromFastAPIAndSave(coord: CLLocationCoordinate2D, userId: String, today: String) {
+    // 当天字符串
+    private func todayString() -> String {
+        let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
+        return df.string(from: Date())
+    }
+
+    // 当天唯一 DocID：uid_yyyy-MM-dd
+    private func todayDocRef(uid: String, day: String) -> DocumentReference {
+        Firestore.firestore()
+            .collection("daily_recommendation")
+            .document("\(uid)_\(day)")
+    }
+
+    // 等待定位后只发一次请求（最多等 8 秒）
+    private func waitForLocationThenRequest(uid: String, today: String, docRef: DocumentReference) {
+        let start = Date()
+        let limit: TimeInterval = 8.0
+
+        func attempt() {
+            if let coord = locationManager.currentLocation {
+                fetchFromFastAPIAndSave(coord: coord, userId: uid, today: today, docRef: docRef)
+                return
+            }
+            if Date().timeIntervalSince(start) > limit {
+                print("⚠️ 超时仍未拿到坐标，本次放弃生成；稍后可重试")
+                todayFetchLock = ""  // 释放互斥锁
+                isFetchingToday = false
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: attempt)
+        }
+        attempt()
+    }
+
+    private func fetchAndSaveRecommendationIfNeeded() {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            print("❌ 用户未登录，跳过获取推荐"); return
+        }
+        let today = todayString()
+        let docRef = todayDocRef(uid: uid, day: today)
+
+        // 单日互斥：同一天只允许一条在途请求
+        if todayFetchLock == today || isFetchingToday {
+            print("⏳ 今日拉取已在进行或已加锁，跳过二次触发")
+            return
+        }
+
+        // 直接命中 docId 判断是否已有今日推荐（避免并发竞态）
+        docRef.getDocument { snap, err in
+            if let err = err {
+                print("❌ 查询今日推荐失败：\(err.localizedDescription)")
+                return
+            }
+            if (snap?.exists ?? false) {
+                print("📌 今日已有推荐（docId 命中），不重复生成")
+                let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
+                lastRecommendationDate = today
+                loadTodayRecommendation()
+                return
+            }
+
+            // 尚无今日记录 → 加锁并等待定位就绪后只发一次
+            todayFetchLock = today
+            isFetchingToday = true
+            if locationManager.currentLocation == nil {
+                locationManager.requestLocation()
+            }
+            waitForLocationThenRequest(uid: uid, today: today, docRef: docRef)
+        }
+    }
+
+    
+    private func fetchFromFastAPIAndSave(
+        coord: CLLocationCoordinate2D,
+        userId: String,
+        today: String,
+        docRef: DocumentReference
+    ) {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let birthDateString = dateFormatter.string(from: viewModel.birth_date)
-        
+
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "HH:mm"
         let birthTimeString = timeFormatter.string(from: viewModel.birth_time)
-        
+
         let payload: [String: Any] = [
             "birth_date": birthDateString,
             "birth_time": birthTimeString,
             "latitude": coord.latitude,
             "longitude": coord.longitude
         ]
-        
+
         guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
             print("❌ 无效的 FastAPI URL")
+            todayFetchLock = ""; isFetchingToday = false
             return
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: payload)
         } catch {
             print("❌ JSON 序列化失败: \(error)")
+            todayFetchLock = ""; isFetchingToday = false
             return
         }
-        
+
         URLSession.shared.dataTask(with: request) { data, response, error in
+            defer {                    // 不管成功失败都释放“今日锁”
+                DispatchQueue.main.async {
+                    todayFetchLock = ""
+                    isFetchingToday = false
+                }
+            }
+
             if let error = error {
                 print("❌ FastAPI 请求失败: \(error.localizedDescription)")
                 return
             }
-            
-            guard let data = data,
-                  let rawString = String(data: data, encoding: .utf8),
-                  let jsonData = rawString.data(using: .utf8) else {
-                print("❌ FastAPI 响应格式错误")
+            guard let http = response as? HTTPURLResponse else {
+                print("❌ 非 HTTP 响应"); return
+            }
+            guard (200...299).contains(http.statusCode) else {
+                let body = String(data: data ?? Data(), encoding: .utf8) ?? "<no body>"
+                print("❌ 非 2xx：\(http.statusCode), body=\(body)")
                 return
             }
-            
+            guard let data = data else { print("❌ 空数据"); return }
+
             do {
-                if let parsed = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+                if let parsed = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let recs = parsed["recommendations"] as? [String: String],
                    let mantra = parsed["mantra"] as? String {
+
                     DispatchQueue.main.async {
-                        viewModel.recommendations = recs
+                        // ✅ 把后端 recommendations 的 key 统一成规范写法
+                        let normalized: [String: String] = recs.reduce(into: [:]) { acc, kv in
+                            if let canon = canonicalCategory(from: kv.key) {
+                                acc[canon] = sanitizeDocumentName(kv.value)
+                            }
+                        }
+
+                        // 更新本地
+                        viewModel.recommendations = normalized
                         viewModel.dailyMantra = mantra
                         lastRecommendationDate = today
-                        
-                        // ⏱ 添加这句代码，确保写入后再 fetch title
+
+                        // 先刷新标题（UI 需要）
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             fetchAllRecommendationTitles()
                         }
-                        
-                        var recommendationData: [String: Any] = recs
+
+                        // 幂等：固定 docId = uid_yyyy-MM-dd，setData(merge:)
+                        var recommendationData: [String: Any] = normalized   // ← 用规范写法保存
                         recommendationData["uid"] = userId
                         recommendationData["createdAt"] = today
                         recommendationData["mantra"] = mantra
-                        
-                        let db = Firestore.firestore()
-                        db.collection("daily_recommendation").addDocument(data: recommendationData) { error in
-                            if let error = error {
-                                print("❌ 保存 daily_recommendation 失败：\(error)")
+
+                        docRef.setData(recommendationData, merge: true) { err in
+                            if let err = err {
+                                print("❌ 保存 daily_recommendation 失败：\(err)")
                             } else {
-                                print("✅ 推荐结果已保存")
+                                print("✅ 今日推荐已保存（幂等写入）")
                             }
                         }
+                        persistWidgetSnapshotFromViewModel()
                     }
-                    
                 }
             } catch {
                 print("❌ FastAPI 响应解析失败: \(error)")
+                print("↳ raw body:", String(data: data ?? Data(), encoding: .utf8) ?? "<binary>")
             }
         }.resume()
     }
+
     
     
     
@@ -801,7 +1178,7 @@ struct FirstPageView: View {
                             .multilineTextAlignment(.center)
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
-                            .padding(.top, 0.2) // ⬅️ subtle spacing only
+                            .padding(.top, 1) // ⬅️ subtle spacing only
                         
                         // 类别标题（和上面稍微拉开）
                         Text(title)
@@ -869,12 +1246,12 @@ struct FirstPageView: View {
             print("❌ 未登录，无法获取推荐")
             return
         }
-        
+
         let db = Firestore.firestore()
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let today = dateFormatter.string(from: Date())
-        
+
         db.collection("daily_recommendation")
             .whereField("uid", isEqualTo: userId)
             .whereField("createdAt", isEqualTo: today)
@@ -883,38 +1260,57 @@ struct FirstPageView: View {
                     print("❌ 查询推荐失败：\(error)")
                     return
                 }
-                
+
                 guard let documents = snapshot?.documents, let doc = documents.first else {
                     print("⚠️ 今日暂无推荐数据")
                     return
                 }
-                
+
                 var recs: [String: String] = [:]
                 var fetchedMantra = ""
-                
+
                 for (key, value) in doc.data() {
                     if key == "mantra", let mantraText = value as? String {
                         fetchedMantra = mantraText
                         continue
                     }
                     if key == "uid" || key == "createdAt" { continue }
-                    if allowedCategories.contains(key), let str = value as? String {
-                        recs[key] = sanitizeDocumentName(str)
+
+                    // ✅ 关键：把后端 key 做大小写无关匹配 → 规范写法
+                    if let canon = canonicalCategory(from: key), let str = value as? String {
+                        recs[canon] = sanitizeDocumentName(str)
                     } else {
                         print("ℹ️ 忽略非推荐字段或未知类别：\(key)")
                     }
                 }
-                
+
                 DispatchQueue.main.async {
-                    self.viewModel.recommendations = recs
+                    self.viewModel.recommendations = recs   // 用规范写法作字典 key
                     self.viewModel.dailyMantra = fetchedMantra
-                    fetchAllRecommendationTitles()
-                    
+                    fetchAllRecommendationTitles()           // 读取标题时就能命中正确集合
+                    persistWidgetSnapshotFromViewModel()
                     print("✅ 成功加载今日推荐：\(recs)")
                 }
             }
-        
     }
+
+    // === Case-insensitive category normalization ===
+    // 后端可能返回 "color" / "Color" / "COLOR"；统一映射到规范写法
+    private let categoryCanonicalMap: [String: String] = [
+        "place": "Place",
+        "gemstone": "Gemstone",
+        "color": "Color",
+        "scent": "Scent",
+        "activity": "Activity",
+        "sound": "Sound",
+        "career": "Career",
+        "relationship": "Relationship"
+    ]
+
+    private func canonicalCategory(from raw: String) -> String? {
+        categoryCanonicalMap[raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()]
+    }
+
     // ✅ 仅允许的类别白名单
     private let allowedCategories: Set<String> = [
         "Place", "Gemstone", "Color", "Scent",
@@ -1120,19 +1516,20 @@ struct OnboardingOpeningPage: View {
                 let minLength = min(geometry.size.width, geometry.size.height)
                 
                 ZStack {
-                    AppBackgroundView(alwaysNight: true)
+                    AppBackgroundView(mode: .night)
                         .environmentObject(starManager)
+                        .environmentObject(themeManager)
                     
                     VStack(spacing: minLength * 0.04) {
                         Spacer()
                         
                         Text("Aligna")
                             .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.12))
-                            .foregroundColor(themeManager.foregroundColor)
+                            .foregroundColor(themeManager.fixedNightTextPrimary)
                         
                         Text("FIND YOUR FLOW")
                             .font(.subheadline)
-                            .foregroundColor(themeManager.foregroundColor.opacity(0.7))
+                            .foregroundColor(themeManager.fixedNightTextSecondary)
                         
                         Image("openingSymbol")
                             .resizable()
@@ -1141,7 +1538,7 @@ struct OnboardingOpeningPage: View {
                         
                         Spacer()
                         
-                        // Sign Up
+                        // Sign Up（按钮本身用白底黑字，保持原样）
                         NavigationLink(destination: RegisterPageView()
                             .environmentObject(starManager)
                             .environmentObject(themeManager)) {
@@ -1156,7 +1553,7 @@ struct OnboardingOpeningPage: View {
                                     .padding(.horizontal, minLength * 0.1)
                             }
 
-                        // Log In
+                        // Log In（按钮文案保留白色）
                         NavigationLink(destination: AccountPageView()
                             .environmentObject(starManager)
                             .environmentObject(themeManager)
@@ -1178,19 +1575,17 @@ struct OnboardingOpeningPage: View {
 
                         Text("Welcome to the Journal of Aligna")
                             .font(.footnote)
-                            .foregroundColor(themeManager.foregroundColor.opacity(0.6))
+                            .foregroundColor(themeManager.fixedNightTextTertiary)
                             .padding(.top, 10)
                         
                         Spacer()
                     }
                     .padding(.bottom, geometry.size.height * 0.05)
+                    .preferredColorScheme(.dark)
                 }
             }
         }
-        .onAppear {
-            starManager.animateStar = true
-            themeManager.isNight = true
-        }
+        .onAppear { starManager.animateStar = true }
         .navigationBarBackButtonHidden(true)
     }
 }
@@ -1215,11 +1610,16 @@ struct RegisterPageView: View {
     @State private var navigateToOnboarding = false
     @State private var navigateToLogin = false
     @State private var currentNonce: String? = nil
+    
+    @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
+    @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
+    @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
 
-    // 🔹 入场动画控制
+
+    // 入场动画控制
     @State private var showIntro = false
 
-    // 🔹 焦点控制（只高亮当前字段）
+    // 焦点控制
     @FocusState private var registerFocus: RegisterField?
     private enum RegisterField { case email, password }
 
@@ -1235,8 +1635,9 @@ struct RegisterPageView: View {
                 let socialGap   = minL * 0.035
 
                 ZStack {
-                    AppBackgroundView(alwaysNight: true)
+                    AppBackgroundView(mode: .night)
                         .environmentObject(starManager)
+                        .environmentObject(themeManager)
 
                     VStack(spacing: 0) {
                         // 顶部：返回 + 标题
@@ -1245,7 +1646,7 @@ struct RegisterPageView: View {
                                 Button(action: { dismiss() }) {
                                     Image(systemName: "chevron.left")
                                         .font(.title2)
-                                        .foregroundColor(themeManager.foregroundColor)
+                                        .foregroundColor(themeManager.fixedNightTextPrimary)
                                         .padding(10)
                                         .background(Color.white.opacity(0.1))
                                         .clipShape(Circle())
@@ -1256,14 +1657,14 @@ struct RegisterPageView: View {
 
                             VStack(spacing: 8) {
                                 AlignaHeading(
-                                    textColor: themeManager.foregroundColor,
+                                    textColor: themeManager.fixedNightTextPrimary,
                                     show: $showIntro,
                                     fontSize: minL * 0.12,
                                     letterSpacing: minL * 0.005
                                 )
                                 Text("Create Account")
                                     .font(.custom("PlayfairDisplay-Regular", size: 28))
-                                    .foregroundColor(themeManager.foregroundColor.opacity(0.9))
+                                    .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.9))
                             }
                             .padding(.top, h * 0.01)
                             .staggered(1, show: $showIntro)
@@ -1276,7 +1677,7 @@ struct RegisterPageView: View {
                         // 表单
                         VStack(spacing: fieldGap) {
 
-                            // Email 外壳承担入场动画；内核承担焦点高亮
+                            // Email
                             Group {
                                 TextField("Email", text: $email)
                                     .textContentType(.emailAddress)
@@ -1286,11 +1687,11 @@ struct RegisterPageView: View {
                                     .padding()
                                     .background(Color.white.opacity(0.1))
                                     .cornerRadius(14)
-                                    .foregroundColor(themeManager.foregroundColor)
+                                    .foregroundColor(themeManager.fixedNightTextPrimary)
                                     .focused($registerFocus, equals: .email)
                                     .focusGlow(
                                         active: registerFocus == .email,
-                                        color: themeManager.foregroundColor,
+                                        color: themeManager.fixedNightTextPrimary,
                                         lineWidth: 2.2,
                                         cornerRadius: 14
                                     )
@@ -1300,16 +1701,17 @@ struct RegisterPageView: View {
                             .staggered(2, show: $showIntro)
                             .animation(nil, value: registerFocus)
 
+                            // Password
                             Group {
                                 SecureField("Password", text: $password)
                                     .padding()
                                     .background(Color.white.opacity(0.1))
                                     .cornerRadius(14)
-                                    .foregroundColor(themeManager.foregroundColor)
+                                    .foregroundColor(themeManager.fixedNightTextPrimary)
                                     .focused($registerFocus, equals: .password)
                                     .focusGlow(
                                         active: registerFocus == .password,
-                                        color: themeManager.foregroundColor,
+                                        color: themeManager.fixedNightTextPrimary,
                                         lineWidth: 2.2,
                                         cornerRadius: 14
                                     )
@@ -1323,7 +1725,7 @@ struct RegisterPageView: View {
                                     .font(.headline)
                                     .padding()
                                     .frame(maxWidth: .infinity)
-                                    .background(themeManager.foregroundColor)
+                                    .background(themeManager.fixedNightTextPrimary)
                                     .foregroundColor(.black)
                                     .cornerRadius(14)
                             }
@@ -1337,21 +1739,46 @@ struct RegisterPageView: View {
                         VStack(spacing: socialGap) {
                             Text("Or register with")
                                 .font(.footnote)
-                                .foregroundColor(themeManager.foregroundColor.opacity(0.7))
+                                .foregroundColor(themeManager.fixedNightTextSecondary)
                                 .staggered(5, show: $showIntro)
 
                             HStack(spacing: minL * 0.10) {
                                 // Google
                                 Button(action: {
+                                    // ① 预设标记（你原有逻辑，保留）
+                                    hasCompletedOnboarding = false
+                                    isLoggedIn = false
+                                    shouldOnboardAfterSignIn = true
+
+                                    // ② 自检：没过就给出友好提示并 return
+                                    if !GoogleSignInDiagnostics.preflight(context: "RegisterPageView.GoogleButton") {
+                                        alertMessage = """
+                                        Google Sign-In 配置未就绪：
+                                        • 请确认 Info.plist 的 URL Types 中已添加 REVERSED_CLIENT_ID
+                                        • 请确认 GoogleService-Info.plist 属于 App 主 target
+                                        • 请在可见页面触发登录
+                                        """
+                                        showAlert = true
+                                        return
+                                    }
+
+                                    // ③ 通过预检 → 执行你原有的注册逻辑
                                     handleGoogleFromRegister(
-                                        onNewUserGoOnboarding: { navigateToOnboarding = true },
+                                        onNewUserGoOnboarding: {
+                                            shouldOnboardAfterSignIn = true
+                                            navigateToOnboarding = true
+                                        },
                                         onExistingUserGoLogin: { msg in
+                                            shouldOnboardAfterSignIn = false
                                             alertMessage = msg; showAlert = true
                                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                                                 navigateToLogin = true
                                             }
                                         },
-                                        onError: { message in alertMessage = message; showAlert = true }
+                                        onError: { message in
+                                            shouldOnboardAfterSignIn = false
+                                            alertMessage = message; showAlert = true
+                                        }
                                     )
                                 }) {
                                     Image("googleIcon")
@@ -1371,26 +1798,36 @@ struct RegisterPageView: View {
                                         currentNonce = nonce
                                         request.requestedScopes = [.fullName, .email]
                                         request.nonce = sha256(nonce)
+                                        // 进入 Apple 注册流程也先打上标记
+                                        hasCompletedOnboarding = false
+                                        isLoggedIn = false
+                                        shouldOnboardAfterSignIn = true
                                     },
                                     onCompletion: { result in
                                         handleAppleFromRegister(
                                             result: result,
                                             rawNonce: currentNonce ?? "",
-                                            onNewUserGoOnboarding: { navigateToOnboarding = true },
+                                            onNewUserGoOnboarding: {
+                                                shouldOnboardAfterSignIn = true
+                                                navigateToOnboarding = true
+                                            },
                                             onExistingUserGoLogin: { msg in
+                                                shouldOnboardAfterSignIn = false
                                                 alertMessage = msg; showAlert = true
                                                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                                                     navigateToLogin = true
                                                 }
                                             },
                                             onError: { message in
+                                                shouldOnboardAfterSignIn = false
                                                 alertMessage = message; showAlert = true
                                             }
                                         )
                                     }
                                 )
+
                                 .frame(width: 160, height: 50)
-                                .signInWithAppleButtonStyle(themeManager.foregroundColor == .black ? .white : .black)
+                                .signInWithAppleButtonStyle(.black) // 固定黑色样式更稳
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                                 .staggered(7, show: $showIntro)
                             }
@@ -1399,8 +1836,8 @@ struct RegisterPageView: View {
 
                         Spacer(minLength: h * 0.08)
                     }
-                    // 保险丝：阻断布局隐式动画
-                    .transaction { $0.animation = nil }
+                    .preferredColorScheme(.dark)
+                    .transaction { $0.animation = nil } // 阻断布局隐式动画
                 }
                 .alert(isPresented: $showAlert) {
                     Alert(title: Text("Notice"),
@@ -1419,14 +1856,12 @@ struct RegisterPageView: View {
                         .environmentObject(viewModel)
                 }
                 .onAppear {
-                    themeManager.isNight = true
-                    // 入场动画稍后启动
                     showIntro = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { showIntro = true }
-                    // 默认聚焦放在入场动画之后，避免“抢镜”
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
                         registerFocus = .email
                     }
+                    GoogleSignInDiagnostics.run(context: "RegisterPageView.onAppear")
                 }
                 .onDisappear { showIntro = false }
                 .navigationBarBackButtonHidden(true)
@@ -1434,7 +1869,7 @@ struct RegisterPageView: View {
         }
     }
 
-    // MARK: - Email & Password 注册（维持你的原有逻辑）
+    // MARK: - Email & Password 注册（保留你的原逻辑）
     private func registerWithEmailPassword() {
         guard !email.isEmpty, !password.isEmpty else {
             alertMessage = "Please fill in all fields."
@@ -1471,7 +1906,6 @@ struct RegisterPageView: View {
         }
     }
 }
-
 import SwiftUI
 import MapKit
 
@@ -1518,6 +1952,10 @@ struct OnboardingStep1: View {
     @ObservedObject var viewModel: OnboardingViewModel
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var starManager: StarAnimationManager
+    
+    @State private var goOpening = false
+
 
     private let panelBG = Color.white.opacity(0.08)
     private let stroke   = Color.white.opacity(0.25)
@@ -1539,11 +1977,11 @@ struct OnboardingStep1: View {
             let minLength = min(geometry.size.width, geometry.size.height)
 
             ZStack {
-                AppBackgroundView(alwaysNight: true)
-
+                AppBackgroundView(mode: .night)
+                    .environmentObject(starManager)
+                    .environmentObject(themeManager)
                 ScrollView {
                     VStack(spacing: minLength * 0.045) {
-
                         // 顶部
                         AlignaTopHeader()
 
@@ -1719,11 +2157,20 @@ struct OnboardingStep1: View {
                         .padding(.bottom, 24)
                     }
                 }
+                .safeAreaInset(edge: .top) {
+                    Color.clear
+                        .frame(height: geometry.safeAreaInsets.top + 8)
+                        .allowsHitTesting(false)
+                }
+                // 给底部 Home 指示条留点空间，手感更好
+                .safeAreaInset(edge: .bottom) {
+                    Color.clear
+                        .frame(height: max(12, geometry.safeAreaInsets.bottom))
+                        .allowsHitTesting(false)
+                }
             }
+            .preferredColorScheme(.dark)
             .onAppear {
-                themeManager.isNight = true
-                // 如需默认聚焦：同样延迟到入场动画（若有）之后
-                // DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { step1Focus = .nickname }
             }
         }
     }
@@ -1759,6 +2206,7 @@ struct OnboardingStep2: View {
     @ObservedObject var viewModel: OnboardingViewModel
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var starManager: StarAnimationManager
 
     // 弹窗控制
     @State private var showDatePickerSheet = false
@@ -1786,7 +2234,9 @@ struct OnboardingStep2: View {
             let minLength = min(geometry.size.width, geometry.size.height)
 
             ZStack {
-                AppBackgroundView(alwaysNight: true)
+                AppBackgroundView(mode: .night)
+                    .environmentObject(starManager)
+                    .environmentObject(themeManager)
 
                 VStack(spacing: minLength * 0.05) {
                     // ✅ 顶部与 Step1/Step3 完全一致
@@ -1877,10 +2327,10 @@ struct OnboardingStep2: View {
                     .padding(.horizontal, geometry.size.width * 0.1)
                     .padding(.bottom, 30)
                 }
+                .preferredColorScheme(.dark)
                 .padding(.horizontal)
             }
             .onAppear {
-                themeManager.isNight = true
                 // 默认值兜底，避免首次为空显示异常
                 if viewModel.birth_date.timeIntervalSince1970 == 0 {
                     viewModel.birth_date = Date()
@@ -2003,8 +2453,9 @@ struct OnboardingStep3: View {
 
     var body: some View {
         ZStack {
-            AppBackgroundView()
+            AppBackgroundView(mode: .night)
                 .environmentObject(starManager)
+                .environmentObject(themeManager)
 
             ScrollView {
                 VStack(spacing: 24) {
@@ -2101,6 +2552,7 @@ struct OnboardingStep3: View {
                 Spacer()
             }
         }
+        .preferredColorScheme(.dark)
         .navigationBarBackButtonHidden(true)
     }
 
@@ -2257,37 +2709,42 @@ struct FlowLayout: Layout {
 
 
 
+import CoreLocation
+import Combine
+
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     @Published var currentLocation: CLLocationCoordinate2D?
     @Published var locationStatus: CLAuthorizationStatus?
-    
+
     override init() {
         super.init()
         manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+        manager.distanceFilter = 25   // 25m 再更新，减少抖动
     }
-    
+
     func requestLocation() {
         manager.requestWhenInUseAuthorization()
-        manager.startUpdatingLocation()
+        // 单次请求即可，系统会在拿到最新定位后回调一次
+        manager.requestLocation()
     }
-    
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        if let location = locations.first {
-            DispatchQueue.main.async {
-                self.currentLocation = location.coordinate
-            }
-            manager.stopUpdatingLocation()
-        }
-    }
-    
+
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        self.locationStatus = manager.authorizationStatus
-        if locationStatus == .authorizedWhenInUse || locationStatus == .authorizedAlways {
-            manager.startUpdatingLocation()
+        locationStatus = manager.authorizationStatus
+        switch manager.authorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            manager.requestLocation()
+        default:
+            break
         }
     }
-    
+
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let last = locations.last else { return }
+        DispatchQueue.main.async { self.currentLocation = last.coordinate }
+    }
+
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         print("❌ 获取位置失败: \(error.localizedDescription)")
     }
@@ -2312,8 +2769,12 @@ struct OnboardingFinalStep: View {
     @ObservedObject var viewModel: OnboardingViewModel
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
+    @Environment(\.dismiss) private var dismiss
 
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding = false
+    @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
+    @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
+
 
     // 位置 & 流程
     @StateObject private var locationManager = LocationManager()
@@ -2331,14 +2792,20 @@ struct OnboardingFinalStep: View {
         GeometryReader { geo in
             let minL = min(geo.size.width, geo.size.height)
 
+            // ===== 尺寸与间距（确保副标题 < 信息字体） =====
+            let infoFontSize = max(18, minL * 0.046)           // 信息行字体（略大于 17，随屏变化）
+            let subtitleFontSize = max(16, minL * 0.038)       // 副标题更小，始终 < infoFontSize
+            let listItemSpacing = max(13, minL * 0.055)        // 信息项之间的垂直间距：更大
+            let innerLineSpacing = max(3, minL * 0.016)        // 单个信息项内的行间距（多行时更松）
+
             ZStack {
                 // 夜空背景（与 Step1~3 一致）
-                AppBackgroundView(alwaysNight: true)
+                AppBackgroundView(mode: .night)
                     .environmentObject(starManager)
+                    .environmentObject(themeManager)
 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: minL * 0.04) {
-
+                    VStack(spacing: minL * 0.048) {
                         // 顶部：Logo + “Aligna”（逐字母入场）
                         VStack(spacing: 12) {
                             if let _ = UIImage(named: "alignaSymbol") {
@@ -2355,7 +2822,7 @@ struct OnboardingFinalStep: View {
                             }
 
                             AlignaHeading(
-                                textColor: themeManager.foregroundColor,
+                                textColor: .white,
                                 show: $showIntro,
                                 text: "Aligna",
                                 fontSize: minL * 0.12,
@@ -2367,37 +2834,57 @@ struct OnboardingFinalStep: View {
                         }
                         .padding(.top, minL * 0.06)
 
-                        // 小副标题
+                        // ⬇️ 小副标题：明显小于信息字体
                         Text("Confirm your information")
-                            .font(.custom("PlayfairDisplay-Regular", size: minL * 0.05))
-                            .foregroundColor(themeManager.foregroundColor.opacity(0.9))
-                            .multilineTextAlignment(.center)
+                            .font(.custom("PlayfairDisplay-Regular", size: subtitleFontSize))
+                            .foregroundColor(.white.opacity(0.95))
+                            .kerning(minL * 0.0005)
                             .staggered(1, show: $showIntro)
 
-                        // 信息条目（用 emoji 当图标，参考你给的图）
-                        VStack(alignment: .leading, spacing: minL * 0.022) {
+                        // 信息条目：更大的项间距 + 更松的行间距
+                        VStack(alignment: .leading, spacing: listItemSpacing) {
+                            bulletRow(
+                                emoji: "👤",
+                                title: "Nickname",
+                                value: viewModel.nickname,
+                                fontSize: infoFontSize,
+                                lineSpacing: innerLineSpacing
+                            )
+                            .staggered(2, show: $showIntro)
 
-                            bulletRow(emoji: "👤",
-                                      text: "Nickname: \(viewModel.nickname)")
-                                .staggered(2, show: $showIntro)
+                            bulletRow(
+                                emoji: "⚧️",
+                                title: "Gender",
+                                value: viewModel.gender,
+                                fontSize: infoFontSize,
+                                lineSpacing: innerLineSpacing
+                            )
+                            .staggered(3, show: $showIntro)
 
-                            bulletRow(emoji: "⚧️",
-                                      text: "Gender: \(viewModel.gender)")
-                                .staggered(3, show: $showIntro)
+                            bulletRow(
+                                emoji: "📅",
+                                title: "Birthday",
+                                value: viewModel.birth_date.formatted(.dateTime.year().month().day()),
+                                fontSize: infoFontSize,
+                                lineSpacing: innerLineSpacing
+                            )
+                            .staggered(4, show: $showIntro)
 
-                            bulletRow(emoji: "📅",
-                                      text: "Birthday: \(viewModel.birth_date.formatted(.dateTime.year().month().day()))")
-                                .staggered(4, show: $showIntro)
-
-                            bulletRow(emoji: "⏰",
-                                      text: "Time of Birth: \(viewModel.birth_time.formatted(date: .omitted, time: .shortened))")
-                                .staggered(5, show: $showIntro)
+                            bulletRow(
+                                emoji: "⏰",
+                                title: "Time of Birth",
+                                value: viewModel.birth_time.formatted(date: .omitted, time: .shortened),
+                                fontSize: infoFontSize,
+                                lineSpacing: innerLineSpacing
+                            )
+                            .staggered(5, show: $showIntro)
 
                             bulletRow(
                                 emoji: "📍",
-                                text: viewModel.currentPlace.isEmpty
-                                    ? locationMessage
-                                    : "Your Current Location: \(viewModel.currentPlace)"
+                                title: "Your Current Location",
+                                value: viewModel.currentPlace.isEmpty ? locationMessage : viewModel.currentPlace,
+                                fontSize: infoFontSize,
+                                lineSpacing: innerLineSpacing
                             )
                             .staggered(6, show: $showIntro)
                         }
@@ -2406,12 +2893,12 @@ struct OnboardingFinalStep: View {
                         // Loading
                         if isLoading {
                             ProgressView("Loading, please wait...")
-                                .foregroundColor(themeManager.foregroundColor)
+                                .foregroundColor(.white)
                                 .padding(.top, 6)
                                 .staggered(7, show: $showIntro)
                         }
 
-                        // 确认按钮（与 Step1~3 样式一致）
+                        // ✅ 确认按钮（白底 + 黑字，与 Step1~3 一致）
                         Button {
                             guard !isLoading else { return }
                             isLoading = true
@@ -2421,7 +2908,7 @@ struct OnboardingFinalStep: View {
                                 .font(.headline)
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(themeManager.foregroundColor)
+                                .background(Color.white)
                                 .foregroundColor(.black)
                                 .cornerRadius(16)
                                 .shadow(color: .white.opacity(0.15), radius: 8, x: 0, y: 4)
@@ -2432,10 +2919,7 @@ struct OnboardingFinalStep: View {
 
                         // 返回（与 Step1~3 一致）
                         Button {
-                            // 交给上级导航返回
-                            //（FinalStep 通常从 Step3 进入，直接 pop 即可）
-                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
-                                                            to: nil, from: nil, for: nil)
+                            dismiss()
                         } label: {
                             Text("Back")
                                 .font(.headline)
@@ -2455,11 +2939,9 @@ struct OnboardingFinalStep: View {
                     }
                 }
             }
+            .preferredColorScheme(.dark)
             .onAppear {
-                themeManager.isNight = true
                 starManager.animateStar = true
-
-                // 入场动画启动
                 showIntro = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { showIntro = true }
 
@@ -2500,18 +2982,28 @@ struct OnboardingFinalStep: View {
                     .navigationBarBackButtonHidden(true)
             }
         }
+        .navigationBarBackButtonHidden(true)
     }
 
-    // MARK: - 单行条目（emoji + 文本）
-    private func bulletRow(emoji: String, text: String) -> some View {
+    // MARK: - 单行条目（emoji + 斜体标题 + 正文字），支持传入字体与行距
+    private func bulletRow(emoji: String, title: String, value: String, fontSize: CGFloat, lineSpacing: CGFloat) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Text(emoji)
                 .font(.system(size: 18))
                 .frame(width: 24, alignment: .center)
-            Text(text)
-                .font(.custom("PlayfairDisplay-Regular", size: 17))
-                .foregroundColor(themeManager.foregroundColor)
-                .fixedSize(horizontal: false, vertical: true)
+
+            // 组合文本：title 斜体，value 正常体；同一字号，内部行距更松
+            (
+                Text("\(title): ")
+                    .italic()
+                    .font(.custom("PlayfairDisplay-Regular", size: fontSize))
+                +
+                Text(value)
+                    .font(.custom("PlayfairDisplay-Regular", size: fontSize))
+            )
+            .foregroundColor(.white)
+            .lineSpacing(lineSpacing) // ⬅️ 单项内部行距（多行时生效）
+            .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -2542,23 +3034,23 @@ struct OnboardingFinalStep: View {
         }
 
         let db = Firestore.firestore()
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "HH:mm"
 
+        // 直接从选择的日期/时间生成存储值
+        let dateFormatter = DateFormatter(); dateFormatter.dateFormat = "yyyy-MM-dd"
+        let timeFormatter = DateFormatter(); timeFormatter.dateFormat = "HH:mm"
         let birthDateString = dateFormatter.string(from: viewModel.birth_date)
         let birthTimeString = timeFormatter.string(from: viewModel.birth_time)
 
         let lat = viewModel.currentCoordinate?.latitude ?? 0
         let lng = viewModel.currentCoordinate?.longitude ?? 0
 
-        let data: [String: Any] = [
+        // ✅ 改为 var，后面可以追加字段
+        var data: [String: Any] = [
             "uid": userId,
             "nickname": viewModel.nickname,
             "gender": viewModel.gender,
             "relationshipStatus": viewModel.relationshipStatus,
-            "birthDate": birthDateString,
+            "birthDate": birthDateString,          // 兼容旧字段（字符串）
             "birthTime": birthTimeString,
             "birthPlace": viewModel.birthPlace,
             "currentPlace": viewModel.currentPlace,
@@ -2569,16 +3061,25 @@ struct OnboardingFinalStep: View {
             "createdAt": Timestamp()
         ]
 
-        db.collection("users").addDocument(data: data) { error in
+        // 可选：同时写一个 Timestamp 版本，便于 AccountDetail 直接用
+        // 只保留日期部分也可以：let onlyDay = Calendar.current.startOfDay(for: viewModel.birth_date)
+        data["birthday"] = Timestamp(date: viewModel.birth_date)
+
+        // ✅ 声明 ref（固定 docId，避免重复）
+        let ref = db.collection("users").document(userId)
+        ref.setData(data, merge: true) { error in
             if let error = error {
-                print("❌ Firebase 上传失败: \(error)")
+                print("❌ Firebase 写入失败: \(error)")
             } else {
-                print("✅ 用户信息已保存")
+                print("✅ 用户信息已保存/更新（users/\(userId)）")
                 hasCompletedOnboarding = true
             }
         }
 
-        // FastAPI 请求
+        // ❌ 不要再 addDocument 了，否则会产生一条新的随机文档
+        // db.collection("users").addDocument(data: data) { ... }
+
+        // ===== 下面保持你原有的 FastAPI 请求逻辑不变 =====
         let payload: [String: Any] = [
             "birth_date": birthDateString,
             "birth_time": birthTimeString,
@@ -2595,10 +3096,8 @@ struct OnboardingFinalStep: View {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: payload)
-        } catch {
+        do { request.httpBody = try JSONSerialization.data(withJSONObject: payload) }
+        catch {
             print("❌ JSON 序列化失败: \(error)")
             isLoading = false
             return
@@ -2610,7 +3109,6 @@ struct OnboardingFinalStep: View {
                 DispatchQueue.main.async { isLoading = false }
                 return
             }
-
             guard let data = data,
                   let raw = String(data: data, encoding: .utf8),
                   let cleanedData = raw.data(using: .utf8) else {
@@ -2625,12 +3123,10 @@ struct OnboardingFinalStep: View {
                    let mantraText = parsed["mantra"] as? String {
                     DispatchQueue.main.async {
                         viewModel.recommendations = recs
-                        self.mantra = mantraText
                         self.isLoading = false
 
                         guard let userId = Auth.auth().currentUser?.uid else { return }
-                        let df = DateFormatter()
-                        df.dateFormat = "yyyy-MM-dd"
+                        let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
                         let createdAt = df.string(from: Date())
 
                         var recommendationData: [String: Any] = recs
@@ -2638,15 +3134,22 @@ struct OnboardingFinalStep: View {
                         recommendationData["createdAt"] = createdAt
                         recommendationData["mantra"] = mantraText
 
-                        let db = Firestore.firestore()
-                        db.collection("daily_recommendation").addDocument(data: recommendationData) { error in
-                            if let error = error {
-                                print("❌ 保存 daily_recommendation 失败：\(error)")
-                            } else {
-                                print("✅ 推荐结果保存成功")
+                        let docId = "\(userId)_\(createdAt)"
+                        Firestore.firestore()
+                            .collection("daily_recommendation")
+                            .document(docId)
+                            .setData(recommendationData, merge: true) { error in
+                                if let error = error {
+                                    print("❌ 保存 daily_recommendation 失败：\(error)")
+                                } else {
+                                    print("✅ 推荐结果保存成功（幂等写入）")
+                                    UserDefaults.standard.set(createdAt, forKey: "lastRecommendationDate")
+                                }
                             }
-                        }
 
+                        self.isLoggedIn = true
+                        self.hasCompletedOnboarding = true
+                        self.shouldOnboardAfterSignIn = false
                         navigateToHome = true
                     }
                 } else {
@@ -2660,8 +3163,6 @@ struct OnboardingFinalStep: View {
         }.resume()
     }
 }
-
-
 func firebaseCollectionName(for category: String) -> String {
     let mapping: [String: String] = [
         "Place": "places",
@@ -2701,10 +3202,10 @@ struct AccountPageView: View {
     @State private var navigateToHome = false
     @State private var authBusy = false
 
-    // 🔹 入场动画
+    // 入场动画
     @State private var showIntro = false
 
-    // 🔹 焦点控制
+    // 焦点控制
     @FocusState private var loginFocus: LoginField?
     private enum LoginField { case email, password }
 
@@ -2715,8 +3216,9 @@ struct AccountPageView: View {
             let minLength = min(geometry.size.width, geometry.size.height)
 
             ZStack {
-                AppBackgroundView(alwaysNight: true)
+                AppBackgroundView(mode: .night)
                     .environmentObject(starManager)
+                    .environmentObject(themeManager)
 
                 VStack {
                     // 顶部返回
@@ -2727,7 +3229,7 @@ struct AccountPageView: View {
                                 .padding()
                                 .background(panelBG)
                                 .clipShape(Circle())
-                                .foregroundColor(themeManager.primaryText)
+                                .foregroundColor(themeManager.fixedNightTextPrimary)
                         }
                         .padding(.leading, geometry.size.width * 0.05)
                         .padding(.top, geometry.size.height * 0.05)
@@ -2740,7 +3242,7 @@ struct AccountPageView: View {
                     // 标题区
                     VStack(spacing: minLength * 0.02) {
                         AlignaHeading(
-                            textColor: themeManager.foregroundColor,
+                            textColor: themeManager.fixedNightTextPrimary,
                             show: $showIntro,
                             fontSize: minLength * 0.12,
                             letterSpacing: minLength * 0.005
@@ -2749,10 +3251,10 @@ struct AccountPageView: View {
                         VStack(spacing: 6) {
                             Text("Welcome Back")
                                 .font(.title3)
-                                .foregroundColor(themeManager.primaryText)
+                                .foregroundColor(themeManager.fixedNightTextPrimary)
                             Text("Sign in to continue your journey")
                                 .font(.subheadline)
-                                .foregroundColor(themeManager.descriptionText)
+                                .foregroundColor(themeManager.fixedNightTextSecondary)
                         }
                         .multilineTextAlignment(.center)
                         .lineSpacing(6)
@@ -2774,17 +3276,19 @@ struct AccountPageView: View {
                                 .padding(.leading, 16)
                                 .background(panelBG)
                                 .cornerRadius(14)
-                                .foregroundColor(themeManager.primaryText)
+                                .foregroundColor(themeManager.fixedNightTextPrimary)
                                 .placeholder(when: email.isEmpty) {
                                     Text("Enter your email")
-                                        .foregroundColor(themeManager.descriptionText)
+                                        .foregroundColor(themeManager.fixedNightTextSecondary)
                                         .padding(.leading, 16)
                                 }
                                 .focused($loginFocus, equals: .email)
-                                .focusGlow(active: loginFocus == .email,
-                                           color: themeManager.foregroundColor,
-                                           lineWidth: 2,
-                                           cornerRadius: 14)
+                                .focusGlow(
+                                    active: loginFocus == .email,
+                                    color: themeManager.fixedNightTextPrimary,
+                                    lineWidth: 2,
+                                    cornerRadius: 14
+                                )
                                 .submitLabel(.next)
                                 .onSubmit { loginFocus = .password }
                         }
@@ -2798,17 +3302,19 @@ struct AccountPageView: View {
                                 .padding(.leading, 16)
                                 .background(panelBG)
                                 .cornerRadius(14)
-                                .foregroundColor(themeManager.primaryText)
+                                .foregroundColor(themeManager.fixedNightTextPrimary)
                                 .placeholder(when: password.isEmpty) {
                                     Text("Enter your password")
-                                        .foregroundColor(themeManager.descriptionText)
+                                        .foregroundColor(themeManager.fixedNightTextSecondary)
                                         .padding(.leading, 16)
                                 }
                                 .focused($loginFocus, equals: .password)
-                                .focusGlow(active: loginFocus == .password,
-                                           color: themeManager.foregroundColor,
-                                           lineWidth: 2,
-                                           cornerRadius: 14)
+                                .focusGlow(
+                                    active: loginFocus == .password,
+                                    color: themeManager.fixedNightTextPrimary,
+                                    lineWidth: 2,
+                                    cornerRadius: 14
+                                )
                                 .submitLabel(.done)
                         }
                         .staggered(3, show: $showIntro)
@@ -2818,64 +3324,65 @@ struct AccountPageView: View {
                         HStack {
                             Spacer()
                             Button("Forgot Password?") {
-    guard !authBusy else { return }
-    if email.isEmpty {
-        alertMessage = "Enter your email first."
-        showAlert = true
-        return
-    }
-    authBusy = true
-    Auth.auth().sendPasswordReset(withEmail: email) { error in
-        authBusy = false
-        if let error = error {
-            alertMessage = error.localizedDescription
-        } else {
-            alertMessage = "Password reset email sent."
-        }
-        showAlert = true
-    }
-}
-                                .font(.footnote)
-                                .foregroundColor(themeManager.descriptionText)
-                                .underline()
+                                guard !authBusy else { return }
+                                if email.isEmpty {
+                                    alertMessage = "Enter your email first."
+                                    showAlert = true
+                                    return
+                                }
+                                authBusy = true
+                                Auth.auth().sendPasswordReset(withEmail: email) { error in
+                                    authBusy = false
+                                    if let error = error {
+                                        alertMessage = error.localizedDescription
+                                    } else {
+                                        alertMessage = "Password reset email sent."
+                                    }
+                                    showAlert = true
+                                }
+                            }
+                            .font(.footnote)
+                            .foregroundColor(themeManager.fixedNightTextSecondary)
+                            .underline()
                         }
                         .staggered(4, show: $showIntro)
 
                         // Log In
-Button(action: {
-    guard !authBusy else { return }
-    if email.isEmpty || password.isEmpty {
-        alertMessage = "Please enter both email and password."
-        showAlert = true
-        return
-    }
-    authBusy = true
-    Auth.auth().signIn(withEmail: email, password: password) { _, error in
-        authBusy = false
-        if let error = error, let code = AuthErrorCode(rawValue: (error as NSError).code) {
-            switch code {
-            case .wrongPassword:      alertMessage = "Incorrect password. Please try again."
-            case .invalidEmail:       alertMessage = "Invalid email address."
-            case .userDisabled:       alertMessage = "This account has been disabled."
-            case .userNotFound:       alertMessage = "No account found with this email."
-            default:                  alertMessage = error.localizedDescription
-            }
-            showAlert = true
-            return
-        }
-        UserDefaults.standard.set(true, forKey: "isLoggedIn")
-        UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
-        navigateToHome = true
-    }
-}) {
-    Text(authBusy ? "Logging in…" : "Log In")
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(themeManager.foregroundColor)
-        .foregroundColor(.black)
-        .cornerRadius(14)
-}
-.disabled(authBusy)
+                        Button(action: {
+                            guard !authBusy else { return }
+                            if email.isEmpty || password.isEmpty {
+                                alertMessage = "Please enter both email and password."
+                                showAlert = true
+                                return
+                            }
+                            authBusy = true
+                            Auth.auth().signIn(withEmail: email, password: password) { _, error in
+                                authBusy = false
+                                if let error = error,
+                                   let code = AuthErrorCode(rawValue: (error as NSError).code) {
+                                    switch code {
+                                    case .wrongPassword: alertMessage = "Incorrect password. Please try again."
+                                    case .invalidEmail: alertMessage = "Invalid email address."
+                                    case .userDisabled: alertMessage = "This account has been disabled."
+                                    case .userNotFound: alertMessage = "No account found with this email."
+                                    default: alertMessage = error.localizedDescription
+                                    }
+                                    showAlert = true
+                                    return
+                                }
+                                UserDefaults.standard.set(true, forKey: "isLoggedIn")
+                                UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+                                navigateToHome = true
+                            }
+                        }) {
+                            Text(authBusy ? "Logging in…" : "Log In")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(themeManager.fixedNightTextPrimary)
+                                .foregroundColor(.black)
+                                .cornerRadius(14)
+                        }
+                        .disabled(authBusy)
                         .staggered(5, show: $showIntro)
 
                         // 分隔线
@@ -2883,7 +3390,7 @@ Button(action: {
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
                             Text("or login with")
                                 .font(.footnote)
-                                .foregroundColor(themeManager.descriptionText)
+                                .foregroundColor(themeManager.fixedNightTextSecondary)
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
                         }
                         .staggered(6, show: $showIntro)
@@ -2891,25 +3398,25 @@ Button(action: {
                         // Google / Apple
                         VStack(spacing: minLength * 0.025) {
                             Button(action: {
-    guard !authBusy else { return }
-    authBusy = true
-    handleGoogleLogin(
-        viewModel: viewModel,
-        onSuccessToLogin: {
-            authBusy = false
-            isLoggedIn = true
-            navigateToHome = true
-        },
-        onSuccessToOnboarding: {
-            authBusy = false
-        },
-        onError: { message in
-            authBusy = false
-            alertMessage = message
-            showAlert = true
-        }
-    )
-}) {
+                                guard !authBusy else { return }
+                                authBusy = true
+                                handleGoogleLogin(
+                                    viewModel: viewModel,
+                                    onSuccessToLogin: {
+                                        authBusy = false
+                                        isLoggedIn = true
+                                        navigateToHome = true
+                                    },
+                                    onSuccessToOnboarding: {
+                                        authBusy = false
+                                    },
+                                    onError: { message in
+                                        authBusy = false
+                                        alertMessage = message
+                                        showAlert = true
+                                    }
+                                )
+                            }) {
                                 HStack(spacing: 12) {
                                     Image("googleIcon")
                                         .resizable()
@@ -2917,7 +3424,7 @@ Button(action: {
                                     Text("Continue with Google")
                                         .font(.system(size: 14))
                                 }
-                                .foregroundColor(themeManager.primaryText)
+                                .foregroundColor(themeManager.fixedNightTextPrimary)
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(panelBG)
@@ -2934,16 +3441,30 @@ Button(action: {
                                     request.nonce = sha256(nonce)
                                 },
                                 onCompletion: { result in
-                            guard !authBusy else { return }
-                            guard let raw = currentNonce, !raw.isEmpty else { alertMessage = "Missing nonce. Please try again."; showAlert = true; return }
-                            authBusy = true
-                            handleAppleLogin(
-                                result: result,
-                                rawNonce: raw,
-                                onSuccessToLogin: { authBusy = false; isLoggedIn = true; navigateToHome = true },
-                                onSuccessToOnboarding: { authBusy = false },
-                                onError: { message in authBusy = false; alertMessage = message; showAlert = true }
-                            )
+                                    guard !authBusy else { return }
+                                    guard let raw = currentNonce, !raw.isEmpty else {
+                                        alertMessage = "Missing nonce. Please try again."
+                                        showAlert = true
+                                        return
+                                    }
+                                    authBusy = true
+                                    handleAppleLogin(
+                                        result: result,
+                                        rawNonce: raw,
+                                        onSuccessToLogin: {
+                                            authBusy = false
+                                            isLoggedIn = true
+                                            navigateToHome = true
+                                        },
+                                        onSuccessToOnboarding: {
+                                            authBusy = false
+                                        },
+                                        onError: { message in
+                                            authBusy = false
+                                            alertMessage = message
+                                            showAlert = true
+                                        }
+                                    )
                                 }
                             )
                             .frame(height: 50)
@@ -2957,16 +3478,18 @@ Button(action: {
                         HStack {
                             Text("Don't have an account?")
                                 .font(.footnote)
-                                .foregroundColor(themeManager.descriptionText)
-                            NavigationLink(destination: RegisterPageView()
-                                .environmentObject(starManager)
-                                .environmentObject(themeManager)
-                                .environmentObject(viewModel)) {
-                                    Text("Sign Up")
-                                        .font(.footnote)
-                                        .foregroundColor(themeManager.primaryText)
-                                        .underline()
-                                }
+                                .foregroundColor(themeManager.fixedNightTextSecondary)
+                            NavigationLink(
+                                destination: RegisterPageView()
+                                    .environmentObject(starManager)
+                                    .environmentObject(themeManager)
+                                    .environmentObject(viewModel)
+                            ) {
+                                Text("Sign Up")
+                                    .font(.footnote)
+                                    .foregroundColor(themeManager.fixedNightTextPrimary)
+                                    .underline()
+                            }
                         }
                         .padding(.top)
                         .staggered(9, show: $showIntro)
@@ -2983,26 +3506,24 @@ Button(action: {
                     .environmentObject(viewModel)
                     .navigationBarBackButtonHidden(true)
             }
+            .preferredColorScheme(.dark)
             .onAppear {
-                themeManager.isNight = true
                 starManager.animateStar = true
                 showIntro = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { showIntro = true }
-                // 登录页不默认聚焦；如需默认聚焦请延迟到入场完成后：
-                // DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) { loginFocus = .email }
             }
             .onDisappear { showIntro = false }
             .alert(isPresented: $showAlert) {
-                Alert(title: Text("Error"),
-                      message: Text(alertMessage),
-                      dismissButton: .default(Text("OK")))
+                Alert(
+                    title: Text("Error"),
+                    message: Text(alertMessage),
+                    dismissButton: .default(Text("OK"))
+                )
             }
-            .navigationBarBackButtonHidden(true)
         }
+        .navigationBarBackButtonHidden(true)
     }
 }
-
-
 // MARK: - 登录工具函数（可直接替换）
 import FirebaseAuth
 import FirebaseFirestore
@@ -3113,10 +3634,11 @@ func handleAppleLogin(
         }
 
         let credential = OAuthProvider.credential(
-            withProviderID: "apple.com",
+            providerID: .apple,          // 或 AuthProviderID.apple
             idToken: tokenString,
             rawNonce: rawNonce
         )
+
 
         Auth.auth().signIn(with: credential) { authResult, error in
             if let error = error {
@@ -3144,70 +3666,69 @@ func handleAppleLogin(
         onError("Apple 授权失败: \(error.localizedDescription)")
     }
 }
-
-// ===============================
-// 注册页专用：Google
-// ===============================
+import GoogleSignIn
+import FirebaseAuth
+import FirebaseCore
+import UIKit
+/// 替换你原有的 Google 注册逻辑（新版 API）
+/// - onNewUserGoOnboarding: 新用户引导回调（进入 Step1）
+/// - onExistingUserGoLogin: 老用户提示去登录的回调（传入提示文案）
+/// - onError: 失败提示
 func handleGoogleFromRegister(
     onNewUserGoOnboarding: @escaping () -> Void,
     onExistingUserGoLogin: @escaping (_ message: String) -> Void,
-    onError: @escaping (String) -> Void
+    onError: @escaping (_ message: String) -> Void
 ) {
+    // 1) 准备配置与呈现控制器
     guard let clientID = FirebaseApp.app()?.options.clientID else {
-        onError("Missing Firebase client ID.")
-        return
+        onError("Missing Firebase clientID."); return
     }
-    GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
+    let config = GIDConfiguration(clientID: clientID)
+    GIDSignIn.sharedInstance.configuration = config
 
-    guard let rootVC = UIApplication.shared.connectedScenes
-        .compactMap({ ($0 as? UIWindowScene)?.keyWindow?.rootViewController }).first else {
-        onError("No root view controller.")
-        return
+    guard let presenter = UIApplication.shared.topViewController_aligna else {
+        onError("No presenting view controller."); return
     }
 
-    GIDSignIn.sharedInstance.signIn(withPresenting: rootVC) { result, error in
-        if let error = error {
-            onError("Google Sign-In failed: \(error.localizedDescription)")
+    // 2) 调起 Google 登录（新版 withPresenting）
+    GIDSignIn.sharedInstance.signIn(withPresenting: presenter) { signInResult, signInError in
+        if let signInError = signInError {
+            onError("Google sign-in failed: \(signInError.localizedDescription)")
             return
         }
-        guard let user = result?.user,
-              let idToken = user.idToken?.tokenString else {
-            onError("Missing Google token.")
-            return
+        guard
+            let user = signInResult?.user,
+            let idToken = user.idToken?.tokenString
+        else {
+            onError("Empty Google sign-in result."); return
         }
 
+        // 3) 用 Google 凭证登录 Firebase
         let credential = GoogleAuthProvider.credential(
             withIDToken: idToken,
             accessToken: user.accessToken.tokenString
         )
 
-        Auth.auth().signIn(with: credential) { _, error in
-            if let error = error {
-                onError("Login failed: \(error.localizedDescription)")
+        Auth.auth().signIn(with: credential) { authResult, authError in
+            if let authError = authError {
+                onError("Firebase auth failed: \(authError.localizedDescription)")
                 return
             }
-            guard let uid = Auth.auth().currentUser?.uid else {
-                onError("Missing UID after sign in.")
-                return
-            }
-            // ✅ 以 Firestore users 表为准做分流
-            checkIfUserAlreadyRegistered(uid: uid) { isRegistered in
-                DispatchQueue.main.async {
-                    if isRegistered {
-                        onExistingUserGoLogin("This Google account is already registered. Redirecting to Sign In…")
-                        try? Auth.auth().signOut()
-                    } else {
-                        onNewUserGoOnboarding()
-                    }
-                }
+
+            let isNew = authResult?.additionalUserInfo?.isNewUser ?? false
+            if isNew {
+                // 新用户：进入 Onboarding（你按钮里已经把 shouldOnboardAfterSignIn 置为 true）
+                onNewUserGoOnboarding()
+            } else {
+                // 老用户：提示去登录页
+                onExistingUserGoLogin("This Google account is already registered. Please sign in instead.")
             }
         }
     }
 }
 
-
 // ===============================
-// 注册页专用：Apple
+// 注册页专用：Apple（替换原函数）
 // ===============================
 func handleAppleFromRegister(
     result: Result<ASAuthorization, Error>,
@@ -3226,7 +3747,7 @@ func handleAppleFromRegister(
         }
 
         let credential = OAuthProvider.credential(
-            withProviderID: "apple.com",
+            providerID: .apple,
             idToken: tokenString,
             rawNonce: rawNonce
         )
@@ -3236,18 +3757,15 @@ func handleAppleFromRegister(
                 onError("Apple 登录失败: \(error.localizedDescription)")
                 return
             }
-            guard let uid = Auth.auth().currentUser?.uid else {
-                onError("Missing UID after sign in.")
-                return
-            }
-            // ✅ 以 Firestore users 表为准做分流
-            checkIfUserAlreadyRegistered(uid: uid) { isRegistered in
+            // ⚠️ 关键：按“资料完整度”来分流
+            determineRegistrationPathForCurrentUser { path in
                 DispatchQueue.main.async {
-                    if isRegistered {
+                    switch path {
+                    case .needsOnboarding:
+                        onNewUserGoOnboarding()
+                    case .existingAccount:
                         onExistingUserGoLogin("This Apple ID is already registered. Redirecting to Sign In…")
                         try? Auth.auth().signOut()
-                    } else {
-                        onNewUserGoOnboarding()
                     }
                 }
             }
@@ -3256,6 +3774,60 @@ func handleAppleFromRegister(
     case .failure(let error):
         onError("Apple 授权失败: \(error.localizedDescription)")
     }
+}
+
+// ===============================
+// 辅助：基于“资料完整度”的分流（新增）
+// ===============================
+
+private enum RegistrationPath { case needsOnboarding, existingAccount }
+
+/// 读取当前登录用户在 Firestore 的档案；
+/// 若无文档或文档不完整（缺少昵称/生日/出生时间/出生地），→ 需要 Onboarding；
+/// 若文档完整 → 视为老用户。
+private func determineRegistrationPathForCurrentUser(
+    completion: @escaping (RegistrationPath) -> Void
+) {
+    guard let uid = Auth.auth().currentUser?.uid else {
+        completion(.needsOnboarding); return
+    }
+    fetchUserDocByUID(uid) { data in
+        guard let data = data else {
+            // 没有任何用户文档 → 新用户
+            completion(.needsOnboarding); return
+        }
+        completion(isProfileComplete(data) ? .existingAccount : .needsOnboarding)
+    }
+}
+
+/// 依次在 "users" / "user" 集合中按 uid 查找文档，返回 data（任一命中即返回）
+private func fetchUserDocByUID(_ uid: String, completion: @escaping ([String: Any]?) -> Void) {
+    let db = Firestore.firestore()
+    let cols = ["users", "user"]
+    func go(_ i: Int) {
+        if i >= cols.count { completion(nil); return }
+        db.collection(cols[i]).whereField("uid", isEqualTo: uid).limit(to: 1).getDocuments { snap, _ in
+            if let data = snap?.documents.first?.data() { completion(data) }
+            else { go(i + 1) }
+        }
+    }
+    go(0)
+}
+
+/// 判定档案是否“完整”：
+/// - 昵称 nickname: 非空
+/// - 生日：支持两种历史字段：`birthday`(Timestamp) 或 `birthDate`(String) 任一存在
+/// - 出生时间 birthTime: 非空字符串
+/// - 出生地 birthPlace: 非空字符串
+private func isProfileComplete(_ d: [String: Any]) -> Bool {
+    let nicknameOK   = !(d["nickname"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    let hasBirthTS   = d["birthday"] is Timestamp
+    let hasBirthStr  = ((d["birthDate"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
+    let birthDateOK  = hasBirthTS || hasBirthStr
+    let birthTimeOK  = ((d["birthTime"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
+    let birthPlaceOK = ((d["birthPlace"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
+
+    return nicknameOK && birthDateOK && birthTimeOK && birthPlaceOK
 }
 
 
@@ -3272,194 +3844,1233 @@ struct UserInfo: Codable {
     var currentPlace: String
 }
 
+import SwiftUI
+import FirebaseAuth
+import FirebaseFirestore
+
+// ========== Firestore Keys（不一致就改这里） ==========
+private enum FSKeys {
+    static let userPrimary   = "user"
+    static let userAlt       = "users"
+    static let recPrimary    = "daily recommendation"
+    static let recAlt        = "daily_recommendation"
+
+    static let uid           = "uid"
+    static let email         = "email"
+    static let nickname      = "nickname"
+    static let birthday      = "birthday"   // Firestore Timestamp
+    static let birthTime     = "birthTime"  // "h:mm a" 字符串
+    static let birthPlace    = "birthPlace"
+    static let currentPlace  = "currentPlace"
+}
+
+import SwiftUI
+import FirebaseAuth
+import FirebaseFirestore
+
+// 主题偏好（轻/暗/系统）
+private enum ThemePreference: String, CaseIterable, Identifiable {
+    case light, dark, auto
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .light: return "Light"
+        case .dark:  return "Dark"
+        case .auto:  return "System"
+        }
+    }
+    var icon: String  {
+        switch self {
+        case .light: return "sun.max"
+        case .dark:  return "moon.stars"
+        case .auto:  return "gearshape"
+        }
+    }
+}
+
+import SwiftUI
+import FirebaseAuth
+import FirebaseFirestore
+import CoreLocation
+import AuthenticationServices
+import FirebaseCore
+import GoogleSignIn
+import UIKit
+
 struct AccountDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
-    
-    @State private var userInfo = UserInfo(nickname: "", birth_date: "", birthPlace: "", birth_time: "", currentPlace: "")
-    @State private var isLoading = true
-    @State private var errorMessage = ""
-    
-    @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
-    @State private var showLogoutAlert = false
-    @State private var navigateToOnboarding = false
-    
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var viewModel: OnboardingViewModel
+    @Environment(\.colorScheme) private var colorScheme
+
+    // Firestore
+    @State private var userDocID: String?
+    @State private var userCollectionUsed: String?
+    private let db = Firestore.firestore()
+
+    // 当前登录用户
+    @State private var email: String = Auth.auth().currentUser?.email ?? ""
+
+    // 用户字段（UI 状态）
+    @State private var nickname: String = ""
+    @State private var birthday: Date = Date()
+    @State private var birthTime: Date = Date()
+    @State private var birthPlace: String = ""
+    @State private var currentPlace: String = ""
+
+    // 编辑状态
+    @State private var editingNickname = false
+    @State private var editingBirthPlace = false
+    @State private var showBirthdaySheet = false
+    @State private var showBirthTimeSheet = false
+
+    // 主题偏好
+    @AppStorage("themePreference") private var themePreferenceRaw: String = ThemePreference.auto.rawValue
+
+    // Busy & Error
+    @State private var isBusy = false
+    @State private var showDeleteAlert = false
+    @State private var errorMessage: String?
+
+    // === 固定英文格式的 Formatter（static，避免 mutating getter 报错）===
+    private static let enUSPOSIX = Locale(identifier: "en_US_POSIX")
+
+    private static let birthdayDisplayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = enUSPOSIX; f.timeZone = .current
+        f.dateFormat = "MMM/d/yyyy"
+        return f
+    }()
+
+    private static let birthTimeDisplayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = enUSPOSIX; f.timeZone = .current
+        f.dateFormat = "h:mm a"
+        return f
+    }()
+
+    private static let birthTimeStorageFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = enUSPOSIX; f.timeZone = .current
+        f.dateFormat = "HH:mm"
+        return f
+    }()
+
+    // 解析兼容：旧的字符串存储
+    private static let parseTimeFormatter12: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = enUSPOSIX; f.timeZone = .current
+        f.dateFormat = "h:mm a"
+        return f
+    }()
+    private static let parseTimeFormatter24: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = enUSPOSIX; f.timeZone = .current
+        f.dateFormat = "HH:mm"
+        return f
+    }()
+    private static let parseDateYYYYMMDD: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = enUSPOSIX; f.timeZone = .current
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+    private static let parseDateYMDSlash: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = enUSPOSIX; f.timeZone = .current
+        f.dateFormat = "yyyy/M/d" // 兼容少量 “2024/9/22” 样式
+        return f
+    }()
+
     var body: some View {
-        GeometryReader { geometry in
-            let width = geometry.size.width
-            let height = geometry.size.height
-            let minLength = min(width, height)
-            
-            ZStack {
-                AppBackgroundView()
-                    .environmentObject(starManager)
-                
-                if isLoading {
-                    ProgressView("Loading...")
-                        .foregroundColor(themeManager.foregroundColor)
-                } else if !errorMessage.isEmpty {
-                    Text("❌ \(errorMessage)")
-                        .foregroundColor(.red)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                    NavigationLink(destination: OnboardingOpeningPage()
-                            .environmentObject(starManager)
-                            .environmentObject(themeManager)
-                        ) {
-                            Text("Go to Onboarding")
-                                .font(.headline)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(themeManager.foregroundColor)
-                                .foregroundColor(.black)
-                                .cornerRadius(10)
+        NavigationStack {
+            GeometryReader { _ in
+                ZStack {
+                    AppBackgroundView()
+                        .environmentObject(starManager)
+                        .environmentObject(themeManager)
+                        .ignoresSafeArea()
+
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 18) {
+                            headerCard
+                            personalInfoCard
+                            timelineCard
+                            themeCard
+                            aboutCard
+                            signOutCard
+                            deleteAccountCard
                         }
-                        .padding(.horizontal, 40)
-                } else {
-                    VStack(spacing: height * 0.04) {
-                        Text("Welcome, \(userInfo.nickname)")
-                            .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.07))
-                            .foregroundColor(themeManager.foregroundColor)
-                            .padding(.top, height * 0.04)
-                        
-                        VStack(alignment: .leading, spacing: height * 0.04) {
-                            Text("Information")
-                                .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.06))
-                                .foregroundColor(themeManager.foregroundColor)
-                            
-                            infoRow(title: "Date of Birth", value: userInfo.birth_date, width: width)
-                            infoRow(title: "Place of Birth", value: userInfo.birthPlace, width: width)
-                            infoRow(title: "Time of Birth", value: userInfo.birth_time, width: width)
-                        }
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.black.opacity(0.15))
-                        .cornerRadius(20)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(themeManager.foregroundColor.opacity(0.7), lineWidth: 1)
-                        )
-                        .padding(.horizontal, width * 0.1)
-                        
-                        CollapsibleSection(title: "Preference", width: width) {
-                            Text("Here you can show user's preferences.")
-                                .foregroundColor(.white)
-                                .padding()
-                                .background(Color.gray.opacity(0.3))
-                                .cornerRadius(10)
-                        }
-                        
-                        CollapsibleSection(title: "Setting", width: width) {
-                            Text("Here you can show setting options.")
-                                .foregroundColor(.white)
-                                .padding()
-                                .background(Color.gray.opacity(0.3))
-                                .cornerRadius(10)
-                        }
-                        
-                        Button(action: {
-                            showLogoutAlert = true
-                        }) {
-                            Text("Log Out")
-                                .foregroundColor(.red)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(Color.white.opacity(0.1))
-                                .cornerRadius(10)
-                        }
-                        .padding(.horizontal, width * 0.1)
-                        .padding(.bottom, 20)
-                        
-                        
-                        Spacer()
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                        .padding(.bottom, 36)
+                    }
+
+                    if isBusy {
+                        ProgressView()
+                            .scaleEffect(1.1)
+                            .padding(18)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
                     }
                 }
-            }
-            .alert("Are you sure you want to log out?", isPresented: $showLogoutAlert) {
-                Button("Log Out", role: .destructive) {
-                    handleLogout()
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button { dismiss() } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.title3.weight(.semibold))
+                                .foregroundColor(themeManager.primaryText)
+                        }
+                    }
                 }
-                Button("Cancel", role: .cancel) {}
-            }
-            .onAppear {
-                starManager.animateStar = true
-                themeManager.updateTheme()
-                loadUserInfo()
-            }
-            .navigationDestination(isPresented: $navigateToOnboarding) {
-                OnboardingOpeningPage()
-            }
-            
-        }
-    }
-    
-    private func handleLogout() {
-        do {
-            try Auth.auth().signOut()
-            isLoggedIn = false
-            navigateToOnboarding = true
-            print("✅ 用户已登出")
-        } catch {
-            print("❌ 登出失败: \(error.localizedDescription)")
-        }
-    }
-    
-    @ViewBuilder
-    private func infoRow(title: String, value: String, width: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(themeManager.foregroundColor.opacity(0.6))
-            
-            Text(value.isEmpty ? "-" : value)
-                .font(.body)
-                .foregroundColor(.black)
-                .frame(width: width * 0.8, height: 44)
-                .background(themeManager.foregroundColor)
-                .cornerRadius(10)
-        }
-    }
-    
-    private func loadUserInfo() {
-        guard let uid = Auth.auth().currentUser?.uid else {
-            errorMessage = "未登录用户"
-            isLoading = false
-            return
-        }
-        
-        let db = Firestore.firestore()
-        db.collection("users")
-            .whereField("uid", isEqualTo: uid)
-            .limit(to: 1)
-            .getDocuments { snapshot, error in
-                DispatchQueue.main.async {
-                    if let error = error {
-                        errorMessage = "获取失败: \(error.localizedDescription)"
-                        isLoading = false
-                        return
-                    }
-                    
-                    guard let document = snapshot?.documents.first else {
-                        errorMessage = "未找到该用户的信息"
-                        isLoading = false
-                        return
-                    }
-                    
-                    let data = document.data()
-                    
-                    self.userInfo = UserInfo(
-                        nickname: data["nickname"] as? String ?? "",
-                        birth_date: data["birthDate"] as? String ?? "",
-                        birthPlace: data["birthPlace"] as? String ?? "",
-                        birth_time: data["birthTime"] as? String ?? "",
-                        currentPlace: data["currentPlace"] as? String ?? ""
-                    )
-                    
-                    isLoading = false
+                .onAppear {
+                    makeNavBarTransparent()
+                    themeManager.setSystemColorScheme(colorScheme)
+                    initialLoad()
+                }
+                .onDisappear { restoreNavBarDefault() }
+                .onChange(of: colorScheme) { newScheme in
+                    themeManager.setSystemColorScheme(newScheme)
                 }
             }
+        }
+        .alert("Delete Account?", isPresented: $showDeleteAlert) {
+            Button("Delete", role: .destructive) { deleteAccount() }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This will remove your profile and all daily recommendations associated with \(email).")
+        }
+        .alert("Error",
+               isPresented: Binding(get: { errorMessage != nil }, set: { _ in errorMessage = nil })) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage ?? "")
+        }
+        .navigationBarBackButtonHidden(true)
+        .preferredColorScheme(themeManager.preferredColorScheme)
+    }
+
+    // MARK: - 导航栏透明/恢复
+    private func makeNavBarTransparent() {
+        let ap = UINavigationBarAppearance()
+        ap.configureWithTransparentBackground()
+        ap.backgroundEffect = nil
+        ap.backgroundColor  = .clear
+        ap.shadowColor      = .clear
+        let nav = UINavigationBar.appearance()
+        nav.standardAppearance = ap
+        nav.scrollEdgeAppearance = ap
+        nav.compactAppearance = ap
+        nav.isTranslucent = true
+    }
+    private func restoreNavBarDefault() {
+        let ap = UINavigationBarAppearance()
+        ap.configureWithDefaultBackground()
+        let nav = UINavigationBar.appearance()
+        nav.standardAppearance = ap
+        nav.scrollEdgeAppearance = ap
+        nav.compactAppearance = ap
+        nav.isTranslucent = false
     }
 }
+
+// MARK: - UI Sections
+private extension AccountDetailView {
+    var headerCard: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                if editingNickname {
+                    TextField("Nickname", text: $nickname)
+                        .multilineTextAlignment(.center)
+                        .font(.system(size: 36, weight: .bold, design: .serif))
+                        .foregroundColor(themeManager.primaryText)
+                        .tint(themeManager.accent)
+                        .textInputAutocapitalization(.words)
+                        .disableAutocorrection(true)
+
+                    HStack(spacing: 10) {
+                        Button { saveField(FSKeys.nickname, value: nickname) { editingNickname = false } }
+                        label: { Image(systemName: "checkmark.circle.fill").font(.title2) }
+
+                        Button { editingNickname = false; loadUser() }
+                        label: { Image(systemName: "xmark.circle.fill").font(.title2) }
+                    }
+                    .foregroundColor(themeManager.accent)
+                } else {
+                    Text(nickname.isEmpty ? "—" : nickname)
+                        .font(.system(size: 36, weight: .bold, design: .serif))
+                        .foregroundColor(themeManager.primaryText)
+
+                    Button { editingNickname = true } label: {
+                        Image(systemName: "pencil").font(.title3).foregroundColor(themeManager.accent)
+                    }
+                }
+            }
+            ZodiacInlineRow(viewModel: viewModel)
+                .environmentObject(themeManager)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+    }
+
+    var personalInfoCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Personal Information")
+                .font(.title3.weight(.semibold))
+                .foregroundColor(themeManager.primaryText)
+
+            VStack(spacing: 12) {
+                // === Birthday | Birth Time ===
+                HStack(spacing: 12) {
+                    infoRow(
+                        title: "Birthday",
+                        value: Self.birthdayDisplayFormatter.string(from: birthday),
+                        editable: true
+                    ) { showBirthdaySheet = true }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .sheet(isPresented: $showBirthdaySheet) {
+                        pickerSheet(
+                            title: "Birthday",
+                            picker: AnyView(
+                                DatePicker("", selection: $birthday, displayedComponents: .date)
+                                    .datePickerStyle(.wheel)
+                                    .labelsHidden()
+                            ),
+                            onSave: {
+                                saveBirthFields(date: birthday, time: birthTime) {
+                                    showBirthdaySheet = false
+                                }
+                            },
+                            onCancel: { showBirthdaySheet = false }
+                        )
+                    }
+
+                    infoRow(
+                        title: "Birth Time",
+                        value: Self.birthTimeDisplayFormatter.string(from: birthTime).lowercased(),
+                        editable: true
+                    ) { showBirthTimeSheet = true }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .sheet(isPresented: $showBirthTimeSheet) {
+                        pickerSheet(
+                            title: "Birth Time",
+                            picker: AnyView(
+                                DatePicker("", selection: $birthTime, displayedComponents: .hourAndMinute)
+                                    .datePickerStyle(.wheel)
+                                    .labelsHidden()
+                            ),
+                            onSave: {
+                                saveBirthFields(date: birthday, time: birthTime) {
+                                    showBirthTimeSheet = false
+                                }
+                            },
+                            onCancel: { showBirthTimeSheet = false }
+                        )
+                    }
+                }
+
+                // === Birth Place | Current Place ===
+                HStack(spacing: 12) {
+                    infoRowEditableText(
+                        title: "Birth Place",
+                        text: $birthPlace,
+                        isEditing: $editingBirthPlace,
+                        onSave: { saveField(FSKeys.birthPlace, value: birthPlace) { editingBirthPlace = false } },
+                        onCancel: { editingBirthPlace = false; loadUser() }
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    infoRow(
+                        title: "Current Place",
+                        value: currentPlace.isEmpty ? "—" : currentPlace,
+                        editable: false,
+                        onEdit: {}
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .padding()
+            .background(Color.white.opacity(themeManager.isNight ? 0.05 : 0.08),
+                        in: RoundedRectangle(cornerRadius: 18))
+            .overlay(RoundedRectangle(cornerRadius: 18)
+                .stroke(Color.white.opacity(themeManager.isNight ? 0.08 : 0.06), lineWidth: 1))
+        }
+    }
+
+    var timelineCard: some View {
+        NavigationLink {
+            ContentView()
+                .environmentObject(starManager)
+                .environmentObject(themeManager)
+                .environmentObject(viewModel)
+        } label: {
+            rowCard(icon: "calendar", title: "Timeline", subtitle: "View your cosmic journey history")
+        }
+    }
+
+    var themeCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "sparkles").foregroundColor(themeManager.accent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("App Theme").font(.headline).foregroundColor(themeManager.primaryText)
+                    Text("Customize appearance").font(.subheadline).foregroundColor(themeManager.descriptionText)
+                }
+            }
+            HStack(spacing: 12) { themeOption(.light); themeOption(.dark); themeOption(.auto) }
+        }
+        .padding()
+        .background(Color.white.opacity(themeManager.isNight ? 0.05 : 0.08),
+                    in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18)
+            .stroke(Color.white.opacity(themeManager.isNight ? 0.08 : 0.06), lineWidth: 1))
+    }
+
+    var aboutCard: some View {
+        NavigationLink { Text("About Aligna").padding() } label: {
+            rowCard(icon: "info.circle",
+                    title: "About Aligna",
+                    subtitle: "Learn more about the app and privacy")
+        }
+    }
+
+    var signOutCard: some View {
+        Button {
+            do { try Auth.auth().signOut(); dismiss() }
+            catch { errorMessage = error.localizedDescription }
+        } label: {
+            rowCard(icon: "rectangle.portrait.and.arrow.right",
+                    title: "Sign out",
+                    subtitle: "Sign out of your account")
+        }
+    }
+
+    var deleteAccountCard: some View {
+        Button(role: .destructive) { showDeleteAlert = true } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Delete Account").font(.headline).foregroundColor(.white)
+                    Text("Permanently delete your account and data")
+                        .font(.subheadline)
+                        .foregroundColor(themeManager.descriptionText)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+            }
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(Color.red.opacity(0.18), in: RoundedRectangle(cornerRadius: 18))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.red.opacity(0.35), lineWidth: 1))
+            .foregroundColor(.white)
+        }
+    }
+}
+
+// MARK: - Reusable UI
+private extension AccountDetailView {
+    func rowCard(icon: String, title: String, subtitle: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon).foregroundColor(themeManager.accent)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.headline).foregroundColor(themeManager.primaryText)
+                Text(subtitle).font(.subheadline).foregroundColor(themeManager.descriptionText)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            Spacer()
+            Image(systemName: "chevron.right").foregroundColor(themeManager.primaryText.opacity(0.9))
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(Color.white.opacity(themeManager.isNight ? 0.05 : 0.08), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(themeManager.isNight ? 0.08 : 0.06), lineWidth: 1))
+    }
+
+    func infoRow(title: String, value: String, editable: Bool, onEdit: @escaping () -> Void) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.footnote).foregroundColor(themeManager.descriptionText)
+                Text(value).font(.headline).foregroundColor(themeManager.primaryText)
+            }
+            Spacer()
+            if editable {
+                Button(action: onEdit) { Image(systemName: "pencil").foregroundColor(themeManager.accent) }
+            }
+        }
+        .padding(.vertical, 6)
+    }
+
+    func infoRowEditableText(
+        title: String,
+        text: Binding<String>,
+        isEditing: Binding<Bool>,
+        onSave: @escaping () -> Void,
+        onCancel: @escaping () -> Void
+    ) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.footnote).foregroundColor(themeManager.descriptionText)
+                if isEditing.wrappedValue {
+                    TextField(title, text: text)
+                        .textInputAutocapitalization(.words)
+                        .disableAutocorrection(true)
+                        .tint(themeManager.accent)
+                        .foregroundColor(themeManager.primaryText)
+                        .font(.headline)
+                } else {
+                    Text(text.wrappedValue.isEmpty ? "—" : text.wrappedValue)
+                        .font(.headline).foregroundColor(themeManager.primaryText)
+                }
+            }
+            Spacer()
+            if isEditing.wrappedValue {
+                HStack(spacing: 10) {
+                    Button(action: onSave) { Image(systemName: "checkmark.circle.fill").font(.title3) }
+                    Button(action: onCancel) { Image(systemName: "xmark.circle.fill").font(.title3) }
+                }
+                .foregroundColor(themeManager.accent)
+            } else {
+                Button { isEditing.wrappedValue = true } label: {
+                    Image(systemName: "pencil").foregroundColor(themeManager.accent)
+                }
+            }
+        }
+        .padding(.vertical, 6)
+    }
+
+    func themeOption(_ pref: ThemePreference) -> some View {
+        let selected = themePreferenceRaw == pref.rawValue
+        return Button {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                themePreferenceRaw = pref.rawValue
+                switch pref {
+                case .light: themeManager.selected = .day
+                case .dark:  themeManager.selected = .night
+                case .auto:  themeManager.selected = .system
+                }
+                themeManager.setSystemColorScheme(colorScheme)
+            }
+        } label: {
+            VStack(spacing: 10) {
+                Image(systemName: pref.icon).font(.title2)
+                Text(pref.title).font(.subheadline)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(selected ? themeManager.accent.opacity(0.18)
+                                   : Color.white.opacity(themeManager.isNight ? 0.06 : 0.08))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(selected ? themeManager.accent : Color.white.opacity(0.15),
+                            lineWidth: selected ? 1 : 0.8)
+            )
+            .foregroundColor(selected ? themeManager.accent : themeManager.primaryText)
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    func pickerSheet(title: String, picker: AnyView, onSave: @escaping () -> Void, onCancel: @escaping () -> Void) -> some View {
+        VStack(spacing: 16) {
+            Text(title).font(.headline).foregroundColor(themeManager.primaryText)
+            picker.tint(themeManager.accent)
+            HStack {
+                Button("Cancel", action: onCancel)
+                Spacer()
+                Button("Save", action: onSave)
+            }
+            .foregroundColor(themeManager.accent)
+            .padding(.horizontal)
+        }
+        .preferredColorScheme(themeManager.preferredColorScheme)
+        .presentationDetents([.height(320)])
+        .presentationBackground(.ultraThinMaterial)
+    }
+}
+
+// MARK: - Data & Actions
+private extension AccountDetailView {
+    func initialLoad() {
+        switch ThemePreference(rawValue: themePreferenceRaw) ?? .auto {
+        case .light: themeManager.selected = .day
+        case .dark:  themeManager.selected = .night
+        case .auto:  themeManager.selected = .system
+        }
+        themeManager.setSystemColorScheme(colorScheme)
+        loadUser()
+    }
+
+    private var candidateUserCollections: [String] { [FSKeys.userPrimary, FSKeys.userAlt] }
+
+    func loadUser() {
+        guard let user = Auth.auth().currentUser else { return }
+        isBusy = true
+        errorMessage = nil
+
+        queryByUID(user.uid) { doc, col in
+            if let doc = doc, let col = col {
+                applyUserDoc(doc, in: col); isBusy = false; return
+            }
+            if let em = user.email {
+                self.email = em
+                queryByEmail(em) { doc2, col2 in
+                    if let doc2 = doc2, let col2 = col2 {
+                        applyUserDoc(doc2, in: col2)
+                    } else {
+                        self.errorMessage = "No user profile found for \(em)."
+                    }
+                    isBusy = false
+                }
+            } else {
+                self.errorMessage = "No user profile for current account."
+                isBusy = false
+            }
+        }
+    }
+
+    private func queryByUID(_ uid: String, completion: @escaping (DocumentSnapshot?, String?) -> Void) {
+        queryInCollections { ref in
+            ref.whereField(FSKeys.uid, isEqualTo: uid).limit(to: 1)
+        } completion: { doc, col in completion(doc, col) }
+    }
+
+    private func queryByEmail(_ email: String, completion: @escaping (DocumentSnapshot?, String?) -> Void) {
+        queryInCollections { ref in
+            ref.whereField(FSKeys.email, isEqualTo: email).limit(to: 1)
+        } completion: { doc, col in completion(doc, col) }
+    }
+
+    private func queryInCollections(
+        where makeQuery: @escaping (CollectionReference) -> Query,
+        completion: @escaping (DocumentSnapshot?, String?) -> Void
+    ) {
+        func go(_ i: Int) {
+            if i >= candidateUserCollections.count { completion(nil, nil); return }
+            let col = candidateUserCollections[i]
+            makeQuery(db.collection(col)).getDocuments { snap, _ in
+                if let doc = snap?.documents.first { completion(doc, col) }
+                else { go(i + 1) }
+            }
+        }
+        go(0)
+    }
+
+    func applyUserDoc(_ doc: DocumentSnapshot, in collection: String) {
+        self.userDocID = doc.documentID
+        self.userCollectionUsed = collection
+        let data = doc.data() ?? [:]
+
+        self.nickname = data[FSKeys.nickname] as? String ?? ""
+
+        if let ts = data[FSKeys.birthday] as? Timestamp {
+                self.birthday = ts.dateValue()
+            } else if let s = data["birthDate"] as? String, let d = ISO8601Calendar.date(from: s) {
+                self.birthday = d
+            }
+
+            // FIX: 出生时间同时支持 "HH:mm"（24h）与 "h:mm a"（12h）
+            if let t = data[FSKeys.birthTime] as? String, let d = timeToDateFlexible(t) {
+                self.birthTime = d
+            }
+
+            self.birthPlace   = data[FSKeys.birthPlace] as? String ?? ""
+            self.currentPlace = (data[FSKeys.currentPlace] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+
+
+        // 修正 currentPlace（保持你原逻辑）
+        let needsFix: Bool = {
+            if currentPlace.isEmpty { return true }
+            if currentPlace.lowercased() == "unknown" { return true }
+            if isCoordinateLikeString(currentPlace) { return true }
+            return false
+        }()
+
+        if needsFix,
+           let lat = data["currentLat"] as? CLLocationDegrees,
+           let lng = data["currentLng"] as? CLLocationDegrees {
+            let coord = CLLocationCoordinate2D(latitude: lat, longitude: lng)
+            getAddressFromCoordinate(coord) { resolved in
+                guard let city = resolved, !city.isEmpty else { return }
+                DispatchQueue.main.async {
+                    self.currentPlace = city
+                    self.saveField(FSKeys.currentPlace, value: city) { }
+                }
+            }
+        }
+    }
+
+    func saveField<T>(_ key: String, value: T, completion: @escaping () -> Void) {
+        guard let col = userCollectionUsed, let id = userDocID else {
+            errorMessage = "User document not found."; return
+        }
+        isBusy = true
+        db.collection(col).document(id).setData([key: value], merge: true) { err in
+            isBusy = false
+            if let err = err { errorMessage = err.localizedDescription } else { completion() }
+        }
+    }
+    // 统一保存（向后兼容旧字段）
+    func saveBirthFields(date: Date, time: Date, completion: @escaping () -> Void) {
+        guard let col = userCollectionUsed, let id = userDocID else {
+            errorMessage = "User document not found."; return
+        }
+        isBusy = true
+        let merged = merge(datePart: date, timePart: time)
+
+        let dateStr = Self.parseDateYYYYMMDD.string(from: merged)
+        let timeStr24 = Self.birthTimeStorageFormatter.string(from: time)
+
+        let payload: [String: Any] = [
+            // 新字段（你现在的规范）
+            FSKeys.birthday: Timestamp(date: merged),
+            FSKeys.birthTime: timeStr24,
+            "birthDateTime": Timestamp(date: merged),
+            // 兼容旧字段
+            "birth_date": dateStr,
+            "birth_time": timeStr24
+        ]
+
+        db.collection(col).document(id).setData(payload, merge: true) { err in
+            isBusy = false
+            if let err = err { errorMessage = err.localizedDescription; return }
+            self.birthday = merged
+            self.birthTime = merged
+            completion()
+        }
+    }
+
+    // 合并“日期部分”和“时间部分”
+    func merge(datePart: Date, timePart: Date) -> Date {
+        var cal = Calendar(identifier: .gregorian)
+        cal.locale = Self.enUSPOSIX
+        cal.timeZone = .current
+        let d = cal.dateComponents([.year, .month, .day], from: datePart)
+        let t = cal.dateComponents([.hour, .minute, .second], from: timePart)
+        var comp = DateComponents()
+        comp.year = d.year
+        comp.month = d.month
+        comp.day = d.day
+        comp.hour = t.hour
+        comp.minute = t.minute
+        comp.second = t.second ?? 0
+        return cal.date(from: comp) ?? datePart
+    }
+
+    func deleteAccount() { /* 原样 */
+        guard let user = Auth.auth().currentUser else { return }
+        let uid   = user.uid
+        let email = user.email
+        isBusy = true
+        errorMessage = nil
+        purgeAllUserData(uid: uid, email: email) { purgeErr in
+            if let purgeErr = purgeErr {
+                self.isBusy = false
+                self.errorMessage = "Delete failed (data purge): \(purgeErr.localizedDescription)"
+                return
+            }
+            deleteAuthAccount { authErr in
+                self.isBusy = false
+                if let e = authErr as NSError? {
+                    if e.code == AuthErrorCode.requiresRecentLogin.rawValue {
+                        self.errorMessage = "For security reasons, please re-authenticate and try again."
+                    } else {
+                        self.errorMessage = "Account deletion failed: \(e.localizedDescription)"
+                    }
+                    return
+                }
+                clearLocalStateAfterAccountDeletion()
+                self.dismiss()
+            }
+        }
+    }
+    func purgeCollection(
+            _ name: String,
+            whereField field: String,
+            equals value: Any,
+            batchSize: Int = 400,
+            completion: @escaping (Error?) -> Void
+        ) {
+            let q = db.collection(name).whereField(field, isEqualTo: value).limit(to: batchSize)
+            q.getDocuments { snap, err in
+                if let err = err { completion(err); return }
+                let docs = snap?.documents ?? []
+                if docs.isEmpty { completion(nil); return }
+
+                let batch = self.db.batch()
+                docs.forEach { batch.deleteDocument($0.reference) }
+                batch.commit { err in
+                    if let err = err { completion(err); return }
+                    // 继续删下一页
+                    self.purgeCollection(name, whereField: field, equals: value, batchSize: batchSize, completion: completion)
+                }
+            }
+        }
+
+        // --- 多条件并行（uid / email） ---
+        func purgeCollectionByFields(
+            _ name: String,
+            fieldsAndValues: [(String, Any)],
+            completion: @escaping (Error?) -> Void
+        ) {
+            let group = DispatchGroup()
+            var firstErr: Error?
+
+            for (f, v) in fieldsAndValues {
+                group.enter()
+                purgeCollection(name, whereField: f, equals: v) { err in
+                    if let err = err, firstErr == nil { firstErr = err }
+                    group.leave()
+                }
+            }
+            group.notify(queue: .main) { completion(firstErr) }
+        }
+    func purgeAllUserData(uid: String, email: String?, completion: @escaping (Error?) -> Void) {
+            let group = DispatchGroup()
+            var firstErr: Error?
+
+            func record(_ err: Error?) {
+                if let err = err, firstErr == nil { firstErr = err }
+            }
+
+            // A) 用户档案：users / user
+            let userCols = ["users", "user"]
+            for col in userCols {
+                group.enter()
+                var pairs: [(String, Any)] = [("uid", uid)]
+                if let em = email, !em.isEmpty { pairs.append(("email", em)) }
+                purgeCollectionByFields(col, fieldsAndValues: pairs) { err in
+                    record(err); group.leave()
+                }
+            }
+
+            // B) 日推荐：兼容 4 种集合名
+            let recCols = ["daily_recommendation", "daily recommendation", "daily_recommendations", "dailyRecommendations"]
+            for col in recCols {
+                // B1) 按字段删（uid / 兼容旧 email）
+                group.enter()
+                var pairs: [(String, Any)] = [("uid", uid)]
+                if let em = email, !em.isEmpty { pairs.append(("email", em)) }
+                purgeCollectionByFields(col, fieldsAndValues: pairs) { err in
+                    record(err); group.leave()
+                }
+
+                // B2) 追加按文档ID前缀删（历史数据可能没有 uid 字段）
+                group.enter()
+                purgeByDocIDPrefix(col, prefix: uid + "_") { err in
+                    record(err); group.leave()
+                }
+                if let em = email, !em.isEmpty {
+                    group.enter()
+                    purgeByDocIDPrefix(col, prefix: em + "_") { err in
+                        record(err); group.leave()
+                    }
+                }
+            }
+
+            group.notify(queue: .main) { completion(firstErr) }
+        }
+    func purgeByDocIDPrefix(
+            _ name: String,
+            prefix: String,
+            batchSize: Int = 400,
+            completion: @escaping (Error?) -> Void
+        ) {
+            guard !prefix.isEmpty else { completion(nil); return }
+            // Firestore 的“前缀查询”技巧： [prefix, prefix+\u{f8ff}]
+            let start = prefix
+            let end   = prefix + "\u{f8ff}"
+
+            let q = db.collection(name)
+                .whereField(FieldPath.documentID(), isGreaterThanOrEqualTo: start)
+                .whereField(FieldPath.documentID(), isLessThanOrEqualTo: end)
+                .limit(to: batchSize)
+
+            q.getDocuments { snap, err in
+                if let err = err { completion(err); return }
+                let docs = snap?.documents ?? []
+                if docs.isEmpty { completion(nil); return }
+
+                let batch = self.db.batch()
+                docs.forEach { batch.deleteDocument($0.reference) }
+                batch.commit { err in
+                    if let err = err { completion(err); return }
+                    // 继续删下一页
+                    self.purgeByDocIDPrefix(name, prefix: prefix, batchSize: batchSize, completion: completion)
+                }
+            }
+        }
+
+    func deleteAuthAccount(completion: @escaping (Error?) -> Void) {
+            guard let user = Auth.auth().currentUser else { completion(nil); return }
+            user.delete { err in
+                if let e = err as NSError?,
+                   e.code == AuthErrorCode.requiresRecentLogin.rawValue {
+                    // 需要最近登录 → 自动 reauth 后重试
+                    self.reauthenticateCurrentUser { reErr in
+                        if let reErr = reErr { completion(reErr); return }
+                        Auth.auth().currentUser?.delete(completion: completion)
+                    }
+                } else {
+                    completion(err)
+                }
+            }
+        }
+    func reauthenticateCurrentUser(completion: @escaping (Error?) -> Void) {
+            guard let user = Auth.auth().currentUser else { completion(nil); return }
+
+            // 找到优先可用的 provider
+            let providerIDs = user.providerData.map { $0.providerID } // e.g., "google.com", "apple.com", "password"
+            guard let rootVC = UIApplication.shared.connectedScenes
+                    .compactMap({ ($0 as? UIWindowScene)?.keyWindow?.rootViewController }).first else {
+                completion(NSError(domain: "Aligna", code: -1, userInfo: [NSLocalizedDescriptionKey: "No root view controller."]))
+                return
+            }
+
+            if providerIDs.contains("google.com") {
+                reauthWithGoogle(presenting: rootVC, completion: completion)
+            } else if providerIDs.contains("apple.com") {
+                reauthWithApple(presenting: rootVC, completion: completion)
+            } else if providerIDs.contains("password") {
+                completion(NSError(domain: "Aligna", code: Int(AuthErrorCode.requiresRecentLogin.rawValue),
+                                   userInfo: [NSLocalizedDescriptionKey: "Please sign in again with email & password, then delete."]))
+            } else {
+                completion(NSError(domain: "Aligna", code: -2, userInfo: [NSLocalizedDescriptionKey: "Unsupported provider."]))
+            }
+        }
+    func reauthWithGoogle(presenting rootVC: UIViewController, completion: @escaping (Error?) -> Void) {
+            guard let clientID = FirebaseApp.app()?.options.clientID else {
+                completion(NSError(domain: "Aligna", code: -3, userInfo: [NSLocalizedDescriptionKey: "Missing Firebase client ID."]))
+                return
+            }
+            GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
+
+            // 直接触发一次 Google 登录获取新 token
+            GIDSignIn.sharedInstance.signIn(withPresenting: rootVC) { result, error in
+                if let error = error { completion(error); return }
+                guard let user = result?.user, let idToken = user.idToken?.tokenString else {
+                    completion(NSError(domain: "Aligna", code: -4, userInfo: [NSLocalizedDescriptionKey: "Missing Google token."]))
+                    return
+                }
+                let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: user.accessToken.tokenString)
+                Auth.auth().currentUser?.reauthenticate(with: credential) { _, err in completion(err) }
+            }
+        }
+
+        // --- Apple 重新验证 ---
+        func reauthWithApple(presenting rootVC: UIViewController, completion: @escaping (Error?) -> Void) {
+            let nonce = randomNonceString()
+            let request = ASAuthorizationAppleIDProvider().createRequest()
+            request.requestedScopes = [] // 只需要 token，不需要姓名/邮箱
+            request.nonce = sha256(nonce)
+
+            let coordinator = AppleReauthCoordinator(nonce: nonce) { token, err in
+                if let err = err { completion(err); return }
+                guard let token = token, let tokenStr = String(data: token, encoding: .utf8) else {
+                    completion(NSError(domain: "Aligna", code: -5, userInfo: [NSLocalizedDescriptionKey: "Missing Apple token."]))
+                    return
+                }
+                let credential = OAuthProvider.credential(providerID: .apple, idToken: tokenStr, rawNonce: nonce)
+                Auth.auth().currentUser?.reauthenticate(with: credential) { _, err in completion(err) }
+            }
+
+            let controller = ASAuthorizationController(authorizationRequests: [request])
+            controller.delegate = coordinator
+            controller.presentationContextProvider = coordinator
+            coordinator.presentingWindow = rootVC.view.window
+            controller.performRequests()
+        }
+
+    func clearLocalStateAfterAccountDeletion() {
+        // 1) 清空本地标记（避免冷启动误判）
+        UserDefaults.standard.set(false, forKey: "isLoggedIn")
+        UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+        UserDefaults.standard.set(false, forKey: "shouldOnboardAfterSignIn")
+        UserDefaults.standard.set("",    forKey: "lastRecommendationDate")
+        UserDefaults.standard.set("",    forKey: "lastCurrentPlaceUpdate")
+        UserDefaults.standard.set("",    forKey: "todayFetchLock")
+
+        // 2) Firebase sign out（双保险：就算 user.delete 成功，也显式登出一次）
+        try? Auth.auth().signOut()
+
+        // 3) 断开 Google 会话（防止“静默恢复”导致下次进入就是已登录态）
+        GIDSignIn.sharedInstance.disconnect { error in
+            if let e = error { print("⚠️ Google disconnect failed: \(e)") }
+            else { print("✅ Google session disconnected") }
+        }
+    }
+}
+
+// MARK: - 固定英文展示 & 解析（工具函数，供其它处复用）
+private extension AccountDetailView {
+    func dateString(_ d: Date) -> String {
+        Self.birthdayDisplayFormatter.string(from: d)
+    }
+    func timeString(_ d: Date) -> String {
+        Self.birthTimeDisplayFormatter.string(from: d).lowercased()
+    }
+    func timeToDate(_ s: String) -> Date? {
+        if let d = Self.parseTimeFormatter12.date(from: s) { return d }
+        if let d = Self.parseTimeFormatter24.date(from: s) { return d }
+        return nil
+    }
+}
+
+    // ——— 下面你的删号/reauth 等逻辑保持不变 ———
+    
+
+    // ………… 省略：purgeCollection / purgeAllUserData / purgeByDocIDPrefix / deleteAuthAccount / reauthenticateCurrentUser / reauthWithGoogle / reauthWithApple / clearLocalStateAfterAccountDeletion（与你现有保持一致） …………
+
+// 放在文件尾部的协调器（保持你的实现）
+final class AppleReauthCoordinator: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+    let nonce: String
+    var presentingWindow: UIWindow?
+    let completion: (Data?, Error?) -> Void
+
+    init(nonce: String, completion: @escaping (Data?, Error?) -> Void) {
+        self.nonce = nonce
+        self.completion = completion
+    }
+
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        presentingWindow ?? ASPresentationAnchor()
+    }
+
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+        guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+              let token = credential.identityToken else {
+            completion(nil, NSError(domain: "Aligna", code: -6, userInfo: [NSLocalizedDescriptionKey: "Apple credential missing token."]))
+            return
+        }
+        completion(token, nil)
+    }
+
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        completion(nil, error)
+    }
+}
+
+import Foundation
+import CoreLocation
+
+/// 轻量级占星计算器（热带黄道）
+/// - 说明：太阳星座按常见区间；月亮与上升使用近似算法，移动端足够好用。
+enum AstroCalculator {
+    // MARK: - Public API
+    static func sunSign(for birthDateTime: Date, in tz: TimeZone = .current) -> String {
+        // 太阳星座按日期区间（热带黄道，常见边界）
+        let cal = Calendar(identifier: .gregorian)
+        let m = cal.component(.month, from: birthDateTime)
+        let d = cal.component(.day, from: birthDateTime)
+        switch (m, d) {
+        case (3,21...31),(4,1...19):  return "♈︎ Aries"
+        case (4,20...30),(5,1...20):  return "♉︎ Taurus"
+        case (5,21...31),(6,1...20):  return "♊︎ Gemini"
+        case (6,21...30),(7,1...22):  return "♋︎ Cancer"
+        case (7,23...31),(8,1...22):  return "♌︎ Leo"
+        case (8,23...31),(9,1...22):  return "♍︎ Virgo"
+        case (9,23...30),(10,1...22): return "♎︎ Libra"
+        case (10,23...31),(11,1...21):return "♏︎ Scorpio"
+        case (11,22...30),(12,1...21):return "♐︎ Sagittarius"
+        case (12,22...31),(1,1...19): return "♑︎ Capricorn"
+        case (1,20...31),(2,1...18):  return "♒︎ Aquarius"
+        default:                      return "♓︎ Pisces"
+        }
+    }
+
+    static func moonSign(for birthDateTime: Date, in tz: TimeZone = .current) -> String {
+        // 粗略月亮经度：J2000以来的日数 * 月球平运动（度/日） + 近似均差项
+        // 近似即可：划分每30度为一宫，对应月亮星座
+        let λ = normalized(deg: meanMoonLongitude(birthDateTime)) // [0,360)
+        return signName(for: λ, prefix: "月亮")
+    }
+
+    static func ascendantSign(for birthDateTime: Date,
+                              latitude: Double?,
+                              longitude: Double?,
+                              in tz: TimeZone = .current) -> String {
+        guard let lat = latitude, let lon = longitude else {
+            return "Unknown"
+        }
+        // 计算地方恒星时（LST），再近似求上升点黄经
+        let lst = localSiderealTime(date: birthDateTime, longitude: lon)
+        let ε = deg2rad(23.439291) // 黄赤交角
+        let φ = deg2rad(lat)
+        let H = deg2rad(lst) // 以度近似小时角
+
+        // 上升点（Asc）黄道经度公式（简化）
+        // tan(λ_asc) = 1 / (cos ε / tan φ + sin ε * sin H / cos H)
+        // 参考：Meeus 简化推导（这里用于近似展示）
+        let numerator = 1.0
+        let denominator = (cos(ε) / tan(φ)) + (sin(ε) * tan(H))
+        var λAsc = atan2(numerator, denominator) // [-π, π]
+        λAsc = λAsc < 0 ? λAsc + 2 * .pi : λAsc
+        let λAscDeg = rad2deg(λAsc)
+        return signName(for: λAscDeg, prefix: "上升")
+    }
+
+    // MARK: - Helpers
+
+    /// 平月黄经（度）粗略；J2000起算
+    private static func meanMoonLongitude(_ date: Date) -> Double {
+        // J2000: 2000-01-01 12:00 UT
+        let j2000 = DateComponents(calendar: Calendar(identifier: .gregorian),
+                                   timeZone: TimeZone(secondsFromGMT: 0),
+                                   year: 2000, month: 1, day: 1, hour: 12).date!
+        let days = date.timeIntervalSince(j2000) / 86400.0
+
+        // 月球平均黄经 ~ 218.316 + 13.176396 * d  （度）
+        // 再加一个很小的简化摄动项提高体感（不追求天文精度）
+        let L0 = 218.316
+        let n = 13.176396
+        let M = 134.963 + 13.064993 * days // 月亮平近点角（近似）
+        let corr = 6.289 * sin(deg2rad(M)) // 主要摄动项（简化）
+        return normalized(deg: L0 + n * days + corr)
+    }
+
+    /// 地方恒星时（度，0-360）
+    private static func localSiderealTime(date: Date, longitude: Double) -> Double {
+        // 近似 GMST（度）
+        let jd = julianDate(date: date)
+        let T = (jd - 2451545.0) / 36525.0
+        var GMST = 280.46061837 + 360.98564736629 * (jd - 2451545.0)
+        GMST += 0.000387933 * T * T - (T * T * T) / 38710000.0
+        GMST = normalized(deg: GMST)
+        // 地方恒星时 = GMST + 经度
+        return normalized(deg: GMST + longitude)
+    }
+
+    /// 儒略日
+    private static func julianDate(date: Date) -> Double {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(secondsFromGMT: 0)!
+        let comps = cal.dateComponents([.year,.month,.day,.hour,.minute,.second], from: date)
+        let Y = Double(comps.year!)
+        let M = Double(comps.month!)
+        let D = Double(comps.day!) +
+                (Double(comps.hour!) - 12.0)/24.0 +
+                Double(comps.minute!) / 1440.0 +
+                Double(comps.second!) / 86400.0
+        let A = floor((14.0 - M)/12.0)
+        let y = Y + 4800.0 - A
+        let m = M + 12.0*A - 3.0
+        var jd = D + floor((153.0*m + 2.0)/5.0) + 365.0*y + floor(y/4.0) - floor(y/100.0) + floor(y/400.0) - 32045.0
+        // 已经包含 12h 偏移（因为上面 -12h）
+        return jd
+    }
+
+    private static func signName(for eclipticLongitude: Double, prefix: String) -> String {
+        let idx = Int(floor(normalized(deg: eclipticLongitude) / 30.0)) % 12
+        let names = [
+            "♈︎ Aries","♉︎ Taurus","♊︎ Gemini","♋︎ Cancer",
+            "♌︎ Leo","♍︎ Virgo","♎︎ Libra","♏︎ Scorpio",
+            "♐︎ Sagittarius","♑︎ Capricorn","♒︎ Aquarius","♓︎ Pisces"
+        ]
+        return "\(prefix) \(names[idx])"
+    }
+
+    private static func normalized(deg: Double) -> Double {
+        var x = deg.truncatingRemainder(dividingBy: 360.0)
+        if x < 0 { x += 360.0 }
+        return x
+    }
+
+    private static func deg2rad(_ x: Double) -> Double { x * .pi / 180.0 }
+    private static func rad2deg(_ x: Double) -> Double { x * 180.0 / .pi }
+}
+
+import Foundation
+import CoreLocation
+
+// 把出生“日期”和“时间”合并成一个 Date（按用户当前时区；若有需要可换成出生地时区）
+extension OnboardingViewModel {
+    var birthDateTime: Date {
+        let cal = Calendar(identifier: .gregorian)
+        let tz = TimeZone.current
+        var dc = cal.dateComponents(in: tz, from: birth_date)
+        let t  = cal.dateComponents(in: tz, from: birth_time)
+        dc.hour = t.hour; dc.minute = t.minute; dc.second = t.second ?? 0
+        return cal.date(from: DateComponents(timeZone: tz,
+                                             year: dc.year, month: dc.month, day: dc.day,
+                                             hour: dc.hour, minute: dc.minute, second: dc.second)) ?? birth_date
+    }
+
+    var sunSignText: String {
+        AstroCalculator.sunSign(for: birthDateTime)
+    }
+
+    var moonSignText: String {
+        AstroCalculator.moonSign(for: birthDateTime)
+    }
+
+    var ascendantText: String {
+        AstroCalculator.ascendantSign(for: birthDateTime,
+                                      latitude: birthCoordinate?.latitude,
+                                      longitude: birthCoordinate?.longitude)
+    }
+}
+
+import SwiftUI
+
+struct ZodiacInlineRow: View {
+    @EnvironmentObject var themeManager: ThemeManager
+    @ObservedObject var viewModel: OnboardingViewModel
+
+    var body: some View {
+        HStack(spacing: 14) {
+            HStack(spacing: 6) {
+                Image(systemName: "sun.max.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                Text(english(from: viewModel.sunSignText))
+            }
+
+            Text("•").opacity(0.5)
+
+            HStack(spacing: 6) {
+                Image(systemName: "moon.stars.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                Text(english(from: viewModel.moonSignText))
+            }
+
+            Text("•").opacity(0.5)
+
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.up.circle.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                Text(english(from: viewModel.ascendantText))
+            }
+        }
+        .foregroundColor(themeManager.foregroundColor)
+        .font(.custom("PlayfairDisplay-Italic", size: 14))
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+        .frame(maxWidth: .infinity, alignment: .center) // ⬅️ 改为居中
+        .padding(.top, 4)
+    }
+
+    private func english(from signText: String) -> String {
+        let trimmed = signText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let noPrefix = trimmed
+            .replacingOccurrences(of: "太阳 ", with: "")
+            .replacingOccurrences(of: "月亮 ", with: "")
+            .replacingOccurrences(of: "上升 ", with: "")
+        if let range = noPrefix.range(of: " ", options: .backwards) {
+            let after = noPrefix[range.upperBound...]
+            let en = after.trimmingCharacters(in: .whitespacesAndNewlines)
+            return en.isEmpty ? trimmed : en
+        }
+        return trimmed
+    }
+}
+
+
+
+
 
 /// 安全加载本地 Asset 的图片：
 /// - 若找不到对应的图片名，不会崩溃，而是回退到系统占位图标。
@@ -3605,6 +5216,46 @@ class SoundPlayer: ObservableObject {
         }
     }
 }
+// 统一按 UTC 解析/格式化生日，避免时区错一天
+enum ISO8601Calendar {
+    static let cal = Calendar(identifier: .gregorian)
+    static let tz  = TimeZone(secondsFromGMT: 0)!
+    static func date(from ymd: String) -> Date? {
+        let df = DateFormatter()
+        df.calendar = cal
+        df.timeZone = tz
+        df.dateFormat = "yyyy-MM-dd"
+        return df.date(from: ymd)
+    }
+    static func string(from date: Date) -> String {
+        let df = DateFormatter()
+        df.calendar = cal
+        df.timeZone = tz
+        df.dateFormat = "yyyy-MM-dd"
+        return df.string(from: date)
+    }
+}
+
+func timeToDateFlexible(_ str: String) -> Date? {
+    let fmts = ["HH:mm", "H:mm", "hh:mm a", "h:mm a"]
+    for f in fmts {
+        let df = DateFormatter()
+        df.calendar = Calendar(identifier: .gregorian)
+        df.locale   = Locale(identifier: "en_US_POSIX")
+        df.timeZone = TimeZone(secondsFromGMT: 0) // 与生日一致走 GMT，避免跨区跑偏
+        df.dateFormat = f
+        if let d = df.date(from: str) {
+            // 仅取“时/分”，拼到一个稳定日期（2001-01-01）
+            let comps = Calendar(identifier: .gregorian).dateComponents([.hour, .minute], from: d)
+            var only = DateComponents()
+            only.year = 2001; only.month = 1; only.day = 1
+            only.hour = comps.hour; only.minute = comps.minute
+            return Calendar(identifier: .gregorian).date(from: only)
+        }
+    }
+    return nil
+}
+
 
 
 
@@ -3655,6 +5306,13 @@ extension View {
         modifier(FocusGlow(active: active, color: color, lineWidth: lineWidth, cornerRadius: cornerRadius))
     }
 }
+// 固定“夜间”文字调色板：用在 Onboarding / 登录注册等必须恒为夜色的页面
+extension ThemeManager {
+    var fixedNightTextPrimary: Color   { Color(hex: "#E6D7C3") } // 主要文字
+    var fixedNightTextSecondary: Color { Color(hex: "#B8C5D6") } // 次要说明
+    var fixedNightTextTertiary: Color  { Color(hex: "#A8B5C8") } // 更淡的正文
+}
+
 
 
 #Preview {

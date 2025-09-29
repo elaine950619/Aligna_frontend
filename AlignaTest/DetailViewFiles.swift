@@ -912,6 +912,15 @@ struct GemstoneDetailView: View {
     var body: some View {
         ZStack {
             AppBackgroundView().environmentObject(starManager)
+            
+            CustomBackButton(
+                iconSize: 18,
+                paddingSize: 8,
+                backgroundColor: Color.black.opacity(0.3),
+                iconColor: themeManager.foregroundColor,
+                topPadding: 44,
+                horizontalPadding: 24
+            )
 
             VStack(spacing: 20) {
                 Text("Gemstone")
@@ -1357,7 +1366,7 @@ struct ScentDetailView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                                 .foregroundColor(themeManager.foregroundColor)
                                 .onTapGesture { showLinkSheet = true }
-                                .sheet(isPresented: $showLinkSheet) {  
+                                .sheet(isPresented: $showLinkSheet) {
                                     ScentLinkSheet(
                                         title: item.title,
                                         linkURLString: item.link,        // expects `link` on RecommendationItem
@@ -1512,23 +1521,6 @@ struct ActivityDetailView: View {
                         .frame(width: 150, height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .foregroundColor(themeManager.foregroundColor)
-                    
-                    Button(action: {
-                        soundPlayer.playSound(named: soundDocumentName)
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.white.opacity(0.10))
-                                .background(.ultraThinMaterial, in: Circle())
-                                .overlay(Circle().stroke(Color.white.opacity(0.20), lineWidth: 2))
-                                .frame(width: 56, height: 56)
-                            Image(systemName: "play.fill")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(Color(hex: "#E6D7C3"))
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.top, 28)
                     
                     // Explanation
                     Text(item.explanation)

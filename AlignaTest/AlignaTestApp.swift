@@ -81,8 +81,19 @@ struct RootRouter: View {
                 self.isAuthenticated = (user != nil)
                 self.isReady = true
                 print("Auth state -> isAuthenticated=\(self.isAuthenticated)")
+
+                // 🧹 关键：一旦变为“未登录”，清掉所有可能误触发 Onboarding 的本地标记
+                if user == nil {
+                    UserDefaults.standard.set(false, forKey: "shouldOnboardAfterSignIn")
+                    UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+                    UserDefaults.standard.set(false, forKey: "isLoggedIn")
+                    UserDefaults.standard.set("",    forKey: "lastRecommendationDate")
+                    UserDefaults.standard.set("",    forKey: "lastCurrentPlaceUpdate")
+                    UserDefaults.standard.set("",    forKey: "todayFetchLock")
+                }
             }
         }
+
     }
 }
 
