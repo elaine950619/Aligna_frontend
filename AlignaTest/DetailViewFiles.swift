@@ -469,28 +469,9 @@ struct PlaceDetailView: View {
                         .italic()
                         .font(.custom("PlayfairDisplay-Regular", size: 14))
                         .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.bodyText)
-                    
-                    // three images
-                    //                    if !imageNames.isEmpty {
-                    //                        ScrollView(.horizontal, showsIndicators: false) {
-                    //                            HStack(spacing: 12) {
-                    //                                ForEach(imageNames, id: \.self) { name in
-                    //                                    Image(name)
-                    //                                        .resizable()
-                    //                                        .scaledToFill()
-                    //                                        .frame(width: 140, height: 140)
-                    //                                        .clipped()
-                    //                                        .cornerRadius(8)
-                    //                                }
-                    //                            }
-                    //                            .padding(.horizontal)
-                    //                        }
-                    //                        .frame(height: 160)
-                    //                    }
+                        .foregroundColor(themeManager.descriptionText)
                     
                     VStack(spacing: 24) {
-                        // top two
                         HStack(spacing: 40) {
                             ForEach(iconItems[0...2]) { item in
                                 VStack(spacing: 8) {
@@ -499,11 +480,11 @@ struct PlaceDetailView: View {
                                         .resizable()
                                         .scaledToFit()
                                         .frame(width: 50, height: 50)
-                                        .foregroundColor(themeManager.accent)
+                                        .foregroundColor(themeManager.placeIcon)
                                     Text(item.title)
                                         .font(.custom("PlayfairDisplay-Regular", size: 16))
                                         .multilineTextAlignment(.center)
-                                        .foregroundColor(themeManager.accent)
+                                        .foregroundColor(themeManager.placeIconText)
                                         .fixedSize(horizontal: true, vertical: true)
                                         .lineLimit(2)
                                 }

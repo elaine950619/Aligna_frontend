@@ -23,18 +23,18 @@ final class ThemeManager: ObservableObject {
 
     // 大型水印文字：夜 #4A5A9E(40%)；日 secondary
     var watermark: Color {
-        isNight ? Color(hex: "#4A5A9E").opacity(0.4) : Color.secondary
+        isNight ? Color(hex: "#4A5A9E").opacity(0.4) : Color(hex: "8B4513").opacity(0.6)
     }
 
     // 主标题（例如 “Green Sanctuary”）
     // 夜 #E6D7C3；日 #8F643E
     var primaryText: Color {
-        isNight ? Color(hex: "#E6D7C3") : Color(hex: "#8F643E")
+        isNight ? Color(hex: "#E6D7C3") : Color(hex: "#8B4513")
     }
 
     // 副标题/简短描述：夜 #B8C5D6；日 secondary
     var descriptionText: Color {
-        isNight ? Color(hex: "#B8C5D6") : Color.secondary
+        isNight ? Color(hex: "#B8C5D6") : Color(hex: "#8B4513")
     }
 
     // 正文/长段落：夜 #A8B5C8；日 primary
@@ -42,6 +42,14 @@ final class ThemeManager: ObservableObject {
         isNight ? Color(hex: "#A8B5C8") : Color.primary
     }
 
+    var placeIcon: Color {
+        isNight ? Color.accentColor : Color(hex: "#CD853F")
+    }
+    
+    var placeIconText: Color {
+        isNight ? Color.accentColor : Color(hex: "#7A5A3A")
+    }
+    
     // 全局强制：任何选项都返回 .dark/.light（不再随系统）
     var preferredColorScheme: ColorScheme? {
         isNight ? .dark : .light
