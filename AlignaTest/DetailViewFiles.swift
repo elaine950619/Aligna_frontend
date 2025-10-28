@@ -330,7 +330,7 @@ struct SoundDetailView: View {
                         .italic()
                         .font(.custom("PlayfairDisplay-Regular", size: 14))
                         .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.bodyText)
+                        .foregroundColor(themeManager.descriptionText)
                 } else {
                     ProgressView("Loading...")
                         .padding(.top, 100)
@@ -376,15 +376,20 @@ struct SoundDetailView: View {
 }
 
 struct Glow: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
     var color: Color = .white
     var radius: CGFloat = 8
     
     func body(content: Content) -> some View {
-        content
-        // first, a tight glow…
-            .shadow(color: color.opacity(0.6), radius: radius, x: 0, y: 0)
-        // …then a wider, fainter glow
-            .shadow(color: color.opacity(0.4), radius: radius * 2, x: 0, y: 0)
+        Group {
+            if colorScheme == .dark {
+                content
+                    .shadow(color: color.opacity(0.6), radius: radius)
+                    .shadow(color: color.opacity(0.4), radius: radius * 2)
+            } else {
+                content
+            }
+        }
     }
 }
 
@@ -967,7 +972,7 @@ struct GemstoneDetailView: View {
                         .padding(.bottom)
                         .italic()
                         .font(.custom("PlayfairDisplay-Regular", size: 14))
-                        .foregroundColor(themeManager.bodyText)
+                        .foregroundColor(themeManager.descriptionText)
                 } else {
                     ProgressView("Loading...").padding(.top, 100)
                 }
@@ -1128,7 +1133,7 @@ struct ColorDetailView: View {
                         .italic()
                         .font(.custom("PlayfairDisplay-Regular", size: 14))
                         .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.bodyText)
+                        .foregroundColor(themeManager.descriptionText)
                     
                     // button
                 } else {
@@ -1366,7 +1371,7 @@ struct ScentDetailView: View {
                                 .italic()
                                 .font(.custom("PlayfairDisplay-Regular", size: 14))
                                 .fixedSize(horizontal: false, vertical: true)
-                                .foregroundColor(themeManager.bodyText)
+                                .foregroundColor(themeManager.descriptionText)
 
                             if let about = item.about, !about.isEmpty {
                                 VStack(alignment: .center, spacing: 10) {
@@ -1511,7 +1516,7 @@ struct ActivityDetailView: View {
                         .italic()
                         .font(.custom("PlayfairDisplay-Regular", size: 14))
                         .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.bodyText)
+                        .foregroundColor(themeManager.descriptionText)
                 } else {
                     ProgressView("Loading...")
                         .padding(.top, 100)
@@ -1607,7 +1612,7 @@ struct CareerDetailView: View {
                         .italic()
                         .font(.custom("PlayfairDisplay-Regular", size: 14))
                         .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.bodyText)
+                        .foregroundColor(themeManager.descriptionText)
                 } else {
                     ProgressView("Loading...")
                         .padding(.top, 100)
@@ -1704,7 +1709,7 @@ struct RelationshipDetailView: View {
                         .italic()
                         .font(.custom("PlayfairDisplay-Regular", size: 14))
                         .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.bodyText)
+                        .foregroundColor(themeManager.descriptionText)
                     
                     // three images
                     

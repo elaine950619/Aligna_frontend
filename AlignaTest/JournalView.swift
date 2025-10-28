@@ -2,98 +2,6 @@ import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth
 
-private struct ReflectionCompleteView: View {
-    let text: String
-    let onEdit: () -> Void
-    let onReturnHome: () -> Void
-    @EnvironmentObject var themeManager: ThemeManager
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        ZStack {
-            BackgroundSky().environmentObject(themeManager)
-
-            VStack(spacing: 24) {
-                // Success glyph
-                ZStack {
-                    Circle()
-                        .fill(Color.green.opacity(0.18))
-                        .frame(width: 64, height: 64)
-                        .shadow(color: .black.opacity(0.25), radius: 10, x: 0, y: 6)
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.9))
-                }
-                .padding(.top, 12)
-
-                // Title
-                Text("Today’s Reflection Complete")
-                    .font(.system(size: 28, weight: .semibold, design: .serif))
-                    .foregroundStyle(themeManager.primaryText)
-                    .multilineTextAlignment(.center)
-
-                // Saved text in a glass card
-                GlassCard {
-                    Text("“\(text)”")
-                        .font(.system(size: 18, weight: .regular, design: .serif))
-                        .foregroundStyle(themeManager.bodyText)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 8)
-                }
-                .environmentObject(themeManager)
-                .padding(.horizontal, 24)
-
-                // Buttons
-                VStack(spacing: 12) {
-                    Button {
-                        onEdit()
-                    } label: {
-                        Text("Edit Today’s Reflection")
-                            .fontWeight(.semibold)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                    }
-                    .buttonStyle(PrimaryGhostButtonStyle(disabled: false))
-                    .environmentObject(themeManager)
-
-                    Button {
-                        onReturnHome()
-                    } label: {
-                        Text("Return to Home")
-                            .fontWeight(.semibold)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                    }
-                    .buttonStyle(PrimaryGhostButtonStyle(disabled: false))
-                    .environmentObject(themeManager)
-                    .opacity(0.9)
-                }
-                .padding(.horizontal, 24)
-
-                Spacer(minLength: 24)
-            }
-            .padding(.top, 24)
-        }
-        .preferredColorScheme(themeManager.preferredColorScheme)
-        .navigationBarBackButtonHidden(true)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        // Optional custom back in the completion page too:
-        .overlay(alignment: .topLeading) {
-            Button(action: { onEdit() }) {
-                CustomBackButton(
-                    iconSize: 18,
-                    paddingSize: 8,
-                    backgroundColor: Color.black.opacity(0.30),
-                    iconColor: themeManager.foregroundColor,
-                    topPadding: 44,
-                    horizontalPadding: 24
-                )
-            }
-        }
-    }
-}
-
-
 struct JournalView: View {
     let date: Date
     
@@ -106,11 +14,8 @@ struct JournalView: View {
     private enum StorageMode { case recommendation(String), standaloneUser }
     @State private var storageMode: StorageMode? = nil
     private let allowStandaloneIfNoRec = true
-    @State private var showComplete = false
-    @State private var savedSnapshot = ""
     
     @Environment(\.dismiss) private var dismiss
-    @State private var shouldPopAfterSheet = false
     @EnvironmentObject var themeManager: ThemeManager
     
     // MARK: Dates
@@ -213,24 +118,7 @@ struct JournalView: View {
         } message: {
             Text("This will clear the current text. It won’t delete anything saved previously.")
         }
-        .fullScreenCover(isPresented: $showComplete, onDismiss: {
-            if shouldPopAfterSheet {
-                shouldPopAfterSheet = false
-                dismiss()
-                DispatchQueue.main.async { dismiss() } 
-            }
-        }) {
-            ReflectionCompleteView(
-                text: savedSnapshot,
-                onEdit: { showComplete = false },            // just close the sheet
-                onReturnHome: {                              // close sheet, then pop
-                    shouldPopAfterSheet = true
-                    showComplete = false
-                }
-            )
-            .environmentObject(themeManager)
-        }
-        .onAppear { loadEntry() }
+        .onAppear { loadEntry() }   
     }
     
     // MARK: Firestore (unchanged)
@@ -276,12 +164,21 @@ struct JournalView: View {
         guard !text.trimmed().isEmpty else { return }
         isSaving = true; defer { isSaving = false }
         guard let userId = Auth.auth().currentUser?.uid else { return }
+
         let db = Firestore.firestore()
         let ds = dateStringForQuery
 
+        // Small helper: return to previous screen after saving
+        func goHome() {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            dismiss()   // 👈 pops this screen off the navigation stack
+        }
+
         switch storageMode {
         case .recommendation(let recID):
-            let journalsRef = db.collection("daily_recommendation").document(recID).collection("journals")
+            let journalsRef = db.collection("daily_recommendation")
+                .document(recID)
+                .collection("journals")
 
             if let journalID = journalDocID {
                 await withCheckedContinuation { c in
@@ -289,8 +186,7 @@ struct JournalView: View {
                         "text": text,
                         "updatedAt": Timestamp()
                     ]) { _ in
-                        savedSnapshot = text
-                        showComplete = true     // <-- present completion here
+                        goHome()  // ✅ Jump straight back
                         c.resume()
                     }
                 }
@@ -300,22 +196,21 @@ struct JournalView: View {
                         "text": text,
                         "createdAt": Timestamp()
                     ]) { _ in
-                        savedSnapshot = text
-                        showComplete = true     // <-- present completion here
+                        goHome()
                         c.resume()
                     }
                 }
             }
 
         case .standaloneUser, .none:
-            let doc = db.collection("users").document(userId).collection("journals").document(ds)
+            let doc = db.collection("users").document(userId)
+                .collection("journals").document(ds)
             await withCheckedContinuation { c in
                 doc.setData([
                     "text": text,
                     "updatedAt": Timestamp()
                 ], merge: true) { _ in
-                    savedSnapshot = text
-                    showComplete = true
+                    goHome()
                     c.resume()
                 }
             }
@@ -435,30 +330,6 @@ private struct StarField: View {
         }
     }
 }
-
-//private struct GlassCard<Content: View>: View {
-//    @EnvironmentObject var themeManager: ThemeManager
-//    @ViewBuilder var content: Content
-//    var body: some View {
-//        VStack(alignment: .leading, spacing: 0) { content }
-//            .padding(14)
-//            .background(
-//                // slightly more contrast for dark (like the video)
-//                LinearGradient(colors: [
-//                    Color.white.opacity(0.07),
-//                    Color.white.opacity(0.03)
-//                ], startPoint: .top, endPoint: .bottom)
-//                .blendMode(.plusLighter)
-//                .background(themeManager.panelFill.opacity(0.35))
-//            )
-//            .overlay(
-//                RoundedRectangle(cornerRadius: 22, style: .continuous)
-//                    .stroke(themeManager.panelStrokeHi.opacity(0.9), lineWidth: 1)
-//            )
-//            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-//            .shadow(color: .black.opacity(themeManager.isNight ? 0.45 : 0.12), radius: 18, x: 0, y: 14)
-//    }
-//}
 
 // MARK: - Helpers
 private extension String {
