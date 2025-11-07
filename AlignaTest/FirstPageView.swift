@@ -4,6 +4,8 @@ import MapKit
 import CoreLocation
 import Combine
 import WidgetKit
+import FirebaseAuth
+import FirebaseFirestore
 
 
 func getAddressFromCoordinate(
@@ -471,6 +473,18 @@ struct FirstPageView: View {
     @State private var splashZodiac: String = ""
     @State private var splashMoon: String = ""
     
+    private func ensureDefaultsIfMissing() {
+        // If nothing loaded yet, supply local demo content
+        if viewModel.recommendations.isEmpty {
+            viewModel.recommendations = DesignRecs.docs
+            viewModel.dailyMantra = viewModel.dailyMantra.isEmpty ? DesignRecs.mantra : viewModel.dailyMantra
+        }
+        // If we don’t have human-facing titles yet, use local titles
+        if recommendationTitles.isEmpty {
+            recommendationTitles = DesignRecs.titles
+        }
+    }
+    
     private var mainContent: some View {
         NavigationStack {
             GeometryReader { geometry in
@@ -583,6 +597,13 @@ struct FirstPageView: View {
                 .onAppear {
                     starManager.animateStar = true
                     themeManager.appBecameActive()
+                    // Always make sure UI has something to render
+                        ensureDefaultsIfMissing()
+
+                    // Skip Firestore in preview, otherwise try to load real titles
+                    #if DEBUG
+                    if _isPreview { return }
+                    #endif
                     // 首次拉取由 startInitialLoad() 统一调度；这里不再发拉取请求
                     fetchAllRecommendationTitles()
                 }
@@ -609,6 +630,9 @@ struct FirstPageView: View {
     
     // 冷启动只看“是否已登录 + 本地标记”来分流；不再在这里查 Firestore 决定是否强拉 Onboarding。
     private func startInitialLoad() {
+        #if DEBUG
+        if _isPreview { bootPhase = .main; return }
+        #endif
         let user = Auth.auth().currentUser
 
         // A) 未登录：展示 OnboardingOpeningPage（不是 Step1）
@@ -889,6 +913,9 @@ struct FirstPageView: View {
     }
 
     private func fetchAllRecommendationTitles() {
+        #if DEBUG
+        if _isPreview { return }
+        #endif
         let db = Firestore.firestore()
 
         for (rawCategory, rawDoc) in viewModel.recommendations {
@@ -1157,51 +1184,53 @@ struct FirstPageView: View {
     
     private func navItemView(title: String, geometry: GeometryProxy) -> some View {
         let documentName = viewModel.recommendations[title] ?? ""
+        let startCat = RecCategory(rawValue: title) // "Place" -> .Place
         
         return Group {
-            if !documentName.isEmpty {
-                NavigationLink(destination:
-                                viewForCategory(title: title, documentName: documentName)
-                ) {
-                    VStack(spacing: 2) {   // ⬅️ tighter spacing
-                        // 图标图像
+            if let startCat, !documentName.isEmpty {
+                NavigationLink {
+                    // Build the docs map for all eight categories from your viewModel
+                    let docsMap: [RecCategory: String] = Dictionary(uniqueKeysWithValues:
+                        RecCategory.allCases.map { cat in
+                            let key = cat.rawValue
+                            return (cat, viewModel.recommendations[key] ?? "")
+                        }
+                    )
+                    RecommendationPagerView(docsByCategory: docsMap, selected: startCat)
+                        .environmentObject(starManager)
+                        .environmentObject(themeManager)
+                        .environmentObject(viewModel)
+                } label: {
+                    VStack(spacing: 2) {
                         SafeImage(name: documentName, renderingMode: .template, contentMode: .fit)
                             .foregroundColor(themeManager.foregroundColor)
-                            .frame(width: geometry.size.width * 0.18)  // slightly smaller to balance text
+                            .frame(width: geometry.size.width * 0.18)
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                             .shadow(radius: 1.5)
-                        
-                        // 推荐名称（小字体，紧贴图标）
                         Text(recommendationTitles[title] ?? "")
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.033))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.8))
-                            .multilineTextAlignment(.center)
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
-                            .padding(.top, 1) // ⬅️ subtle spacing only
-                        
-                        // 类别标题（和上面稍微拉开）
+                            .padding(.top, 1)
                         Text(title)
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.05))
                             .foregroundColor(themeManager.foregroundColor)
-                            .padding(.top, 2) // ⬅️ tighter than before
+                            .padding(.top, 2)
                     }
                 }
             } else {
-                Button {
-                    print("⚠️ 无法进入 '\(title)'，推荐结果尚未加载")
-                } label: {
+                // your loading placeholder…
+                Button { print("⚠️ '\(title)' not loaded yet") } label: {
                     VStack(spacing: 2) {
                         Image(systemName: "questionmark.square.dashed")
                             .resizable()
                             .scaledToFit()
                             .frame(width: geometry.size.width * 0.18)
                             .foregroundColor(themeManager.foregroundColor.opacity(0.4))
-                        
                         Text("Loading")
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.033))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.5))
-                        
                         Text(title)
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.05))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.5))
@@ -1253,18 +1282,19 @@ struct FirstPageView: View {
         let today = dateFormatter.string(from: Date())
 
         db.collection("daily_recommendation")
-            .whereField("uid", isEqualTo: userId)
-            .whereField("createdAt", isEqualTo: today)
-            .getDocuments { snapshot, error in
-                if let error = error {
-                    print("❌ 查询推荐失败：\(error)")
-                    return
-                }
-
-                guard let documents = snapshot?.documents, let doc = documents.first else {
-                    print("⚠️ 今日暂无推荐数据")
-                    return
-                }
+          .whereField("uid", isEqualTo: userId)
+          .whereField("createdAt", isEqualTo: today)
+          .getDocuments { snapshot, error in
+              if let error = error {
+                  print("❌ 查询推荐失败：\(error). 使用本地默认内容")
+                  ensureDefaultsIfMissing()
+                  return
+              }
+              guard let documents = snapshot?.documents, let doc = documents.first else {
+                  print("⚠️ 今日暂无推荐数据。使用本地默认内容")
+                  ensureDefaultsIfMissing()
+                  return
+              }
 
                 var recs: [String: String] = [:]
                 var fetchedMantra = ""
@@ -1343,6 +1373,67 @@ struct FirstPageView: View {
 }
 
 
+enum DesignRecs {
+    static let docs: [String:String] = [
+        "Place": "echo_niche",
+        "Gemstone": "amethyst",
+        "Color": "amber",
+        "Scent": "bergamot",
+        "Activity": "clean_mirror",
+        "Sound": "brown_noise",
+        "Career": "clear_channel",
+        "Relationship": "breathe_sync"
+    ]
+    static let titles: [String:String] = [
+        "Place": "Echo Niche", "Gemstone": "Amethyst", "Color": "Amber",
+        "Scent": "Bergamot", "Activity": "Polishing Mirror",
+        "Sound": "Brown Noise", "Career": "Clear Channel",
+        "Relationship": "Breathe in Sync"
+    ]
+    static let mantra = "Find your flow."
+}
+
+
+#if DEBUG
+extension FirstPageView {
+    init(previewBoot: BootPhase) {
+        self.init()
+        _bootPhase = State(initialValue: previewBoot) // jump straight to .main
+    }
+}
+#endif
+
+#if DEBUG
+struct FirstPageView_Previews: PreviewProvider {
+    static var previews: some View {
+        let vm = OnboardingViewModel()
+        vm.recommendations = [
+            "Place": "echo_niche",
+            "Gemstone": "amethyst",
+            "Color": "amber",
+            "Scent": "bergamot",
+            "Activity": "clean_mirror",
+            "Sound": "brown_noise",
+            "Career": "clear_channel",
+            "Relationship": "breathe_sync"
+        ]
+        vm.dailyMantra = "Find your flow."
+
+        return FirstPageView(previewBoot: .main)
+            .environmentObject(StarAnimationManager())
+            .environmentObject(ThemeManager())
+            .environmentObject(vm)
+            .previewDisplayName("FirstPage main grid")
+    }
+}
+#endif
+
+#if DEBUG
+let _isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+#endif
+
+
+
 
 
 
@@ -1377,6 +1468,76 @@ struct CustomBackButton: View {
             .padding(.top, topPadding)
             .padding(.horizontal, horizontalPadding)
             Spacer()
+        }
+    }
+}
+
+
+// swipable
+
+enum RecCategory: String, CaseIterable, Identifiable {
+    case Place, Gemstone, Color, Scent, Activity, Sound, Career, Relationship
+    var id: String { rawValue }
+}
+
+struct RecommendationPagerView: View {
+    let docsByCategory: [RecCategory: String]
+    @State var selected: RecCategory
+    
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    
+    var body: some View {
+        ZStack {
+            // Full-bleed background
+            AppBackgroundView()
+                .environmentObject(starManager)
+                .ignoresSafeArea() // <- key line
+
+            TabView(selection: $selected) {
+                ForEach(RecCategory.allCases) { cat in
+                    Group {
+                        if let doc = docsByCategory[cat], !doc.isEmpty {
+                            pageView(for: cat, documentName: doc).id(doc)
+                        } else {
+                            VStack(spacing: 12) {
+                                ProgressView()
+                                Text("Loading \(cat.rawValue)…")
+                                    .foregroundColor(themeManager.foregroundColor.opacity(0.7))
+                            }
+                        }
+                    }
+                    .tag(cat)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .automatic))
+        }
+        // Prevent the default nav bar blur from showing at the top
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar(.hidden, for: .navigationBar) // if you don’t want any bar at all
+        .preferredColorScheme(themeManager.preferredColorScheme)
+    }
+    
+    @ViewBuilder
+    private func pageView(for cat: RecCategory, documentName: String) -> some View {
+        switch cat {
+        case .Place:
+            PlaceDetailView(documentName: documentName)
+        case .Gemstone:
+            GemstoneDetailView(documentName: documentName)
+        case .Color:
+            ColorDetailView(documentName: documentName)
+        case .Scent:
+            ScentDetailView(documentName: documentName)
+        case .Activity:
+            ActivityDetailView(documentName: documentName,
+                               soundDocumentName: docsByCategory[.Sound] ?? "")
+        case .Sound:
+            SoundDetailView(documentName: documentName)
+        case .Career:
+            CareerDetailView(documentName: documentName)
+        case .Relationship:
+            RelationshipDetailView(documentName: documentName)
         }
     }
 }

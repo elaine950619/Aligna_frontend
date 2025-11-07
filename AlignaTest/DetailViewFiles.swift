@@ -254,6 +254,18 @@ struct SoundDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var soundPlayer: SoundPlayer
+    @Environment(\.colorScheme) private var colorScheme
+    
+    private var playRingFill: Color {
+        colorScheme == .dark ? Color.white.opacity(0.10) : Color.black.opacity(0.06)
+    }
+    private var playRingStroke: Color {
+        colorScheme == .dark ? Color.white.opacity(0.20) : Color.black.opacity(0.12)
+    }
+    private var playGlyphColor: Color {
+        colorScheme == .dark ? Color(hex: "#E6D7C3") : themeManager.foregroundColor.opacity(0.9)
+    }
+
     
     let documentName: String
     @State private var item: RecommendationItem?
@@ -310,17 +322,19 @@ struct SoundDetailView: View {
                     } label: {
                         ZStack {
                             Circle()
-                                .fill(Color.white.opacity(0.10))
+                                .fill(playRingFill)
                                 .background(.ultraThinMaterial, in: Circle())
-                                .overlay(Circle().stroke(Color.white.opacity(0.20), lineWidth: 2))
+                                .overlay(Circle().stroke(playRingStroke, lineWidth: 2))
                                 .frame(width: 56, height: 56)
+
                             Image(systemName: "play.fill")
                                 .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(Color(hex: "#E6D7C3"))
+                                .foregroundColor(playGlyphColor)
                         }
                     }
                     .buttonStyle(.plain)
                     .padding(.top, 28)
+
                     
                     // Explanation
                     Text(item.explanation)
@@ -375,30 +389,6 @@ struct SoundDetailView: View {
     }
 }
 
-struct Glow: ViewModifier {
-    @Environment(\.colorScheme) private var colorScheme
-    var color: Color = .white
-    var radius: CGFloat = 8
-    
-    func body(content: Content) -> some View {
-        Group {
-            if colorScheme == .dark {
-                content
-                    .shadow(color: color.opacity(0.6), radius: radius)
-                    .shadow(color: color.opacity(0.4), radius: radius * 2)
-            } else {
-                content
-            }
-        }
-    }
-}
-
-extension View {
-    func glow(color: Color = .white, radius: CGFloat = 8) -> some View {
-        self.modifier(Glow(color: color, radius: radius))
-    }
-}
-
 struct IconItem: Identifiable {
     let id = UUID()
     let imageName: String
@@ -447,7 +437,6 @@ struct PlaceDetailView: View {
                         .font(.custom("PlayfairDisplay-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
                         .bold()
-                        .glow(color: themeManager.primaryText, radius: 6)
                     
                     // Description
                     Text(item.description)
@@ -533,10 +522,21 @@ struct PlaceDetailView: View {
 
 struct DailyAnchorView: View {
     @EnvironmentObject var themeManager: ThemeManager
+    @Environment(\.colorScheme) private var colorScheme
     let text: String
     
     @State private var pulse = false
     @State private var shimmer = false
+    
+    private var quoteMarkColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.45) : Color.black.opacity(0.35)
+    }
+    private var quoteTextColor: Color {
+        colorScheme == .dark ? Color(white: 0.94).opacity(0.9) : Color.black.opacity(0.85)
+    }
+    private var quoteShadowColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.18) : Color.black.opacity(0.10)
+    }
     
     var body: some View {
         VStack(spacing: 16) {
@@ -579,58 +579,45 @@ struct DailyAnchorView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.06),
-                                Color.white.opacity(0.02)
+                                colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.03),
+                                colorScheme == .dark ? Color.white.opacity(0.02) : Color.black.opacity(0.01)
                             ],
-                            startPoint: .top,
-                            endPoint: .bottom
+                            startPoint: .top, endPoint: .bottom
                         )
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 18)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            .stroke((colorScheme == .dark ? Color.white : Color.black).opacity(0.08), lineWidth: 1)
                     )
-                    .background(
-                        RoundedRectangle(cornerRadius: 18)
-                            .fill(
-                                RadialGradient(
-                                    colors: [Color.white.opacity(0.06), .clear],
-                                    center: .center,
-                                    startRadius: 2,
-                                    endRadius: 280
-                                )
-                            )
-                            .blur(radius: 10)
-                    )
-                    .opacity(0.9)
                     
                 Text("“")
                     .font(.custom("PlayfairDisplay-Bold", size: 28))
-                    .foregroundColor(Color.white.opacity(0.45))
+                    .foregroundColor(quoteMarkColor)
                     .rotationEffect(.degrees(shimmer ? 5 : 0))
                     .opacity(shimmer ? 0.7 : 0.4)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .padding(8)
                     .animation(.easeInOut(duration: 6).repeatForever(autoreverses: true), value: shimmer)
-
+                
                 Text("”")
                     .font(.custom("PlayfairDisplay-Bold", size: 28))
-                    .foregroundColor(Color.white.opacity(0.45))
+                    .foregroundColor(quoteMarkColor)
                     .rotationEffect(.degrees(shimmer ? 185 : 180))
                     .opacity(shimmer ? 0.7 : 0.4)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                     .padding(8)
                     .animation(.easeInOut(duration: 6).repeatForever(autoreverses: true).delay(3), value: shimmer)
 
+
                 // the quote text
-                Text("\(text)")
+                Text(text)
                     .font(.custom("PlayfairDisplay-Italic", size: 19))
-                    .foregroundColor(Color(white: 0.94).opacity(0.9))
+                    .foregroundColor(quoteTextColor)
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 14)
-                    .shadow(color: Color.white.opacity(0.18), radius: 10)
+                    .shadow(color: quoteShadowColor, radius: 10)
             }
             .fixedSize(horizontal: false, vertical: true)
 
@@ -920,7 +907,6 @@ struct GemstoneDetailView: View {
                         .font(.custom("PlayfairDisplay-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
                         .bold()
-                        .glow(color: themeManager.primaryText, radius: 6)
 
                     Text(item.description)
                         .multilineTextAlignment(.center)
@@ -1105,7 +1091,6 @@ struct ColorDetailView: View {
                         .font(.custom("PlayfairDisplay-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
                         .bold()
-                        .glow(color: themeManager.primaryText, radius: 6)
                     
                     // Description
                     Text(item.description)
@@ -1335,7 +1320,6 @@ struct ScentDetailView: View {
                                 .font(.custom("PlayfairDisplay-Regular", size: 36))
                                 .foregroundColor(themeManager.primaryText)
                                 .bold()
-                                .glow(color: themeManager.primaryText, radius: 6)
 
                             Text(item.description)
                                 .multilineTextAlignment(.center)
@@ -1489,7 +1473,6 @@ struct ActivityDetailView: View {
                         .font(.custom("PlayfairDisplay-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
                         .bold()
-                        .glow(color: themeManager.primaryText, radius: 6)
                     
                     // Description
                     Text(item.description)
@@ -1585,7 +1568,6 @@ struct CareerDetailView: View {
                         .font(.custom("PlayfairDisplay-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
                         .bold()
-                        .glow(color: themeManager.primaryText, radius: 6)
                     
                     // Description
                     Text(item.description)
@@ -1674,7 +1656,6 @@ struct RelationshipDetailView: View {
                     .foregroundColor(themeManager.watermark)
                     .font(.custom("PlayfairDisplay-Regular", size: 36))
                     .bold()
-                    .glow(color: themeManager.primaryText, radius: 6)
                 
                 if let item = item {
                     // Title
