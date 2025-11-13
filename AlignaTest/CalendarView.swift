@@ -187,4 +187,3 @@ struct CalendarView: View {
         return syms
     }
 }
-

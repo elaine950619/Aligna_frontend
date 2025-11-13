@@ -118,7 +118,7 @@ struct JournalView: View {
         } message: {
             Text("This will clear the current text. It won’t delete anything saved previously.")
         }
-        .onAppear { loadEntry() }   
+        .onAppear { loadEntry() }
     }
     
     // MARK: Firestore (unchanged)

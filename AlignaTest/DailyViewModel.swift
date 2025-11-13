@@ -104,5 +104,3 @@ final class DailyViewModel: ObservableObject {
         }
     }
 }
-
-

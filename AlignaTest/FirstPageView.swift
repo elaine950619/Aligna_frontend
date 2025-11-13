@@ -4,8 +4,6 @@ import MapKit
 import CoreLocation
 import Combine
 import WidgetKit
-import FirebaseAuth
-import FirebaseFirestore
 
 
 func getAddressFromCoordinate(
@@ -137,6 +135,73 @@ extension Color {
                   opacity: opacity)
     }
 }
+// ====== Time & Parse Helpers (新增) ======
+struct ISO8601Calendar {
+    private static let f1: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+    private static let f2: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+    static func date(from s: String) -> Date? { f1.date(from: s) ?? f2.date(from: s) }
+}
+
+/// 仅用“本地时区的时分”构造一个 Date（锚定在固定参考日，避免跨时区/日期导致显示漂移）
+func makeLocalDate(hour: Int, minute: Int, tz: TimeZone = .current) -> Date? {
+    var cal = Calendar(identifier: .gregorian)
+    cal.timeZone = tz
+    // 选择一个固定参考日（不会用于展示，只为承载时分）
+    var comp = DateComponents()
+    comp.year = 2000; comp.month = 1; comp.day = 1
+    comp.hour = hour; comp.minute = minute
+    return cal.date(from: comp)
+}
+
+/// 兼容 "HH:mm" / "H:mm" / "h:mm a" / "hh:mm a"
+func timeToDateFlexible(_ s: String, tz: TimeZone = .current) -> Date? {
+    let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
+    let fmts = ["HH:mm","H:mm","h:mm a","hh:mm a","h:mma","hh:mma"]
+    for pat in fmts {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = tz
+        f.dateFormat = pat
+        if let d = f.date(from: trimmed) {
+            let cal = Calendar(identifier: .gregorian)
+            let hm = cal.dateComponents([.hour,.minute], from: d)
+            return makeLocalDate(hour: hm.hour ?? 0, minute: hm.minute ?? 0, tz: tz)
+        }
+    }
+    return nil
+}
+// 兼容 "yyyy-MM-dd" 和 "yyyy/M/d" 的日期解析（本地时区）
+private let DF_YMD: DateFormatter = {
+    let f = DateFormatter()
+    f.locale = Locale(identifier: "en_US_POSIX")
+    f.timeZone = .current
+    f.dateFormat = "yyyy-MM-dd"
+    return f
+}()
+
+private let DF_YMD_SLASH: DateFormatter = {
+    let f = DateFormatter()
+    f.locale = Locale(identifier: "en_US_POSIX")
+    f.timeZone = .current
+    f.dateFormat = "yyyy/M/d"
+    return f
+}()
+
+@inline(__always)
+private func parseBirthDateString(_ s: String) -> Date? {
+    // 先试 ISO8601（含 T…Z 的情况），再试两种纯日期
+    return ISO8601Calendar.date(from: s) ?? DF_YMD.date(from: s) ?? DF_YMD_SLASH.date(from: s)
+}
+
+
 
 // Subtle text shimmer like your React “brand-title animate-text-shimmer”
 struct Shimmer: ViewModifier {
@@ -460,9 +525,20 @@ struct FirstPageView: View {
     @AppStorage("todayAutoRefetchDone") private var todayAutoRefetchDone: String = ""
     // 本次进程是否已经安排过 watchdog 计时器（避免重复安排）
     @State private var autoRefetchScheduled = false
-
-
     
+    // === 放在 FirstPageView 的属性区（和其他 @State / @AppStorage 放一起）===
+
+    // NEW: 认证监听 + 看门狗计数（跨天持久）
+    @State private var authListenerHandle: AuthStateDidChangeListenerHandle? = nil
+    @State private var authWaitTimedOut = false
+
+    @AppStorage("watchdogDay") private var watchdogDay: String = ""
+    @AppStorage("todayAutoRefetchAttempts") private var todayAutoRefetchAttempts: Int = 0  // 当天已重试次数
+
+    // NEW: 多次重试的配置
+    private let maxRefetchAttempts = 3
+    private let initialRefetchDelay: TimeInterval = 8.0
+
     @StateObject private var locationManager = LocationManager()
     @State private var recommendationTitles: [String: String] = [:]
     
@@ -597,6 +673,7 @@ struct FirstPageView: View {
                 .onAppear {
                     starManager.animateStar = true
                     themeManager.appBecameActive()
+                    
                     // Always make sure UI has something to render
                         ensureDefaultsIfMissing()
 
@@ -629,55 +706,112 @@ struct FirstPageView: View {
 
     
     // 冷启动只看“是否已登录 + 本地标记”来分流；不再在这里查 Firestore 决定是否强拉 Onboarding。
+    // === 替换你原来的 startInitialLoad()（整段替换） ===
     private func startInitialLoad() {
+        
+        
         #if DEBUG
         if _isPreview { bootPhase = .main; return }
         #endif
-        let user = Auth.auth().currentUser
+        // 冷启动先“等用户恢复”，最多等一小会（例如 6 秒）
+        waitForAuthenticatedUserThenBoot(maxWait: 6.0)
+    }
 
-        // A) 未登录：展示 OnboardingOpeningPage（不是 Step1）
-        if user == nil {
-            // 清理可能残留的标记，确保进入的是 OpeningPage
+    // NEW: 等待 Firebase 恢复 currentUser 后再走原有分流逻辑
+    private func waitForAuthenticatedUserThenBoot(maxWait: TimeInterval) {
+        // 每天首次启动：重置 watchdog 计数/锁
+        resetDailyWatchdogIfNeeded()
+
+        if let user = Auth.auth().currentUser, !authWaitTimedOut {
+            // 已有用户（或超时标记未触发）：按你原来的分流逻辑走
+            // A) 未登录
+            if user.uid.isEmpty {
+                shouldOnboardAfterSignIn = false
+                hasCompletedOnboarding = false
+                withAnimation(.easeInOut) { bootPhase = .onboarding }
+                return
+            }
+            // B) 刚注册需要走引导
+            if shouldOnboardAfterSignIn && !hasCompletedOnboarding {
+                withAnimation(.easeInOut) { bootPhase = .onboarding }
+                return
+            }
+            // C) 正常首页启动
+            shouldOnboardAfterSignIn = false
+            proceedNormalBoot()
+            return
+        }
+
+        // 没有 currentUser：安装监听，等待恢复
+        if authListenerHandle == nil {
+            authListenerHandle = Auth.auth().addStateDidChangeListener { _, user in
+                if user != nil {
+                    // 恢复到用户了 → 移除监听并启动
+                    if let h = authListenerHandle { Auth.auth().removeStateDidChangeListener(h) }
+                    authListenerHandle = nil
+                    authWaitTimedOut = false
+                    waitForAuthenticatedUserThenBoot(maxWait: 0) // 递归调用进入分流
+                }
+            }
+        }
+
+        // 兜底超时：防止无限等。到时仍未恢复用户，就按“未登录”进入。
+        DispatchQueue.main.asyncAfter(deadline: .now() + max(0.5, maxWait)) {
+            guard Auth.auth().currentUser == nil else { return }
+            authWaitTimedOut = true
+            if let h = authListenerHandle { Auth.auth().removeStateDidChangeListener(h) }
+            authListenerHandle = nil
+            // 超时还没恢复用户 → 走未登录 OpeningPage
             shouldOnboardAfterSignIn = false
             hasCompletedOnboarding = false
-            withAnimation(.easeInOut) { bootPhase = .onboarding } // ↓ 在 .onboarding 里会看到 OpeningPage
-            return
+            withAnimation(.easeInOut) { bootPhase = .onboarding }
         }
-
-        // B) 已登录 & 刚注册完需要走引导：进入 Step1
-        if shouldOnboardAfterSignIn && !hasCompletedOnboarding {
-            withAnimation(.easeInOut) { bootPhase = .onboarding } // ↓ 在 .onboarding 里会看到 Step1
-            return
-        }
-
-        // C) 其它情况：走正常首页启动
-        shouldOnboardAfterSignIn = false
-        proceedNormalBoot()
     }
-    
+
+    // NEW: 按自然日重置 watchdog 相关的 @AppStorage
+    private func resetDailyWatchdogIfNeeded() {
+        let today = todayString()
+        if watchdogDay != today {
+            watchdogDay = today
+            todayAutoRefetchAttempts = 0
+            todayAutoRefetchDone = ""   // 你原有的“一次触发标记”也清掉
+            todayFetchLock = ""         // 清理潜在残留锁
+        }
+    }
+
     // ====== FirstPageView 内新增 ======
     private func hydrateBirthFromProfileIfNeeded(_ done: @escaping () -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else { done(); return }
         let db = Firestore.firestore()
-        // 直接按固定 docId 查（配合上面的写入）
         let ref = db.collection("users").document(uid)
         ref.getDocument { snap, _ in
             defer { done() }
             guard let data = snap?.data() else { return }
+            
 
             // birth date
             if let ts = data["birthday"] as? Timestamp {
                 viewModel.birth_date = ts.dateValue()
-            } else if let s = data["birthDate"] as? String, let d = ISO8601Calendar.date(from: s) {
+            } else if let s = data["birthDate"] as? String,
+                      let d = parseBirthDateString(s) {
                 viewModel.birth_date = d
             }
 
-            // birth time
+
+            // birth time（统一通过 timeToDateFlexible 解析成本地时区的“时分锚定”Date）
             if let t = data["birthTime"] as? String, let d = timeToDateFlexible(t) {
                 viewModel.birth_time = d
             }
+
+            // ✅ 出生经纬度 → 注入 viewModel（供上升星座使用）
+            if let lat = data["birthLat"] as? CLLocationDegrees,
+               let lng = data["birthLng"] as? CLLocationDegrees,
+               lat != 0 || lng != 0 {
+                viewModel.birthCoordinate = CLLocationCoordinate2D(latitude: lat, longitude: lng)
+            }
         }
     }
+
 
     // 原先 startInitialLoad 的主体逻辑移到这里（不修改其内容）
     private func proceedNormalBoot() {
@@ -916,6 +1050,7 @@ struct FirstPageView: View {
         #if DEBUG
         if _isPreview { return }
         #endif
+        
         let db = Firestore.firestore()
 
         for (rawCategory, rawDoc) in viewModel.recommendations {
@@ -952,31 +1087,44 @@ struct FirstPageView: View {
     }
 
     /// 启动“保底看门狗”：若 delay 秒后仍未拿到 mantra 或推荐，则强制走一次 FastAPI 重拉
+    // === 替换你原有的 startAutoRefetchWatchdog(delay:)（整段替换） ===
     private func startAutoRefetchWatchdog(delay: TimeInterval = 8.0) {
-        // 只安排一次定时器
+        // 只安排一次根任务
         guard !autoRefetchScheduled else { return }
         autoRefetchScheduled = true
-        
-        let today = todayString()
-        // 当天已经触发过兜底，就不再重复
-        if todayAutoRefetchDone == today { return }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-            // 条件：mantra 为空 或 推荐字典为空
-            let mantraEmpty = viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            let recsEmpty   = viewModel.recommendations.isEmpty
-            guard mantraEmpty || recsEmpty else {
-                print("🛡️ Watchdog: 数据已就绪，无需兜底")
-                return
+        func scheduleNext(after: TimeInterval) {
+            // 已经有数据就不用继续重试了
+            let mantraReady = !viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            let recsReady   = !viewModel.recommendations.isEmpty
+            if mantraReady && recsReady { return }
+
+            // 达到上限就停
+            if todayAutoRefetchAttempts >= maxRefetchAttempts { return }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + after) {
+                // 进入具体一次尝试：再次判断是否已经就绪
+                let readyNow = !viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                            && !viewModel.recommendations.isEmpty
+                guard !readyNow else { return }
+
+                // 触发一次强制重拉
+                print("🛡️ Watchdog attempt #\(todayAutoRefetchAttempts + 1)")
+                forceRefetchDailyIfNotLocked()
+
+                // 增加计数并安排下一次（指数退避，封顶 60s）
+                todayAutoRefetchAttempts += 1
+                let nextDelay = min(60.0, max(6.0, after * 1.8))
+                scheduleNext(after: nextDelay)
             }
-
-            print("🛡️ Watchdog 触发：超时仍未加载到数据，准备强制重拉 FastAPI")
-            forceRefetchDailyIfNotLocked()
-            todayAutoRefetchDone = today
         }
+
+        scheduleNext(after: delay <= 0 ? initialRefetchDelay : delay)
     }
 
+
     /// 强制当日重拉（跳过“今日已有推荐”的判断），仍复用今日互斥锁与定位等待
+    // === 替换你原有的 forceRefetchDailyIfNotLocked()（整段替换） ===
     private func forceRefetchDailyIfNotLocked() {
         guard let uid = Auth.auth().currentUser?.uid else {
             print("❌ 未登录，无法强制重拉"); return
@@ -984,7 +1132,7 @@ struct FirstPageView: View {
         let today = todayString()
         let docRef = todayDocRef(uid: uid, day: today)
 
-        // 若已有在途请求，就不再重复发
+        // 若已有在途请求，就不重复发
         if todayFetchLock == today || isFetchingToday {
             print("⏳ Watchdog: 今日请求已在进行中，跳过强制重拉")
             return
@@ -993,12 +1141,13 @@ struct FirstPageView: View {
         todayFetchLock = today
         isFetchingToday = true
 
-        // 若还没拿到定位，先请求定位并复用统一的等待逻辑
+        // Watchdog 重拉也需要定位；没有的话先申请并等待
         if locationManager.currentLocation == nil {
             locationManager.requestLocation()
         }
         waitForLocationThenRequest(uid: uid, today: today, docRef: docRef)
     }
+
 
     
     // 当天字符串
@@ -1188,49 +1337,58 @@ struct FirstPageView: View {
         
         return Group {
             if let startCat, !documentName.isEmpty {
-                NavigationLink {
-                    // Build the docs map for all eight categories from your viewModel
-                    let docsMap: [RecCategory: String] = Dictionary(uniqueKeysWithValues:
-                        RecCategory.allCases.map { cat in
-                            let key = cat.rawValue
-                            return (cat, viewModel.recommendations[key] ?? "")
-                        }
-                    )
-                    RecommendationPagerView(docsByCategory: docsMap, selected: startCat)
-                        .environmentObject(starManager)
-                        .environmentObject(themeManager)
-                        .environmentObject(viewModel)
-                } label: {
-                    VStack(spacing: 2) {
+                        NavigationLink {
+                            // Build the docs map for all eight categories from your viewModel
+                            let docsMap: [RecCategory: String] = Dictionary(uniqueKeysWithValues:
+                                RecCategory.allCases.map { cat in
+                                    let key = cat.rawValue
+                                    return (cat, viewModel.recommendations[key] ?? "")
+                                }
+                            )
+                            RecommendationPagerView(docsByCategory: docsMap, selected: startCat)
+                                .environmentObject(starManager)
+                                .environmentObject(themeManager)
+                                .environmentObject(viewModel)
+                        } label: {
+                    VStack(spacing: 2) {   // ⬅️ tighter spacing
+                        // 图标图像
                         SafeImage(name: documentName, renderingMode: .template, contentMode: .fit)
                             .foregroundColor(themeManager.foregroundColor)
-                            .frame(width: geometry.size.width * 0.18)
+                            .frame(width: geometry.size.width * 0.18)  // slightly smaller to balance text
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                             .shadow(radius: 1.5)
+                        
+                        // 推荐名称（小字体，紧贴图标）
                         Text(recommendationTitles[title] ?? "")
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.033))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.8))
+                            .multilineTextAlignment(.center)
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
-                            .padding(.top, 1)
+                            .padding(.top, 1) // ⬅️ subtle spacing only
+                        
+                        // 类别标题（和上面稍微拉开）
                         Text(title)
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.05))
                             .foregroundColor(themeManager.foregroundColor)
-                            .padding(.top, 2)
+                            .padding(.top, 2) // ⬅️ tighter than before
                     }
                 }
             } else {
-                // your loading placeholder…
-                Button { print("⚠️ '\(title)' not loaded yet") } label: {
+                Button {
+                    print("⚠️ 无法进入 '\(title)'，推荐结果尚未加载")
+                } label: {
                     VStack(spacing: 2) {
                         Image(systemName: "questionmark.square.dashed")
                             .resizable()
                             .scaledToFit()
                             .frame(width: geometry.size.width * 0.18)
                             .foregroundColor(themeManager.foregroundColor.opacity(0.4))
+                        
                         Text("Loading")
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.033))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.5))
+                        
                         Text(title)
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.05))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.5))
@@ -1282,19 +1440,19 @@ struct FirstPageView: View {
         let today = dateFormatter.string(from: Date())
 
         db.collection("daily_recommendation")
-          .whereField("uid", isEqualTo: userId)
-          .whereField("createdAt", isEqualTo: today)
-          .getDocuments { snapshot, error in
-              if let error = error {
-                  print("❌ 查询推荐失败：\(error). 使用本地默认内容")
-                  ensureDefaultsIfMissing()
-                  return
-              }
-              guard let documents = snapshot?.documents, let doc = documents.first else {
-                  print("⚠️ 今日暂无推荐数据。使用本地默认内容")
-                  ensureDefaultsIfMissing()
-                  return
-              }
+            .whereField("uid", isEqualTo: userId)
+            .whereField("createdAt", isEqualTo: today)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("❌ 查询推荐失败：\(error). 使用本地默认内容")
+                    ensureDefaultsIfMissing()
+                    return
+                }
+                guard let documents = snapshot?.documents, let doc = documents.first else {
+                    print("⚠️ 今日暂无推荐数据。使用本地默认内容")
+                    ensureDefaultsIfMissing()
+                    return
+                }
 
                 var recs: [String: String] = [:]
                 var fetchedMantra = ""
@@ -1433,48 +1591,6 @@ let _isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS
 #endif
 
 
-
-
-
-
-
-
-
-
-// Back button
-
-struct CustomBackButton: View {
-    @Environment(\.dismiss) private var dismiss
-    var iconSize: CGFloat = 20
-    var paddingSize: CGFloat = 10
-    var backgroundColor: Color = Color.black.opacity(0.3)
-    var iconColor: Color = .white
-    var topPadding: CGFloat = 44
-    var horizontalPadding: CGFloat = 24
-    
-    var body: some View {
-        VStack {
-            HStack {
-                Button(action: { dismiss() }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: iconSize, weight: .semibold))
-                        .foregroundColor(iconColor)
-                        .padding(paddingSize)
-                        .background(backgroundColor)
-                        .clipShape(Circle())
-                }
-                Spacer()
-            }
-            .padding(.top, topPadding)
-            .padding(.horizontal, horizontalPadding)
-            Spacer()
-        }
-    }
-}
-
-
-// swipable
-
 enum RecCategory: String, CaseIterable, Identifiable {
     case Place, Gemstone, Color, Scent, Activity, Sound, Career, Relationship
     var id: String { rawValue }
@@ -1538,6 +1654,43 @@ struct RecommendationPagerView: View {
             CareerDetailView(documentName: documentName)
         case .Relationship:
             RelationshipDetailView(documentName: documentName)
+        }
+    }
+}
+
+
+
+
+
+
+
+// Back button
+
+struct CustomBackButton: View {
+    @Environment(\.dismiss) private var dismiss
+    var iconSize: CGFloat = 20
+    var paddingSize: CGFloat = 10
+    var backgroundColor: Color = Color.black.opacity(0.3)
+    var iconColor: Color = .white
+    var topPadding: CGFloat = 44
+    var horizontalPadding: CGFloat = 24
+    
+    var body: some View {
+        VStack {
+            HStack {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: iconSize, weight: .semibold))
+                        .foregroundColor(iconColor)
+                        .padding(paddingSize)
+                        .background(backgroundColor)
+                        .clipShape(Circle())
+                }
+                Spacer()
+            }
+            .padding(.top, topPadding)
+            .padding(.horizontal, horizontalPadding)
+            Spacer()
         }
     }
 }
@@ -1692,7 +1845,7 @@ struct OnboardingOpeningPage: View {
                             .font(.subheadline)
                             .foregroundColor(themeManager.fixedNightTextSecondary)
                         
-                        Image("LogoImage")
+                        Image("openingSymbol")
                             .resizable()
                             .scaledToFit()
                             .frame(width: minLength * 0.35)
@@ -2000,6 +2153,7 @@ struct RegisterPageView: View {
                     .preferredColorScheme(.dark)
                     .transaction { $0.animation = nil } // 阻断布局隐式动画
                 }
+                .hideKeyboardOnTapOutside($registerFocus)
                 .alert(isPresented: $showAlert) {
                     Alert(title: Text("Notice"),
                           message: Text(alertMessage),
@@ -2026,6 +2180,12 @@ struct RegisterPageView: View {
                 }
                 .onDisappear { showIntro = false }
                 .navigationBarBackButtonHidden(true)
+                .toolbar {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("Done") { registerFocus = nil }
+                    }
+                }
             }
         }
     }
@@ -2065,6 +2225,19 @@ struct RegisterPageView: View {
                 }
             }
         }
+    }
+}
+
+extension View {
+    func hideKeyboardOnTapOutside<T: Hashable>(_ focus: FocusState<T?>.Binding) -> some View {
+        self
+            .contentShape(Rectangle()) // 让空白也可点
+            .simultaneousGesture(TapGesture().onEnded {
+                focus.wrappedValue = nil
+            })
+            .gesture(DragGesture().onChanged { _ in
+                focus.wrappedValue = nil
+            })
     }
 }
 import SwiftUI
@@ -2363,6 +2536,7 @@ struct OnboardingStep1: View {
 }
 
 // MARK: - OnboardingStep2（顶部与 Step1/Step3 一致，日期/时间用弹出滚轮）
+// MARK: - OnboardingStep2（顶部与 Step1 一致 + 时间保存改为本地锚定）
 struct OnboardingStep2: View {
     @ObservedObject var viewModel: OnboardingViewModel
     @Environment(\.dismiss) private var dismiss
@@ -2400,15 +2574,14 @@ struct OnboardingStep2: View {
                     .environmentObject(themeManager)
 
                 VStack(spacing: minLength * 0.05) {
-                    // ✅ 顶部与 Step1/Step3 完全一致
+                    // 顶部与 Step1 保持一致（无系统返回）
                     AlignaTopHeader()
 
-                    // 说明小字
                     Text("When were you born?")
                         .onboardingQuestionStyle()
                         .padding(.top, 10)
 
-                    // Birthday 卡片（点击后弹出滚轮）
+                    // Birthday
                     VStack(spacing: 15) {
                         Text("Birthday").onboardingQuestionStyle()
 
@@ -2431,7 +2604,7 @@ struct OnboardingStep2: View {
                     }
                     .padding(.horizontal)
 
-                    // Time of Birth 卡片（点击后弹出滚轮）
+                    // Time of Birth
                     VStack(spacing: 15) {
                         Text("Time of Your Birth").onboardingQuestionStyle()
 
@@ -2456,7 +2629,7 @@ struct OnboardingStep2: View {
 
                     Spacer()
 
-                    // Continue（样式与 Step1/Step3 一致）
+                    // Continue
                     NavigationLink(
                         destination: OnboardingStep3(viewModel: viewModel)
                     ) {
@@ -2471,7 +2644,7 @@ struct OnboardingStep2: View {
                     }
                     .padding(.horizontal, geometry.size.width * 0.1)
 
-                    // Back（样式与 Step1/Step3 一致）
+                    // Back（自定义返回按钮，不用系统自带的）
                     Button(action: { dismiss() }) {
                         Text("Back")
                             .font(.headline)
@@ -2492,7 +2665,7 @@ struct OnboardingStep2: View {
                 .padding(.horizontal)
             }
             .onAppear {
-                // 默认值兜底，避免首次为空显示异常
+                // 默认值兜底
                 if viewModel.birth_date.timeIntervalSince1970 == 0 {
                     viewModel.birth_date = Date()
                 }
@@ -2500,7 +2673,7 @@ struct OnboardingStep2: View {
                     viewModel.birth_time = Date()
                 }
             }
-            // 日期滚轮弹窗
+            // 日期滚轮
             .sheet(isPresented: $showDatePickerSheet) {
                 VStack(spacing: 12) {
                     HStack {
@@ -2521,23 +2694,24 @@ struct OnboardingStep2: View {
                     )
                     .datePickerStyle(.wheel)
                     .labelsHidden()
-                    .environment(\.colorScheme, .dark) // 夜间滚轮可读
+                    .environment(\.colorScheme, .dark)
                     .padding(.bottom, 24)
                 }
                 .presentationDetents([.fraction(0.45), .medium])
                 .background(.black.opacity(0.6))
             }
-            // 时间滚轮弹窗
+            // 时间滚轮（关键：保存时用 makeLocalDate 固定到本地时区的参考日，防止后续显示漂移）
             .sheet(isPresented: $showTimePickerSheet) {
                 VStack(spacing: 12) {
                     HStack {
                         Spacer()
                         Button("Done") {
                             let comps = Calendar.current.dateComponents([.hour, .minute], from: tempBirthTime)
-                            var onlyHM = DateComponents()
-                            onlyHM.hour = comps.hour
-                            onlyHM.minute = comps.minute
-                            viewModel.birth_time = Calendar.current.date(from: onlyHM) ?? tempBirthTime
+                            if let d = makeLocalDate(hour: comps.hour ?? 0, minute: comps.minute ?? 0) {
+                                viewModel.birth_time = d
+                            } else {
+                                viewModel.birth_time = tempBirthTime
+                            }
                             showTimePickerSheet = false
                         }
                         .padding(.trailing)
@@ -2558,6 +2732,11 @@ struct OnboardingStep2: View {
                 .background(.black.opacity(0.6))
             }
         }
+        // === 彻底隐藏系统导航条 & 返回按钮，去掉顶部白条 ===
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .ignoresSafeArea() // 防止出现顶边色带
     }
 }
 
@@ -3196,23 +3375,28 @@ struct OnboardingFinalStep: View {
 
         let db = Firestore.firestore()
 
-        // 直接从选择的日期/时间生成存储值
-        let dateFormatter = DateFormatter(); dateFormatter.dateFormat = "yyyy-MM-dd"
-        let timeFormatter = DateFormatter(); timeFormatter.dateFormat = "HH:mm"
+        // 生日存成可读字符串（兼容你原有字段）
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.timeZone = .current
+        dateFormatter.dateFormat = "yyyy-MM-dd"
         let birthDateString = dateFormatter.string(from: viewModel.birth_date)
-        let birthTimeString = timeFormatter.string(from: viewModel.birth_time)
+
+        // ✅ 关键：只存“时、分”两个整型，彻底规避时区改动
+        let (h, m) = BirthTimeUtils.hourMinute(from: viewModel.birth_time)
 
         let lat = viewModel.currentCoordinate?.latitude ?? 0
         let lng = viewModel.currentCoordinate?.longitude ?? 0
 
-        // ✅ 改为 var，后面可以追加字段
+        // ✅ 用 var，后面可追加字段
         var data: [String: Any] = [
             "uid": userId,
             "nickname": viewModel.nickname,
             "gender": viewModel.gender,
             "relationshipStatus": viewModel.relationshipStatus,
-            "birthDate": birthDateString,          // 兼容旧字段（字符串）
-            "birthTime": birthTimeString,
+            "birthDate": birthDateString,          // 你原来的字符串生日
+            "birthHour": h,                        // ✅ 新增：小时
+            "birthMinute": m,                      // ✅ 新增：分钟
             "birthPlace": viewModel.birthPlace,
             "currentPlace": viewModel.currentPlace,
             "birthLat": viewModel.birthCoordinate?.latitude ?? 0,
@@ -3222,11 +3406,10 @@ struct OnboardingFinalStep: View {
             "createdAt": Timestamp()
         ]
 
-        // 可选：同时写一个 Timestamp 版本，便于 AccountDetail 直接用
-        // 只保留日期部分也可以：let onlyDay = Calendar.current.startOfDay(for: viewModel.birth_date)
+        // 可选保留：同时写入一个 Timestamp 生日（仅用于“年月日”）
         data["birthday"] = Timestamp(date: viewModel.birth_date)
 
-        // ✅ 声明 ref（固定 docId，避免重复）
+        // ✅ 固定 docId，避免重复文档
         let ref = db.collection("users").document(userId)
         ref.setData(data, merge: true) { error in
             if let error = error {
@@ -3237,10 +3420,14 @@ struct OnboardingFinalStep: View {
             }
         }
 
-        // ❌ 不要再 addDocument 了，否则会产生一条新的随机文档
-        // db.collection("users").addDocument(data: data) { ... }
+        // ===== 下面保持你原有的 FastAPI 请求逻辑 =====
+        // 这里仍然用你原来传给后端的“字符串时间”，不会影响我们在 Firestore 的存储方案
+        let timeFormatter = DateFormatter()
+        timeFormatter.locale = Locale(identifier: "en_US_POSIX")
+        timeFormatter.timeZone = .current
+        timeFormatter.dateFormat = "HH:mm"
+        let birthTimeString = timeFormatter.string(from: viewModel.birth_time)
 
-        // ===== 下面保持你原有的 FastAPI 请求逻辑不变 =====
         let payload: [String: Any] = [
             "birth_date": birthDateString,
             "birth_time": birthTimeString,
@@ -3257,8 +3444,9 @@ struct OnboardingFinalStep: View {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        do { request.httpBody = try JSONSerialization.data(withJSONObject: payload) }
-        catch {
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+        } catch {
             print("❌ JSON 序列化失败: \(error)")
             isLoading = false
             return
@@ -3323,6 +3511,7 @@ struct OnboardingFinalStep: View {
             }
         }.resume()
     }
+
 }
 func firebaseCollectionName(for category: String) -> String {
     let mapping: [String: String] = [
@@ -4079,6 +4268,13 @@ struct AccountDetailView: View {
     @State private var birthTime: Date = Date()
     @State private var birthPlace: String = ""
     @State private var currentPlace: String = ""
+    
+    // Birth location & timezone & raw input (for exact display)
+    @State private var birthLat: Double = 0
+    @State private var birthLng: Double = 0
+    @State private var birthTimezoneOffsetMinutes: Int = TimeZone.current.secondsFromGMT() / 60
+    @State private var birthRawTimeString: String? = nil
+
 
     // 编辑状态
     @State private var editingNickname = false
@@ -4093,6 +4289,16 @@ struct AccountDetailView: View {
     @State private var isBusy = false
     @State private var showDeleteAlert = false
     @State private var errorMessage: String?
+    
+    
+    // 保持定位器存活，避免回调丢失
+    @State private var activeLocationFetcher: OneShotLocationFetcher?
+
+    // 刷新结果弹窗
+    @State private var showRefreshAlert = false
+    @State private var refreshAlertTitle = ""
+    @State private var refreshAlertMessage = ""
+
 
     // === 固定英文格式的 Formatter（static，避免 mutating getter 报错）===
     private static let enUSPOSIX = Locale(identifier: "en_US_POSIX")
@@ -4109,6 +4315,15 @@ struct AccountDetailView: View {
         f.locale = enUSPOSIX; f.timeZone = .current
         f.dateFormat = "h:mm a"
         return f
+    }()
+    private static let birthDateDisplayFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.calendar = .current
+        df.locale   = .current
+        df.timeZone = .current
+        df.dateStyle = .medium
+        df.timeStyle = .none
+        return df
     }()
 
     private static let birthTimeStorageFormatter: DateFormatter = {
@@ -4207,7 +4422,14 @@ struct AccountDetailView: View {
         } message: {
             Text(errorMessage ?? "")
         }
+        .alert(refreshAlertTitle, isPresented: $showRefreshAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(refreshAlertMessage)
+        }
+
         .navigationBarBackButtonHidden(true)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .preferredColorScheme(themeManager.preferredColorScheme)
     }
 
@@ -4267,12 +4489,20 @@ private extension AccountDetailView {
                     }
                 }
             }
-            ZodiacInlineRow(viewModel: viewModel)
-                .environmentObject(themeManager)
+
+            // Inline zodiac row — use locally computed texts to avoid "Unknown"
+            ZodiacInlineRow(
+                sunText:  sunSignText,
+                moonText: moonSignText,
+                ascText:  ascSignText
+            )
+            .environmentObject(themeManager)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
     }
+
+
 
     var personalInfoCard: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -4282,10 +4512,13 @@ private extension AccountDetailView {
 
             VStack(spacing: 12) {
                 // === Birthday | Birth Time ===
+                // === Birthday | Birth Time ===
+                // === Birthday | Birth Time ===
                 HStack(spacing: 12) {
+                    // Birthday —— 显示“日期”
                     infoRow(
                         title: "Birthday",
-                        value: Self.birthdayDisplayFormatter.string(from: birthday),
+                        value: Self.birthDateDisplayFormatter.string(from: birthday),
                         editable: true
                     ) { showBirthdaySheet = true }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -4298,7 +4531,7 @@ private extension AccountDetailView {
                                     .labelsHidden()
                             ),
                             onSave: {
-                                saveBirthFields(date: birthday, time: birthTime) {
+                                saveBirthDateOnly(newDate: birthday) {
                                     showBirthdaySheet = false
                                 }
                             },
@@ -4306,9 +4539,10 @@ private extension AccountDetailView {
                         )
                     }
 
+                    // Birth Time —— 显示 “时:分 am/pm（或系统 24h）”
                     infoRow(
                         title: "Birth Time",
-                        value: Self.birthTimeDisplayFormatter.string(from: birthTime).lowercased(),
+                        value: BirthTimeUtils.displayFormatter.string(from: birthTime).lowercased(),
                         editable: true
                     ) { showBirthTimeSheet = true }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -4321,7 +4555,7 @@ private extension AccountDetailView {
                                     .labelsHidden()
                             ),
                             onSave: {
-                                saveBirthFields(date: birthday, time: birthTime) {
+                                saveBirthTimeOnly(newTime: birthTime) {
                                     showBirthTimeSheet = false
                                 }
                             },
@@ -4329,6 +4563,8 @@ private extension AccountDetailView {
                         )
                     }
                 }
+
+
 
                 // === Birth Place | Current Place ===
                 HStack(spacing: 12) {
@@ -4341,11 +4577,11 @@ private extension AccountDetailView {
                     )
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    infoRow(
+                    infoRowWithTrailingButton(
                         title: "Current Place",
                         value: currentPlace.isEmpty ? "—" : currentPlace,
-                        editable: false,
-                        onEdit: {}
+                        systemImage: "arrow.clockwise",
+                        onTap: { refreshCurrentPlace() }
                     )
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -4428,6 +4664,47 @@ private extension AccountDetailView {
             .foregroundColor(.white)
         }
     }
+    var astrologyCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Astrology (approximate)")
+                .font(.title3.weight(.semibold))
+                .foregroundColor(themeManager.primaryText)
+
+            VStack(spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Sun sign").font(.footnote).foregroundColor(themeManager.descriptionText)
+                        Text(sunSignText).font(.headline).foregroundColor(themeManager.primaryText)
+                    }
+                    Spacer()
+                }
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Moon sign").font(.footnote).foregroundColor(themeManager.descriptionText)
+                        Text(moonSignText).font(.headline).foregroundColor(themeManager.primaryText)
+                    }
+                    Spacer()
+                }
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Ascendant").font(.footnote).foregroundColor(themeManager.descriptionText)
+                        Text(ascSignText).font(.headline).foregroundColor(themeManager.primaryText)
+                    }
+                    Spacer()
+                }
+                Text("Note: Lightweight astronomical approximations; values near sign cusps may vary slightly.")
+                    .font(.footnote)
+                    .foregroundColor(themeManager.descriptionText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding()
+            .background(Color.white.opacity(themeManager.isNight ? 0.05 : 0.08),
+                        in: RoundedRectangle(cornerRadius: 18))
+            .overlay(RoundedRectangle(cornerRadius: 18)
+                .stroke(Color.white.opacity(themeManager.isNight ? 0.08 : 0.06), lineWidth: 1))
+        }
+    }
+
 }
 
 // MARK: - Reusable UI
@@ -4463,6 +4740,32 @@ private extension AccountDetailView {
         }
         .padding(.vertical, 6)
     }
+    
+    func infoRowWithTrailingButton(
+        title: String,
+        value: String,
+        systemImage: String,
+        onTap: @escaping () -> Void
+    ) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.footnote).foregroundColor(themeManager.descriptionText)
+                Text(value).font(.headline).foregroundColor(themeManager.primaryText)
+            }
+            Spacer()
+            Button(action: onTap) {
+                Image(systemName: systemImage)
+                    .font(.body.weight(.semibold))
+                    .foregroundColor(themeManager.accent)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Refresh \(title)"))
+        }
+        .padding(.vertical, 6)
+    }
+
 
     func infoRowEditableText(
         title: String,
@@ -4535,6 +4838,47 @@ private extension AccountDetailView {
         }
         .buttonStyle(.plain)
     }
+    /// Map "Aries" -> "aries", "Taurus" -> "taurus", ... for SF Symbols.
+    /// If not found, fall back to "questionmark.circle".
+    func zodiacSFIcon(for signName: String) -> String {
+        switch signName.lowercased() {
+        case "aries": return "aries"
+        case "taurus": return "taurus"
+        case "gemini": return "gemini"
+        case "cancer": return "cancer"
+        case "leo": return "leo"
+        case "virgo": return "virgo"
+        case "libra": return "libra"
+        case "scorpio": return "scorpio"
+        case "sagittarius": return "sagittarius"
+        case "capricorn": return "capricorn"
+        case "aquarius": return "aquarius"
+        case "pisces": return "pisces"
+        default: return "questionmark.circle"
+        }
+    }
+
+    /// A compact pill with a kind icon (sun/moon/asc) + the zodiac glyph + text value.
+    func zodiacPill(title: String, systemImage: String, signImage: String, value: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: systemImage).font(.caption2.weight(.semibold))
+            Image(systemName: signImage).font(.caption2.weight(.semibold))
+            Text(title).font(.caption2.weight(.semibold))
+            Text(value).font(.caption.weight(.semibold))
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white.opacity(themeManager.isNight ? 0.06 : 0.1))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.white.opacity(themeManager.isNight ? 0.1 : 0.08), lineWidth: 0.8)
+        )
+        .foregroundColor(themeManager.primaryText)
+    }
+
 
     @ViewBuilder
     func pickerSheet(title: String, picker: AnyView, onSave: @escaping () -> Void, onCancel: @escaping () -> Void) -> some View {
@@ -4553,7 +4897,160 @@ private extension AccountDetailView {
         .presentationDetents([.height(320)])
         .presentationBackground(.ultraThinMaterial)
     }
+    final class OneShotLocationFetcher: NSObject, CLLocationManagerDelegate {
+        private let manager = CLLocationManager()
+        private var callback: ((Result<CLLocationCoordinate2D, Error>) -> Void)?
+
+        override init() {
+            super.init()
+            manager.delegate = self
+            manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        }
+
+        func requestOnce(_ cb: @escaping (Result<CLLocationCoordinate2D, Error>) -> Void) {
+            self.callback = cb
+            switch CLLocationManager.authorizationStatus() {
+            case .notDetermined:
+                manager.requestWhenInUseAuthorization()
+            case .denied, .restricted:
+                cb(.failure(NSError(domain: "Aligna", code: 1,
+                                    userInfo: [NSLocalizedDescriptionKey: "Location permission denied."])))
+            default:
+                manager.requestLocation()
+            }
+        }
+
+        func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+            if manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways {
+                manager.requestLocation()
+            }
+        }
+
+        func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+            guard let loc = locations.first else {
+                callback?(.failure(NSError(domain: "Aligna", code: 2,
+                                           userInfo: [NSLocalizedDescriptionKey: "No location found."])))
+                callback = nil
+                return
+            }
+            callback?(.success(loc.coordinate)); callback = nil
+        }
+
+        func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+            callback?(.failure(error)); callback = nil
+        }
+    }
+    
+    func refreshCurrentPlace() {
+        // 防抖：忙时不再进入
+        if isBusy { return }
+
+        isBusy = true
+        errorMessage = nil
+
+        let previous = self.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // 10 秒看门狗，防止永久 loading
+        var timedOut = false
+        let watchdog = DispatchWorkItem {
+            timedOut = true
+            self.isBusy = false
+            self.activeLocationFetcher = nil
+            self.refreshAlertTitle = "Location Timeout"
+            self.refreshAlertMessage = "定位超过 10 秒未返回，请稍后再试或检查定位权限。"
+            self.showRefreshAlert = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10, execute: watchdog)
+
+        // 持有引用，确保回调能触发
+        let fetcher = OneShotLocationFetcher()
+        self.activeLocationFetcher = fetcher
+
+        fetcher.requestOnce { result in
+            // 任一回调路径都先清理看门狗
+            DispatchQueue.main.async {
+                if !watchdog.isCancelled { watchdog.cancel() }
+            }
+
+            switch result {
+            case .failure(let err):
+                DispatchQueue.main.async {
+                    guard !timedOut else { return } // 已经被看门狗处理
+                    self.isBusy = false
+                    self.activeLocationFetcher = nil
+                    self.refreshAlertTitle = "Location Error"
+                    self.refreshAlertMessage = err.localizedDescription
+                    self.showRefreshAlert = true
+                }
+
+            case .success(let coord):
+                // 逆地理
+                getAddressFromCoordinate(coord) { maybeCity in
+                    DispatchQueue.main.async {
+                        guard !timedOut else { return }
+
+                        let city = (maybeCity ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                        let placeToShow = city.isEmpty
+                            ? String(format: "%.4f, %.4f", coord.latitude, coord.longitude)
+                            : city
+
+                        // 更新 UI
+                        self.currentPlace = placeToShow
+
+                        // 写入 Firestore（即使没变也写：更新坐标 & 时间戳）
+                        var payload: [String: Any] = [
+                            FSKeys.currentPlace: placeToShow,
+                            "currentLat": coord.latitude,
+                            "currentLng": coord.longitude,
+                            "updatedAt": FieldValue.serverTimestamp()
+                        ]
+                        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "lastCurrentPlaceUpdate")
+
+                        func finishAndAlert() {
+                            self.isBusy = false
+                            self.activeLocationFetcher = nil
+
+                            // 比较是否变化（大小写与首尾空格忽略）
+                            let changed = previous.lowercased() != placeToShow.lowercased()
+
+                            if changed {
+                                self.refreshAlertTitle = "Location Updated"
+                                self.refreshAlertMessage = "已更新为：\(placeToShow)"
+                            } else {
+                                self.refreshAlertTitle = "No Change"
+                                self.refreshAlertMessage = "位置没有变化（仍为：\(placeToShow)）。"
+                            }
+                            self.showRefreshAlert = true
+                        }
+
+                        if let col = self.userCollectionUsed, let id = self.userDocID {
+                            self.db.collection(col).document(id).setData(payload, merge: true) { err in
+                                if let err = err {
+                                    // 写库失败也要结束 loading，并提示
+                                    self.isBusy = false
+                                    self.activeLocationFetcher = nil
+                                    self.refreshAlertTitle = "Save Failed"
+                                    self.refreshAlertMessage = err.localizedDescription
+                                    self.showRefreshAlert = true
+                                } else {
+                                    finishAndAlert()
+                                }
+                            }
+                        } else {
+                            // 尚未载入用户文档：仍然结束并提示
+                            finishAndAlert()
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
 }
+
+// === One-shot 定位器 ===
+
+
 
 // MARK: - Data & Actions
 private extension AccountDetailView {
@@ -4629,22 +5126,34 @@ private extension AccountDetailView {
 
         self.nickname = data[FSKeys.nickname] as? String ?? ""
 
+        // birthday：优先 Timestamp；其次你旧的 "birthDate" 字符串（yyyy-MM-dd / yyyy/M/d）
         if let ts = data[FSKeys.birthday] as? Timestamp {
-                self.birthday = ts.dateValue()
-            } else if let s = data["birthDate"] as? String, let d = ISO8601Calendar.date(from: s) {
+            self.birthday = ts.dateValue()
+        } else if let s = data["birthDate"] as? String {
+            if let d = Self.parseDateYYYYMMDD.date(from: s) {
                 self.birthday = d
+            } else if let d2 = Self.parseDateYMDSlash.date(from: s) {
+                self.birthday = d2
             }
+        }
 
-            // FIX: 出生时间同时支持 "HH:mm"（24h）与 "h:mm a"（12h）
-            if let t = data[FSKeys.birthTime] as? String, let d = timeToDateFlexible(t) {
-                self.birthTime = d
+        // birthTime：首选新的 birthHour/birthMinute；兼容旧的 "birthTime" 字符串
+        var hour: Int? = data["birthHour"] as? Int
+        var minute: Int? = data["birthMinute"] as? Int
+
+        if hour == nil || minute == nil {
+            if let t = data[FSKeys.birthTime] as? String, let d = timeToDate(t) {
+                let comps = Calendar.current.dateComponents([.hour, .minute], from: d)
+                hour = hour ?? comps.hour
+                minute = minute ?? comps.minute
             }
+        }
+        self.birthTime = BirthTimeUtils.makeLocalTimeDate(hour: hour ?? 0, minute: minute ?? 0)
 
-            self.birthPlace   = data[FSKeys.birthPlace] as? String ?? ""
-            self.currentPlace = (data[FSKeys.currentPlace] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        self.birthPlace   = data[FSKeys.birthPlace] as? String ?? ""
+        self.currentPlace = (data[FSKeys.currentPlace] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
 
-
-        // 修正 currentPlace（保持你原逻辑）
+        // --- 修正 currentPlace（保持你原逻辑） ---
         let needsFix: Bool = {
             if currentPlace.isEmpty { return true }
             if currentPlace.lowercased() == "unknown" { return true }
@@ -4664,7 +5173,33 @@ private extension AccountDetailView {
                 }
             }
         }
+
+        // --- Birth geo & timezone & raw time（保持你的兼容逻辑） ---
+        if let lat = data["birthLat"] as? CLLocationDegrees { self.birthLat = lat }
+        else if let lat = data["birth_lat"] as? CLLocationDegrees { self.birthLat = lat }
+
+        if let lng = data["birthLng"] as? CLLocationDegrees { self.birthLng = lng }
+        else if let lng = data["birth_lng"] as? CLLocationDegrees { self.birthLng = lng }
+
+        if let tzMin = data["birthTimezoneOffsetMinutes"] as? Int {
+            self.birthTimezoneOffsetMinutes = tzMin
+        } else if let tzMin = data["timezoneOffsetMinutes"] as? Int {
+            self.birthTimezoneOffsetMinutes = tzMin
+        } else {
+            self.birthTimezoneOffsetMinutes = TimeZone.current.secondsFromGMT() / 60
+        }
+
+        if let raw = data["birthTimeRaw"] as? String {
+            self.birthRawTimeString = raw
+        } else if let raw = data["birth_raw"] as? String {
+            self.birthRawTimeString = raw
+        } else if let raw = data["birthTimeOriginal"] as? String {
+            self.birthRawTimeString = raw
+        } else {
+            self.birthRawTimeString = nil
+        }
     }
+
 
     func saveField<T>(_ key: String, value: T, completion: @escaping () -> Void) {
         guard let col = userCollectionUsed, let id = userDocID else {
@@ -4677,34 +5212,70 @@ private extension AccountDetailView {
         }
     }
     // 统一保存（向后兼容旧字段）
-    func saveBirthFields(date: Date, time: Date, completion: @escaping () -> Void) {
+    // === Replace the old saveBirthFields with two explicit flows ===
+
+    // 仅更新“生日”部分（日期），并与当前“时间”合并后写库
+    // 仅更新“生日”（日期）
+    func saveBirthDateOnly(newDate: Date, completion: @escaping () -> Void) {
         guard let col = userCollectionUsed, let id = userDocID else {
             errorMessage = "User document not found."; return
         }
         isBusy = true
-        let merged = merge(datePart: date, timePart: time)
 
-        let dateStr = Self.parseDateYYYYMMDD.string(from: merged)
-        let timeStr24 = Self.birthTimeStorageFormatter.string(from: time)
+        let dateStr = Self.parseDateYYYYMMDD.string(from: newDate) // "yyyy-MM-dd"
 
         let payload: [String: Any] = [
-            // 新字段（你现在的规范）
-            FSKeys.birthday: Timestamp(date: merged),
-            FSKeys.birthTime: timeStr24,
-            "birthDateTime": Timestamp(date: merged),
-            // 兼容旧字段
-            "birth_date": dateStr,
-            "birth_time": timeStr24
+            FSKeys.birthday: Timestamp(date: newDate), // 正式字段（仅日期语义）
+            "birth_date": dateStr,                     // 兼容旧字段
+            "updatedAt": FieldValue.serverTimestamp()
         ]
 
         db.collection(col).document(id).setData(payload, merge: true) { err in
-            isBusy = false
-            if let err = err { errorMessage = err.localizedDescription; return }
-            self.birthday = merged
-            self.birthTime = merged
+            self.isBusy = false
+            if let err = err { self.errorMessage = err.localizedDescription; return }
+            self.birthday = newDate   // 本地状态只改日期
             completion()
         }
     }
+
+    // 仅更新时间（时:分）
+    func saveBirthTimeOnly(newTime: Date, completion: @escaping () -> Void) {
+        guard let col = userCollectionUsed, let id = userDocID else {
+            errorMessage = "User document not found."; return
+        }
+        isBusy = true
+
+        let (h, m) = BirthTimeUtils.hourMinute(from: newTime)
+
+        // 兼容：写一个 "HH:mm" 字符串，方便旧逻辑或后端使用
+        let time24: String = {
+            let f = DateFormatter()
+            f.locale = Locale(identifier: "en_US_POSIX")
+            f.timeZone = .current
+            f.dateFormat = "HH:mm"
+            return f.string(from: newTime)
+        }()
+
+        let timeRaw = BirthTimeUtils.displayFormatter.string(from: newTime).lowercased()
+
+        let payload: [String: Any] = [
+            "birthHour": h,
+            "birthMinute": m,
+            "birth_time": time24,            // 兼容旧字段
+            "birthTimeRaw": timeRaw,         // 显示方便
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+
+        db.collection(col).document(id).setData(payload, merge: true) { err in
+            self.isBusy = false
+            if let err = err { self.errorMessage = err.localizedDescription; return }
+            // 本地状态只改“时间”
+            self.birthTime = BirthTimeUtils.makeLocalTimeDate(hour: h, minute: m)
+            self.birthRawTimeString = timeRaw
+            completion()
+        }
+    }
+
 
     // 合并“日期部分”和“时间部分”
     func merge(datePart: Date, timePart: Date) -> Date {
@@ -4965,6 +5536,49 @@ private extension AccountDetailView {
             else { print("✅ Google session disconnected") }
         }
     }
+    
+    // ===== Astrology glue (no extra conversion) =====
+
+    // Merge local civil date & time (your existing helper already uses .current)
+    private var mergedLocalBirthDateTime: Date {
+        merge(datePart: birthday, timePart: birthTime)
+    }
+
+    // BirthInfo used for display (keeps the local civil time; NO second conversion)
+    private var birthInfo: BirthInfo {
+        BirthInfo(
+            date: mergedLocalBirthDateTime,
+            latitude: birthLat,
+            longitude: birthLng,
+            timezoneOffsetMinutes: birthTimezoneOffsetMinutes,
+            originalUserInput: birthRawTimeString
+        )
+    }
+
+    // For Sun/Moon we want the absolute instant: local time minus offset = UTC
+    private var birthDateUTC: Date {
+        mergedLocalBirthDateTime.addingTimeInterval(-Double(birthTimezoneOffsetMinutes * 60))
+    }
+
+    // Display birth time exactly as typed (if available); otherwise format in birth timezone
+    private var birthTimeDisplay: String {
+        AstroCalculator.displayBirthTime(birthInfo, format: "yyyy-MM-dd HH:mm")
+    }
+    private var birthTimeDisplayOnly: String {
+        AstroCalculator.displayBirthTime(birthInfo, format: "h:mm a").lowercased()
+    }
+
+    // Sign texts
+    private var sunSignText: String {
+        AstroCalculator.sunSign(date: birthDateUTC).rawValue
+    }
+    private var moonSignText: String {
+        AstroCalculator.moonSign(date: birthDateUTC).rawValue
+    }
+    private var ascSignText: String {
+        AstroCalculator.ascendantSign(info: birthInfo).rawValue
+    }
+
 }
 
 // MARK: - 固定英文展示 & 解析（工具函数，供其它处复用）
@@ -4982,10 +5596,6 @@ private extension AccountDetailView {
     }
 }
 
-    // ——— 下面你的删号/reauth 等逻辑保持不变 ———
-    
-
-    // ………… 省略：purgeCollection / purgeAllUserData / purgeByDocIDPrefix / deleteAuthAccount / reauthenticateCurrentUser / reauthWithGoogle / reauthWithApple / clearLocalStateAfterAccountDeletion（与你现有保持一致） …………
 
 // 放在文件尾部的协调器（保持你的实现）
 final class AppleReauthCoordinator: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
@@ -5019,131 +5629,7 @@ final class AppleReauthCoordinator: NSObject, ASAuthorizationControllerDelegate,
 import Foundation
 import CoreLocation
 
-/// 轻量级占星计算器（热带黄道）
-/// - 说明：太阳星座按常见区间；月亮与上升使用近似算法，移动端足够好用。
-enum AstroCalculator {
-    // MARK: - Public API
-    static func sunSign(for birthDateTime: Date, in tz: TimeZone = .current) -> String {
-        // 太阳星座按日期区间（热带黄道，常见边界）
-        let cal = Calendar(identifier: .gregorian)
-        let m = cal.component(.month, from: birthDateTime)
-        let d = cal.component(.day, from: birthDateTime)
-        switch (m, d) {
-        case (3,21...31),(4,1...19):  return "♈︎ Aries"
-        case (4,20...30),(5,1...20):  return "♉︎ Taurus"
-        case (5,21...31),(6,1...20):  return "♊︎ Gemini"
-        case (6,21...30),(7,1...22):  return "♋︎ Cancer"
-        case (7,23...31),(8,1...22):  return "♌︎ Leo"
-        case (8,23...31),(9,1...22):  return "♍︎ Virgo"
-        case (9,23...30),(10,1...22): return "♎︎ Libra"
-        case (10,23...31),(11,1...21):return "♏︎ Scorpio"
-        case (11,22...30),(12,1...21):return "♐︎ Sagittarius"
-        case (12,22...31),(1,1...19): return "♑︎ Capricorn"
-        case (1,20...31),(2,1...18):  return "♒︎ Aquarius"
-        default:                      return "♓︎ Pisces"
-        }
-    }
 
-    static func moonSign(for birthDateTime: Date, in tz: TimeZone = .current) -> String {
-        // 粗略月亮经度：J2000以来的日数 * 月球平运动（度/日） + 近似均差项
-        // 近似即可：划分每30度为一宫，对应月亮星座
-        let λ = normalized(deg: meanMoonLongitude(birthDateTime)) // [0,360)
-        return signName(for: λ, prefix: "月亮")
-    }
-
-    static func ascendantSign(for birthDateTime: Date,
-                              latitude: Double?,
-                              longitude: Double?,
-                              in tz: TimeZone = .current) -> String {
-        guard let lat = latitude, let lon = longitude else {
-            return "Unknown"
-        }
-        // 计算地方恒星时（LST），再近似求上升点黄经
-        let lst = localSiderealTime(date: birthDateTime, longitude: lon)
-        let ε = deg2rad(23.439291) // 黄赤交角
-        let φ = deg2rad(lat)
-        let H = deg2rad(lst) // 以度近似小时角
-
-        // 上升点（Asc）黄道经度公式（简化）
-        // tan(λ_asc) = 1 / (cos ε / tan φ + sin ε * sin H / cos H)
-        // 参考：Meeus 简化推导（这里用于近似展示）
-        let numerator = 1.0
-        let denominator = (cos(ε) / tan(φ)) + (sin(ε) * tan(H))
-        var λAsc = atan2(numerator, denominator) // [-π, π]
-        λAsc = λAsc < 0 ? λAsc + 2 * .pi : λAsc
-        let λAscDeg = rad2deg(λAsc)
-        return signName(for: λAscDeg, prefix: "上升")
-    }
-
-    // MARK: - Helpers
-
-    /// 平月黄经（度）粗略；J2000起算
-    private static func meanMoonLongitude(_ date: Date) -> Double {
-        // J2000: 2000-01-01 12:00 UT
-        let j2000 = DateComponents(calendar: Calendar(identifier: .gregorian),
-                                   timeZone: TimeZone(secondsFromGMT: 0),
-                                   year: 2000, month: 1, day: 1, hour: 12).date!
-        let days = date.timeIntervalSince(j2000) / 86400.0
-
-        // 月球平均黄经 ~ 218.316 + 13.176396 * d  （度）
-        // 再加一个很小的简化摄动项提高体感（不追求天文精度）
-        let L0 = 218.316
-        let n = 13.176396
-        let M = 134.963 + 13.064993 * days // 月亮平近点角（近似）
-        let corr = 6.289 * sin(deg2rad(M)) // 主要摄动项（简化）
-        return normalized(deg: L0 + n * days + corr)
-    }
-
-    /// 地方恒星时（度，0-360）
-    private static func localSiderealTime(date: Date, longitude: Double) -> Double {
-        // 近似 GMST（度）
-        let jd = julianDate(date: date)
-        let T = (jd - 2451545.0) / 36525.0
-        var GMST = 280.46061837 + 360.98564736629 * (jd - 2451545.0)
-        GMST += 0.000387933 * T * T - (T * T * T) / 38710000.0
-        GMST = normalized(deg: GMST)
-        // 地方恒星时 = GMST + 经度
-        return normalized(deg: GMST + longitude)
-    }
-
-    /// 儒略日
-    private static func julianDate(date: Date) -> Double {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(secondsFromGMT: 0)!
-        let comps = cal.dateComponents([.year,.month,.day,.hour,.minute,.second], from: date)
-        let Y = Double(comps.year!)
-        let M = Double(comps.month!)
-        let D = Double(comps.day!) +
-                (Double(comps.hour!) - 12.0)/24.0 +
-                Double(comps.minute!) / 1440.0 +
-                Double(comps.second!) / 86400.0
-        let A = floor((14.0 - M)/12.0)
-        let y = Y + 4800.0 - A
-        let m = M + 12.0*A - 3.0
-        var jd = D + floor((153.0*m + 2.0)/5.0) + 365.0*y + floor(y/4.0) - floor(y/100.0) + floor(y/400.0) - 32045.0
-        // 已经包含 12h 偏移（因为上面 -12h）
-        return jd
-    }
-
-    private static func signName(for eclipticLongitude: Double, prefix: String) -> String {
-        let idx = Int(floor(normalized(deg: eclipticLongitude) / 30.0)) % 12
-        let names = [
-            "♈︎ Aries","♉︎ Taurus","♊︎ Gemini","♋︎ Cancer",
-            "♌︎ Leo","♍︎ Virgo","♎︎ Libra","♏︎ Scorpio",
-            "♐︎ Sagittarius","♑︎ Capricorn","♒︎ Aquarius","♓︎ Pisces"
-        ]
-        return "\(prefix) \(names[idx])"
-    }
-
-    private static func normalized(deg: Double) -> Double {
-        var x = deg.truncatingRemainder(dividingBy: 360.0)
-        if x < 0 { x += 360.0 }
-        return x
-    }
-
-    private static func deg2rad(_ x: Double) -> Double { x * .pi / 180.0 }
-    private static func rad2deg(_ x: Double) -> Double { x * 180.0 / .pi }
-}
 
 import Foundation
 import CoreLocation
@@ -5162,17 +5648,23 @@ extension OnboardingViewModel {
     }
 
     var sunSignText: String {
-        AstroCalculator.sunSign(for: birthDateTime)
+        AstroCalculator.sunSign(date: birthDateTime).rawValue
     }
 
     var moonSignText: String {
-        AstroCalculator.moonSign(for: birthDateTime)
+        AstroCalculator.moonSign(date: birthDateTime).rawValue
     }
 
     var ascendantText: String {
-        AstroCalculator.ascendantSign(for: birthDateTime,
-                                      latitude: birthCoordinate?.latitude,
-                                      longitude: birthCoordinate?.longitude)
+        guard let coord = birthCoordinate else { return "—" } // no coords → show dash
+        let tzMinutes = TimeZone.current.secondsFromGMT(for: birthDateTime) / 60
+        let info = BirthInfo(
+            date: birthDateTime,
+            latitude: coord.latitude,
+            longitude: coord.longitude,
+            timezoneOffsetMinutes: tzMinutes
+        )
+        return AstroCalculator.ascendantSign(info: info).rawValue
     }
 }
 
@@ -5180,59 +5672,41 @@ import SwiftUI
 
 struct ZodiacInlineRow: View {
     @EnvironmentObject var themeManager: ThemeManager
-    @ObservedObject var viewModel: OnboardingViewModel
+
+    let sunText: String
+    let moonText: String
+    let ascText: String
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
             HStack(spacing: 6) {
                 Image(systemName: "sun.max.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                Text(english(from: viewModel.sunSignText))
+                Text(sunText).italic()
             }
 
-            Text("•").opacity(0.5)
+            Text("•")
+                .foregroundColor(themeManager.descriptionText)
 
             HStack(spacing: 6) {
-                Image(systemName: "moon.stars.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                Text(english(from: viewModel.moonSignText))
+                Image(systemName: "moon.fill")
+                Text(moonText).italic()
             }
 
-            Text("•").opacity(0.5)
+            Text("•")
+                .foregroundColor(themeManager.descriptionText)
 
             HStack(spacing: 6) {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                Text(english(from: viewModel.ascendantText))
+                Image(systemName: "arrow.up.right")
+                Text(ascText.isEmpty || ascText == "—" ? "Unknown" : ascText)
+                    .italic()
             }
         }
-        .foregroundColor(themeManager.foregroundColor)
-        .font(.custom("PlayfairDisplay-Italic", size: 14))
-        .lineLimit(1)
-        .minimumScaleFactor(0.8)
-        .frame(maxWidth: .infinity, alignment: .center) // ⬅️ 改为居中
-        .padding(.top, 4)
-    }
-
-    private func english(from signText: String) -> String {
-        let trimmed = signText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let noPrefix = trimmed
-            .replacingOccurrences(of: "太阳 ", with: "")
-            .replacingOccurrences(of: "月亮 ", with: "")
-            .replacingOccurrences(of: "上升 ", with: "")
-        if let range = noPrefix.range(of: " ", options: .backwards) {
-            let after = noPrefix[range.upperBound...]
-            let en = after.trimmingCharacters(in: .whitespacesAndNewlines)
-            return en.isEmpty ? trimmed : en
-        }
-        return trimmed
+        .font(.callout)
+        .foregroundColor(themeManager.primaryText)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        // no background / border — clean style like your old version
     }
 }
-
-
-
-
-
 /// 安全加载本地 Asset 的图片：
 /// - 若找不到对应的图片名，不会崩溃，而是回退到系统占位图标。
 struct SafeImage: View {
@@ -5299,6 +5773,37 @@ struct CollapsibleSection<Content: View>: View {
                 .stroke(Color.white.opacity(0.3), lineWidth: 1)
         )
         .animation(.easeInOut, value: isExpanded)
+    }
+}
+import Foundation
+
+// 用于在界面上显示 12 小时制的时间（本地时区）
+// === Only store/display hour & minute to avoid timezone shifts ===
+enum BirthTimeUtils {
+    /// 本地时区的时间显示格式（系统 12/24 小时会自动匹配）
+    static let displayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeStyle = .short
+        f.dateStyle = .none
+        f.timeZone = .current
+        return f
+    }()
+
+    /// 从 Date 抽取小时/分钟（按本地时区）
+    static func hourMinute(from date: Date) -> (hour: Int, minute: Int) {
+        let cal = Calendar.current
+        return (cal.component(.hour, from: date), cal.component(.minute, from: date))
+    }
+
+    /// 用小时+分钟拼一个固定日期（仅用于显示/计算，避免跨日/跨时区偏移）
+    static func makeLocalTimeDate(hour: Int, minute: Int) -> Date {
+        var comps = DateComponents()
+        comps.calendar = Calendar.current
+        comps.timeZone = .current
+        comps.year = 2001; comps.month = 1; comps.day = 1
+        comps.hour = hour; comps.minute = minute
+        return comps.date ?? Date()
     }
 }
 
@@ -5375,25 +5880,6 @@ class SoundPlayer: ObservableObject {
         } catch {
             print("❌ 播放失败：\(error.localizedDescription)")
         }
-    }
-}
-// 统一按 UTC 解析/格式化生日，避免时区错一天
-enum ISO8601Calendar {
-    static let cal = Calendar(identifier: .gregorian)
-    static let tz  = TimeZone(secondsFromGMT: 0)!
-    static func date(from ymd: String) -> Date? {
-        let df = DateFormatter()
-        df.calendar = cal
-        df.timeZone = tz
-        df.dateFormat = "yyyy-MM-dd"
-        return df.date(from: ymd)
-    }
-    static func string(from date: Date) -> String {
-        let df = DateFormatter()
-        df.calendar = cal
-        df.timeZone = tz
-        df.dateFormat = "yyyy-MM-dd"
-        return df.string(from: date)
     }
 }
 
@@ -5477,7 +5963,8 @@ extension ThemeManager {
 
 
 #Preview {
-    OnboardingFinalStep(viewModel: OnboardingViewModel())
+    RegisterPageView()
         .environmentObject(StarAnimationManager())
         .environmentObject(ThemeManager())
+        .environmentObject(OnboardingViewModel())
 }

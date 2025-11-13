@@ -2,16 +2,96 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
-	<key>UIAppFonts</key>
-	<array>
-		<string>PlayfairDisplay-Italic-VariableFont_wght.ttf</string>
-		<string>PlayfairDisplay-VariableFont_wght.ttf</string>
-		<string>Inter-VariableFont_opsz,wght.ttf</string>
-	</array>
+    <!-- 必需：包标识、名称、可执行名、版本、包类型 -->
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundleDisplayName</key>
+    <string>Aligna</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+
+    <!-- 启动画面（没用 LaunchScreen.storyboard 时留空字典也行） -->
+    <key>UILaunchScreen</key>
+    <dict/>
+
+    <!-- 你原有的配置： -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
+
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <!-- Google Sign-In 反向客户端ID -->
+                <string>com.googleusercontent.apps.16639733048-camsvc058sv7id0faubuhiee2ejan3jv</string>
+            </array>
+        </dict>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <!-- TwitterKit -->
+                <string>twitterkit-pnxiRsFZjbXdXPFI8T2Ek7OYd</string>
+            </array>
+        </dict>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLName</key>
+            <string>aligna</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>aligna</string>
+            </array>
+        </dict>
+    </array>
+
+    <key>UIAppFonts</key>
+    <array>
+        <string>PlayfairDisplay-Italic-VariableFont_wght.ttf</string>
+        <string>PlayfairDisplay-VariableFont_wght.ttf</string>
+        <string>Inter-VariableFont_opsz,wght.ttf</string>
+    </array>
+
+    <key>LSApplicationQueriesSchemes</key>
+    <array>
+        <string>twitterauth</string>
+    </array>
+
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>我们需要获取您的当前位置以生成个性化推荐。</string>
+    
+    <!-- iPhone -->
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+    <!-- iPad（必须四个方向全有，含 UpsideDown）-->
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
 </dict>
 </plist>

@@ -7,9 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		54D76B362DED1BC900F7ABC0 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 54D76B352DED1BC900F7ABC0 /* FirebaseAnalytics */; };
-		54D76B382DED1BC900F7ABC0 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 54D76B372DED1BC900F7ABC0 /* FirebaseAuth */; };
-		54D76B3A2DED1BC900F7ABC0 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 54D76B392DED1BC900F7ABC0 /* FirebaseFirestore */; };
+		54C65B742E6E115C00A41F9A /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 54C65B732E6E115C00A41F9A /* WidgetKit.framework */; };
+		54C65B762E6E115C00A41F9A /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 54C65B752E6E115C00A41F9A /* SwiftUI.framework */; };
+		54C65B852E6E115E00A41F9A /* AlignaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 54C65B712E6E115C00A41F9A /* AlignaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		54C65B8D2E6E128A00A41F9A /* AlignaWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54C65B8C2E6E127B00A41F9A /* AlignaWidgetShared.swift */; };
+		54C65B902E6E129B00A41F9A /* AlignaWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54C65B8C2E6E127B00A41F9A /* AlignaWidgetShared.swift */; };
+		54C65B912E6E12AD00A41F9A /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DE2DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf */; };
+		54C65B922E6E12AD00A41F9A /* PlayfairDisplay-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */; };
+		54C65B932E6E12AD00A41F9A /* Inter-VariableFont_opsz,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DA2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf */; };
+		54C65BC72E6E22D100A41F9A /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 54C65BC62E6E22D100A41F9A /* FirebaseAnalytics */; };
+		54C65BC92E6E22D100A41F9A /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 54C65BC82E6E22D100A41F9A /* FirebaseAuth */; };
+		54C65BCB2E6E22D100A41F9A /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 54C65BCA2E6E22D100A41F9A /* FirebaseFirestore */; };
+		54C65BCE2E6E230500A41F9A /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 54C65BCD2E6E230500A41F9A /* GoogleSignIn */; };
+		54C65BD02E6E230500A41F9A /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 54C65BCF2E6E230500A41F9A /* GoogleSignInSwift */; };
 		54DE58DB2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DA2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf */; };
 		54DE58DC2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DA2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf */; };
 		54DE58DD2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DA2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf */; };
@@ -19,21 +29,16 @@
 		54DE58E32DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */; };
 		54DE58E42DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DE2DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf */; };
 		54DE58E52DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */; };
-		B925B2912E3D203C00A0D2D8 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = B925B2902E3D203800A0D2D8 /* .gitignore */; };
-		B925B2922E3D203C00A0D2D8 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = B925B2902E3D203800A0D2D8 /* .gitignore */; };
-		B925B2932E3D203C00A0D2D8 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = B925B2902E3D203800A0D2D8 /* .gitignore */; };
-		B95C17E12E37CC190074C099 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = B95C17E02E37CC190074C099 /* GoogleSignIn */; };
-		B95C17E32E37CC3B0074C099 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = B95C17E22E37CC3B0074C099 /* GoogleSignInSwift */; };
-		B96F12A22E37215B00C851AE /* FirebaseAI in Frameworks */ = {isa = PBXBuildFile; productRef = B96F12A12E37215B00C851AE /* FirebaseAI */; };
-		B96F12A42E37215B00C851AE /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = B96F12A32E37215B00C851AE /* FirebaseAnalyticsOnDeviceConversion */; };
-		B96F12A62E37215B00C851AE /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = B96F12A52E37215B00C851AE /* FirebaseAnalyticsWithoutAdIdSupport */; };
-		B96F12A82E37215B00C851AE /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = B96F12A72E37215B00C851AE /* FirebaseAppCheck */; };
-		B96F12AA2E37221800C851AE /* FirebaseFirestoreCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = B96F12A92E37221800C851AE /* FirebaseFirestoreCombine-Community */; };
-		B96F12AC2E3722E500C851AE /* FirebaseFirestoreCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = B96F12AB2E3722E500C851AE /* FirebaseFirestoreCombine-Community */; };
-		B96F12AE2E37246C00C851AE /* FirebaseFirestoreCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = B96F12AD2E37246C00C851AE /* FirebaseFirestoreCombine-Community */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		54C65B832E6E115E00A41F9A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 54DE58A82DC29A91008BE4B8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 54C65B702E6E115C00A41F9A;
+			remoteInfo = AlignaWidgetExtension;
+		};
 		54DE58BE2DC29A93008BE4B8 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 54DE58A82DC29A91008BE4B8 /* Project object */;
@@ -51,12 +56,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		B92EA4132E8A089A008FEE30 /* Embed Foundation Extensions */ = {
+		54C65B8A2E6E115E00A41F9A /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
+			buildActionMask = 12;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				54C65B852E6E115E00A41F9A /* AlignaWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -64,19 +70,72 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		54C65B712E6E115C00A41F9A /* AlignaWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AlignaWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		54C65B732E6E115C00A41F9A /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		54C65B752E6E115C00A41F9A /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		54C65B8B2E6E125600A41F9A /* AlignaWidgetExtensionRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AlignaWidgetExtensionRelease.entitlements; sourceTree = "<group>"; };
+		54C65B8C2E6E127B00A41F9A /* AlignaWidgetShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignaWidgetShared.swift; sourceTree = "<group>"; };
 		54DE58B02DC29A91008BE4B8 /* AlignaTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AlignaTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		54DE58BD2DC29A93008BE4B8 /* AlignaTestTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AlignaTestTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		54DE58C72DC29A93008BE4B8 /* AlignaTestUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AlignaTestUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		54DE58DA2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-VariableFont_opsz,wght.ttf"; sourceTree = "<group>"; };
 		54DE58DE2DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlayfairDisplay-Italic-VariableFont_wght.ttf"; sourceTree = "<group>"; };
 		54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlayfairDisplay-VariableFont_wght.ttf"; sourceTree = "<group>"; };
-		B925B2902E3D203800A0D2D8 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
-		B92EA3FA2E8A0899008FEE30 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
-		B92EA3FC2E8A0899008FEE30 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		B925B29C2E3D22E800A0D2D8 /* Exceptions for "AlignaTest" folder in "AlignaTest" target */ = {
+		548498042E2B8E5A00E93C9D /* Exceptions for "AlignaTest" folder in "AlignaTestTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				brown_noise.wav,
+				DS_Store,
+				fire_crackle.wav,
+				forest_birds.wav,
+				"GoogleService-Info.plist",
+				low_drums.wav,
+				night_insects.wav,
+				ocean_waves.wav,
+				pink_noise.wav,
+				rainfall.wav,
+				singing_bowl.wav,
+				white_noise.wav,
+			);
+			target = 54DE58BC2DC29A93008BE4B8 /* AlignaTestTests */;
+		};
+		548498052E2B8E5A00E93C9D /* Exceptions for "AlignaTest" folder in "AlignaTestUITests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				brown_noise.wav,
+				DS_Store,
+				fire_crackle.wav,
+				forest_birds.wav,
+				"GoogleService-Info.plist",
+				low_drums.wav,
+				night_insects.wav,
+				ocean_waves.wav,
+				pink_noise.wav,
+				rainfall.wav,
+				singing_bowl.wav,
+				white_noise.wav,
+			);
+			target = 54DE58C62DC29A93008BE4B8 /* AlignaTestUITests */;
+		};
+		54C65BBA2E6E161800A41F9A /* Exceptions for "AlignaTest" folder in "AlignaWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Assets.xcassets,
+				"GoogleService-Info.plist",
+			);
+			target = 54C65B702E6E115C00A41F9A /* AlignaWidgetExtension */;
+		};
+		54C65BC32E6E16BF00A41F9A /* Exceptions for "AlignaWidget" folder in "AlignaWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 54C65B702E6E115C00A41F9A /* AlignaWidgetExtension */;
+		};
+		54C65BC42E6E17C100A41F9A /* Exceptions for "AlignaTest" folder in "AlignaTest" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -86,10 +145,21 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		54C65B772E6E115C00A41F9A /* AlignaWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				54C65BC32E6E16BF00A41F9A /* Exceptions for "AlignaWidget" folder in "AlignaWidgetExtension" target */,
+			);
+			path = AlignaWidget;
+			sourceTree = "<group>";
+		};
 		54DE58B22DC29A91008BE4B8 /* AlignaTest */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				B925B29C2E3D22E800A0D2D8 /* Exceptions for "AlignaTest" folder in "AlignaTest" target */,
+				54C65BC42E6E17C100A41F9A /* Exceptions for "AlignaTest" folder in "AlignaTest" target */,
+				548498042E2B8E5A00E93C9D /* Exceptions for "AlignaTest" folder in "AlignaTestTests" target */,
+				548498052E2B8E5A00E93C9D /* Exceptions for "AlignaTest" folder in "AlignaTestUITests" target */,
+				54C65BBA2E6E161800A41F9A /* Exceptions for "AlignaTest" folder in "AlignaWidgetExtension" target */,
 			);
 			path = AlignaTest;
 			sourceTree = "<group>";
@@ -107,22 +177,24 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		54C65B6E2E6E115C00A41F9A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				54C65B762E6E115C00A41F9A /* SwiftUI.framework in Frameworks */,
+				54C65B742E6E115C00A41F9A /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		54DE58AD2DC29A91008BE4B8 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				54D76B362DED1BC900F7ABC0 /* FirebaseAnalytics in Frameworks */,
-				B96F12AA2E37221800C851AE /* FirebaseFirestoreCombine-Community in Frameworks */,
-				B95C17E12E37CC190074C099 /* GoogleSignIn in Frameworks */,
-				B95C17E32E37CC3B0074C099 /* GoogleSignInSwift in Frameworks */,
-				B96F12A62E37215B00C851AE /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
-				B96F12AE2E37246C00C851AE /* FirebaseFirestoreCombine-Community in Frameworks */,
-				B96F12AC2E3722E500C851AE /* FirebaseFirestoreCombine-Community in Frameworks */,
-				B96F12A22E37215B00C851AE /* FirebaseAI in Frameworks */,
-				B96F12A42E37215B00C851AE /* FirebaseAnalyticsOnDeviceConversion in Frameworks */,
-				B96F12A82E37215B00C851AE /* FirebaseAppCheck in Frameworks */,
-				54D76B382DED1BC900F7ABC0 /* FirebaseAuth in Frameworks */,
-				54D76B3A2DED1BC900F7ABC0 /* FirebaseFirestore in Frameworks */,
+				54C65BD02E6E230500A41F9A /* GoogleSignInSwift in Frameworks */,
+				54C65BC72E6E22D100A41F9A /* FirebaseAnalytics in Frameworks */,
+				54C65BCE2E6E230500A41F9A /* GoogleSignIn in Frameworks */,
+				54C65BC92E6E22D100A41F9A /* FirebaseAuth in Frameworks */,
+				54C65BCB2E6E22D100A41F9A /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -143,17 +215,28 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		54C65B722E6E115C00A41F9A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				54C65B732E6E115C00A41F9A /* WidgetKit.framework */,
+				54C65B752E6E115C00A41F9A /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		54DE58A72DC29A91008BE4B8 = {
 			isa = PBXGroup;
 			children = (
-				B925B2902E3D203800A0D2D8 /* .gitignore */,
+				54C65B8C2E6E127B00A41F9A /* AlignaWidgetShared.swift */,
+				54C65B8B2E6E125600A41F9A /* AlignaWidgetExtensionRelease.entitlements */,
 				54DE58DE2DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf */,
 				54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */,
 				54DE58DA2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf */,
 				54DE58B22DC29A91008BE4B8 /* AlignaTest */,
 				54DE58C02DC29A93008BE4B8 /* AlignaTestTests */,
 				54DE58CA2DC29A93008BE4B8 /* AlignaTestUITests */,
-				B92EA3F92E8A0899008FEE30 /* Frameworks */,
+				54C65B772E6E115C00A41F9A /* AlignaWidget */,
+				54C65B722E6E115C00A41F9A /* Frameworks */,
 				54DE58B12DC29A91008BE4B8 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -164,22 +247,36 @@
 				54DE58B02DC29A91008BE4B8 /* AlignaTest.app */,
 				54DE58BD2DC29A93008BE4B8 /* AlignaTestTests.xctest */,
 				54DE58C72DC29A93008BE4B8 /* AlignaTestUITests.xctest */,
+				54C65B712E6E115C00A41F9A /* AlignaWidgetExtension.appex */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		B92EA3F92E8A0899008FEE30 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				B92EA3FA2E8A0899008FEE30 /* WidgetKit.framework */,
-				B92EA3FC2E8A0899008FEE30 /* SwiftUI.framework */,
-			);
-			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		54C65B702E6E115C00A41F9A /* AlignaWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 54C65B862E6E115E00A41F9A /* Build configuration list for PBXNativeTarget "AlignaWidgetExtension" */;
+			buildPhases = (
+				54C65B6D2E6E115C00A41F9A /* Sources */,
+				54C65B6E2E6E115C00A41F9A /* Frameworks */,
+				54C65B6F2E6E115C00A41F9A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				54C65B772E6E115C00A41F9A /* AlignaWidget */,
+			);
+			name = AlignaWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = AlignaWidgetExtension;
+			productReference = 54C65B712E6E115C00A41F9A /* AlignaWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		54DE58AF2DC29A91008BE4B8 /* AlignaTest */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 54DE58D12DC29A93008BE4B8 /* Build configuration list for PBXNativeTarget "AlignaTest" */;
@@ -187,29 +284,23 @@
 				54DE58AC2DC29A91008BE4B8 /* Sources */,
 				54DE58AD2DC29A91008BE4B8 /* Frameworks */,
 				54DE58AE2DC29A91008BE4B8 /* Resources */,
-				B92EA4132E8A089A008FEE30 /* Embed Foundation Extensions */,
+				54C65B8A2E6E115E00A41F9A /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				54C65B842E6E115E00A41F9A /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				54DE58B22DC29A91008BE4B8 /* AlignaTest */,
 			);
 			name = AlignaTest;
 			packageProductDependencies = (
-				54D76B352DED1BC900F7ABC0 /* FirebaseAnalytics */,
-				54D76B372DED1BC900F7ABC0 /* FirebaseAuth */,
-				54D76B392DED1BC900F7ABC0 /* FirebaseFirestore */,
-				B96F12A12E37215B00C851AE /* FirebaseAI */,
-				B96F12A32E37215B00C851AE /* FirebaseAnalyticsOnDeviceConversion */,
-				B96F12A52E37215B00C851AE /* FirebaseAnalyticsWithoutAdIdSupport */,
-				B96F12A72E37215B00C851AE /* FirebaseAppCheck */,
-				B96F12A92E37221800C851AE /* FirebaseFirestoreCombine-Community */,
-				B96F12AB2E3722E500C851AE /* FirebaseFirestoreCombine-Community */,
-				B96F12AD2E37246C00C851AE /* FirebaseFirestoreCombine-Community */,
-				B95C17E02E37CC190074C099 /* GoogleSignIn */,
-				B95C17E22E37CC3B0074C099 /* GoogleSignInSwift */,
+				54C65BC62E6E22D100A41F9A /* FirebaseAnalytics */,
+				54C65BC82E6E22D100A41F9A /* FirebaseAuth */,
+				54C65BCA2E6E22D100A41F9A /* FirebaseFirestore */,
+				54C65BCD2E6E230500A41F9A /* GoogleSignIn */,
+				54C65BCF2E6E230500A41F9A /* GoogleSignInSwift */,
 			);
 			productName = AlignaTest;
 			productReference = 54DE58B02DC29A91008BE4B8 /* AlignaTest.app */;
@@ -268,9 +359,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1640;
+				LastSwiftUpdateCheck = 1630;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
+					54C65B702E6E115C00A41F9A = {
+						CreatedOnToolsVersion = 16.3;
+					};
 					54DE58AF2DC29A91008BE4B8 = {
 						CreatedOnToolsVersion = 16.3;
 					};
@@ -294,8 +388,8 @@
 			mainGroup = 54DE58A72DC29A91008BE4B8;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				54D76B322DED185300F7ABC0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
-				B95C17DF2E37CC190074C099 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				54C65BC52E6E22D100A41F9A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				54C65BCC2E6E230500A41F9A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 54DE58B12DC29A91008BE4B8 /* Products */;
@@ -305,16 +399,26 @@
 				54DE58AF2DC29A91008BE4B8 /* AlignaTest */,
 				54DE58BC2DC29A93008BE4B8 /* AlignaTestTests */,
 				54DE58C62DC29A93008BE4B8 /* AlignaTestUITests */,
+				54C65B702E6E115C00A41F9A /* AlignaWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		54C65B6F2E6E115C00A41F9A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				54C65B912E6E12AD00A41F9A /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
+				54C65B922E6E12AD00A41F9A /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
+				54C65B932E6E12AD00A41F9A /* Inter-VariableFont_opsz,wght.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		54DE58AE2DC29A91008BE4B8 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B925B2932E3D203C00A0D2D8 /* .gitignore in Resources */,
 				54DE58DC2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf in Resources */,
 				54DE58E02DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
 				54DE58E12DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
@@ -325,7 +429,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B925B2922E3D203C00A0D2D8 /* .gitignore in Resources */,
 				54DE58E42DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
 				54DE58E52DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
 				54DE58DD2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf in Resources */,
@@ -336,7 +439,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B925B2912E3D203C00A0D2D8 /* .gitignore in Resources */,
 				54DE58E22DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
 				54DE58E32DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
 				54DE58DB2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf in Resources */,
@@ -346,10 +448,19 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		54C65B6D2E6E115C00A41F9A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				54C65B902E6E129B00A41F9A /* AlignaWidgetShared.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		54DE58AC2DC29A91008BE4B8 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				54C65B8D2E6E128A00A41F9A /* AlignaWidgetShared.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -370,6 +481,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		54C65B842E6E115E00A41F9A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 54C65B702E6E115C00A41F9A /* AlignaWidgetExtension */;
+			targetProxy = 54C65B832E6E115E00A41F9A /* PBXContainerItemProxy */;
+		};
 		54DE58BF2DC29A93008BE4B8 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 54DE58AF2DC29A91008BE4B8 /* AlignaTest */;
@@ -383,6 +499,63 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		54C65B872E6E115E00A41F9A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8TU5H5G565;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AlignaWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AlignaWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = martinyuan.AlignaTest.AlignaWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		54C65B882E6E115E00A41F9A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = AlignaWidgetExtensionRelease.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8TU5H5G565;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AlignaWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AlignaWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = martinyuan.AlignaTest.AlignaWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		54DE58CF2DC29A93008BE4B8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -435,7 +608,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -492,7 +665,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -507,16 +680,21 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = AlignaTest/AlignaTest.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8TU5H5G565;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AlignaTest/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -524,6 +702,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = martinyuan.AlignaTest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -535,16 +714,21 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = AlignaTest/AlignaTestRelease.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8TU5H5G565;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AlignaTest/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -552,6 +736,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = martinyuan.AlignaTest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -629,6 +814,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		54C65B862E6E115E00A41F9A /* Build configuration list for PBXNativeTarget "AlignaWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				54C65B872E6E115E00A41F9A /* Debug */,
+				54C65B882E6E115E00A41F9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		54DE58AB2DC29A91008BE4B8 /* Build configuration list for PBXProject "AlignaTest" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -668,15 +862,15 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		54D76B322DED185300F7ABC0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+		54C65BC52E6E22D100A41F9A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 11.13.0;
+				minimumVersion = 12.2.0;
 			};
 		};
-		B95C17DF2E37CC190074C099 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+		54C65BCC2E6E230500A41F9A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/google/GoogleSignIn-iOS.git";
 			requirement = {
@@ -687,58 +881,30 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		54D76B352DED1BC900F7ABC0 /* FirebaseAnalytics */ = {
+		54C65BC62E6E22D100A41F9A /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 54D76B322DED185300F7ABC0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			package = 54C65BC52E6E22D100A41F9A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAnalytics;
 		};
-		54D76B372DED1BC900F7ABC0 /* FirebaseAuth */ = {
+		54C65BC82E6E22D100A41F9A /* FirebaseAuth */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 54D76B322DED185300F7ABC0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			package = 54C65BC52E6E22D100A41F9A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
 		};
-		54D76B392DED1BC900F7ABC0 /* FirebaseFirestore */ = {
+		54C65BCA2E6E22D100A41F9A /* FirebaseFirestore */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 54D76B322DED185300F7ABC0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			package = 54C65BC52E6E22D100A41F9A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
 		};
-		B95C17E02E37CC190074C099 /* GoogleSignIn */ = {
+		54C65BCD2E6E230500A41F9A /* GoogleSignIn */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = B95C17DF2E37CC190074C099 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			package = 54C65BCC2E6E230500A41F9A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignIn;
 		};
-		B95C17E22E37CC3B0074C099 /* GoogleSignInSwift */ = {
+		54C65BCF2E6E230500A41F9A /* GoogleSignInSwift */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = B95C17DF2E37CC190074C099 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			package = 54C65BCC2E6E230500A41F9A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignInSwift;
-		};
-		B96F12A12E37215B00C851AE /* FirebaseAI */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = FirebaseAI;
-		};
-		B96F12A32E37215B00C851AE /* FirebaseAnalyticsOnDeviceConversion */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = FirebaseAnalyticsOnDeviceConversion;
-		};
-		B96F12A52E37215B00C851AE /* FirebaseAnalyticsWithoutAdIdSupport */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = FirebaseAnalyticsWithoutAdIdSupport;
-		};
-		B96F12A72E37215B00C851AE /* FirebaseAppCheck */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = FirebaseAppCheck;
-		};
-		B96F12A92E37221800C851AE /* FirebaseFirestoreCombine-Community */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = "FirebaseFirestoreCombine-Community";
-		};
-		B96F12AB2E3722E500C851AE /* FirebaseFirestoreCombine-Community */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = "FirebaseFirestoreCombine-Community";
-		};
-		B96F12AD2E37246C00C851AE /* FirebaseFirestoreCombine-Community */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = "FirebaseFirestoreCombine-Community";
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

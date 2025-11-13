@@ -64,7 +64,7 @@ private struct TimelineHeader: View {
                 VStack(spacing: 12) {
                     Text(title)
                         .font(.system(size: 34, weight: .bold, design: .serif))
-                        .foregroundColor(themeManager.primaryText)  
+                        .foregroundColor(themeManager.primaryText)
                         .kerning(0.5)
 
                     // subtle underline "glow"
@@ -406,5 +406,3 @@ extension SuggestionItem {
     }
 }
 #endif
-
-

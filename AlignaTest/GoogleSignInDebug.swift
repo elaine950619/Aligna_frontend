@@ -86,4 +86,3 @@ enum GoogleSignInDebug {
         vc.present(safari, animated: true)
     }
 }
-
