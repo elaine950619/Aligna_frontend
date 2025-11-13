@@ -2191,16 +2191,31 @@ struct RegisterPageView: View {
     }
 
     // MARK: - Email & Password 注册（保留你的原逻辑）
+    // MARK: - Email & Password 注册（跳转到 Onboarding）
+    // MARK: - Email & Password 注册（跳转到 Onboarding）
     private func registerWithEmailPassword() {
         guard !email.isEmpty, !password.isEmpty else {
             alertMessage = "Please fill in all fields."
             showAlert = true
             return
         }
+        
+        // ✅ 关键：在调用 createUser 之前，先打上“需要 Onboarding”的标记
+        hasCompletedOnboarding = false
+        isLoggedIn = false
+        shouldOnboardAfterSignIn = true
+        
         Auth.auth().createUser(withEmail: email, password: password) { result, error in
             if let error = error {
+                // 特殊处理：邮箱已经被注册 → 引导去登录
                 if let errCode = AuthErrorCode(rawValue: error._code),
                    errCode == .emailAlreadyInUse {
+                    
+                    // 这个情况其实是“老用户”，所以这里顺便把标记改回来也可以
+                    shouldOnboardAfterSignIn = false
+                    isLoggedIn = false
+                    hasCompletedOnboarding = false
+                    
                     alertMessage = "This email is already in use. Redirecting to Sign In..."
                     showAlert = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
@@ -2208,24 +2223,25 @@ struct RegisterPageView: View {
                     }
                     return
                 }
+                
+                // 其他错误，直接弹出
                 alertMessage = error.localizedDescription
                 showAlert = true
                 return
             }
-            result?.user.sendEmailVerification { err in
-                if let err = err {
-                    alertMessage = "Failed to send verification email: \(err.localizedDescription)"
-                    showAlert = true
-                } else {
-                    alertMessage = "✅ Verification email sent. Please check your inbox."
-                    showAlert = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                        navigateToOnboarding = true
-                    }
-                }
+            
+            // ✅ 账号创建成功：发验证邮件（就算失败也不影响继续 Onboarding）
+            result?.user.sendEmailVerification(completion: nil)
+            
+            // 此时 FirstPageView 那个监听已经看到 shouldOnboardAfterSignIn = true，
+            // 不会把你拉去首页，只会保持在 .onboarding。
+            // 这里我们用本页的 NavigationStack 去推 OnboardingStep1。
+            DispatchQueue.main.async {
+                navigateToOnboarding = true
             }
         }
     }
+
 }
 
 extension View {
@@ -4747,24 +4763,34 @@ private extension AccountDetailView {
         systemImage: String,
         onTap: @escaping () -> Void
     ) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.footnote).foregroundColor(themeManager.descriptionText)
-                Text(value).font(.headline).foregroundColor(themeManager.primaryText)
+        VStack(alignment: .leading, spacing: 4) {
+            // 上面一行：标题
+            Text(title)
+                .font(.footnote)
+                .foregroundColor(themeManager.descriptionText)
+
+            // 下面一行：内容 + 按钮 靠在一起
+            HStack(spacing: 6) {
+                Text(value)
+                    .font(.headline)
+                    .foregroundColor(themeManager.primaryText)
+
+                Button(action: onTap) {
+                    Image(systemName: systemImage)
+                        .font(.body.weight(.semibold))
+                        .foregroundColor(themeManager.accent)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Refresh \(title)"))
+
+                Spacer(minLength: 0) // 可要可不要，留一点弹性空间
             }
-            Spacer()
-            Button(action: onTap) {
-                Image(systemName: systemImage)
-                    .font(.body.weight(.semibold))
-                    .foregroundColor(themeManager.accent)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 4)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("Refresh \(title)"))
         }
         .padding(.vertical, 6)
     }
+
 
 
     func infoRowEditableText(
