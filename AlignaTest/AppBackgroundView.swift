@@ -31,13 +31,19 @@ struct DecorativeRings: View {
 
 // MARK: - Daytime background (for all light mode screens)
 struct DayBackgroundLayer: View {
-    let size: CGSize   // get from outer GeometryReader
+    let size: CGSize   // from outer GeometryReader
 
     @State private var sunPulse = false
 
     var body: some View {
+        // use a single base length so everything scales proportionally
+        let base = min(size.width, size.height)
+        let sunSize   = base * 0.28      // ≈ 140 on ~500pt base
+        let blob1Size = base * 0.45
+        let blob2Size = base * 0.38
+
         ZStack {
-            // Main beige gradient
+            // === Main vertical beige gradient ===
             LinearGradient(
                 colors: [
                     Color(hex: "#F4E9D3"),
@@ -50,62 +56,70 @@ struct DayBackgroundLayer: View {
             )
             .ignoresSafeArea()
 
-            // Soft global glow
+            // === Soft global radial glow ===
             RadialGradient(
                 gradient: Gradient(colors: [
-                    Color(hex: "#F4D69D").opacity(0.15),
+                    Color(hex: "#F4D69D").opacity(0.08),
                     .clear
                 ]),
                 center: .center,
                 startRadius: 0,
-                endRadius: max(size.width, size.height)
+                endRadius: base
             )
             .ignoresSafeArea()
 
-            // Ambient blobs (similar to your React light spots)
+            // === Ambient blobs (positions are % of screen) ===
+            // top ~15%, left ~20%
             Circle()
                 .fill(
                     RadialGradient(
                         gradient: Gradient(colors: [
-                            Color(hex: "#FFDF9C").opacity(0.18),
+                            Color(hex: "#FFDF9C").opacity(0.14),
                             .clear
                         ]),
                         center: .center,
                         startRadius: 0,
-                        endRadius: 160
+                        endRadius: blob1Size * 0.6
                     )
                 )
-                .frame(width: 260, height: 260)
-                .position(x: size.width * 0.25,
-                          y: size.height * 0.2)
+                .frame(width: blob1Size, height: blob1Size)
+                .position(
+                    x: size.width * 0.20,
+                    y: size.height * 0.15
+                )
 
+            // top ~75%, right ~15%
             Circle()
                 .fill(
                     RadialGradient(
                         gradient: Gradient(colors: [
-                            Color(hex: "#FFEBBE").opacity(0.14),
+                            Color(hex: "#FFEBBE").opacity(0.10),
                             .clear
                         ]),
                         center: .center,
                         startRadius: 0,
-                        endRadius: 140
+                        endRadius: blob2Size * 0.6
                     )
                 )
-                .frame(width: 220, height: 220)
-                .position(x: size.width * 0.8,
-                          y: size.height * 0.75)
+                .frame(width: blob2Size, height: blob2Size)
+                .position(
+                    x: size.width * 0.85,
+                    y: size.height * 0.75
+                )
 
-            // Sun in top-right
+            // === Sun: top ~8%, hugging the right edge ===
             DaySunView(pulse: $sunPulse)
-                .frame(width: 140, height: 140)
-                .position(x: size.width - 70,
-                          y: size.height * 0.12)
+                .frame(width: sunSize, height: sunSize)
+                .position(
+                    x: size.width - sunSize / 2,
+                    y: size.height * 0.08 + sunSize / 2
+                )
 
-            // Bottom hills / mountains
+            // === Bottom mountains – height as % of screen ===
             VStack {
                 Spacer()
                 DayMountainsView()
-                    .frame(height: 220)
+                    .frame(height: size.height * 0.22)
             }
         }
         .onAppear {
@@ -118,6 +132,7 @@ struct DayBackgroundLayer: View {
         }
     }
 }
+
 
 // MARK: - Sun
 struct DaySunView: View {
