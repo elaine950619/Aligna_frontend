@@ -276,15 +276,6 @@ struct SoundDetailView: View {
             AppBackgroundView()
                 .environmentObject(starManager)
             
-            CustomBackButton(
-                iconSize: 18,
-                paddingSize: 8,
-                backgroundColor: Color.black.opacity(0.3),
-                iconColor: themeManager.foregroundColor,
-                topPadding: 44,
-                horizontalPadding: 24
-            )
-            
             VStack(spacing: 20) {
                 // Sound
                 Text("Sound")
@@ -413,16 +404,7 @@ struct PlaceDetailView: View {
         ZStack{
             AppBackgroundView()
                 .environmentObject(starManager)
-            
-            CustomBackButton(
-                iconSize: 18,
-                paddingSize: 8,
-                backgroundColor: Color.black.opacity(0.3),
-                iconColor: themeManager.foregroundColor,
-                topPadding: 44,
-                horizontalPadding: 24
-            )
-            
+             
             VStack(spacing: 20) {
                 // Place
                 Text("Place")
@@ -885,15 +867,6 @@ struct GemstoneDetailView: View {
     var body: some View {
         ZStack {
             AppBackgroundView().environmentObject(starManager)
-            
-            CustomBackButton(
-                iconSize: 18,
-                paddingSize: 8,
-                backgroundColor: Color.black.opacity(0.3),
-                iconColor: themeManager.foregroundColor,
-                topPadding: 44,
-                horizontalPadding: 24
-            )
 
             VStack(spacing: 20) {
                 Text("Gemstone")
@@ -1067,16 +1040,7 @@ struct ColorDetailView: View {
         ZStack{
             AppBackgroundView()
                 .environmentObject(starManager)
-            
-            CustomBackButton(
-                iconSize: 18,
-                paddingSize: 8,
-                backgroundColor: Color.black.opacity(0.3),
-                iconColor: themeManager.foregroundColor,
-                topPadding: 44,
-                horizontalPadding: 24
-            )
-            
+
             VStack(spacing: 20) {
                 // Color
                 Text("Color")
@@ -1293,124 +1257,117 @@ struct ScentDetailView: View {
     let documentName: String
     @State private var item: RecommendationItem?
     @State private var showLinkSheet = false
+//    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                AppBackgroundView()
-                    .environmentObject(starManager)
+        ZStack {
+            AppBackgroundView()
+                .environmentObject(starManager)
 
-                ScrollView {
-                    CustomBackButton(
-                        iconSize: 18, paddingSize: 8,
-                        backgroundColor: Color.black.opacity(0.3),
-                        iconColor: themeManager.foregroundColor,
-                        topPadding: 44, horizontalPadding: 24
-                    )
+            ScrollView {
 
-                    VStack(spacing: 20) {
-                        Text("Scent")
-                            .foregroundColor(themeManager.watermark)
+                VStack(spacing: 20) {
+                    Text("Scent")
+                        .foregroundColor(themeManager.watermark)
+                        .font(.custom("PlayfairDisplay-Regular", size: 36))
+                        .bold()
+
+                    if let item = item {
+                        Text(item.title)
+                            .multilineTextAlignment(.center)
                             .font(.custom("PlayfairDisplay-Regular", size: 36))
+                            .foregroundColor(themeManager.primaryText)
                             .bold()
 
-                        if let item = item {
-                            Text(item.title)
-                                .multilineTextAlignment(.center)
-                                .font(.custom("PlayfairDisplay-Regular", size: 36))
-                                .foregroundColor(themeManager.primaryText)
-                                .bold()
+                        Text(item.description)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                            .font(.custom("PlayfairDisplay-Italic", size: 17))
+                            .fixedSize(horizontal: false, vertical: true)
+                            .foregroundColor(themeManager.descriptionText)
 
-                            Text(item.description)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-                                .font(.custom("PlayfairDisplay-Italic", size: 17))
-                                .fixedSize(horizontal: false, vertical: true)
-                                .foregroundColor(themeManager.descriptionText)
+                        Image(documentName)
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 150, height: 150)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .foregroundColor(themeManager.foregroundColor)
+                            .onTapGesture { showLinkSheet = true }
+                            .sheet(isPresented: $showLinkSheet) {
+                                ScentLinkSheet(
+                                    title: item.title,
+                                    linkURLString: item.link,        // expects `link` on RecommendationItem
+                                    candleURLString: item.candle,    // expects `candle` on RecommendationItem
+                                    themeManager: themeManager
+                                )
+                                .presentationDragIndicator(.hidden)
+                                .presentationDetents([.fraction(0.34), .medium])
+                                .preferredColorScheme(.dark)
+                            }
 
-                            Image(documentName)
-                                .renderingMode(.template)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 150, height: 150)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                .foregroundColor(themeManager.foregroundColor)
-                                .onTapGesture { showLinkSheet = true }
-                                .sheet(isPresented: $showLinkSheet) {
-                                    ScentLinkSheet(
-                                        title: item.title,
-                                        linkURLString: item.link,        // expects `link` on RecommendationItem
-                                        candleURLString: item.candle,    // expects `candle` on RecommendationItem
-                                        themeManager: themeManager
-                                    )
-                                    .presentationDragIndicator(.hidden)
-                                    .presentationDetents([.fraction(0.34), .medium])
-                                    .preferredColorScheme(.dark)
-                                }
+                        Text(item.explanation)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                            .padding(.bottom)
+                            .italic()
+                            .font(.custom("PlayfairDisplay-Regular", size: 14))
+                            .fixedSize(horizontal: false, vertical: true)
+                            .foregroundColor(themeManager.descriptionText)
 
-                            Text(item.explanation)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-                                .padding(.bottom)
-                                .italic()
-                                .font(.custom("PlayfairDisplay-Regular", size: 14))
-                                .fixedSize(horizontal: false, vertical: true)
-                                .foregroundColor(themeManager.descriptionText)
+                        if let about = item.about, !about.isEmpty {
+                            VStack(alignment: .center, spacing: 10) {
+                                Text("About the Scent")
+                                    .font(.custom("PlayfairDisplay-Regular", size: 18))
+                                    .foregroundColor(themeManager.foregroundColor)
+                                    .bold()
+                                    .multilineTextAlignment(.center)
 
-                            if let about = item.about, !about.isEmpty {
-                                VStack(alignment: .center, spacing: 10) {
-                                    Text("About the Scent")
-                                        .font(.custom("PlayfairDisplay-Regular", size: 18))
-                                        .foregroundColor(themeManager.foregroundColor)
+                                Text(about)
+                                    .font(.custom("PlayfairDisplay-Italic", size: 15))
+                                    .foregroundColor(themeManager.foregroundColor)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .lineSpacing(3)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(16)
+                        }
+
+                        if let notice = item.notice, !notice.isEmpty {
+                            VStack(alignment: .center, spacing: 8) {
+                                HStack(spacing: 8) {
+                                    Text("Usage Note")
+                                        .font(.custom("PlayfairDisplay-Regular", size: 14))
+                                        .foregroundColor(themeManager.accent)
                                         .bold()
                                         .multilineTextAlignment(.center)
-
-                                    Text(about)
-                                        .font(.custom("PlayfairDisplay-Italic", size: 15))
-                                        .foregroundColor(themeManager.foregroundColor)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                        .lineSpacing(3)
-                                        .multilineTextAlignment(.center)
                                 }
-                                .padding(16)
+                                Text(notice)
+                                    .font(.custom("PlayfairDisplay-Regular", size: 12))
+                                    .foregroundColor(themeManager.foregroundColor)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .lineSpacing(2)
+                                    .multilineTextAlignment(.center)
                             }
-
-                            if let notice = item.notice, !notice.isEmpty {
-                                VStack(alignment: .center, spacing: 8) {
-                                    HStack(spacing: 8) {
-                                        Text("Usage Note")
-                                            .font(.custom("PlayfairDisplay-Regular", size: 14))
-                                            .foregroundColor(themeManager.accent)
-                                            .bold()
-                                            .multilineTextAlignment(.center)
-                                    }
-                                    Text(notice)
-                                        .font(.custom("PlayfairDisplay-Regular", size: 12))
-                                        .foregroundColor(themeManager.foregroundColor)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                        .lineSpacing(2)
-                                        .multilineTextAlignment(.center)
-                                }
-                                .padding(14)
-                                .background(Color.black.opacity(0.20))
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(themeManager.accent.opacity(0.22), lineWidth: 1)
-                                )
-                                .padding(.horizontal, 12)
-                                .padding(.top, 8)
-                            }
-                        } else {
-                            ProgressView("Loading...")
-                                .padding(.top, 100)
+                            .padding(14)
+                            .background(Color.black.opacity(0.20))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(themeManager.accent.opacity(0.22), lineWidth: 1)
+                            )
+                            .padding(.horizontal, 12)
+                            .padding(.top, 8)
                         }
+                    } else {
+                        ProgressView("Loading...")
+                            .padding(.top, 100)
                     }
-                    .padding()
-                    .onAppear { fetchItem() }
                 }
-                .navigationBarBackButtonHidden(true)
+                .padding()
+                .onAppear { fetchItem() }
             }
+            .navigationBarBackButtonHidden(true)
         }
     }
 
@@ -1449,15 +1406,6 @@ struct ActivityDetailView: View {
         ZStack{
             AppBackgroundView()
                 .environmentObject(starManager)
-            
-            CustomBackButton(
-                iconSize: 18,
-                paddingSize: 8,
-                backgroundColor: Color.black.opacity(0.3),
-                iconColor: themeManager.foregroundColor,
-                topPadding: 44,
-                horizontalPadding: 24
-            )
             
             VStack(spacing: 20) {
                 // Activity
@@ -1545,15 +1493,6 @@ struct CareerDetailView: View {
             AppBackgroundView()
                 .environmentObject(starManager)
             
-            CustomBackButton(
-                iconSize: 18,
-                paddingSize: 8,
-                backgroundColor: Color.black.opacity(0.3),
-                iconColor: themeManager.foregroundColor,
-                topPadding: 44,
-                horizontalPadding: 24
-            )
-            
             VStack(spacing: 20) {
                 // Career
                 Text("Career")
@@ -1640,16 +1579,7 @@ struct RelationshipDetailView: View {
         ZStack{
             AppBackgroundView()
                 .environmentObject(starManager)
-            
-            CustomBackButton(
-                iconSize: 18,
-                paddingSize: 8,
-                backgroundColor: Color.black.opacity(0.3),
-                iconColor: themeManager.foregroundColor,
-                topPadding: 44,
-                horizontalPadding: 24
-            )
-            
+
             VStack(spacing: 20) {
                 // Relationship
                 Text("Relationship")

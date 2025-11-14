@@ -690,6 +690,8 @@ struct FirstPageView: View {
             }
         }
         .navigationViewStyle(.stack)
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 
     private func persistWidgetSnapshotFromViewModel() {
@@ -1602,13 +1604,14 @@ struct RecommendationPagerView: View {
     
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         ZStack {
             // Full-bleed background
             AppBackgroundView()
                 .environmentObject(starManager)
-                .ignoresSafeArea() // <- key line
+                .ignoresSafeArea()
 
             TabView(selection: $selected) {
                 ForEach(RecCategory.allCases) { cat in
@@ -1627,6 +1630,18 @@ struct RecommendationPagerView: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .automatic))
+            
+            CustomBackButton(
+                iconSize: 18,
+                paddingSize: 8,
+                backgroundColor: Color.black.opacity(0.3),
+                iconColor: themeManager.foregroundColor,
+                topPadding: 44,
+                horizontalPadding: 24
+            )
+            .onTapGesture {
+                dismiss()          // pop back to FirstPageView
+            }
         }
         // Prevent the default nav bar blur from showing at the top
         .toolbarBackground(.hidden, for: .navigationBar)
