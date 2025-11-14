@@ -273,8 +273,8 @@ struct SoundDetailView: View {
     
     var body: some View {
         ZStack{
-            AppBackgroundView()
-                .environmentObject(starManager)
+//            AppBackgroundView()
+//                .environmentObject(starManager)
             
             VStack(spacing: 20) {
                 // Sound
@@ -402,8 +402,8 @@ struct PlaceDetailView: View {
     
     var body: some View {
         ZStack{
-            AppBackgroundView()
-                .environmentObject(starManager)
+//            AppBackgroundView()
+//                .environmentObject(starManager)
              
             VStack(spacing: 20) {
                 // Place
@@ -866,7 +866,7 @@ struct GemstoneDetailView: View {
 
     var body: some View {
         ZStack {
-            AppBackgroundView().environmentObject(starManager)
+//            AppBackgroundView().environmentObject(starManager)
 
             VStack(spacing: 20) {
                 Text("Gemstone")
@@ -1038,8 +1038,8 @@ struct ColorDetailView: View {
     
     var body: some View {
         ZStack{
-            AppBackgroundView()
-                .environmentObject(starManager)
+//            AppBackgroundView()
+//                .environmentObject(starManager)
 
             VStack(spacing: 20) {
                 // Color
@@ -1261,8 +1261,8 @@ struct ScentDetailView: View {
 
     var body: some View {
         ZStack {
-            AppBackgroundView()
-                .environmentObject(starManager)
+//            AppBackgroundView()
+//                .environmentObject(starManager)
 
             ScrollView {
 
@@ -1404,8 +1404,8 @@ struct ActivityDetailView: View {
     
     var body: some View {
         ZStack{
-            AppBackgroundView()
-                .environmentObject(starManager)
+//            AppBackgroundView()
+//                .environmentObject(starManager)
             
             VStack(spacing: 20) {
                 // Activity
@@ -1490,8 +1490,8 @@ struct CareerDetailView: View {
     
     var body: some View {
         ZStack{
-            AppBackgroundView()
-                .environmentObject(starManager)
+//            AppBackgroundView()
+//                .environmentObject(starManager)
             
             VStack(spacing: 20) {
                 // Career
@@ -1577,8 +1577,8 @@ struct RelationshipDetailView: View {
     
     var body: some View {
         ZStack{
-            AppBackgroundView()
-                .environmentObject(starManager)
+//            AppBackgroundView()
+//                .environmentObject(starManager)
 
             VStack(spacing: 20) {
                 // Relationship

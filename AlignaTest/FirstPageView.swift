@@ -569,6 +569,7 @@ struct FirstPageView: View {
                     // 背景组件
                     AppBackgroundView()
                         .environmentObject(starManager)
+                        .ignoresSafeArea()
                     
                     VStack(spacing: minLength * 0.015) {
                         // 顶部按钮
