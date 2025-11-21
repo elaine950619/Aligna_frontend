@@ -563,14 +563,17 @@ struct FirstPageView: View {
     
     private var mainContent: some View {
         NavigationStack {
-            GeometryReader { geometry in
-                let minLength = min(geometry.size.width, geometry.size.height)
-                ZStack {
-                    // 背景组件
-                    AppBackgroundView()
-                        .environmentObject(starManager)
-                        .ignoresSafeArea()
-                    
+            ZStack {
+                // ✅ Full-screen background, not constrained by inner GeometryReader
+                AppBackgroundView()
+                    .environmentObject(starManager)
+                    .environmentObject(themeManager)
+                    .ignoresSafeArea()
+
+                // ✅ Foreground content uses GeometryReader for layout
+                GeometryReader { geometry in
+                    let minLength = min(geometry.size.width, geometry.size.height)
+
                     VStack(spacing: minLength * 0.015) {
                         // 顶部按钮
                         HStack {
@@ -586,23 +589,27 @@ struct FirstPageView: View {
                                     .frame(width: 28, height: 28)
                             }
                             .padding(.horizontal, geometry.size.width * 0.05)
-                            
+
                             Spacer()
-                            
+
                             HStack(spacing: geometry.size.width * 0.04) {
                                 if isLoggedIn {
-                                    NavigationLink(destination: AccountDetailView(viewModel: OnboardingViewModel())
-                                        .environmentObject(starManager)
-                                        .environmentObject(themeManager)) {
-                                            Image("account")
-                                                .resizable()
-                                                .renderingMode(.template)
-                                                .aspectRatio(contentMode: .fit)
-                                                .frame(width: 28, height: 28)
-                                                .foregroundColor(themeManager.foregroundColor)
-                                        }
+                                    NavigationLink(
+                                        destination: AccountDetailView(viewModel: OnboardingViewModel())
+                                            .environmentObject(starManager)
+                                            .environmentObject(themeManager)
+                                    ) {
+                                        Image("account")
+                                            .resizable()
+                                            .renderingMode(.template)
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 28, height: 28)
+                                            .foregroundColor(themeManager.foregroundColor)
+                                    }
                                 } else {
-                                    NavigationLink(destination: AccountDetailView(viewModel: OnboardingViewModel())) {
+                                    NavigationLink(
+                                        destination: AccountDetailView(viewModel: OnboardingViewModel())
+                                    ) {
                                         Image("account")
                                             .resizable()
                                             .renderingMode(.template)
@@ -614,7 +621,7 @@ struct FirstPageView: View {
                             }
                             .padding(.horizontal, geometry.size.width * 0.05)
                         }
-                        
+
                         NavigationLink(
                             destination: JournalView(date: selectedDate)
                                 .environmentObject(starManager)
@@ -629,31 +636,32 @@ struct FirstPageView: View {
                                         .foregroundColor(.black)
                                 )
                         }
-                        .offset(x:  geometry.size.width * 0.23, y: geometry.size.width * 0.09)
-                        //                        .padding(.horizontal, geometry.size.width * 0.05)
-                        
+                        .offset(x: geometry.size.width * 0.23,
+                                y: geometry.size.width * 0.09)
+
                         Text("Aligna")
-                            .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.13))
+                            .font(Font.custom("PlayfairDisplay-Regular",
+                                              size: minLength * 0.13))
                             .foregroundColor(themeManager.foregroundColor)
-                        
+
                         Text(viewModel.dailyMantra)
-                            .font(Font.custom("PlayfairDisplay-Italic", size: minLength * 0.04))
+                            .font(Font.custom("PlayfairDisplay-Italic",
+                                              size: minLength * 0.04))
                             .multilineTextAlignment(.center)
                             .foregroundColor(themeManager.foregroundColor.opacity(0.7))
                             .padding(.horizontal, geometry.size.width * 0.1)
                             .fixedSize(horizontal: false, vertical: true)
-                        
+
                         Spacer()
-                        
+
                         VStack(spacing: minLength * 0.05) {
-                            
                             let columns = [
                                 GridItem(.flexible(), alignment: .center),
                                 GridItem(.flexible(), alignment: .center)
                             ]
-                            
-                            
-                            LazyVGrid(columns: columns, spacing: geometry.size.height * 0.03) {
+
+                            LazyVGrid(columns: columns,
+                                      spacing: geometry.size.height * 0.03) {
                                 navItemView(title: "Place", geometry: geometry)
                                 navItemView(title: "Gemstone", geometry: geometry)
                                 navItemView(title: "Color", geometry: geometry)
@@ -665,29 +673,21 @@ struct FirstPageView: View {
                             }
                             .padding(.horizontal, geometry.size.width * 0.05)
                         }
-                        
-                        //                        Spacer()
+
                         Spacer().frame(height: geometry.size.height * 0.03)
                     }
                     .padding(.top, 16)
-                }
-                .onAppear {
-                    starManager.animateStar = true
-                    themeManager.appBecameActive()
-                    
-                    // Always make sure UI has something to render
+                    .frame(width: geometry.size.width,
+                           height: geometry.size.height,
+                           alignment: .top)
+                    .preferredColorScheme(themeManager.preferredColorScheme)
+                    .onAppear {
+                        starManager.animateStar = true
+                        themeManager.appBecameActive()
                         ensureDefaultsIfMissing()
-
-                    // Skip Firestore in preview, otherwise try to load real titles
-                    #if DEBUG
-                    if _isPreview { return }
-                    #endif
-                    // 首次拉取由 startInitialLoad() 统一调度；这里不再发拉取请求
-                    fetchAllRecommendationTitles()
+                        fetchAllRecommendationTitles()
+                    }
                 }
-
-                .frame(width: geometry.size.width, height: geometry.size.height)
-                .preferredColorScheme(themeManager.preferredColorScheme)
             }
         }
         .navigationViewStyle(.stack)

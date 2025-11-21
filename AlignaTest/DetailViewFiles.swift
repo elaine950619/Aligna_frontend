@@ -710,7 +710,7 @@ struct ClickHint: View {
     }
 }
 
-// MARK: - The prettier sheet
+// MARK: - Gemstone sheet (light theme, same as Scent)
 
 struct GemLinkSheet: View {
     let title: String
@@ -720,22 +720,28 @@ struct GemLinkSheet: View {
     
     @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var isDark: Bool { colorScheme == .dark }
     
     var body: some View {
         ZStack {
-            // soft halo background
+            // Background halo adapts to theme
             RadialGradient(
-                colors: [themeManager.foregroundColor.opacity(0.18), .clear],
-                center: .top, startRadius: 10, endRadius: 400
+                colors: [
+                    isDark
+                    ? Color.black.opacity(0.65)
+                    : themeManager.foregroundColor.opacity(0.18),
+                    .clear
+                ],
+                center: .top,
+                startRadius: 10,
+                endRadius: 400
             )
             .ignoresSafeArea()
             
             VStack(spacing: 16) {
-                Capsule()
-                    .fill(.secondary.opacity(0.4))
-                    .frame(width: 40, height: 5)
-                    .padding(.top, 6)
-                    .accessibilityHidden(true)
+                Spacer().frame(height: 6)
                 
                 GlassCard {
                     VStack(spacing: 14) {
@@ -743,11 +749,18 @@ struct GemLinkSheet: View {
                         HStack(spacing: 12) {
                             ZStack {
                                 Circle()
-                                    .fill(LinearGradient(
-                                        colors: [themeManager.foregroundColor.opacity(0.25), .clear],
-                                        startPoint: .topLeading, endPoint: .bottomTrailing
-                                    ))
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                themeManager.foregroundColor.opacity(isDark ? 0.32 : 0.25),
+                                                .clear
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
                                     .frame(width: 40, height: 40)
+                                
                                 Image(systemName: "diamond.fill")
                                     .font(.system(size: 18, weight: .bold))
                                     .foregroundColor(themeManager.primaryText)
@@ -759,10 +772,15 @@ struct GemLinkSheet: View {
                                 .lineLimit(2)
                                 .minimumScaleFactor(0.85)
                                 .multilineTextAlignment(.leading)
+                            
                             Spacer(minLength: 0)
                         }
                         
-                        Divider().overlay(.white.opacity(0.25))
+                        Divider()
+                            .overlay(
+                                (isDark ? Color.white : Color.black)
+                                    .opacity(0.20)
+                            )
                         
                         // Primary button (Bracelet / Link)
                         if let s = linkURLString, let url = URL(string: s) {
@@ -794,11 +812,18 @@ struct GemLinkSheet: View {
                                 .padding(.vertical, 12)
                                 .background(
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .fill(themeManager.foregroundColor.opacity(0.12))
+                                        .fill(
+                                            themeManager.foregroundColor
+                                                .opacity(isDark ? 0.16 : 0.08)
+                                        )
                                 )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .stroke(.white.opacity(0.18), lineWidth: 1)
+                                        .stroke(
+                                            (isDark ? Color.white : themeManager.foregroundColor)
+                                                .opacity(isDark ? 0.24 : 0.20),
+                                            lineWidth: 1
+                                        )
                                 )
                             }
                             .foregroundColor(themeManager.primaryText)
@@ -824,31 +849,36 @@ struct GemLinkSheet: View {
                             }
                         }
                         .font(.footnote)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(isDark ? .white.opacity(0.6) : .secondary)
                     }
                 }
                 
+                // Close in accent for light, softer in dark
                 Button(role: .cancel) { dismiss() } label: {
                     Text("Close")
                         .font(.system(size: 16, weight: .regular))
                         .padding(.vertical, 6)
                         .padding(.bottom, 8)
                 }
+                .foregroundColor(
+                    isDark
+                    ? themeManager.primaryText.opacity(0.85)
+                    : themeManager.accent
+                )
             }
             .padding(.horizontal, 18)
         }
-        // iOS 16+
         .presentationDetents([.fraction(0.42), .medium])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
-        // iOS 17+: uncomment if available
-        // .presentationBackground(.ultraThinMaterial)
     }
     
     private func haptics() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 }
+
+
 
 struct GemstoneDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
@@ -904,7 +934,7 @@ struct GemstoneDetailView: View {
                             }
 
                         ClickHint(isVisible: .constant(showGemClickHint), label: "Click")
-                            .offset(x: 6, y: 6) // tweak to match your video’s corner placement
+                            .offset(x: 6, y: 6)
                     }
                     .sheet(isPresented: $showLinkSheet) {
                         GemLinkSheet(
@@ -913,10 +943,6 @@ struct GemstoneDetailView: View {
                             stoneURLString: item.stone,
                             themeManager: themeManager
                         )
-                        .presentationDragIndicator(.hidden)
-                        .presentationDetents([.fraction(0.34), .medium])
-                        .preferredColorScheme(.dark)
-                        .presentationBackground(.ultraThinMaterial)
                     }
 
                     if let anchor = item.anchor, !anchor.isEmpty {
@@ -1127,21 +1153,29 @@ struct ScentLinkSheet: View {
 
     @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var isDark: Bool { colorScheme == .dark }
 
     var body: some View {
         ZStack {
+            // Background halo adapts to theme
             RadialGradient(
-                colors: [themeManager.foregroundColor.opacity(0.18), .clear],
-                center: .top, startRadius: 10, endRadius: 400
+                colors: [
+                    isDark
+                    ? Color.black.opacity(0.65)
+                    : themeManager.foregroundColor.opacity(0.18),
+                    .clear
+                ],
+                center: .top,
+                startRadius: 10,
+                endRadius: 400
             )
             .ignoresSafeArea()
 
             VStack(spacing: 16) {
-                Capsule()
-                    .fill(.secondary.opacity(0.4))
-                    .frame(width: 40, height: 5)
-                    .padding(.top, 6)
-                    .accessibilityHidden(true)
+                // only system drag indicator
+                Spacer().frame(height: 6)
 
                 GlassCard {
                     VStack(spacing: 14) {
@@ -1149,11 +1183,18 @@ struct ScentLinkSheet: View {
                         HStack(spacing: 12) {
                             ZStack {
                                 Circle()
-                                    .fill(LinearGradient(
-                                        colors: [themeManager.foregroundColor.opacity(0.25), .clear],
-                                        startPoint: .topLeading, endPoint: .bottomTrailing
-                                    ))
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                themeManager.foregroundColor.opacity(isDark ? 0.32 : 0.25),
+                                                .clear
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
                                     .frame(width: 40, height: 40)
+
                                 Image(systemName: "leaf.fill")
                                     .font(.system(size: 18, weight: .bold))
                                     .foregroundColor(themeManager.primaryText)
@@ -1165,10 +1206,15 @@ struct ScentLinkSheet: View {
                                 .lineLimit(2)
                                 .minimumScaleFactor(0.85)
                                 .multilineTextAlignment(.leading)
+
                             Spacer(minLength: 0)
                         }
 
-                        Divider().overlay(.white.opacity(0.25))
+                        Divider()
+                            .overlay(
+                                (isDark ? Color.white : Color.black)
+                                    .opacity(0.20)
+                            )
 
                         // Primary button: Link
                         if let s = linkURLString, let url = URL(string: s) {
@@ -1193,18 +1239,25 @@ struct ScentLinkSheet: View {
                                 dismiss()
                             } label: {
                                 HStack(spacing: 8) {
-                                    Image(systemName: "flame.fill") // candle icon substitute
+                                    Image(systemName: "flame.fill")
                                     Text("Open Candle")
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
                                 .background(
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .fill(themeManager.foregroundColor.opacity(0.12))
+                                        .fill(
+                                            themeManager.foregroundColor
+                                                .opacity(isDark ? 0.16 : 0.08)
+                                        )
                                 )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .stroke(.white.opacity(0.18), lineWidth: 1)
+                                        .stroke(
+                                            (isDark ? Color.white : themeManager.foregroundColor)
+                                                .opacity(isDark ? 0.24 : 0.20),
+                                            lineWidth: 1
+                                        )
                                 )
                             }
                             .foregroundColor(themeManager.primaryText)
@@ -1216,37 +1269,48 @@ struct ScentLinkSheet: View {
                                 Button {
                                     UIPasteboard.general.string = s
                                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                } label: { Label("Copy link URL", systemImage: "doc.on.doc") }
+                                } label: {
+                                    Label("Copy link URL", systemImage: "doc.on.doc")
+                                }
                             }
                             if let s = candleURLString {
                                 Button {
                                     UIPasteboard.general.string = s
                                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                } label: { Label("Copy candle URL", systemImage: "doc.on.doc.fill") }
+                                } label: {
+                                    Label("Copy candle URL", systemImage: "doc.on.doc.fill")
+                                }
                             }
                         }
                         .font(.footnote)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(isDark ? .white.opacity(0.6) : .secondary)
                     }
                 }
 
+                // Close: warm accent in light, softer primary text in dark
                 Button(role: .cancel) { dismiss() } label: {
                     Text("Close")
                         .font(.system(size: 16, weight: .regular))
                         .padding(.vertical, 6)
                         .padding(.bottom, 8)
                 }
+                .foregroundColor(
+                    isDark
+                    ? themeManager.primaryText.opacity(0.85)
+                    : themeManager.accent
+                )
             }
             .padding(.horizontal, 18)
         }
         .presentationDetents([.fraction(0.42), .medium])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
-        // If you target iOS 17+, you can also add:
-        // .presentationBackground(.ultraThinMaterial)
-        .preferredColorScheme(.dark)
+        // no preferredColorScheme → follow app/system
     }
 }
+
+
+
 
 
 
@@ -1297,13 +1361,13 @@ struct ScentDetailView: View {
                             .sheet(isPresented: $showLinkSheet) {
                                 ScentLinkSheet(
                                     title: item.title,
-                                    linkURLString: item.link,        // expects `link` on RecommendationItem
-                                    candleURLString: item.candle,    // expects `candle` on RecommendationItem
+                                    linkURLString: item.link,
+                                    candleURLString: item.candle,
                                     themeManager: themeManager
                                 )
-                                .presentationDragIndicator(.hidden)
-                                .presentationDetents([.fraction(0.34), .medium])
-                                .preferredColorScheme(.dark)
+                                .presentationDragIndicator(.visible)
+                                .presentationDetents([.medium, .large])   // more height → no cropping
+                                .presentationCornerRadius(28)
                             }
 
                         Text(item.explanation)
