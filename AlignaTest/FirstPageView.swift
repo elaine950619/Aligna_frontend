@@ -577,21 +577,38 @@ struct FirstPageView: View {
                     VStack(spacing: minLength * 0.015) {
                         // 顶部按钮
                         HStack {
-                            NavigationLink(
-                                destination: ContentView()
-                                    .environmentObject(starManager)
-                                    .environmentObject(themeManager)
-                                    .environmentObject(viewModel)
-                            ) {
-                                Image(systemName: "calendar")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(themeManager.foregroundColor)
-                                    .frame(width: 28, height: 28)
+                            // LEFT: timeline + journal
+                            HStack(spacing: geometry.size.width * 0.035) {
+                                // Timeline / calendar
+                                NavigationLink(
+                                    destination: ContentView()
+                                        .environmentObject(starManager)
+                                        .environmentObject(themeManager)
+                                        .environmentObject(viewModel)
+                                ) {
+                                    Image(systemName: "calendar")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(themeManager.foregroundColor)
+                                        .frame(width: 28, height: 28)
+                                }
+
+                                // Journal button – book icon
+                                NavigationLink(
+                                    destination: JournalView(date: selectedDate)
+                                        .environmentObject(starManager)
+                                        .environmentObject(themeManager)
+                                ) {
+                                    Image(systemName: "book.closed")      // ⬅️ journal symbol
+                                        .font(.system(size: 20))
+                                        .foregroundColor(themeManager.foregroundColor)
+                                        .frame(width: 28, height: 28)
+                                }
                             }
-                            .padding(.horizontal, geometry.size.width * 0.05)
+                            .padding(.leading, geometry.size.width * 0.05)
 
                             Spacer()
 
+                            // RIGHT: account icon (unchanged)
                             HStack(spacing: geometry.size.width * 0.04) {
                                 if isLoggedIn {
                                     NavigationLink(
@@ -619,25 +636,8 @@ struct FirstPageView: View {
                                     }
                                 }
                             }
-                            .padding(.horizontal, geometry.size.width * 0.05)
+                            .padding(.trailing, geometry.size.width * 0.05)
                         }
-
-                        NavigationLink(
-                            destination: JournalView(date: selectedDate)
-                                .environmentObject(starManager)
-                                .environmentObject(themeManager)
-                        ) {
-                            Rectangle()
-                                .fill(themeManager.foregroundColor)
-                                .frame(width: 20, height: 20)
-                                .overlay(
-                                    Text("+")
-                                        .font(.caption)
-                                        .foregroundColor(.black)
-                                )
-                        }
-                        .offset(x: geometry.size.width * 0.23,
-                                y: geometry.size.width * 0.09)
 
                         Text("Aligna")
                             .font(Font.custom("PlayfairDisplay-Regular",

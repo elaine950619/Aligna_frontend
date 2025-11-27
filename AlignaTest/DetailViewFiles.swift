@@ -93,6 +93,40 @@ struct VinylRecord: View {
     }
 }
 
+final class SoundPlayer: ObservableObject {
+    @Published var isPlaying: Bool = false
+    var player: AVAudioPlayer?
+
+    // 🔻 DELETE the init + configureAudioSession
+
+    func playSound(named name: String) {
+        guard let url = Bundle.main.url(forResource: name, withExtension: "mp3") else {
+            print("❌ Missing sound file \(name).mp3")
+            return
+        }
+        do {
+            player = try AVAudioPlayer(contentsOf: url)
+            player?.numberOfLoops = -1
+            player?.play()
+            isPlaying = true
+        } catch {
+            print("❌ AVAudioPlayer error: \(error)")
+        }
+    }
+
+    func pause() {
+        player?.pause()
+        isPlaying = false
+    }
+
+    func stop() {
+        player?.stop()
+        isPlaying = false
+        player = nil
+    }
+}
+
+
 import SwiftUI
 import AVFoundation
 

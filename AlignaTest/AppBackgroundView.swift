@@ -588,13 +588,13 @@ struct DayStarField: View {
 
         // warm, sun-like palette
         let fills: [Color] = [
-            Color(hex: "#FFF4B3"),
+            Color(hex: "#FFF4B3").opacity(0.50),
             Color(hex: "#FFD700"),
-            Color(hex: "#F4D69D")
+            Color(hex: "#F4D69D").opacity(0.60)
         ]
         let strokes: [Color] = [
-            Color(hex: "#D4A574"),
-            Color(hex: "#C8925F")
+            Color(hex: "#D4A574").opacity(0.60),
+            Color(hex: "#C8925F").opacity(0.60)
         ]
 
         func makeRandomStar() {
