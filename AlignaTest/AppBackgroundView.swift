@@ -110,8 +110,8 @@ struct DayBackgroundLayer: View {
                 )
 
             // === Rotating “gold” stars, like the React LineArtDecorations ===
-//            DayStarField(size: size)
-//                .allowsHitTesting(false)
+            DayStarField()
+                .allowsHitTesting(false)
 
             // === Sun: top ~8%, hugging the right edge ===
             DaySunView(pulse: $sunPulse)
@@ -136,6 +136,8 @@ struct DayBackgroundLayer: View {
                 sunPulse = true
             }
         }
+        .frame(width: width, height: height, alignment: .center)
+        .clipped()
     }
 }
 
@@ -404,32 +406,46 @@ struct DayMountainShape: Shape {
     }
 }
 
-struct DayStar: Identifiable {
-    enum Kind { case main, small, sparkle, cross, dot, special }
-
-    let id = UUID()
-    let position: CGPoint
-    let size: CGFloat
-    let kind: Kind
-    let delay: Double
-    let duration: Double
-}
-
 struct FourPointStarShape: Shape {
     func path(in rect: CGRect) -> Path {
         let cx = rect.midX
         let cy = rect.midY
         let r  = min(rect.width, rect.height) / 2
 
+        // Outer + inner radii (tweak these to change “leafiness”)
+        let outerR = r
+        let innerR = r * 0.38
+
+        func point(angleDeg: CGFloat, radius: CGFloat) -> CGPoint {
+            let rad = angleDeg * .pi / 180
+            // y is inverted in screen coords, so subtract sin
+            return CGPoint(
+                x: cx + cos(rad) * radius,
+                y: cy - sin(rad) * radius
+            )
+        }
+
         var p = Path()
-        p.move(to: CGPoint(x: cx,     y: cy - r))
-        p.addLine(to: CGPoint(x: cx + r * 0.4, y: cy))
-        p.addLine(to: CGPoint(x: cx,     y: cy + r))
-        p.addLine(to: CGPoint(x: cx - r * 0.4, y: cy))
+
+        // Start at top outer
+        p.move(to: point(angleDeg: 90, radius: outerR))
+
+        // Go around clockwise:
+        // top → (top-right inner) → right → (bottom-right inner) → bottom → etc.
+        p.addLine(to: point(angleDeg: 45, radius: innerR))
+        p.addLine(to: point(angleDeg: 0,  radius: outerR))
+        p.addLine(to: point(angleDeg: 315, radius: innerR))
+        p.addLine(to: point(angleDeg: 270, radius: outerR))
+        p.addLine(to: point(angleDeg: 225, radius: innerR))
+        p.addLine(to: point(angleDeg: 180, radius: outerR))
+        p.addLine(to: point(angleDeg: 135, radius: innerR))
+
         p.closeSubpath()
         return p
     }
 }
+
+
 
 struct CrossShape: Shape {
     func path(in rect: CGRect) -> Path {
@@ -448,231 +464,177 @@ struct CrossShape: Shape {
     }
 }
 
-struct DayStarField: View {
-    let size: CGSize
+struct AlignaDiamondStar: Shape {
+    func path(in rect: CGRect) -> Path {
+        let cx = rect.midX
+        let cy = rect.midY
+        let r  = min(rect.width, rect.height) / 2
 
-    @State private var stars: [DayStar] = []
-    @State private var animate = false
+        // long vertical diamond, narrow sides (tweak 0.18 if you want thinner/thicker)
+        let side = r * 0.18
+
+        var p = Path()
+        p.move(to: CGPoint(x: cx,        y: cy - r))     // top
+        p.addLine(to: CGPoint(x: cx + side, y: cy))      // right
+        p.addLine(to: CGPoint(x: cx,        y: cy + r))  // bottom
+        p.addLine(to: CGPoint(x: cx - side, y: cy))      // left
+        p.closeSubpath()
+        return p
+    }
+}
+
+// MARK: - Daytime decorative stars
+
+
+struct DayStar: Identifiable {
+    enum ShapeKind { case fourPoint, cross }
+    let id = UUID()
+    let position: CGPoint
+    let size: CGFloat
+    let shape: ShapeKind
+    let fillColor: Color
+    let strokeColor: Color
+    let delay: Double
+    let spinDuration: Double
+    let pulseDuration: Double
+}
+
+struct AnimatedDayStar: View {
+    let star: DayStar
+
+    @State private var spin = false
+    @State private var pulse = false
 
     var body: some View {
-        ZStack {
-            ForEach(stars) { star in
-                starView(for: star)
+        let base: AnyView = {
+            switch star.shape {
+            case .fourPoint:
+                return AnyView(
+                    FourPointStarShape()
+                        .fill(star.fillColor.opacity(0.75))
+                        .overlay(
+                            FourPointStarShape()
+                                .stroke(star.fillColor.opacity(0.95), lineWidth: 1)
+                        )
+                )
+            case .cross:
+                return AnyView(
+                    CrossShape()
+                        .stroke(
+                            star.strokeColor.opacity(0.95),
+                            style: StrokeStyle(lineWidth: 1, lineCap: .round)
+                        )
+                )
+            }
+        }()
+
+        base
+            .frame(width: star.size, height: star.size)
+            .rotationEffect(.degrees(spin ? 360 : 0), anchor: .center)
+            .scaleEffect(pulse ? 1.15 : 0.9)
+            .opacity(pulse ? 0.95 : 0.6)
+            .position(star.position)
+            .onAppear {
+                withAnimation(
+                    .linear(duration: star.spinDuration)
+                        .repeatForever(autoreverses: false)
+                        .delay(star.delay)
+                ) {
+                    spin = true
+                }
+
+                withAnimation(
+                    .easeInOut(duration: star.pulseDuration)
+                        .repeatForever(autoreverses: true)
+                        .delay(star.delay)
+                ) {
+                    pulse = true
+                }
+            }
+    }
+}
+
+
+
+
+struct DayStarField: View {
+    @State private var stars: [DayStar] = []
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                ForEach(stars) { star in
+                    AnimatedDayStar(star: star)
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .center)
+            .onAppear {
+                if stars.isEmpty {
+                    generateStars(in: geo.size)
+                }
             }
         }
-        .onAppear {
-            if stars.isEmpty {
-                generateStars(in: size)
-            }
-            animate = true
-        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
     }
 
-    // MARK: - Generate random but stable stars
+    // MARK: - Layout / generation
+
     private func generateStars(in size: CGSize) {
-        var arr: [DayStar] = []
         let w = size.width
         let h = size.height
 
-        func randX(_ minPct: CGFloat = 0.05, _ maxPct: CGFloat = 0.95) -> CGFloat {
-            .random(in: w * minPct ... w * maxPct)
-        }
-        func randY(_ minPct: CGFloat = 0.10, _ maxPct: CGFloat = 0.90) -> CGFloat {
-            .random(in: h * minPct ... h * maxPct)
-        }
+        guard w > 0, h > 0 else { return }   // 👈 extra safety
 
-        // main stars (10)
-        for _ in 0..<10 {
-            let s = CGFloat.random(in: 8...18)
-            arr.append(DayStar(
-                position: CGPoint(x: randX(), y: randY()),
-                size: s,
-                kind: .main,
-                delay: Double.random(in: 0...5),
-                duration: Double.random(in: 6...14)
-            ))
-        }
+        // warm, sun-like palette
+        let fills: [Color] = [
+            Color(hex: "#FFF4B3").opacity(0.50),
+            Color(hex: "#FFD700"),
+            Color(hex: "#F4D69D").opacity(0.60)
+        ]
+        let strokes: [Color] = [
+            Color(hex: "#D4A574").opacity(0.60),
+            Color(hex: "#C8925F").opacity(0.60)
+        ]
 
-        // small stars (8)
-        for _ in 0..<8 {
-            let s = CGFloat.random(in: 4...10)
-            arr.append(DayStar(
-                position: CGPoint(x: randX(0.05, 0.90), y: randY(0.10, 0.85)),
-                size: s,
-                kind: .small,
-                delay: Double.random(in: 0...3),
-                duration: Double.random(in: 4...10)
-            ))
-        }
+        func makeRandomStar() {
+            let nx = CGFloat.random(in: 0.05...0.95)
+            let ny = CGFloat.random(in: 0.05...0.95)
 
-        // sparkles (6)
-        for _ in 0..<6 {
-            let s = CGFloat.random(in: 6...14)
-            arr.append(DayStar(
-                position: CGPoint(x: randX(0.10, 0.90), y: randY(0.15, 0.75)),
-                size: s,
-                kind: .sparkle,
-                delay: Double.random(in: 0...4),
-                duration: Double.random(in: 1.5...3.5)
-            ))
+            let s = CGFloat.random(in: 8...16)
+            let shape: DayStar.ShapeKind = Bool.random() ? .fourPoint : .cross
+
+            let fill  = fills.randomElement()   ?? fills[0]
+            let stroke = strokes.randomElement() ?? strokes[0]
+            let delay = Double.random(in: 0...3)
+            let spinDuration  = Double.random(in: 8...16)
+            let pulseDuration = Double.random(in: 4...8)
+
+            stars.append(
+                DayStar(
+                    position: CGPoint(x: w * nx, y: h * ny),
+                    size: s,
+                    shape: shape,
+                    fillColor: fill,
+                    strokeColor: stroke,
+                    delay: delay,
+                    spinDuration: spinDuration,
+                    pulseDuration: pulseDuration
+                )
+            )
         }
 
-        // crosses (4)
-        for _ in 0..<4 {
-            let s = CGFloat.random(in: 4...10)
-            arr.append(DayStar(
-                position: CGPoint(x: randX(0.10, 0.90), y: randY(0.15, 0.80)),
-                size: s,
-                kind: .cross,
-                delay: Double.random(in: 0...3),
-                duration: Double.random(in: 4...8)
-            ))
-        }
-
-        // dots (8)
-        for _ in 0..<8 {
-            let s = CGFloat.random(in: 1...3)
-            arr.append(DayStar(
-                position: CGPoint(x: randX(0.05, 0.90), y: randY(0.10, 0.85)),
-                size: s,
-                kind: .dot,
-                delay: Double.random(in: 0...2),
-                duration: Double.random(in: 3...7)
-            ))
-        }
-
-        // special sparkles (2)
-        let specials: [(CGFloat, CGFloat)] = [(0.25, 0.35), (0.75, 0.60)]
-        for (idx, pos) in specials.enumerated() {
-            let s: CGFloat = idx == 0 ? 14 : 12
-            arr.append(DayStar(
-                position: CGPoint(x: w * pos.0, y: h * pos.1),
-                size: s,
-                kind: .special,
-                delay: idx == 0 ? 0.5 : 2.8,
-                duration: 5 + Double(idx) * 1.5
-            ))
-        }
-
-        stars = arr
-    }
-
-    // MARK: - Per-star rendering + animation
-    @ViewBuilder
-    private func starView(for star: DayStar) -> some View {
-        switch star.kind {
-        case .main:
-            FourPointStarShape()
-                .stroke(Color(hex: "#CD853F").opacity(0.8), lineWidth: 1.5)
-                .background(
-                    FourPointStarShape()
-                        .fill(Color(hex: "#CD853F").opacity(0.3))
-                )
-                .frame(width: star.size, height: star.size)
-                .position(star.position)
-                .rotationEffect(.degrees(animate ? 360 : 0))
-                .scaleEffect(animate ? 1.2 : 0.8)
-                .opacity(animate ? 0.8 : 0.4)
-                .shadow(color: Color(hex: "#CD853F").opacity(0.3),
-                        radius: 4)
-                .animation(
-                    .easeInOut(duration: star.duration)
-                        .repeatForever(autoreverses: true)
-                        .delay(star.delay),
-                    value: animate
-                )
-
-        case .small:
-            FourPointStarShape()
-                .stroke(Color(hex: "#CD853F").opacity(0.7), lineWidth: 2)
-                .background(
-                    FourPointStarShape()
-                        .fill(Color(hex: "#CD853F").opacity(0.4))
-                )
-                .frame(width: star.size, height: star.size)
-                .position(star.position)
-                .rotationEffect(.degrees(animate ? 360 : 0))
-                .scaleEffect(animate ? 1.0 : 0.6)
-                .opacity(animate ? 0.7 : 0.3)
-                .animation(
-                    .easeInOut(duration: star.duration)
-                        .repeatForever(autoreverses: true)
-                        .delay(star.delay),
-                    value: animate
-                )
-
-        case .sparkle:
-            FourPointStarShape()
-                .stroke(Color(hex: "#FFC107").opacity(0.9), lineWidth: 1.5)
-                .background(
-                    FourPointStarShape()
-                        .fill(Color(hex: "#FFC107").opacity(0.6))
-                )
-                .frame(width: star.size, height: star.size)
-                .position(star.position)
-                .scaleEffect(animate ? 1.8 : 0.0)
-                .opacity(animate ? 0.9 : 0.0)
-                .shadow(color: Color(hex: "#FFC107").opacity(0.5),
-                        radius: 6)
-                .animation(
-                    .easeInOut(duration: star.duration)
-                        .repeatForever(autoreverses: true)
-                        .delay(star.delay),
-                    value: animate
-                )
-
-        case .cross:
-            CrossShape()
-                .stroke(Color(hex: "#CD853F").opacity(0.4),
-                        style: StrokeStyle(lineWidth: 1,
-                                           lineCap: .round))
-                .frame(width: star.size, height: star.size)
-                .position(star.position)
-                .opacity(animate ? 0.6 : 0.2)
-                .animation(
-                    .easeInOut(duration: star.duration)
-                        .repeatForever(autoreverses: true)
-                        .delay(star.delay),
-                    value: animate
-                )
-
-        case .dot:
-            Circle()
-                .fill(Color(hex: "#CD853F").opacity(0.3))
-                .frame(width: star.size, height: star.size)
-                .position(star.position)
-                .scaleEffect(animate ? 1.2 : 0.8)
-                .opacity(animate ? 0.5 : 0.2)
-                .animation(
-                    .easeInOut(duration: star.duration)
-                        .repeatForever(autoreverses: true)
-                        .delay(star.delay),
-                    value: animate
-                )
-
-        case .special:
-            FourPointStarShape()
-                .stroke(Color(hex: "#FFD700").opacity(0.95), lineWidth: 1.8)
-                .background(
-                    FourPointStarShape()
-                        .fill(Color(hex: "#FFEB78").opacity(0.7))
-                )
-                .frame(width: star.size, height: star.size)
-                .position(star.position)
-                .rotationEffect(.degrees(animate ? 720 : 0))
-                .scaleEffect(animate ? 1.5 : 0.0)
-                .opacity(animate ? 1.0 : 0.0)
-                .shadow(color: Color(hex: "#FFD700").opacity(0.6),
-                        radius: 8)
-                .animation(
-                    .easeInOut(duration: star.duration)
-                        .repeatForever(autoreverses: true)
-                        .delay(star.delay),
-                    value: animate
-                )
+        let starCount = 22
+        for _ in 0..<starCount {
+            makeRandomStar()
         }
     }
 }
+
+
+
+
+
 
 
 // MARK: - 背景视图
@@ -722,6 +684,7 @@ struct AppBackgroundView: View {
                 // ===== 日间贴图 =====
                 if !effectiveIsNight {
                     DayBackgroundLayer(size: geo.size)
+                        .frame(width: geo.size.width, height: geo.size.height)
                 }
 
                 // ===== 夜间星空 + 同心环 =====
@@ -747,10 +710,9 @@ struct AppBackgroundView: View {
                         .position(x: geo.size.width / 2, y: geo.size.height * 0.3)
                 }
             }
-            // 让系统控件（导航栏、Picker 等）也跟随固定日/夜/自动
+            // let the whole background match the GeometryReader’s size
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .center)
             .preferredColorScheme(themeManager.preferredColorScheme)
-
-            // 保持 ThemeManager 跟系统外观同步（当选择“随系统”时）
             .onAppear { themeManager.setSystemColorScheme(colorScheme) }
             .onChange(of: colorScheme) { _, new in themeManager.setSystemColorScheme(new) }
             .onChange(of: scenePhase) { _, new in if new == .active { themeManager.appBecameActive() } }

@@ -227,6 +227,8 @@ struct Shimmer: ViewModifier {
 extension View { func shimmer() -> some View { modifier(Shimmer()) } }
 
 // MARK: - LoadingView
+import SwiftUI
+
 struct LoadingView: View {
     var onStartLoading: (() -> Void)? = nil
     
@@ -246,7 +248,6 @@ struct LoadingView: View {
     @State private var dotPhase: CGFloat = 0
     @State private var bounce = false
     
-    
     @State private var showWelcome = false
     @State private var currentLocation: String = "Your Current Location"
     @State private var zodiacSign: String = ""
@@ -259,23 +260,23 @@ struct LoadingView: View {
                     .environmentObject(starManager)
 
                 // === Nebula effects ===
-                // Blue nebula: top-1/4 left-1/3 w-96 h-96 blur-3xl scale(1.5) rgba(59,130,246,0.1)
+                // Blue nebula
                 Circle()
                     .fill(Color(.sRGB, red: 59/255, green: 130/255, blue: 246/255, opacity: 0.10))
-                    .frame(width: 384, height: 384) // w-96 h-96
+                    .frame(width: 384, height: 384)
                     .scaleEffect(1.5)
-                    .blur(radius: 48) // ~ blur-3xl
+                    .blur(radius: 48)
                     .offset(x: geo.size.width * -0.17, y: geo.size.height * -0.25)
 
-                // Purple nebula: bottom-1/3 right-1/4 w-80 h-80 blur-3xl scale(1.2) rgba(168,85,247,0.1)
+                // Purple nebula
                 Circle()
                     .fill(Color(.sRGB, red: 168/255, green: 85/255, blue: 247/255, opacity: 0.10))
-                    .frame(width: 320, height: 320) // w-80 h-80
+                    .frame(width: 320, height: 320)
                     .scaleEffect(1.2)
                     .blur(radius: 48)
                     .offset(x: geo.size.width * 0.25, y: geo.size.height * 0.18)
 
-                // === Central radial glow: rgba(255,255,255,0.05) at center to transparent ===
+                // === Central radial glow ===
                 RadialGradient(
                     gradient: Gradient(colors: [Color.white.opacity(0.05), .clear]),
                     center: .center,
@@ -287,23 +288,23 @@ struct LoadingView: View {
                 // === Main content ===
                 VStack(spacing: 32) {
                     let disk: CGFloat = 96
-                    // Logo
+
+                    // Logo（透明背景 + 颜色跟随 ThemeManager）
                     ZStack {
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 96, height: 96) // w-24 h-24
-                            .shadow(color: .white.opacity(0.35), radius: 24, x: 0, y: 8)
-//                            .scaleEffect(pulse ? 1.04 : 1.0)
-//                            .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: pulse)
-                            .overlay(
-                                Image("LogoImage")
-                                    .resizable()
-                                    .renderingMode(.original)
-                                    .scaledToFill()
-                                    .frame(width: disk, height: disk) // bigger
-                                    .scaleEffect(1)
-                                    .mask(Circle())
-//                                    .overlay(Circle().stroke(.white.opacity(0.12), lineWidth: 1)) // optional rim
+                        let iconColor: Color = themeManager.primaryText
+
+                        Image("appLogo")
+                            .resizable()
+                            .renderingMode(.template)   // 使用 template 方便着色
+                            .scaledToFit()
+                            .frame(width: disk, height: disk)
+                            .foregroundColor(iconColor)  // 月亮等标识颜色 = 主题文字颜色
+                            .shadow(color: iconColor.opacity(0.35), radius: 24, x: 0, y: 8)
+                            .scaleEffect(pulse ? 1.04 : 1.0)
+                            .animation(
+                                .easeInOut(duration: 1.8)
+                                    .repeatForever(autoreverses: true),
+                                value: pulse
                             )
                     }
                     .onAppear {
@@ -313,8 +314,8 @@ struct LoadingView: View {
 
                     // Brand title + thin underline + shimmer
                     VStack(spacing: 8) {
-                        Text("Aligna")
-                            .font(.custom("PlayfairDisplay-Regular", size: 40)) // ~ text-4xl
+                        Text("Alynna")
+                            .font(.custom("PlayfairDisplay-Regular", size: 40))
                             .foregroundColor(.white)
                             .shimmer()
 
@@ -322,19 +323,19 @@ struct LoadingView: View {
                             .fill(
                                 LinearGradient(
                                     colors: [.clear, .white.opacity(0.6), .clear],
-                                    startPoint: .leading, endPoint: .trailing
+                                    startPoint: .leading,
+                                    endPoint: .trailing
                                 )
                             )
-                            .frame(width: 128, height: 1) // w-32 h-0.5
+                            .frame(width: 128, height: 1)
                     }
 
-                    // Spinner (two rings) EXACT behavior
+                    // Spinner (two rings)
                     ZStack {
                         Circle()
                             .stroke(Color.white.opacity(0.20), lineWidth: 2)
                             .frame(width: 64, height: 64)
 
-                        // Fast ring (1s), “border-t-transparent” look via Trim arc
                         Circle()
                             .trim(from: 0, to: 0.25)
                             .stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round))
@@ -342,7 +343,6 @@ struct LoadingView: View {
                             .rotationEffect(.degrees(spinFast ? 360 : 0))
                             .animation(.linear(duration: 1.0).repeatForever(autoreverses: false), value: spinFast)
 
-                        // Slow ring (2s), semi-opaque
                         Circle()
                             .trim(from: 0, to: 0.25)
                             .stroke(Color.white.opacity(0.4), style: StrokeStyle(lineWidth: 2, lineCap: .round))
@@ -350,9 +350,12 @@ struct LoadingView: View {
                             .rotationEffect(.degrees(spinSlow ? 360 : 0))
                             .animation(.linear(duration: 2.0).repeatForever(autoreverses: false), value: spinSlow)
                     }
-                    .onAppear { spinFast = true; spinSlow = true }
+                    .onAppear {
+                        spinFast = true
+                        spinSlow = true
+                    }
 
-                    // Loading text + bouncing dots (three)
+                    // Loading text + bouncing dots
                     VStack(spacing: 12) {
                         Text(loadingMessages[msgIndex])
                             .foregroundColor(.white.opacity(0.9))
@@ -365,11 +368,11 @@ struct LoadingView: View {
                                 Circle()
                                     .fill(Color.white.opacity(0.6))
                                     .frame(width: 8, height: 8)
-                                    .offset(y: bounce ? -6 : 0) // up by 6pt
+                                    .offset(y: bounce ? -6 : 0)
                                     .animation(
                                         .easeInOut(duration: 0.5)
                                             .repeatForever(autoreverses: true)
-                                            .delay(Double(i) * 0.15),   // nice cascade
+                                            .delay(Double(i) * 0.15),
                                         value: bounce
                                     )
                             }
@@ -378,7 +381,7 @@ struct LoadingView: View {
                     }
                     .onAppear { bounce = true }
                 }
-                .frame(maxWidth: 480) // equivalent to max-w-md container
+                .frame(maxWidth: 480)
                 .padding(16)
             }
             .onAppear {
@@ -388,7 +391,6 @@ struct LoadingView: View {
                         msgIndex = (msgIndex + 1) % loadingMessages.count
                     }
                 }
-                // drive dot bounce
                 withAnimation {
                     dotPhase = 1
                 }
@@ -399,11 +401,15 @@ struct LoadingView: View {
 
     // mimic three “animate-bounce-dot-*” offsets
     private func dotOffset(for i: Int) -> CGFloat {
-        // Stagger using index against an ever-toggling phase
         let up = (Int(dotPhase) + i) % 2 == 0
         return up ? -4 : 0
     }
 }
+
+
+import SwiftUI
+
+import SwiftUI
 
 struct WelcomeSplashView: View {
     let location: String
@@ -412,6 +418,58 @@ struct WelcomeSplashView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @State private var appear = false
+
+    // 根据星座文字“包含什么单词”来返回对应 emoji
+    private var zodiacIcon: String {
+        let lower = zodiac.lowercased()
+
+        if lower.contains("aries") { return "♈️" }
+        if lower.contains("taurus") { return "♉️" }
+        if lower.contains("gemini") { return "♊️" }
+        if lower.contains("cancer") { return "♋️" }
+        if lower.contains("leo") { return "♌️" }
+        if lower.contains("virgo") { return "♍️" }
+        if lower.contains("libra") { return "♎️" }
+        if lower.contains("scorpio") { return "♏️" }
+        if lower.contains("sagittarius") { return "♐️" }
+        if lower.contains("capricorn") { return "♑️" }
+        if lower.contains("aquarius") { return "♒️" }
+        if lower.contains("pisces") { return "♓️" }
+
+        return "✨"
+    }
+
+    // 生成“干净”的星座名字
+    private var zodiacText: String {
+        let lower = zodiac.lowercased()
+
+        if lower.contains("aries") { return "Aries" }
+        if lower.contains("taurus") { return "Taurus" }
+        if lower.contains("gemini") { return "Gemini" }
+        if lower.contains("cancer") { return "Cancer" }
+        if lower.contains("leo") { return "Leo" }
+        if lower.contains("virgo") { return "Virgo" }
+        if lower.contains("libra") { return "Libra" }
+        if lower.contains("scorpio") { return "Scorpio" }
+        if lower.contains("sagittarius") { return "Sagittarius" }
+        if lower.contains("capricorn") { return "Capricorn" }
+        if lower.contains("aquarius") { return "Aquarius" }
+        if lower.contains("pisces") { return "Pisces" }
+
+        return zodiac
+    }
+
+    // 去掉 moon 字符串里前面的 emoji，只保留文字描述
+    private var cleanMoonText: String {
+        let parts = moon.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
+        if parts.count == 2 {
+            // 例如 "🌓 First Quarter" -> "First Quarter"
+            return String(parts[1])
+        } else {
+            // 没有 emoji 时就原样返回
+            return moon
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -427,56 +485,52 @@ struct WelcomeSplashView: View {
             .allowsHitTesting(false)
 
             VStack(spacing: 22) {
-                // Logo in white circle with glow
+                // Logo（透明背景 + 颜色跟随 ThemeManager）
                 let disk: CGFloat = 96
-                ZStack {
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 84, height: 84)
-                        .shadow(color: .white.opacity(0.35), radius: 22, x: 0, y: 8)
-                    Image("LogoImage")
-                        .resizable()
-                        .renderingMode(.original)
-                        .scaledToFill()
-                        .frame(width: disk, height: disk) // bigger
-                        .scaleEffect(1)
-                        .mask(Circle())
-//                        .overlay(Circle().stroke(.white.opacity(0.12), lineWidth: 1))  //optional rim
-                }
-//                .padding(.top, 24)
+                let iconColor: Color = themeManager.primaryText
 
+                Image("appLogo")
+                    .resizable()
+                    .renderingMode(.template)
+                    .scaledToFit()
+                    .frame(width: disk, height: disk)
+                    .foregroundColor(iconColor)
+                    .shadow(color: iconColor.opacity(0.35), radius: 22, x: 0, y: 8)
                 
                 // Brand + hairline underline
                 VStack(spacing: 6) {
-                    Text("Aligna")
+                    Text("Alynna")
                         .font(.custom("PlayfairDisplay-Regular", size: 34))
                         .foregroundColor(.white)
                     Rectangle()
-                        .fill(LinearGradient(
-                            colors: [.clear, .white.opacity(0.7), .clear],
-                            startPoint: .leading, endPoint: .trailing))
+                        .fill(
+                            LinearGradient(
+                                colors: [.clear, .white.opacity(0.7), .clear],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
                         .frame(width: 120, height: 1)
                 }
 
-                // Info rows (no card; just clean lines)
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(spacing: 8) {
-                        Text("📍").font(.title3)
-                        Text(location)
-                            .foregroundColor(.white.opacity(0.9))
-                            .font(.title3)
-                    }
-                    Text(zodiac)
-                        .foregroundColor(.white.opacity(0.85))
-                        .font(.body)
-                    Text(moon)
-                        .foregroundColor(.white.opacity(0.75))
-                        .font(.body)
+                // Info rows（统一字号 16、行间距约 22，首字母对齐）
+                VStack(alignment: .leading, spacing: 10) {
+                    infoLine(icon: "📍",
+                             text: location,
+                             textOpacity: 0.9)
+
+                    infoLine(icon: zodiacIcon,
+                             text: zodiacText,
+                             textOpacity: 0.85)
+
+                    // 这里改成 cleanMoonText，这样只有左边一个固定的 🌙 emoji
+                    infoLine(icon: "🌙",
+                             text: cleanMoonText,
+                             textOpacity: 0.75)
                 }
                 .padding(.top, 6)
                 .padding(.horizontal, 30)
                 .frame(maxWidth: 260, alignment: .leading)
-
             }
             .multilineTextAlignment(.leading)
             .opacity(appear ? 1 : 0)
@@ -486,25 +540,22 @@ struct WelcomeSplashView: View {
         .onAppear { appear = true }
     }
 
-    // MARK: - Row
-    private func infoRow(dot color: Color, text: String, sf: String) -> some View {
-        HStack(spacing: 10) {
-            Circle()
-                .fill(color.opacity(0.9))
-                .frame(width: 10, height: 10)
-                .overlay(Circle().stroke(.white.opacity(0.35), lineWidth: 0.5))
-
-            Image(systemName: sf)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.white.opacity(0.85))
+    // MARK: - 统一的 Info Row（16pt 字号 + 行高约 22pt + 首字母对齐）
+    private func infoLine(icon: String, text: String, textOpacity: Double) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            // 固定宽度的 emoji 区域，保证后面文字首字母对齐
+            Text(icon)
+                .font(.system(size: 18))
+                .frame(width: 24, alignment: .leading)
 
             Text(text)
-                .foregroundColor(.white.opacity(0.85))
-                .font(.system(size: 16, weight: .regular))
+                .foregroundColor(.white.opacity(textOpacity))
+                .font(.system(size: 16))       // 16 "px"
+                .lineSpacing(6)                // 16 + 6 ≈ 22 行高
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
-
 
 
 
@@ -563,46 +614,69 @@ struct FirstPageView: View {
     
     private var mainContent: some View {
         NavigationStack {
-            GeometryReader { geometry in
-                let minLength = min(geometry.size.width, geometry.size.height)
-                ZStack {
-                    // 背景组件
-                    AppBackgroundView()
-                        .environmentObject(starManager)
-                        .ignoresSafeArea()
-                    
+            ZStack {
+                // ✅ Full-screen background, not constrained by inner GeometryReader
+                AppBackgroundView()
+                    .environmentObject(starManager)
+                    .environmentObject(themeManager)
+                    .ignoresSafeArea()
+
+                // ✅ Foreground content uses GeometryReader for layout
+                GeometryReader { geometry in
+                    let minLength = min(geometry.size.width, geometry.size.height)
+
                     VStack(spacing: minLength * 0.015) {
                         // 顶部按钮
                         HStack {
-                            NavigationLink(
-                                destination: ContentView()
-                                    .environmentObject(starManager)
-                                    .environmentObject(themeManager)
-                                    .environmentObject(viewModel)
-                            ) {
-                                Image(systemName: "calendar")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(themeManager.foregroundColor)
-                                    .frame(width: 28, height: 28)
+                            
+                            HStack(spacing: geometry.size.width * 0.035) {
+                                // Timeline / calendar
+                                NavigationLink(
+                                    destination: ContentView()
+                                        .environmentObject(starManager)
+                                        .environmentObject(themeManager)
+                                        .environmentObject(viewModel)
+                                ) {
+                                    Image(systemName: "calendar")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(themeManager.foregroundColor)
+                                        .frame(width: 28, height: 28)
+                                }
+
+                                // Journal button – book icon
+                                NavigationLink(
+                                    destination: JournalView(date: selectedDate)
+                                        .environmentObject(starManager)
+                                        .environmentObject(themeManager)
+                                ) {
+                                    Image(systemName: "book.closed")      // ⬅️ journal symbol
+                                        .font(.system(size: 20))
+                                        .foregroundColor(themeManager.foregroundColor)
+                                        .frame(width: 28, height: 28)
+                                }
                             }
-                            .padding(.horizontal, geometry.size.width * 0.05)
-                            
+                            .padding(.leading, geometry.size.width * 0.05)
+
                             Spacer()
-                            
+
                             HStack(spacing: geometry.size.width * 0.04) {
                                 if isLoggedIn {
-                                    NavigationLink(destination: AccountDetailView(viewModel: OnboardingViewModel())
-                                        .environmentObject(starManager)
-                                        .environmentObject(themeManager)) {
-                                            Image("account")
-                                                .resizable()
-                                                .renderingMode(.template)
-                                                .aspectRatio(contentMode: .fit)
-                                                .frame(width: 28, height: 28)
-                                                .foregroundColor(themeManager.foregroundColor)
-                                        }
+                                    NavigationLink(
+                                        destination: AccountDetailView(viewModel: OnboardingViewModel())
+                                            .environmentObject(starManager)
+                                            .environmentObject(themeManager)
+                                    ) {
+                                        Image("account")
+                                            .resizable()
+                                            .renderingMode(.template)
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 28, height: 28)
+                                            .foregroundColor(themeManager.foregroundColor)
+                                    }
                                 } else {
-                                    NavigationLink(destination: AccountDetailView(viewModel: OnboardingViewModel())) {
+                                    NavigationLink(
+                                        destination: AccountDetailView(viewModel: OnboardingViewModel())
+                                    ) {
                                         Image("account")
                                             .resizable()
                                             .renderingMode(.template)
@@ -612,48 +686,32 @@ struct FirstPageView: View {
                                     }
                                 }
                             }
-                            .padding(.horizontal, geometry.size.width * 0.05)
+                            .padding(.trailing, geometry.size.width * 0.05)
                         }
-                        
-                        NavigationLink(
-                            destination: JournalView(date: selectedDate)
-                                .environmentObject(starManager)
-                                .environmentObject(themeManager)
-                        ) {
-                            Rectangle()
-                                .fill(themeManager.foregroundColor)
-                                .frame(width: 20, height: 20)
-                                .overlay(
-                                    Text("+")
-                                        .font(.caption)
-                                        .foregroundColor(.black)
-                                )
-                        }
-                        .offset(x:  geometry.size.width * 0.23, y: geometry.size.width * 0.09)
-                        //                        .padding(.horizontal, geometry.size.width * 0.05)
-                        
-                        Text("Aligna")
-                            .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.13))
+
+                        Text("Alynna")
+                            .font(Font.custom("PlayfairDisplay-Regular",
+                                              size: minLength * 0.13))
                             .foregroundColor(themeManager.foregroundColor)
-                        
+
                         Text(viewModel.dailyMantra)
-                            .font(Font.custom("PlayfairDisplay-Italic", size: minLength * 0.04))
+                            .font(Font.custom("PlayfairDisplay-Italic",
+                                              size: minLength * 0.04))
                             .multilineTextAlignment(.center)
                             .foregroundColor(themeManager.foregroundColor.opacity(0.7))
                             .padding(.horizontal, geometry.size.width * 0.1)
                             .fixedSize(horizontal: false, vertical: true)
-                        
+
                         Spacer()
-                        
+
                         VStack(spacing: minLength * 0.05) {
-                            
                             let columns = [
                                 GridItem(.flexible(), alignment: .center),
                                 GridItem(.flexible(), alignment: .center)
                             ]
-                            
-                            
-                            LazyVGrid(columns: columns, spacing: geometry.size.height * 0.03) {
+
+                            LazyVGrid(columns: columns,
+                                      spacing: geometry.size.height * 0.023) {
                                 navItemView(title: "Place", geometry: geometry)
                                 navItemView(title: "Gemstone", geometry: geometry)
                                 navItemView(title: "Color", geometry: geometry)
@@ -665,35 +723,38 @@ struct FirstPageView: View {
                             }
                             .padding(.horizontal, geometry.size.width * 0.05)
                         }
-                        
-                        //                        Spacer()
-                        Spacer().frame(height: geometry.size.height * 0.03)
+
+                        // ✅ 给底部说明文字留出空间
+                        Spacer().frame(height: geometry.size.height * 0.11)
                     }
                     .padding(.top, 16)
-                }
-                .onAppear {
-                    starManager.animateStar = true
-                    themeManager.appBecameActive()
-                    
-                    // Always make sure UI has something to render
+                    .frame(width: geometry.size.width,
+                           height: geometry.size.height,
+                           alignment: .top)
+                    .preferredColorScheme(themeManager.preferredColorScheme)
+                    .onAppear {
+                        starManager.animateStar = true
+                        themeManager.appBecameActive()
                         ensureDefaultsIfMissing()
-
-                    // Skip Firestore in preview, otherwise try to load real titles
-                    #if DEBUG
-                    if _isPreview { return }
-                    #endif
-                    // 首次拉取由 startInitialLoad() 统一调度；这里不再发拉取请求
-                    fetchAllRecommendationTitles()
+                        fetchAllRecommendationTitles()
+                    }
                 }
-
-                .frame(width: geometry.size.width, height: geometry.size.height)
-                .preferredColorScheme(themeManager.preferredColorScheme)
+            }
+            // ✅ 只作用在首页这个 ZStack 上，push 新页面后不会带过去
+            .safeAreaInset(edge: .bottom) {
+                Text("The daily rhythms above are derived from integrated modeling of Earth observation, climate, air-quality, physiological, and astrological data, updated in real time.")
+                    .font(.system(size: 10))
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(themeManager.foregroundColor.opacity(0.28))
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 0)
             }
         }
         .navigationViewStyle(.stack)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
     }
+
 
     private func persistWidgetSnapshotFromViewModel() {
 //        // 你已有：viewModel.dailyMantra, recommendationTitles["Color"/"Place"/"Gemstone"/"Scent"]
@@ -1612,7 +1673,7 @@ struct RecommendationPagerView: View {
             // Full-bleed background
             AppBackgroundView()
                 .environmentObject(starManager)
-                .ignoresSafeArea()
+                .ignoresSafeArea() // <- key line
 
             TabView(selection: $selected) {
                 ForEach(RecCategory.allCases) { cat in
@@ -1777,7 +1838,7 @@ struct AlignaHeading: View {
     @Binding var show: Bool
 
     // 新增可调参数（有默认值，不会破坏现有调用）
-    var text: String = "Aligna"
+    var text: String = "Alynna"
     var fontSize: CGFloat = 34
     var perLetterDelay: Double = 0.07   // 每个字母的出现间隔
     var duration: Double = 0.26         // 单个字母动画时长
@@ -1853,7 +1914,7 @@ struct OnboardingOpeningPage: View {
                     VStack(spacing: minLength * 0.04) {
                         Spacer()
                         
-                        Text("Aligna")
+                        Text("Alynna")
                             .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.12))
                             .foregroundColor(themeManager.fixedNightTextPrimary)
                         
@@ -1903,7 +1964,7 @@ struct OnboardingOpeningPage: View {
                                     .padding(.horizontal, minLength * 0.1)
                             }
 
-                        Text("Welcome to the Journal of Aligna")
+                        Text("Welcome to the Journal of Alynna")
                             .font(.footnote)
                             .foregroundColor(themeManager.fixedNightTextTertiary)
                             .padding(.top, 10)
@@ -2293,7 +2354,7 @@ struct AlignaTopHeader: View {
                     .foregroundColor(.white)
                     .padding(.top, 6)
             }
-            Text("Aligna")
+            Text("Alynna")
                 .font(Font.custom("PlayfairDisplay-Regular", size: 34))
                 .foregroundColor(.white)
         }
@@ -2406,7 +2467,7 @@ struct OnboardingStep1: View {
                                     .onboardingQuestionStyle()
 
                                 HStack(spacing: 10) {
-                                    ForEach(["Single", "In a relationship"], id: \.self) { status in
+                                    ForEach(["Single", "In a relationship", "Other"], id: \.self) { status in
                                         Button {
                                             viewModel.relationshipStatus = status
                                         } label: {
@@ -2805,8 +2866,8 @@ struct OnboardingStep3: View {
     @EnvironmentObject var themeManager: ThemeManager
 
     // 选项文案（对齐效果图）
-    private let scentOptions  = ["Floral scents", "Strong perfumes", "Woody scents",
-                                 "Citrus scents", "Spicy scents", "Other"]
+    private let scentOptions  = ["Floral", "Strong", "Woody",
+                                 "Citrus", "Spicy", "Other"]
     private let actOptions    = ["Static", "Dynamic", "No preference"]
     private let colorOptions  = ["Yellow", "Pink", "Green",
                                  "Orange", "Purple", "Other"]
@@ -2946,7 +3007,7 @@ struct OnboardingStep3: View {
                     .padding(.top, 6)
             }
 
-            Text("Aligna")
+            Text("Alynna")
                 .font(Font.custom("PlayfairDisplay-Regular", size: 34))
                 .foregroundColor(.white)
         }
@@ -3196,7 +3257,7 @@ struct OnboardingFinalStep: View {
                             AlignaHeading(
                                 textColor: .white,
                                 show: $showIntro,
-                                text: "Aligna",
+                                text: "Alynna",
                                 fontSize: minL * 0.12,
                                 perLetterDelay: 0.06,
                                 duration: 0.22,
@@ -4497,7 +4558,7 @@ private extension AccountDetailView {
                 if editingNickname {
                     TextField("Nickname", text: $nickname)
                         .multilineTextAlignment(.center)
-                        .font(.system(size: 36, weight: .bold, design: .serif))
+                        .font(.custom("PlayfairDisplay-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
                         .tint(themeManager.accent)
                         .textInputAutocapitalization(.words)
@@ -4656,9 +4717,9 @@ private extension AccountDetailView {
     }
 
     var aboutCard: some View {
-        NavigationLink { Text("About Aligna").padding() } label: {
+        NavigationLink { Text("About Alynna").padding() } label: {
             rowCard(icon: "info.circle",
-                    title: "About Aligna",
+                    title: "About Alynna",
                     subtitle: "Learn more about the app and privacy")
         }
     }
@@ -4760,18 +4821,33 @@ private extension AccountDetailView {
     }
 
     func infoRow(title: String, value: String, editable: Bool, onEdit: @escaping () -> Void) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.footnote).foregroundColor(themeManager.descriptionText)
-                Text(value).font(.headline).foregroundColor(themeManager.primaryText)
-            }
-            Spacer()
-            if editable {
-                Button(action: onEdit) { Image(systemName: "pencil").foregroundColor(themeManager.accent) }
+        VStack(alignment: .leading, spacing: 4) {
+            // 上面一行：标题
+            Text(title)
+                .font(.footnote)
+                .foregroundColor(themeManager.descriptionText)
+
+            // 下面一行：内容 + 小笔 靠在一起
+            HStack(spacing: 6) {
+                Text(value)
+                    .font(.headline)
+                    .foregroundColor(themeManager.primaryText)
+
+                if editable {
+                    Button(action: onEdit) {
+                        Image(systemName: "pencil")
+                            .font(.body.weight(.semibold))
+                            .foregroundColor(themeManager.accent)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Spacer(minLength: 0)
             }
         }
         .padding(.vertical, 6)
     }
+
     
     func infoRowWithTrailingButton(
         title: String,
@@ -4816,9 +4892,14 @@ private extension AccountDetailView {
         onSave: @escaping () -> Void,
         onCancel: @escaping () -> Void
     ) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.footnote).foregroundColor(themeManager.descriptionText)
+        VStack(alignment: .leading, spacing: 4) {
+            // 上面一行：标题
+            Text(title)
+                .font(.footnote)
+                .foregroundColor(themeManager.descriptionText)
+
+            // 下面一行：内容 / TextField + 图标 靠在一起
+            HStack(spacing: 6) {
                 if isEditing.wrappedValue {
                     TextField(title, text: text)
                         .textInputAutocapitalization(.words)
@@ -4828,24 +4909,37 @@ private extension AccountDetailView {
                         .font(.headline)
                 } else {
                     Text(text.wrappedValue.isEmpty ? "—" : text.wrappedValue)
-                        .font(.headline).foregroundColor(themeManager.primaryText)
+                        .font(.headline)
+                        .foregroundColor(themeManager.primaryText)
                 }
-            }
-            Spacer()
-            if isEditing.wrappedValue {
-                HStack(spacing: 10) {
-                    Button(action: onSave) { Image(systemName: "checkmark.circle.fill").font(.title3) }
-                    Button(action: onCancel) { Image(systemName: "xmark.circle.fill").font(.title3) }
+
+                if isEditing.wrappedValue {
+                    HStack(spacing: 10) {
+                        Button(action: onSave) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.title3)
+                        }
+                        Button(action: onCancel) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title3)
+                        }
+                    }
+                    .foregroundColor(themeManager.accent)
+                } else {
+                    Button { isEditing.wrappedValue = true } label: {
+                        Image(systemName: "pencil")
+                            .font(.body.weight(.semibold))
+                            .foregroundColor(themeManager.accent)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .foregroundColor(themeManager.accent)
-            } else {
-                Button { isEditing.wrappedValue = true } label: {
-                    Image(systemName: "pencil").foregroundColor(themeManager.accent)
-                }
+
+                Spacer(minLength: 0)
             }
         }
         .padding(.vertical, 6)
     }
+
 
     func themeOption(_ pref: ThemePreference) -> some View {
         let selected = themePreferenceRaw == pref.rawValue
@@ -5745,7 +5839,7 @@ struct ZodiacInlineRow: View {
         }
         .font(.callout)
         .foregroundColor(themeManager.primaryText)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .center)
         // no background / border — clean style like your old version
     }
 }
@@ -5904,27 +5998,6 @@ extension View {
 }
 
 
-import AVFoundation
-
-class SoundPlayer: ObservableObject {
-    var player: AVAudioPlayer?
-    
-    func playSound(named soundName: String) {
-        guard let url = Bundle.main.url(forResource: soundName, withExtension: "wav") else {
-            print("❌ 找不到音频文件：\(soundName).wav")
-            return
-        }
-        
-        do {
-            player = try AVAudioPlayer(contentsOf: url)
-            player?.play()
-            print("🎵 正在播放：\(soundName).wav")
-        } catch {
-            print("❌ 播放失败：\(error.localizedDescription)")
-        }
-    }
-}
-
 func timeToDateFlexible(_ str: String) -> Date? {
     let fmts = ["HH:mm", "H:mm", "hh:mm a", "h:mm a"]
     for f in fmts {
@@ -6005,8 +6078,10 @@ extension ThemeManager {
 
 
 #Preview {
-    RegisterPageView()
+    FirstPageView()
         .environmentObject(StarAnimationManager())
         .environmentObject(ThemeManager())
         .environmentObject(OnboardingViewModel())
+        .environmentObject(SoundPlayer())
+        
 }
