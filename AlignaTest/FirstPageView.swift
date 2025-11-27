@@ -628,37 +628,21 @@ struct FirstPageView: View {
                     VStack(spacing: minLength * 0.015) {
                         // 顶部按钮
                         HStack {
-                            
-                            HStack(spacing: geometry.size.width * 0.035) {
-                                // Timeline / calendar
-                                NavigationLink(
-                                    destination: ContentView()
-                                        .environmentObject(starManager)
-                                        .environmentObject(themeManager)
-                                        .environmentObject(viewModel)
-                                ) {
-                                    Image(systemName: "calendar")
-                                        .font(.system(size: 20))
-                                        .foregroundColor(themeManager.foregroundColor)
-                                        .frame(width: 28, height: 28)
-                                }
-
-                                // Journal button – book icon
-                                NavigationLink(
-                                    destination: JournalView(date: selectedDate)
-                                        .environmentObject(starManager)
-                                        .environmentObject(themeManager)
-                                ) {
-                                    Image(systemName: "book.closed")      // ⬅️ journal symbol
-                                        .font(.system(size: 20))
-                                        .foregroundColor(themeManager.foregroundColor)
-                                        .frame(width: 28, height: 28)
-                                }
+                            NavigationLink(
+                                destination: ContentView()
+                                    .environmentObject(starManager)
+                                    .environmentObject(themeManager)
+                                    .environmentObject(viewModel)
+                            ) {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(themeManager.foregroundColor)
+                                    .frame(width: 28, height: 28)
                             }
-                            .padding(.leading, geometry.size.width * 0.05)
-
+                            .padding(.horizontal, geometry.size.width * 0.05)
+                            
                             Spacer()
-
+                            
                             HStack(spacing: geometry.size.width * 0.04) {
                                 if isLoggedIn {
                                     NavigationLink(
@@ -686,12 +670,28 @@ struct FirstPageView: View {
                                     }
                                 }
                             }
-                            .padding(.trailing, geometry.size.width * 0.05)
+                            .padding(.horizontal, geometry.size.width * 0.05)
                         }
-
-                        Text("Alynna")
-                            .font(Font.custom("PlayfairDisplay-Regular",
-                                              size: minLength * 0.13))
+                        
+                        NavigationLink(
+                            destination: JournalView(date: selectedDate)
+                                .environmentObject(starManager)
+                                .environmentObject(themeManager)
+                        ) {
+                            Rectangle()
+                                .fill(themeManager.foregroundColor)
+                                .frame(width: 20, height: 20)
+                                .overlay(
+                                    Text("+")
+                                        .font(.caption)
+                                        .foregroundColor(.black)
+                                )
+                        }
+                        .offset(x:  geometry.size.width * 0.23, y: geometry.size.width * 0.09)
+                        //                        .padding(.horizontal, geometry.size.width * 0.05)
+                        
+                        Text("Aligna")
+                            .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.13))
                             .foregroundColor(themeManager.foregroundColor)
 
                         Text(viewModel.dailyMantra)
@@ -709,9 +709,9 @@ struct FirstPageView: View {
                                 GridItem(.flexible(), alignment: .center),
                                 GridItem(.flexible(), alignment: .center)
                             ]
-
-                            LazyVGrid(columns: columns,
-                                      spacing: geometry.size.height * 0.023) {
+                            
+                            
+                            LazyVGrid(columns: columns, spacing: geometry.size.height * 0.03) {
                                 navItemView(title: "Place", geometry: geometry)
                                 navItemView(title: "Gemstone", geometry: geometry)
                                 navItemView(title: "Color", geometry: geometry)
@@ -723,9 +723,9 @@ struct FirstPageView: View {
                             }
                             .padding(.horizontal, geometry.size.width * 0.05)
                         }
-
-                        // ✅ 给底部说明文字留出空间
-                        Spacer().frame(height: geometry.size.height * 0.11)
+                        
+                        //                        Spacer()
+                        Spacer().frame(height: geometry.size.height * 0.03)
                     }
                     .padding(.top, 16)
                     .frame(width: geometry.size.width,
@@ -736,18 +736,17 @@ struct FirstPageView: View {
                         starManager.animateStar = true
                         themeManager.appBecameActive()
                         ensureDefaultsIfMissing()
-                        fetchAllRecommendationTitles()
-                    }
+
+                    // Skip Firestore in preview, otherwise try to load real titles
+                    #if DEBUG
+                    if _isPreview { return }
+                    #endif
+                    // 首次拉取由 startInitialLoad() 统一调度；这里不再发拉取请求
+                    fetchAllRecommendationTitles()
                 }
-            }
-            // ✅ 只作用在首页这个 ZStack 上，push 新页面后不会带过去
-            .safeAreaInset(edge: .bottom) {
-                Text("The daily rhythms above are derived from integrated modeling of Earth observation, climate, air-quality, physiological, and astrological data, updated in real time.")
-                    .font(.system(size: 10))
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(themeManager.foregroundColor.opacity(0.28))
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 0)
+
+                .frame(width: geometry.size.width, height: geometry.size.height)
+                .preferredColorScheme(themeManager.preferredColorScheme)
             }
         }
         .navigationViewStyle(.stack)
