@@ -5997,7 +5997,6 @@ extension View {
     }
 }
 
-
 func timeToDateFlexible(_ str: String) -> Date? {
     let fmts = ["HH:mm", "H:mm", "hh:mm a", "h:mm a"]
     for f in fmts {

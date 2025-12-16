@@ -93,11 +93,25 @@ struct VinylRecord: View {
     }
 }
 
+import AVFoundation
+
 final class SoundPlayer: ObservableObject {
     @Published var isPlaying: Bool = false
     var player: AVAudioPlayer?
 
-    // 🔻 DELETE the init + configureAudioSession
+    init() {
+        configureAudioSession()
+    }
+
+    private func configureAudioSession() {
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default) // <- key for background audio
+            try session.setActive(true)
+        } catch {
+            print("❌ Audio session error: \(error)")
+        }
+    }
 
     func playSound(named name: String) {
         guard let url = Bundle.main.url(forResource: name, withExtension: "mp3") else {
@@ -114,16 +128,8 @@ final class SoundPlayer: ObservableObject {
         }
     }
 
-    func pause() {
-        player?.pause()
-        isPlaying = false
-    }
-
-    func stop() {
-        player?.stop()
-        isPlaying = false
-        player = nil
-    }
+    func pause() { player?.pause(); isPlaying = false }
+    func stop()  { player?.stop();  isPlaying = false; player = nil }
 }
 
 
