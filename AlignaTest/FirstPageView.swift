@@ -565,12 +565,15 @@ struct FirstPageView: View {
     @EnvironmentObject var viewModel: OnboardingViewModel
     
     @AppStorage("lastRecommendationDate") var lastRecommendationDate: String = ""
+    @AppStorage("lastRecommendationPlace") var lastRecommendationPlace: String = ""   // ✅ NEW
     @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
     @AppStorage("lastCurrentPlaceUpdate") var lastCurrentPlaceUpdate: String = ""
     @AppStorage("todayFetchLock") private var todayFetchLock: String = ""  // 当天的拉取互斥锁
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
     @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
     @State private var isFetchingToday: Bool = false
+    
+    @State private var isMantraExpanded: Bool = false
 
     // 🔐 当天是否已经触发过一次“自动兜底重拉”
     @AppStorage("todayAutoRefetchDone") private var todayAutoRefetchDone: String = ""
@@ -611,6 +614,21 @@ struct FirstPageView: View {
             recommendationTitles = DesignRecs.titles
         }
     }
+    
+    private var updatedOnText: String {
+        let date = lastRecommendationDate.trimmingCharacters(in: .whitespacesAndNewlines)
+        let dateText = date.isEmpty ? todayString() : date
+
+        let p = (lastRecommendationPlace.isEmpty ? viewModel.currentPlace : lastRecommendationPlace)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if p.isEmpty {
+            return "Updated on \(dateText)"
+        } else {
+            return "Updated on \(dateText), \(p)"
+        }
+    }
+
     
     private var mainContent: some View {
         NavigationStack {
@@ -659,7 +677,15 @@ struct FirstPageView: View {
 
                             Spacer()
 
-                            HStack(spacing: geometry.size.width * 0.04) {
+                            HStack(spacing: geometry.size.width * 0.02) {
+
+                                Text(updatedOnText)
+                                    .font(Font.custom("PlayfairDisplay-Italic", size: minLength * 0.04)) // ✅ 与 mantra 一致
+                                    .foregroundColor(themeManager.foregroundColor.opacity(0.7))
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+                                    .minimumScaleFactor(0.6)
+
                                 if isLoggedIn {
                                     NavigationLink(
                                         destination: AccountDetailView(viewModel: OnboardingViewModel())
@@ -687,6 +713,7 @@ struct FirstPageView: View {
                                 }
                             }
                             .padding(.trailing, geometry.size.width * 0.05)
+
                         }
 
                         Text("Alynna")
@@ -694,13 +721,27 @@ struct FirstPageView: View {
                                               size: minLength * 0.13))
                             .foregroundColor(themeManager.foregroundColor)
 
-                        Text(viewModel.dailyMantra)
-                            .font(Font.custom("PlayfairDisplay-Italic",
-                                              size: minLength * 0.04))
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(themeManager.foregroundColor.opacity(0.7))
-                            .padding(.horizontal, geometry.size.width * 0.1)
-                            .fixedSize(horizontal: false, vertical: true)
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isMantraExpanded.toggle()
+                            }
+                        } label: {
+                            Text(viewModel.dailyMantra)
+                                .font(Font.custom("PlayfairDisplay-Italic",
+                                                  size: minLength * 0.04))
+                                .multilineTextAlignment(.center)
+                                .foregroundColor(themeManager.foregroundColor.opacity(0.7))
+                                .padding(.horizontal, geometry.size.width * 0.1)
+                                .lineLimit(isMantraExpanded ? nil : 1)     // ✅ 折叠：最多 1 行
+                                .truncationMode(.tail)                    // ✅ 超出：显示 "..."
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .buttonStyle(.plain)
+                        .contentShape(Rectangle())
+                        // ✅ 当 mantra 更新（新的一天/重新拉取）时，自动收起回 “...”
+                        .onChange(of: viewModel.dailyMantra) { _ in
+                            isMantraExpanded = false
+                        }
 
                         Spacer()
 
@@ -1226,6 +1267,54 @@ struct FirstPageView: View {
             .collection("daily_recommendation")
             .document("\(uid)_\(day)")
     }
+    
+    /// ✅ 当 FastAPI 生成失败时，把本地默认推荐也写入 daily_recommendation（用于 Timeline/Calendar 回看）
+    /// - Note: 使用同一个 docId = uid_yyyy-MM-dd，后续如果 FastAPI 成功，会覆盖掉默认值。
+    private func saveDefaultDailyRecommendationToCalendar(
+        userId: String,
+        today: String,
+        docRef: DocumentReference,
+        reason: String
+    ) {
+        // 只写“规范写法”的 key，保证 Timeline/DailyViewModel 能正常读取
+        let normalized: [String: String] = DesignRecs.docs.reduce(into: [:]) { acc, kv in
+            if let canon = canonicalCategory(from: kv.key) {
+                acc[canon] = sanitizeDocumentName(kv.value)
+            }
+        }
+
+        var data: [String: Any] = normalized
+        data["uid"] = userId
+        data["createdAt"] = today
+        data["mantra"] = DesignRecs.mantra
+        
+        let fallbackPlace = {
+            let p1 = viewModel.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !p1.isEmpty { return p1 }
+            let p2 = lastRecommendationPlace.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !p2.isEmpty { return p2 }
+            return "Unknown"
+        }()
+        data["generatedPlace"] = fallbackPlace
+
+        DispatchQueue.main.async {
+            self.lastRecommendationDate = today
+            self.lastRecommendationPlace = fallbackPlace
+        }
+
+        
+        data["isDefault"] = true
+        data["fallbackReason"] = reason
+        data["updatedAt"] = FieldValue.serverTimestamp()
+
+        docRef.setData(data, merge: true) { err in
+            if let err = err {
+                print("❌ 保存默认 daily_recommendation 失败：\(err)")
+            } else {
+                print("✅ 已保存默认推荐到 Calendar（\(reason)）")
+            }
+        }
+    }
 
     // 等待定位后只发一次请求（最多等 8 秒）
     private func waitForLocationThenRequest(uid: String, today: String, docRef: DocumentReference) {
@@ -1238,7 +1327,13 @@ struct FirstPageView: View {
                 return
             }
             if Date().timeIntervalSince(start) > limit {
-                print("⚠️ 超时仍未拿到坐标，本次放弃生成；稍后可重试")
+                print("⚠️ 超时仍未拿到坐标，本次放弃生成；将默认推荐写入 Calendar 以便回看")
+                saveDefaultDailyRecommendationToCalendar(
+                    userId: uid,
+                    today: today,
+                    docRef: docRef,
+                    reason: "location_timeout"
+                )
                 todayFetchLock = ""  // 释放互斥锁
                 isFetchingToday = false
                 return
@@ -1247,6 +1342,8 @@ struct FirstPageView: View {
         }
         attempt()
     }
+
+    
 
     private func fetchAndSaveRecommendationIfNeeded() {
         guard let uid = Auth.auth().currentUser?.uid else {
@@ -1269,11 +1366,11 @@ struct FirstPageView: View {
             }
             if (snap?.exists ?? false) {
                 print("📌 今日已有推荐（docId 命中），不重复生成")
-                let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
                 lastRecommendationDate = today
-                loadTodayRecommendation()
+                loadTodayRecommendation(day: today)
                 return
             }
+
 
             // 尚无今日记录 → 加锁并等待定位就绪后只发一次
             todayFetchLock = today
@@ -1309,6 +1406,12 @@ struct FirstPageView: View {
 
         guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
             print("❌ 无效的 FastAPI URL")
+            saveDefaultDailyRecommendationToCalendar(
+                userId: userId,
+                today: today,
+                docRef: docRef,
+                reason: "invalid_url"
+            )
             todayFetchLock = ""; isFetchingToday = false
             return
         }
@@ -1320,6 +1423,12 @@ struct FirstPageView: View {
             request.httpBody = try JSONSerialization.data(withJSONObject: payload)
         } catch {
             print("❌ JSON 序列化失败: \(error)")
+            saveDefaultDailyRecommendationToCalendar(
+                userId: userId,
+                today: today,
+                docRef: docRef,
+                reason: "json_serialization_error"
+            )
             todayFetchLock = ""; isFetchingToday = false
             return
         }
@@ -1334,17 +1443,45 @@ struct FirstPageView: View {
 
             if let error = error {
                 print("❌ FastAPI 请求失败: \(error.localizedDescription)")
+                saveDefaultDailyRecommendationToCalendar(
+                    userId: userId,
+                    today: today,
+                    docRef: docRef,
+                    reason: "network_error"
+                )
                 return
             }
             guard let http = response as? HTTPURLResponse else {
-                print("❌ 非 HTTP 响应"); return
+                print("❌ 非 HTTP 响应")
+                saveDefaultDailyRecommendationToCalendar(
+                    userId: userId,
+                    today: today,
+                    docRef: docRef,
+                    reason: "non_http_response"
+                )
+                return
             }
             guard (200...299).contains(http.statusCode) else {
                 let body = String(data: data ?? Data(), encoding: .utf8) ?? "<no body>"
                 print("❌ 非 2xx：\(http.statusCode), body=\(body)")
+                saveDefaultDailyRecommendationToCalendar(
+                    userId: userId,
+                    today: today,
+                    docRef: docRef,
+                    reason: "http_\(http.statusCode)"
+                )
                 return
             }
-            guard let data = data else { print("❌ 空数据"); return }
+            guard let data = data else {
+                print("❌ 空数据")
+                saveDefaultDailyRecommendationToCalendar(
+                    userId: userId,
+                    today: today,
+                    docRef: docRef,
+                    reason: "empty_data"
+                )
+                return
+            }
 
             do {
                 if let parsed = try JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -1364,16 +1501,30 @@ struct FirstPageView: View {
                         viewModel.dailyMantra = mantra
                         lastRecommendationDate = today
 
+                        // ✅ 先用一个“可用的地点”占位（立即显示），随后用反地理编码精确覆盖
+                        let guessedPlace = viewModel.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !guessedPlace.isEmpty {
+                            lastRecommendationPlace = guessedPlace
+                        } else if lastRecommendationPlace.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            lastRecommendationPlace = "Unknown"
+                        }
+
                         // 先刷新标题（UI 需要）
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             fetchAllRecommendationTitles()
                         }
 
                         // 幂等：固定 docId = uid_yyyy-MM-dd，setData(merge:)
-                        var recommendationData: [String: Any] = normalized   // ← 用规范写法保存
+                        var recommendationData: [String: Any] = normalized
                         recommendationData["uid"] = userId
                         recommendationData["createdAt"] = today
                         recommendationData["mantra"] = mantra
+                        recommendationData["generatedPlace"] = lastRecommendationPlace     // ✅ NEW
+
+                        // ✅ 如果之前写过默认值，这里要显式“转正”
+                        recommendationData["isDefault"] = false
+                        recommendationData["fallbackReason"] = FieldValue.delete()
+                        recommendationData["updatedAt"] = FieldValue.serverTimestamp()
 
                         docRef.setData(recommendationData, merge: true) { err in
                             if let err = err {
@@ -1382,12 +1533,43 @@ struct FirstPageView: View {
                                 print("✅ 今日推荐已保存（幂等写入）")
                             }
                         }
+
                         persistWidgetSnapshotFromViewModel()
+
+                        // ✅ NEW：用本次生成坐标做反地理编码，拿到更准确的 place 后再覆盖写回
+                        getAddressFromCoordinate(coord) { place in
+                            let resolved = (place ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard !resolved.isEmpty else { return }
+
+                            DispatchQueue.main.async {
+                                self.lastRecommendationPlace = resolved
+                            }
+
+                            docRef.setData(["generatedPlace": resolved], merge: true) { e in
+                                if let e = e {
+                                    print("⚠️ 写入 generatedPlace 失败：\(e.localizedDescription)")
+                                }
+                            }
+                        }
                     }
+                } else {
+                    print("❌ FastAPI 返回缺少必要字段（recommendations/mantra）")
+                    saveDefaultDailyRecommendationToCalendar(
+                        userId: userId,
+                        today: today,
+                        docRef: docRef,
+                        reason: "missing_fields"
+                    )
                 }
             } catch {
                 print("❌ FastAPI 响应解析失败: \(error)")
-                print("↳ raw body:", String(data: data ?? Data(), encoding: .utf8) ?? "<binary>")
+                print("↳ raw body:", String(data: data, encoding: .utf8) ?? "<binary>")
+                saveDefaultDailyRecommendationToCalendar(
+                    userId: userId,
+                    today: today,
+                    docRef: docRef,
+                    reason: "parse_error"
+                )
             }
         }.resume()
     }
@@ -1492,59 +1674,131 @@ struct FirstPageView: View {
     }
     
     
-    private func loadTodayRecommendation() {
+    private func loadTodayRecommendation(day: String? = nil) {
         guard let userId = Auth.auth().currentUser?.uid else {
             print("❌ 未登录，无法获取推荐")
             return
         }
 
+        let today = day ?? todayString()
         let db = Firestore.firestore()
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let today = dateFormatter.string(from: Date())
+        let fixedDocRef = todayDocRef(uid: userId, day: today)
 
-        db.collection("daily_recommendation")
-            .whereField("uid", isEqualTo: userId)
-            .whereField("createdAt", isEqualTo: today)
-            .getDocuments { snapshot, error in
-                if let error = error {
-                    print("❌ 查询推荐失败：\(error). 使用本地默认内容")
-                    ensureDefaultsIfMissing()
-                    return
-                }
-                guard let documents = snapshot?.documents, let doc = documents.first else {
-                    print("⚠️ 今日暂无推荐数据。使用本地默认内容")
-                    ensureDefaultsIfMissing()
-                    return
+        func applyDailyData(_ data: [String: Any]) {
+            var recs: [String: String] = [:]
+            var fetchedMantra = ""
+            let fetchedPlace = (data["generatedPlace"] as? String ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            for (key, value) in data {
+                if key == "mantra", let mantraText = value as? String {
+                    fetchedMantra = mantraText
+                    continue
                 }
 
-                var recs: [String: String] = [:]
-                var fetchedMantra = ""
-
-                for (key, value) in doc.data() {
-                    if key == "mantra", let mantraText = value as? String {
-                        fetchedMantra = mantraText
-                        continue
-                    }
-                    if key == "uid" || key == "createdAt" { continue }
-
-                    // ✅ 关键：把后端 key 做大小写无关匹配 → 规范写法
-                    if let canon = canonicalCategory(from: key), let str = value as? String {
-                        recs[canon] = sanitizeDocumentName(str)
-                    } else {
-                        print("ℹ️ 忽略非推荐字段或未知类别：\(key)")
-                    }
+                // ✅ 跳过元数据字段（包含 generatedPlace）
+                if key == "uid"
+                    || key == "createdAt"
+                    || key == "updatedAt"
+                    || key == "isDefault"
+                    || key == "fallbackReason"
+                    || key == "generatedPlace" {
+                    continue
                 }
 
-                DispatchQueue.main.async {
-                    self.viewModel.recommendations = recs   // 用规范写法作字典 key
-                    self.viewModel.dailyMantra = fetchedMantra
-                    fetchAllRecommendationTitles()           // 读取标题时就能命中正确集合
-                    persistWidgetSnapshotFromViewModel()
-                    print("✅ 成功加载今日推荐：\(recs)")
+                // ✅ 关键：把后端 key 做大小写无关匹配 → 规范写法
+                if let canon = canonicalCategory(from: key), let str = value as? String {
+                    recs[canon] = sanitizeDocumentName(str)
+                } else {
+                    // 允许存在其它字段，不影响
+                    // print("ℹ️ 忽略非推荐字段或未知类别：\(key)")
                 }
             }
+
+            DispatchQueue.main.async {
+                // ✅ 稳定：即使反复进入/返回首页，也只会读取“固定 docId”那一条
+                self.lastRecommendationDate = today
+
+                // ✅ NEW：写入本次 recommendation 生成地点（用于首页 Updated on）
+                if !fetchedPlace.isEmpty {
+                    self.lastRecommendationPlace = fetchedPlace
+                }
+
+                self.viewModel.recommendations = recs
+                self.viewModel.dailyMantra = fetchedMantra
+
+                self.ensureDefaultsIfMissing()
+                self.fetchAllRecommendationTitles()
+                self.persistWidgetSnapshotFromViewModel()
+
+                print("✅ 成功加载今日推荐（固定 docId 优先）：\(recs), place=\(fetchedPlace)")
+            }
+        }
+
+        // 1) ✅ 优先读取固定 docId：uid_yyyy-MM-dd（稳定，不会随机）
+        fixedDocRef.getDocument { snap, err in
+            if let err = err {
+                print("❌ 读取今日固定 docId 失败：\(err.localizedDescription)；使用本地默认内容")
+                DispatchQueue.main.async {
+                    self.ensureDefaultsIfMissing()
+                }
+                return
+            }
+
+            if let snap = snap, snap.exists, let data = snap.data() {
+                applyDailyData(data)
+                return
+            }
+
+            // 2) 兼容旧数据：如果历史上同一天被写入过“随机 docId”文档，这里回退查询
+            db.collection("daily_recommendation")
+                .whereField("uid", isEqualTo: userId)
+                .whereField("createdAt", isEqualTo: today)
+                .getDocuments { snapshot, error in
+                    if let error = error {
+                        print("❌ 回退查询今日推荐失败：\(error). 使用本地默认内容")
+                        DispatchQueue.main.async {
+                            self.ensureDefaultsIfMissing()
+                        }
+                        return
+                    }
+
+                    guard let docs = snapshot?.documents, !docs.isEmpty else {
+                        print("⚠️ 今日暂无推荐数据。使用本地默认内容")
+                        DispatchQueue.main.async {
+                            self.ensureDefaultsIfMissing()
+                        }
+                        return
+                    }
+
+                    // 选“最可能最新”的一条：优先按 updatedAt 最大；没有就取第一条
+                    let best = docs.max { a, b in
+                        let ta = (a.data()["updatedAt"] as? Timestamp)?.dateValue() ?? .distantPast
+                        let tb = (b.data()["updatedAt"] as? Timestamp)?.dateValue() ?? .distantPast
+                        return ta < tb
+                    } ?? docs[0]
+
+                    let data = best.data()
+                    applyDailyData(data)
+
+                    // 3) ✅ 迁移：把这条写入固定 docId，之后就不会再“返回随机刷新”
+                    var migrated = data
+                    migrated["uid"] = userId
+                    migrated["createdAt"] = today
+                    migrated["updatedAt"] = FieldValue.serverTimestamp()
+
+                    fixedDocRef.setData(migrated, merge: true) { e in
+                        if let e = e {
+                            print("⚠️ 迁移写入固定 docId 失败：\(e.localizedDescription)")
+                        } else {
+                            print("✅ 已迁移今日推荐到固定 docId（避免返回首页随机命中旧文档）")
+                        }
+                    }
+                }
+        }
     }
+
+
 
     // === Case-insensitive category normalization ===
     // 后端可能返回 "color" / "Color" / "COLOR"；统一映射到规范写法
@@ -4039,7 +4293,7 @@ func handleGoogleLogin(
                 return
             }
             guard let uid = Auth.auth().currentUser?.uid else {
-                onError("获取 UID 失败")
+                onError("Retrieve UID unsuccessful")
                 return
             }
 
@@ -4072,7 +4326,7 @@ func handleAppleLogin(
         guard let appleIDCredential = authResults.credential as? ASAuthorizationAppleIDCredential,
               let identityToken = appleIDCredential.identityToken,
               let tokenString = String(data: identityToken, encoding: .utf8) else {
-            onError("Apple 登录失败，无法获取 token")
+            onError("Apple sign in failed, cannot obtain identity token.")
             return
         }
 
@@ -4085,11 +4339,11 @@ func handleAppleLogin(
 
         Auth.auth().signIn(with: credential) { authResult, error in
             if let error = error {
-                onError("Apple 登录失败: \(error.localizedDescription)")
+                onError("Apple sign in failed: \(error.localizedDescription)")
                 return
             }
             guard let uid = Auth.auth().currentUser?.uid else {
-                onError("获取 UID 失败")
+                onError("Obtain current user UID failed.")
                 return
             }
 
@@ -4106,7 +4360,7 @@ func handleAppleLogin(
         }
 
     case .failure(let error):
-        onError("Apple 授权失败: \(error.localizedDescription)")
+        onError("Apple authorization failed: \(error.localizedDescription)")
     }
 }
 import GoogleSignIn
@@ -4185,7 +4439,7 @@ func handleAppleFromRegister(
         guard let appleIDCredential = authResults.credential as? ASAuthorizationAppleIDCredential,
               let identityToken = appleIDCredential.identityToken,
               let tokenString = String(data: identityToken, encoding: .utf8) else {
-            onError("Apple 登录失败，无法获取 token")
+            onError("Apple sign in failed, cannot extract identity token")
             return
         }
 
@@ -4197,7 +4451,7 @@ func handleAppleFromRegister(
 
         Auth.auth().signIn(with: credential) { _, error in
             if let error = error {
-                onError("Apple 登录失败: \(error.localizedDescription)")
+                onError("Apple sign in failed: \(error.localizedDescription)")
                 return
             }
             // ⚠️ 关键：按“资料完整度”来分流
@@ -4215,7 +4469,7 @@ func handleAppleFromRegister(
         }
 
     case .failure(let error):
-        onError("Apple 授权失败: \(error.localizedDescription)")
+        onError("Apple authorization failed: \(error.localizedDescription)")
     }
 }
 
@@ -5093,7 +5347,7 @@ private extension AccountDetailView {
             self.isBusy = false
             self.activeLocationFetcher = nil
             self.refreshAlertTitle = "Location Timeout"
-            self.refreshAlertMessage = "定位超过 10 秒未返回，请稍后再试或检查定位权限。"
+            self.refreshAlertMessage = "Exceed 10 seconds, please try again."
             self.showRefreshAlert = true
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 10, execute: watchdog)
@@ -5151,10 +5405,10 @@ private extension AccountDetailView {
 
                             if changed {
                                 self.refreshAlertTitle = "Location Updated"
-                                self.refreshAlertMessage = "已更新为：\(placeToShow)"
+                                self.refreshAlertMessage = "Updated to：\(placeToShow)"
                             } else {
                                 self.refreshAlertTitle = "No Change"
-                                self.refreshAlertMessage = "位置没有变化（仍为：\(placeToShow)）。"
+                                self.refreshAlertMessage = "No change in location（Still is：\(placeToShow)）。"
                             }
                             self.showRefreshAlert = true
                         }
@@ -5996,6 +6250,7 @@ extension View {
         }
     }
 }
+
 
 func timeToDateFlexible(_ str: String) -> Date? {
     let fmts = ["HH:mm", "H:mm", "hh:mm a", "h:mm a"]
