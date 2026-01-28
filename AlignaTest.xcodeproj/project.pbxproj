@@ -132,7 +132,6 @@
 		548498042E2B8E5A00E93C9D /* Exceptions for "AlignaTest" folder in "AlignaTestTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				brown_noise.wav,
 				DS_Store,
 				fire_crackle.wav,
 				forest_birds.wav,
@@ -150,7 +149,6 @@
 		548498052E2B8E5A00E93C9D /* Exceptions for "AlignaTest" folder in "AlignaTestUITests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				brown_noise.wav,
 				DS_Store,
 				fire_crackle.wav,
 				forest_birds.wav,

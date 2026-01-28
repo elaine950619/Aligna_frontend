@@ -30,3 +30,4 @@ xcuserdata/
 *.xcuserstate
 .idea/
 DerivedData/
+.DS_Store

@@ -235,44 +235,246 @@ struct VinylRecord: View {
 }
 
 import AVFoundation
+import FirebaseStorage
 
+@MainActor
 final class SoundPlayer: ObservableObject {
     @Published var isPlaying: Bool = false
+    @Published var isLoading: Bool = false
+    @Published var currentSoundKey: String? = nil
+    @Published var lastErrorMessage: String? = nil
+
+    // 供 View 里读取 duration / currentTime 等（你现在的代码在用 soundPlayer.player?.duration）
     var player: AVAudioPlayer?
+
+    private var downloadTask: StorageDownloadTask?
+
+    /// 你在 Firebase Storage 里存音频的文件夹：sounds/<documentName>.<ext>
+    private let storageFolder = "sounds"
+    /// 建议优先用 m4a（体积更小），其次 mp3，最后 wav
+    private let preferredExtensions = ["m4a", "mp3", "wav"]
 
     init() {
         configureAudioSession()
+        ensureCacheFolderExists()
     }
 
     private func configureAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .default) // <- key for background audio
+            try session.setCategory(.playback, mode: .default) // 允许锁屏/后台播放
             try session.setActive(true)
         } catch {
             print("❌ Audio session error: \(error)")
         }
     }
 
-    func playSound(named name: String) {
-        guard let url = Bundle.main.url(forResource: name, withExtension: "mp3") else {
-            print("❌ Missing sound file \(name).mp3")
+    // MARK: - Public API
+
+    /// 直接调用：soundPlayer.playSound(named: documentName)
+    func playSound(named rawKey: String) {
+        Task { await playSoundFromFirebase(named: rawKey) }
+    }
+
+    /// 可选：如果你想把按钮逻辑变简单，用这个
+    func togglePlay(named rawKey: String) {
+        if isPlaying, currentSoundKey == rawKey {
+            pause()
+        } else {
+            playSound(named: rawKey)
+        }
+    }
+
+    func pause() {
+        player?.pause()
+        isPlaying = false
+    }
+
+    func stop() {
+        downloadTask?.cancel()
+        downloadTask = nil
+
+        player?.stop()
+        player = nil
+
+        isPlaying = false
+        isLoading = false
+        currentSoundKey = nil
+    }
+
+    // MARK: - Core
+
+    private func playSoundFromFirebase(named rawKey: String) async {
+        lastErrorMessage = nil
+
+        // 允许 rawKey 传入 "brown_noise" 或 "brown_noise.mp3"
+        let normalized = normalizeKey(rawKey)
+        let key = normalized.key
+        let exts = normalized.extensions
+
+        // 切换音频时，先停止当前播放 & 取消下载
+        if currentSoundKey != rawKey {
+            stop()
+        }
+        currentSoundKey = rawKey
+
+        // 1) 先看看本地缓存有没有（避免每次都走网络）
+        if let cached = findCachedFileURL(for: key, extensions: exts) {
+            startPlayer(with: cached)
             return
         }
+
+        // 2) 没缓存 -> 从 Firebase Storage 下载到缓存 -> 播放
+        isLoading = true
+        do {
+            let localURL = try await downloadFirstAvailableSoundToCache(for: key, extensions: exts)
+            startPlayer(with: localURL)
+        } catch {
+            isLoading = false
+            isPlaying = false
+            lastErrorMessage = "Failed to load sound: \(error.localizedDescription)"
+            print("❌ Firebase audio download error: \(error)")
+        }
+    }
+
+    private func startPlayer(with url: URL) {
         do {
             player = try AVAudioPlayer(contentsOf: url)
             player?.numberOfLoops = -1
+            player?.prepareToPlay()
             player?.play()
+
+            isLoading = false
             isPlaying = true
         } catch {
+            isLoading = false
+            isPlaying = false
+            lastErrorMessage = "AVAudioPlayer error: \(error.localizedDescription)"
             print("❌ AVAudioPlayer error: \(error)")
         }
     }
 
-    func pause() { player?.pause(); isPlaying = false }
-    func stop()  { player?.stop();  isPlaying = false; player = nil }
-}
+    // MARK: - Cache
 
+    private func cacheFolderURL() -> URL {
+        let base = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        return base.appendingPathComponent("AlignaAudioCache", isDirectory: true)
+    }
+
+    private func ensureCacheFolderExists() {
+        let dir = cacheFolderURL()
+        if !FileManager.default.fileExists(atPath: dir.path) {
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+    }
+
+    private func cachedFileURL(for key: String, ext: String) -> URL {
+        cacheFolderURL().appendingPathComponent("\(key).\(ext)")
+    }
+
+    private func findCachedFileURL(for key: String, extensions: [String]) -> URL? {
+        for ext in extensions {
+            let url = cachedFileURL(for: key, ext: ext)
+            if FileManager.default.fileExists(atPath: url.path) {
+                return url
+            }
+        }
+        return nil
+    }
+
+    // MARK: - Firebase Storage download
+
+    /// 依次尝试 sounds/<key>.<ext>，找到第一个存在的就下载并返回本地 URL
+    private func downloadFirstAvailableSoundToCache(for key: String, extensions: [String]) async throws -> URL {
+        var lastError: Error?
+
+        for ext in extensions {
+            let localURL = cachedFileURL(for: key, ext: ext)
+            if FileManager.default.fileExists(atPath: localURL.path) {
+                return localURL
+            }
+
+            do {
+                return try await downloadSoundTo(localURL: localURL, key: key, ext: ext)
+            } catch {
+                lastError = error
+
+                // 如果是“对象不存在”，继续尝试下一个扩展名；否则直接抛出
+                if isObjectNotFound(error) {
+                    continue
+                } else {
+                    throw error
+                }
+            }
+        }
+
+        throw lastError ?? NSError(domain: "SoundPlayer", code: -1, userInfo: [
+            NSLocalizedDescriptionKey: "No audio file found in Firebase Storage for key: \(key)"
+        ])
+    }
+
+    private func downloadSoundTo(localURL: URL, key: String, ext: String) async throws -> URL {
+        let path = "\(storageFolder)/\(key).\(ext)"
+        let ref = Storage.storage().reference(withPath: path)
+
+        // 如果之前下载同一文件残留了空文件，先删掉
+        if FileManager.default.fileExists(atPath: localURL.path) {
+            try? FileManager.default.removeItem(at: localURL)
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            downloadTask = ref.write(toFile: localURL) { url, error in
+                self.downloadTask = nil
+
+                if let error = error {
+                    // 下载失败时删掉残留文件
+                    try? FileManager.default.removeItem(at: localURL)
+                    continuation.resume(throwing: error)
+                    return
+                }
+
+                if let url = url {
+                    continuation.resume(returning: url)
+                } else {
+                    continuation.resume(throwing: NSError(domain: "SoundPlayer", code: -2, userInfo: [
+                        NSLocalizedDescriptionKey: "Firebase download finished but file URL is nil"
+                    ]))
+                }
+            }
+        }
+    }
+
+    private func isObjectNotFound(_ error: Error) -> Bool {
+        let ns = error as NSError
+        if ns.domain == StorageErrorDomain,
+           let code = StorageErrorCode(rawValue: ns.code),
+           code == .objectNotFound {
+            return true
+        }
+        return false
+    }
+
+    private func normalizeKey(_ rawKey: String) -> (key: String, extensions: [String]) {
+        // 允许 "name.ext"（比如 brown_noise.mp3）直接传进来
+        let parts = rawKey.split(separator: ".")
+        guard parts.count >= 2 else {
+            return (rawKey, preferredExtensions)
+        }
+
+        let ext = String(parts.last!).lowercased()
+        let base = parts.dropLast().joined(separator: ".")
+
+        if ext.isEmpty {
+            return (rawKey, preferredExtensions)
+        }
+
+        // 把显式扩展名提到最前面（例如传了 mp3，就先找/下 mp3）
+        var exts = preferredExtensions
+        exts.removeAll { $0.lowercased() == ext }
+        exts.insert(ext, at: 0)
+        return (base, exts)
+    }
+}
 
 import SwiftUI
 import AVFoundation
