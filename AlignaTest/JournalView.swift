@@ -91,12 +91,12 @@ struct JournalView: View {
             // ---- Custom top overlay controls (Back + Reset) ----
             .overlay(alignment: .topLeading) {
                 CustomBackButton(
-                    iconSize: 18,
-                    paddingSize: 8,
-                    backgroundColor: Color.black.opacity(0.30),
-                    iconColor: themeManager.foregroundColor,
-                    topPadding: 44,
-                    horizontalPadding: 24
+//                    iconSize: 18,
+//                    paddingSize: 8,
+//                    backgroundColor: Color.black.opacity(0.30),
+//                    iconColor: themeManager.foregroundColor,
+//                    topPadding: 44,
+//                    horizontalPadding: 24
                 )
             }
             .overlay(alignment: .topTrailing) {

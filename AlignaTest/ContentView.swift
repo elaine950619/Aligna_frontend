@@ -18,11 +18,13 @@ struct NoDataMessage: View {
                 .foregroundColor(themeManager.accent)
 
             Text("No data available for this day")
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .font(TimelineType.cardTitle18MerriweatherBlack())
+                .lineSpacing(TimelineType.cardTitle18LineSpacing)
                 .foregroundColor(themeManager.primaryText)
 
             Text(DateFormatter.appLong.string(from: date))
-                .font(.footnote)
+                .font(TimelineType.cardBody14MerriweatherRegular())
+                .lineSpacing(TimelineType.cardBody14LineSpacing)
                 .foregroundColor(themeManager.descriptionText)
         }
         .padding(.vertical, 18)
@@ -49,7 +51,14 @@ extension DateFormatter {
 
 private struct TimelineHeader: View {
     var title: String = "Timeline"
+    var iconSize: CGFloat = 20
+    var paddingSize: CGFloat = 10
+    var backgroundColor: Color = Color.black.opacity(0.3)
+    var iconColor: Color = .white
+    var topPadding: CGFloat = 0
+    var horizontalPadding: CGFloat = 0
     var onBack: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject var themeManager: ThemeManager
 
     var body: some View {
@@ -63,9 +72,11 @@ private struct TimelineHeader: View {
                 // centered title
                 VStack(spacing: 12) {
                     Text(title)
-                        .font(.system(size: 34, weight: .bold, design: .serif))
+                        .font(TimelineType.title34GloockBlack())
+                        .lineSpacing(TimelineType.title34LineSpacing)
                         .foregroundColor(themeManager.primaryText)
                         .kerning(0.5)
+
 
                     // subtle underline "glow"
                     Capsule()
@@ -86,16 +97,18 @@ private struct TimelineHeader: View {
                 HStack {
                     Button(action: onBack) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.white.opacity(0.95))
-                            .padding(8)
-                            .background(
-                                Circle().fill(Color.black.opacity(0.25))
-                            )
+                            .font(.system(size: iconSize, weight: .semibold))
+                            .foregroundColor(iconColor)
+                            .padding(paddingSize)
+    //                        .background(backgroundColor)
+                            .clipShape(Circle())
+                            
                     }
-                    .contentShape(Rectangle())
                     Spacer()
                 }
+                .padding(.top, topPadding)
+                .padding(.horizontal, horizontalPadding)
+                Spacer()
             }
             .padding(.top, max(top, 12) + extraTop)
             .padding(.horizontal, 20)
@@ -123,6 +136,8 @@ struct SuggestionRow: View {
     let item: SuggestionItem
     @EnvironmentObject var viewModel: OnboardingViewModel
     @EnvironmentObject var themeManager: ThemeManager
+    @Environment(\.colorScheme) private var colorScheme
+
 
     // use mapped asset; fallback to computed
     private var iconName: String {
@@ -155,15 +170,17 @@ struct SuggestionRow: View {
 
                 // Title
                 Text(item.title)
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                    .foregroundColor(.primary)
+                    .font(TimelineType.cardTitle18MerriweatherBlack())
+                    .lineSpacing(TimelineType.cardTitle18LineSpacing)
+                    .foregroundColor(themeManager.primaryText)   // <-- avoid .primary so it matches theme
                     .lineLimit(1)
 
                 Spacer(minLength: 12)
 
                 // Category pill (uppercase), right‑aligned
                 Text(item.category)
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .font(TimelineType.tag14MerriweatherLight())
+                    .lineSpacing(TimelineType.tag14LineSpacing)
                     .tracking(0.7)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
@@ -173,8 +190,9 @@ struct SuggestionRow: View {
             // Description (muted, single line like your React list)
             if !item.description.isEmpty {
                 Text(item.description)
-                    .font(.system(size: 13, weight: .regular, design: .rounded))
-                    .foregroundColor(.secondary)
+                    .font(TimelineType.cardBody14MerriweatherRegular())
+                    .lineSpacing(TimelineType.cardBody14LineSpacing)
+                    .foregroundColor(themeManager.descriptionText)
                     .lineLimit(1)
             }
         }
@@ -183,7 +201,11 @@ struct SuggestionRow: View {
         .padding(.horizontal, 14)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(0.04))
+                .fill(
+                    colorScheme == .dark
+                    ? Color.white.opacity(0.06)   // dark mode → light capsule
+                    : Color.black.opacity(0.06)   // light mode → dark capsule
+                )
         )
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)

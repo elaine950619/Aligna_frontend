@@ -13,6 +13,41 @@ enum MoonPhase: String, CaseIterable {
          full, waninggibbous, lastquarter, waningcrescent
 }
 
+enum TimelineType {
+    // Timeline title
+    static func title34GloockBlack() -> Font { .custom("Gloock-Regular", size: 34) }
+    static let title34LineSpacing: CGFloat = 40 - 34  // 6
+
+    // Calendar month
+    static func month20MerriweatherBlack() -> Font { .custom("Merriweather-Black", size: 20) }
+    static let month20LineSpacing: CGFloat = 26 - 20  // 6
+
+    // Calendar weekdays + day numbers
+    static func date14MerriweatherRegular() -> Font { .custom("Merriweather-Regular", size: 14) }
+    static let date14LineSpacing: CGFloat = 20 - 14  // 6
+
+    // Section title
+    static func section20MerriweatherBlack() -> Font { .custom("Merriweather-Black", size: 20) }
+    static let section20LineSpacing: CGFloat = 26 - 20  // 6
+
+    // Section subtitle
+    static func subtitle16MerriweatherItalic() -> Font { .custom("Merriweather-Italic", size: 16) }
+    static let subtitle16LineSpacing: CGFloat = 22 - 16 // 6
+
+    // Card title
+    static func cardTitle18MerriweatherBlack() -> Font { .custom("Merriweather-Black", size: 18) }
+    static let cardTitle18LineSpacing: CGFloat = 24 - 18 // 6
+
+    // Card subtitle
+    static func cardBody14MerriweatherRegular() -> Font { .custom("Merriweather-Regular", size: 14) }
+    static let cardBody14LineSpacing: CGFloat = 20 - 14 // 6
+
+    // Card category tag
+    static func tag14MerriweatherLight() -> Font { .custom("Merriweather-Light", size: 14) }
+    static let tag14LineSpacing: CGFloat = 20 - 14 // 6
+}
+
+
 // Meeus JD + simple synodic phase bucket
 func julianDay(from date: Date) -> Double {
     let cal = Calendar(identifier: .gregorian)
@@ -91,8 +126,10 @@ struct DayCell: View {
 
                     // day label uses your theme primary text
                     Text("\(day)")
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .foregroundColor(themeManager.primaryText.opacity(0.9))   // ← was white
+                        .font(TimelineType.date14MerriweatherRegular())
+                        .lineSpacing(TimelineType.date14LineSpacing)
+                        .foregroundColor(themeManager.primaryText.opacity(0.9))
+
                 }
                 .frame(width: 44)
             }
@@ -100,7 +137,10 @@ struct DayCell: View {
         } else {
             VStack(spacing: 6) {
                 Color.clear.frame(width: 36, height: 36)
-                Text(" ").font(.system(size: 11))
+                Text(" ")
+                    .font(TimelineType.date14MerriweatherRegular())
+                    .lineSpacing(TimelineType.date14LineSpacing)
+
             }
             .frame(width: 44)
         }
@@ -131,8 +171,10 @@ struct CalendarView: View {
                 }
                 Spacer()
                 Text(monthTitle)
-                    .font(.system(size: 22, weight: .bold, design: .serif))
-                    .foregroundColor(themeManager.primaryText)                  // ← was white
+                    .font(TimelineType.month20MerriweatherBlack())
+                    .lineSpacing(TimelineType.month20LineSpacing)
+                    .foregroundColor(themeManager.primaryText)
+
                 Spacer()
                 Button { nextMonth() } label: {
                     Image(systemName: "chevron.right")
@@ -147,9 +189,9 @@ struct CalendarView: View {
             HStack {
                 ForEach(shortWeekdaySymbols, id: \.self) { wd in
                     Text(wd)
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundColor(themeManager.descriptionText.opacity(0.9)) // ← was white
-                        .frame(maxWidth: .infinity)
+                        .font(TimelineType.date14MerriweatherRegular())
+                        .lineSpacing(TimelineType.date14LineSpacing)
+                        .foregroundColor(themeManager.descriptionText.opacity(0.9))
                 }
             }
 

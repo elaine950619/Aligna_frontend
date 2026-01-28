@@ -315,7 +315,8 @@ struct LoadingView: View {
                     // Brand title + thin underline + shimmer
                     VStack(spacing: 8) {
                         Text("Alynna")
-                            .font(.custom("PlayfairDisplay-Regular", size: 40))
+                            .font(AlignaType.brandTitle())       // Gloock 34
+                            .lineSpacing(40 - 34)                // 6
                             .foregroundColor(.white)
                             .shimmer()
 
@@ -358,10 +359,9 @@ struct LoadingView: View {
                     // Loading text + bouncing dots
                     VStack(spacing: 12) {
                         Text(loadingMessages[msgIndex])
+                            .font(AlignaType.loadingSubtitle())  // Merriweather Italic 16
+                            .lineSpacing(AlignaType.body16LineSpacing)
                             .foregroundColor(.white.opacity(0.9))
-                            .font(.system(size: 18))
-                            .id(msgIndex)
-                            .transition(.opacity)
                             
                         HStack(spacing: 6) {
                             ForEach(0..<3) { i in
@@ -406,8 +406,6 @@ struct LoadingView: View {
     }
 }
 
-
-import SwiftUI
 
 import SwiftUI
 
@@ -500,8 +498,10 @@ struct WelcomeSplashView: View {
                 // Brand + hairline underline
                 VStack(spacing: 6) {
                     Text("Alynna")
-                        .font(.custom("PlayfairDisplay-Regular", size: 34))
-                        .foregroundColor(.white)
+                        .font(AlignaType.brandTitle())
+                       .lineSpacing(40 - 34)
+                       .foregroundColor(.white)
+                
                     Rectangle()
                         .fill(
                             LinearGradient(
@@ -550,12 +550,31 @@ struct WelcomeSplashView: View {
 
             Text(text)
                 .foregroundColor(.white.opacity(textOpacity))
-                .font(.system(size: 16))       // 16 "px"
-                .lineSpacing(6)                // 16 + 6 ≈ 22 行高
-                .fixedSize(horizontal: false, vertical: true)
+                .font(.custom("Merriweather-Regular", size: 16))
+                .lineSpacing(AlignaType.body16LineSpacing)
         }
     }
 }
+
+
+enum AlignaType {
+    static func logo() -> Font { .custom("CormorantGaramond-Bold", size: 38) }
+    static func brandTitle() -> Font { .custom("Gloock-Regular", size: 34) }
+
+    static func homeSubtitle() -> Font { .custom("Merriweather-Italic", size: 18) }
+
+    static func gridCategoryTitle() -> Font { .custom("Merriweather-Black", size: 18) }
+    static func gridItemName() -> Font { .custom("Merriweather-Light", size: 16) }
+
+    static func loadingSubtitle() -> Font { .custom("Merriweather-Italic", size: 16) }
+    static func helperSmall() -> Font { .custom("Merriweather24pt-Light", size: 14) }
+
+    static let logoLineSpacing: CGFloat = 44 - 38   // 6
+    static let descLineSpacing: CGFloat = 26 - 18   // 8
+    static let body16LineSpacing: CGFloat = 22 - 16 // 6
+    static let small14LineSpacing: CGFloat = 20 - 14// 6
+}
+
 
 
 
@@ -599,6 +618,8 @@ struct FirstPageView: View {
     @State private var splashLocation: String = "Your Current Location"
     @State private var splashZodiac: String = ""
     @State private var splashMoon: String = ""
+    
+    @State private var didBootVisuals = false
     
     private func ensureDefaultsIfMissing() {
         // If nothing loaded yet, supply local demo content
@@ -688,15 +709,18 @@ struct FirstPageView: View {
                             }
                             .padding(.trailing, geometry.size.width * 0.05)
                         }
+//                        .padding(.top, 120)
+//                        .padding(.horizontal, geometry.size.width * 0.05)
 
                         Text("Alynna")
-                            .font(Font.custom("PlayfairDisplay-Regular",
-                                              size: minLength * 0.13))
+                            .font(AlignaType.logo())
+                            .lineSpacing(AlignaType.logoLineSpacing)
                             .foregroundColor(themeManager.foregroundColor)
+                            .padding(.top, 20)
 
                         Text(viewModel.dailyMantra)
-                            .font(Font.custom("PlayfairDisplay-Italic",
-                                              size: minLength * 0.04))
+                            .font(AlignaType.homeSubtitle())
+                            .lineSpacing(AlignaType.descLineSpacing) // 26-18=8
                             .multilineTextAlignment(.center)
                             .foregroundColor(themeManager.foregroundColor.opacity(0.7))
                             .padding(.horizontal, geometry.size.width * 0.1)
@@ -1067,48 +1091,59 @@ struct FirstPageView: View {
 
 
     var body: some View {
-        switch bootPhase {
-        case .loading:
-            LoadingView(onStartLoading: {
-                startInitialLoad()
-            })
-            .ignoresSafeArea()
-            
-        case .onboarding:
-            NavigationStack {
-                if shouldOnboardAfterSignIn {
-                    // 注册后正式进入引导：Step1
-                    OnboardingStep1(viewModel: viewModel)
-                        .environmentObject(starManager)
-                        .environmentObject(themeManager)
-                        .navigationBarBackButtonHidden(true)
-                } else {
-                    // 冷启动未登录：先到 OpeningPage（包含 Sign Up / Log In）
-                    OnboardingOpeningPage()
-                        .environmentObject(starManager)
-                        .environmentObject(themeManager)
-                        .navigationBarBackButtonHidden(true)
+        Group {
+            switch bootPhase {
+            case .loading:
+                LoadingView(onStartLoading: {
+                    startInitialLoad()
+                })
+                .ignoresSafeArea()
+                
+            case .onboarding:
+                NavigationStack {
+                    if shouldOnboardAfterSignIn {
+                        // 注册后正式进入引导：Step1
+                        OnboardingStep1(viewModel: viewModel)
+                            .environmentObject(starManager)
+                            .environmentObject(themeManager)
+                            .navigationBarBackButtonHidden(true)
+                    } else {
+                        // 冷启动未登录：先到 OpeningPage（包含 Sign Up / Log In）
+                        OnboardingOpeningPage()
+                            .environmentObject(starManager)
+                            .environmentObject(themeManager)
+                            .navigationBarBackButtonHidden(true)
+                    }
                 }
-            }
-            
-        case .infoSplash:
-            WelcomeSplashView(location: splashLocation,
-                              zodiac: splashZodiac,
-                              moon: splashMoon)
-            .environmentObject(starManager)
-            .environmentObject(themeManager)
-            .onAppear {
-                // Show the splash briefly, then go main
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    withAnimation(.easeInOut) { bootPhase = .main }
+                
+            case .infoSplash:
+                WelcomeSplashView(location: splashLocation,
+                                  zodiac: splashZodiac,
+                                  moon: splashMoon)
+                .environmentObject(starManager)
+                .environmentObject(themeManager)
+                .onAppear {
+                    // Show the splash briefly, then go main
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        withAnimation(.easeInOut) { bootPhase = .main }
+                    }
                 }
+                .ignoresSafeArea()
+                
+            case .main:
+                mainContent // (extract your existing NavigationStack content into a computed var)
             }
-            .ignoresSafeArea()
+        }
+        .onAppear {
+            // run once on cold start
+            guard !didBootVisuals else { return }
+            didBootVisuals = true
 
-        case .main:
-            mainContent // (extract your existing NavigationStack content into a computed var)
+            starManager.animateStar = true
+            themeManager.appBecameActive()
         }
     }
+    
 
     private func fetchAllRecommendationTitles() {
         #if DEBUG
@@ -1424,18 +1459,20 @@ struct FirstPageView: View {
                         
                         // 推荐名称（小字体，紧贴图标）
                         Text(recommendationTitles[title] ?? "")
-                            .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.033))
+                            .font(AlignaType.gridItemName())
+                            .lineSpacing(AlignaType.body16LineSpacing) // 22-16=6
                             .foregroundColor(themeManager.foregroundColor.opacity(0.8))
                             .multilineTextAlignment(.center)
                             .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                            .padding(.top, 1) // ⬅️ subtle spacing only
+                            .minimumScaleFactor(0.75)
                         
                         // 类别标题（和上面稍微拉开）
                         Text(title)
-                            .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.05))
+                            .font(AlignaType.gridCategoryTitle())
+                            .lineSpacing(34 - 28) // 6
                             .foregroundColor(themeManager.foregroundColor)
-                            .padding(.top, 2) // ⬅️ tighter than before
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
                     }
                 }
             } else {
@@ -1477,8 +1514,8 @@ struct FirstPageView: View {
             ScentDetailView(documentName: documentName)
         case "Activity":
             ActivityDetailView(
-                documentName: documentName,
-                soundDocumentName: viewModel.recommendations["Sound"] ?? ""
+                documentName: documentName
+//                soundDocumentName: viewModel.recommendations["Sound"] ?? ""
             )
         case "Sound":
             SoundDetailView(documentName: documentName)
@@ -1694,12 +1731,12 @@ struct RecommendationPagerView: View {
             .tabViewStyle(.page(indexDisplayMode: .automatic))
             
             CustomBackButton(
-                iconSize: 18,
-                paddingSize: 8,
-                backgroundColor: Color.black.opacity(0.3),
-                iconColor: themeManager.foregroundColor,
-                topPadding: 44,
-                horizontalPadding: 24
+//                iconSize: 18,
+////                paddingSize: 8,
+//                backgroundColor: Color.black.opacity(0.3),
+//                iconColor: themeManager.foregroundColor,
+////                topPadding: 120,
+//                horizontalPadding: 24
             )
             .onTapGesture {
                 dismiss()          // pop back to FirstPageView
@@ -1723,8 +1760,8 @@ struct RecommendationPagerView: View {
         case .Scent:
             ScentDetailView(documentName: documentName)
         case .Activity:
-            ActivityDetailView(documentName: documentName,
-                               soundDocumentName: docsByCategory[.Sound] ?? "")
+            ActivityDetailView(documentName: documentName)
+//                               soundDocumentName: docsByCategory[.Sound] ?? "")
         case .Sound:
             SoundDetailView(documentName: documentName)
         case .Career:
@@ -1749,8 +1786,8 @@ struct CustomBackButton: View {
     var paddingSize: CGFloat = 10
     var backgroundColor: Color = Color.black.opacity(0.3)
     var iconColor: Color = .white
-    var topPadding: CGFloat = 44
-    var horizontalPadding: CGFloat = 24
+    var topPadding: CGFloat = 12
+    var horizontalPadding: CGFloat = 12
     
     var body: some View {
         VStack {
@@ -1760,7 +1797,7 @@ struct CustomBackButton: View {
                         .font(.system(size: iconSize, weight: .semibold))
                         .foregroundColor(iconColor)
                         .padding(paddingSize)
-                        .background(backgroundColor)
+//                        .background(backgroundColor)
                         .clipShape(Circle())
                 }
                 Spacer()

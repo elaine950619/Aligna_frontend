@@ -8,6 +8,147 @@
 import SwiftUI
 import FirebaseFirestore
 
+
+enum AlynnaType {
+    // MARK: - Place page spec (use across screens if desired)
+    static func sectionTitle30Black() -> Font { .custom("Merriweather-Black", size: 30) }   // e.g. "Place"
+    static let sectionTitle30LineSpacing: CGFloat = 36 - 30  // 6
+
+    static func cardName32Black() -> Font { .custom("Merriweather-Black", size: 32) }       // e.g. "Green Sanctuary"
+    static let cardName32LineSpacing: CGFloat = 38 - 32       // 6
+
+    static func desc18Italic() -> Font { .custom("Merriweather-Italic", size: 18) }         // description
+    static let desc18LineSpacing: CGFloat = 26 - 18           // 8
+
+    static func body16Regular() -> Font { .custom("Merriweather-Regular", size: 16) }       // explanation (regular)
+    static let body16LineSpacing: CGFloat = 22 - 16           // 6
+
+    static func tag16Light() -> Font { .custom("Merriweather-Light", size: 16) }            // labels/tags
+    static let tag16LineSpacing: CGFloat = 22 - 16            // 6
+
+    static func explain14Regular() -> Font { .custom("Merriweather-Regular", size: 14) }    // muted note
+    static let explain14LineSpacing: CGFloat = 22 - 14        // 8
+}
+
+struct DetailScaffold<MainContent: View>: View {
+    @EnvironmentObject var themeManager: ThemeManager
+
+    let section: String
+    let item: RecommendationItem
+    let mainContent: MainContent
+
+    init(
+        section: String,
+        item: RecommendationItem,
+        @ViewBuilder mainContent: () -> MainContent
+    ) {
+        self.section = section
+        self.item = item
+        self.mainContent = mainContent()
+    }
+
+    var body: some View {
+        VStack(spacing: 20) {
+            // Section label
+            Text(section)
+                .foregroundColor(themeManager.watermark)
+                .font(AlynnaType.sectionTitle30Black())
+                .lineSpacing(AlynnaType.sectionTitle30LineSpacing)
+
+            // Title
+            Text(item.title)
+                .multilineTextAlignment(.center)
+                .foregroundColor(themeManager.primaryText)
+                .font(AlynnaType.cardName32Black())
+                .lineSpacing(AlynnaType.cardName32LineSpacing)
+
+            // Description
+            Text(item.description)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+                .font(AlynnaType.desc18Italic())
+                .lineSpacing(AlynnaType.desc18LineSpacing)
+                .fixedSize(horizontal: false, vertical: true)
+                .foregroundColor(themeManager.descriptionText)
+
+            // Custom middle content (image, icons, breathing, link sheets, play button, etc.)
+            mainContent
+
+            // Explanation
+            Text(item.explanation)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+                .padding(.bottom)
+                .fixedSize(horizontal: false, vertical: true)
+                .font(AlynnaType.explain14Regular())
+                .lineSpacing(AlynnaType.explain14LineSpacing)
+                .foregroundColor(Color(hex: "#B9A08B").opacity(0.7))
+        }
+        .padding()
+        .padding(.top, 36)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+}
+
+
+struct FirestoreDetailView<Extra: View>: View {
+    @EnvironmentObject var themeManager: ThemeManager
+
+    let section: String
+    let collection: String
+    let documentName: String
+    let extra: (RecommendationItem) -> Extra
+
+    @State private var item: RecommendationItem?
+
+    init(
+        section: String,
+        collection: String,
+        documentName: String,
+        @ViewBuilder extra: @escaping (RecommendationItem) -> Extra
+    ) {
+        self.section = section
+        self.collection = collection
+        self.documentName = documentName
+        self.extra = extra
+    }
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            if let item = item {
+                DetailScaffold(section: section, item: item) {
+                    extra(item)
+                }
+            } else {
+                ProgressView("Loading...")
+                    .padding(.top, 100)
+            }
+        }
+        .onAppear { fetch() }
+        .navigationBarBackButtonHidden(true)
+    }
+
+    private func fetch() {
+        let db = Firestore.firestore()
+        db.collection(collection).document(documentName).getDocument { snapshot, error in
+            if let error = error {
+                print("❌ Firebase error: \(error)")
+                return
+            }
+            do {
+                if let data = try snapshot?.data(as: RecommendationItem.self) {
+                    self.item = data
+                } else {
+                    print("❌ Doc not found / decode failed")
+                }
+            } catch {
+                print("❌ Decode failed: \(error)")
+            }
+        }
+    }
+}
+
+
 struct PlayPauseButton: View {
     let isPlaying: Bool
     let action: () -> Void
@@ -294,8 +435,37 @@ struct SoundDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var soundPlayer: SoundPlayer
+
+    let documentName: String
+
+    // ✅ compatibility init so old calls compile
+    init(documentName: String, soundDocumentName: String? = nil) {
+        self.documentName = soundDocumentName ?? documentName
+    }
+
+    var body: some View {
+        FirestoreDetailView(
+            section: "Sound",
+            collection: "sounds",
+            documentName: documentName
+        ) { item in
+            SoundExtraContent(documentName: documentName, title: item.title)
+        }
+    }
+}
+
+
+private struct SoundExtraContent: View {
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var soundPlayer: SoundPlayer
     @Environment(\.colorScheme) private var colorScheme
-    
+
+    let documentName: String
+    let title: String
+
+    @State private var showPlayer = false
+
     private var playRingFill: Color {
         colorScheme == .dark ? Color.white.opacity(0.10) : Color.black.opacity(0.06)
     }
@@ -306,119 +476,44 @@ struct SoundDetailView: View {
         colorScheme == .dark ? Color(hex: "#E6D7C3") : themeManager.foregroundColor.opacity(0.9)
     }
 
-    
-    let documentName: String
-    @State private var item: RecommendationItem?
-    @State private var showPlayer = false
-    
     var body: some View {
-        ZStack{
-//            AppBackgroundView()
-//                .environmentObject(starManager)
-            
-            VStack(spacing: 20) {
-                // Sound
-                Text("Sound")
-                    .foregroundColor(themeManager.watermark)
-                    .font(.custom("PlayfairDisplay-Regular", size: 36))
-                    .bold()
-                
-                if let item = item {
-                    // Title
-                    Text(item.title)
-                        .multilineTextAlignment(.center)
-                        .font(.custom("PlayfairDisplay-Regular", size: 36))
-                        .foregroundColor(themeManager.primaryText)
-                        .bold()
-                    
-                    // Description
-                    Text(item.description)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .font(.custom("PlayfairDisplay-Italic", size: 17))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.descriptionText)
-                    
-                    // image
-                    Image(documentName)
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 150, height: 150)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.foregroundColor)
-                    
-                    Button {
-                        showPlayer = true
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(playRingFill)
-                                .background(.ultraThinMaterial, in: Circle())
-                                .overlay(Circle().stroke(playRingStroke, lineWidth: 2))
-                                .frame(width: 56, height: 56)
+        VStack(spacing: 24) {
+            Image(documentName)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 150, height: 150)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .foregroundColor(themeManager.foregroundColor)
 
-                            Image(systemName: "play.fill")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(playGlyphColor)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.top, 28)
+            Button { showPlayer = true } label: {
+                ZStack {
+                    Circle()
+                        .fill(playRingFill)
+                        .background(.ultraThinMaterial, in: Circle())
+                        .overlay(Circle().stroke(playRingStroke, lineWidth: 2))
+                        .frame(width: 56, height: 56)
 
-                    
-                    // Explanation
-                    Text(item.explanation)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .padding(.bottom)
-                        .italic()
-                        .font(.custom("PlayfairDisplay-Regular", size: 14))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.descriptionText)
-                } else {
-                    ProgressView("Loading...")
-                        .padding(.top, 100)
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(playGlyphColor)
                 }
             }
-            .padding()
-            .onAppear {
-                fetchItem()
-            }
+            .buttonStyle(.plain)
+            .padding(.top, 8)
         }
         .sheet(isPresented: $showPlayer) {
             PlayerPopup(
-                documentName: documentName,              // pass through your asset name
-                dismiss: { showPlayer = false }          // allow the popup to close itself
+                documentName: documentName,
+                dismiss: { showPlayer = false }
             )
-            // Nice, modern sheet presentation:
-            .presentationDetents([.fraction(0.6), .large]) // iOS 16+
+            .presentationDetents([.fraction(0.6), .large])
             .presentationDragIndicator(.visible)
             .presentationCornerRadius(24)
         }
-        .navigationBarBackButtonHidden(true)
-    }
-    
-    
-    private func fetchItem() {
-        let db = Firestore.firestore()
-        db.collection("sounds").document(documentName).getDocument { snapshot, error in
-            if let error = error {
-                print("❌ 获取 Firebase 数据失败: \(error)")
-                return
-            }
-            do {
-                if let data = try snapshot?.data(as: RecommendationItem.self) {
-                    self.item = data
-                } else {
-                    print("❌ 文档未找到或解码失败")
-                }
-            } catch {
-                print("❌ 解码失败: \(error)")
-            }
-        }
     }
 }
+
 
 struct IconItem: Identifiable {
     let id = UUID()
@@ -427,116 +522,51 @@ struct IconItem: Identifiable {
 }
 
 struct PlaceDetailView: View {
-    @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
-    
-    @Environment(\.dismiss) private var dismiss
     let documentName: String
-    //    let imageNames: [String]
+
     let iconItems = [
         IconItem(imageName: "botanical_garden", title: "Botanical\ngardens"),
         IconItem(imageName: "small_parks",     title: "Small\nparks"),
         IconItem(imageName: "shaded_paths",    title: "Shaded\npaths")
     ]
-    @State private var item: RecommendationItem?
-    
+
     var body: some View {
-        ZStack{
-//            AppBackgroundView()
-//                .environmentObject(starManager)
-             
-            VStack(spacing: 20) {
-                // Place
-                Text("Place")
-                    .foregroundColor(themeManager.watermark)
-                    .font(.custom("PlayfairDisplay-Regular", size: 36))
-                    .bold()
-                
-                if let item = item {
-                    // Title
-                    Text(item.title)
-                        .multilineTextAlignment(.center)
-                        .font(.custom("PlayfairDisplay-Regular", size: 36))
-                        .foregroundColor(themeManager.primaryText)
-                        .bold()
-                    
-                    // Description
-                    Text(item.description)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .font(.custom("PlayfairDisplay-Italic", size: 17))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.descriptionText)
-                    
-                    // Image
-                    Image(documentName) // assumes .png in Assets
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 150, height: 150)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.foregroundColor)
-                    
-                    // Explanation
-                    Text(item.explanation)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .padding(.bottom)
-                        .italic()
-                        .font(.custom("PlayfairDisplay-Regular", size: 14))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.descriptionText)
-                    
-                    VStack(spacing: 24) {
-                        HStack(spacing: 40) {
-                            ForEach(iconItems[0...2]) { item in
-                                VStack(spacing: 8) {
-                                    Image(item.imageName)
-                                        .renderingMode(.template)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 50, height: 50)
-                                        .foregroundColor(themeManager.placeIcon)
-                                    Text(item.title)
-                                        .font(.custom("PlayfairDisplay-Regular", size: 16))
-                                        .multilineTextAlignment(.center)
-                                        .foregroundColor(themeManager.placeIconText)
-                                        .fixedSize(horizontal: true, vertical: true)
-                                        .lineLimit(2)
-                                }
-                                .padding(.horizontal, 24)
-                            }
+        FirestoreDetailView(
+            section: "Place",
+            collection: "places",
+            documentName: documentName
+        ) { _ in
+            VStack(spacing: 24) {
+                Image(documentName)
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 150, height: 150)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .foregroundColor(themeManager.foregroundColor)
+
+                HStack(spacing: 40) {
+                    ForEach(iconItems) { icon in
+                        VStack(spacing: 8) {
+                            Image(icon.imageName)
+                                .renderingMode(.template)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 50, height: 50)
+                                .foregroundColor(themeManager.placeIcon)
+
+                            Text(icon.title)
+                                .font(AlynnaType.tag16Light())
+                                .lineSpacing(AlynnaType.tag16LineSpacing)
+                                .multilineTextAlignment(.center)
+                                .foregroundColor(themeManager.placeIconText)
+                                .fixedSize(horizontal: true, vertical: true)
+                                .lineLimit(2)
                         }
+                        .padding(.horizontal, 24)
                     }
-                } else {
-                    ProgressView("Loading...")
-                        .padding(.top, 100)
                 }
-            }
-            .padding()
-            
-        }
-        .onAppear { // where should i put this?
-            fetchItem()
-        }
-        .navigationBarBackButtonHidden(true)
-    }
-    
-    private func fetchItem() {
-        let db = Firestore.firestore()
-        db.collection("places").document(documentName).getDocument { snapshot, error in
-            if let error = error {
-                print("❌ 获取 Firebase 数据失败: \(error)")
-                return
-            }
-            do {
-                if let data = try snapshot?.data(as: RecommendationItem.self) {
-                    self.item = data
-                } else {
-                    print("❌ 文档未找到或解码失败")
-                }
-            } catch {
-                print("❌ 解码失败: \(error)")
             }
         }
     }
@@ -921,107 +951,67 @@ struct GemLinkSheet: View {
 
 
 struct GemstoneDetailView: View {
-    @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
-    @Environment(\.openURL) private var openURL
-
-    @State private var showLinkSheet = false
-    @State private var item: RecommendationItem?
-
-    // Persisted click counter for the gemstone “click” hint
-    @AppStorage("aligna.gem.click.count") private var gemClickCount: Int = 0
-    private var showGemClickHint: Bool { gemClickCount < 3 }
-
     let documentName: String
 
     var body: some View {
-        ZStack {
-//            AppBackgroundView().environmentObject(starManager)
-
-            VStack(spacing: 20) {
-                Text("Gemstone")
-                    .foregroundColor(themeManager.watermark)
-                    .font(.custom("PlayfairDisplay-Regular", size: 36))
-                    .bold()
-
-                if let item = item {
-                    Text(item.title)
-                        .multilineTextAlignment(.center)
-                        .font(.custom("PlayfairDisplay-Regular", size: 36))
-                        .foregroundColor(themeManager.primaryText)
-                        .bold()
-
-                    Text(item.description)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .font(.custom("PlayfairDisplay-Italic", size: 17))
-                        .foregroundColor(themeManager.descriptionText)
-
-                    // Gem image with click hint overlay in bottom-right corner
-                    ZStack(alignment: .bottomTrailing) {
-                        Image(documentName)
-                            .renderingMode(.template)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 150, height: 150)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .foregroundColor(themeManager.foregroundColor)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                // treat as a "click"
-                                gemClickCount = min(gemClickCount + 1, 3) // cap at 3
-                                showLinkSheet = true
-                            }
-
-                        ClickHint(isVisible: .constant(showGemClickHint), label: "Click")
-                            .offset(x: 6, y: 6)
-                    }
-                    .sheet(isPresented: $showLinkSheet) {
-                        GemLinkSheet(
-                            title: item.title,
-                            linkURLString: item.link,
-                            stoneURLString: item.stone,
-                            themeManager: themeManager
-                        )
-                    }
-
-                    if let anchor = item.anchor, !anchor.isEmpty {
-                        DailyAnchorView(text: anchor)
-                            .environmentObject(themeManager)
-                            .padding(.top, 8)
-                    }
-
-                    Text(item.explanation)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .padding(.bottom)
-                        .italic()
-                        .font(.custom("PlayfairDisplay-Regular", size: 14))
-                        .foregroundColor(themeManager.descriptionText)
-                } else {
-                    ProgressView("Loading...").padding(.top, 100)
-                }
-            }
-            .padding()
-            .onAppear { fetchItem() }
-        }
-        .navigationBarBackButtonHidden(true)
-    }
-
-    private func fetchItem() {
-        let db = Firestore.firestore()
-        db.collection("gemstones").document(documentName).getDocument { snapshot, error in
-            if let error = error { print("❌ Firebase error: \(error)"); return }
-            do {
-                if let data = try snapshot?.data(as: RecommendationItem.self) {
-                    self.item = data
-                } else {
-                    print("❌ Doc not found / decode failed")
-                }
-            } catch { print("❌ Decode failed: \(error)") }
+        FirestoreDetailView(
+            section: "Gemstone",
+            collection: "gemstones",
+            documentName: documentName
+        ) { item in
+            GemstoneExtraContent(documentName: documentName, item: item)
         }
     }
 }
+
+private struct GemstoneExtraContent: View {
+    @EnvironmentObject var themeManager: ThemeManager
+
+    let documentName: String
+    let item: RecommendationItem
+
+    @State private var showLinkSheet = false
+    @AppStorage("aligna.gem.click.count") private var gemClickCount: Int = 0
+    private var showGemClickHint: Bool { gemClickCount < 3 }
+
+    var body: some View {
+        VStack(spacing: 20) {
+            ZStack(alignment: .bottomTrailing) {
+                Image(documentName)
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 150, height: 150)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .foregroundColor(themeManager.foregroundColor)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        gemClickCount = min(gemClickCount + 1, 3)
+                        showLinkSheet = true
+                    }
+
+                ClickHint(isVisible: .constant(showGemClickHint), label: "Click")
+                    .offset(x: 6, y: 6)
+            }
+            .sheet(isPresented: $showLinkSheet) {
+                GemLinkSheet(
+                    title: item.title,
+                    linkURLString: item.link,
+                    stoneURLString: item.stone,
+                    themeManager: themeManager
+                )
+            }
+
+            if let anchor = item.anchor, !anchor.isEmpty {
+                DailyAnchorView(text: anchor)
+                    .environmentObject(themeManager)
+                    .padding(.top, 8)
+            }
+        }
+    }
+}
+
 
 struct BreathingCircle: View {
     let color: Color
@@ -1082,107 +1072,31 @@ struct SetColorButton: View {
 }
 
 struct ColorDetailView: View {
-    @EnvironmentObject var starManager: StarAnimationManager
-    @EnvironmentObject var themeManager: ThemeManager
-    
     let documentName: String
-    @State private var item: RecommendationItem?
-    
-    // color mapping
-    private let colorHexMapping: [String:String] = [
-        "amber":     "#FFBF00",
-        "cream":     "#FFFDD0",
-        "forest_green":"#228B22",
-        "ice_blue":  "#ADD8E6",
-        "indigo":    "#4B0082",
-        "rose":      "#FF66CC",
-        "sage_green":"#9EB49F",
-        "silver_white":"#C0C0C0",
-        "slate_blue":"#6A5ACD",
-        "teal":      "#008080"
-    ]
-    
-    var body: some View {
-        ZStack{
-//            AppBackgroundView()
-//                .environmentObject(starManager)
 
-            VStack(spacing: 20) {
-                // Color
-                Text("Color")
-                    .foregroundColor(themeManager.watermark)
-                    .font(.custom("PlayfairDisplay-Regular", size: 36))
-                    .bold()
-                
-                if let item = item {
-                    // Title
-                    Text(item.title)
-                        .multilineTextAlignment(.center)
-                        .font(.custom("PlayfairDisplay-Regular", size: 36))
-                        .foregroundColor(themeManager.primaryText)
-                        .bold()
-                    
-                    // Description
-                    Text(item.description)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .font(.custom("PlayfairDisplay-Italic", size: 17))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.descriptionText)
-                    
-                    // breathing circle
-                    if let hex = colorHexMapping[item.name] {
-                        BreathingCircle(
-                            color: Color(hex: hex),
-                            diameter: 230,
-                            duration: 4
-                        )
+    private let colorHexMapping: [String:String] = [
+        "amber":"#FFBF00", "cream":"#FFFDD0", "forest_green":"#228B22",
+        "ice_blue":"#ADD8E6", "indigo":"#4B0082", "rose":"#FF66CC",
+        "sage_green":"#9EB49F", "silver_white":"#C0C0C0", "slate_blue":"#6A5ACD",
+        "teal":"#008080"
+    ]
+
+    var body: some View {
+        FirestoreDetailView(
+            section: "Color",
+            collection: "colors",
+            documentName: documentName
+        ) { item in
+            VStack {
+                if let hex = colorHexMapping[item.name] {
+                    BreathingCircle(color: Color(hex: hex), diameter: 230, duration: 4)
                         .padding(.top, 32)
-                    }
-                    
-                    // Explanation
-                    Text(item.explanation)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .padding(.bottom)
-                        .italic()
-                        .font(.custom("PlayfairDisplay-Regular", size: 14))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.descriptionText)
-                    
-                    // button
-                } else {
-                    ProgressView("Loading...")
-                        .padding(.top, 100)
                 }
-            }
-            .padding()
-            .onAppear {
-                fetchItem()
-            }
-        }
-        .navigationBarBackButtonHidden(true)
-    }
-    
-    private func fetchItem() {
-        let db = Firestore.firestore()
-        db.collection("colors").document(documentName).getDocument { snapshot, error in
-            if let error = error {
-                print("❌ 获取 Firebase 数据失败: \(error)")
-                return
-            }
-            do {
-                if let data = try snapshot?.data(as: RecommendationItem.self) {
-                    self.item = data
-                } else {
-                    print("❌ 文档未找到或解码失败")
-                }
-            } catch {
-                print("❌ 解码失败: \(error)")
             }
         }
     }
 }
+
 
 
 struct ScentLinkSheet: View {
@@ -1355,142 +1269,102 @@ struct ScentLinkSheet: View {
 
 
 struct ScentDetailView: View {
-    @EnvironmentObject var starManager: StarAnimationManager
+    let documentName: String
+
+    var body: some View {
+        FirestoreDetailView(
+            section: "Scent",
+            collection: "scents",
+            documentName: documentName
+        ) { item in
+            ScentExtraContent(documentName: documentName, item: item)
+        }
+    }
+}
+
+private struct ScentExtraContent: View {
     @EnvironmentObject var themeManager: ThemeManager
 
     let documentName: String
-    @State private var item: RecommendationItem?
+    let item: RecommendationItem
+
     @State private var showLinkSheet = false
-//    @Environment(\.dismiss) private var dismiss
+
+    // ✅ show hint only first few times (like Gemstone)
+    @AppStorage("aligna.scent.click.count") private var scentClickCount: Int = 0
+    private var showScentClickHint: Bool { scentClickCount < 3 }
 
     var body: some View {
-        ZStack {
-//            AppBackgroundView()
-//                .environmentObject(starManager)
+        VStack(spacing: 16) {
 
-            ScrollView {
+            // ✅ Add click hint overlay
+            ZStack(alignment: .bottomTrailing) {
+                Image(documentName)
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 150, height: 150)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .foregroundColor(themeManager.foregroundColor)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        scentClickCount = min(scentClickCount + 1, 3)
+                        showLinkSheet = true
+                    }
 
-                VStack(spacing: 20) {
-                    Text("Scent")
-                        .foregroundColor(themeManager.watermark)
-                        .font(.custom("PlayfairDisplay-Regular", size: 36))
+                ClickHint(isVisible: .constant(showScentClickHint), label: "Click")
+                    .offset(x: 6, y: 6)
+            }
+            .sheet(isPresented: $showLinkSheet) {
+                ScentLinkSheet(
+                    title: item.title,
+                    linkURLString: item.link,
+                    candleURLString: item.candle,
+                    themeManager: themeManager
+                )
+                .presentationDragIndicator(.visible)
+                .presentationDetents([.medium, .large])
+                .presentationCornerRadius(28)
+            }
+
+            if let about = item.about, !about.isEmpty {
+                VStack(spacing: 10) {
+                    Text("About the Scent")
+                        .font(.custom("PlayfairDisplay-Regular", size: 18))
+                        .foregroundColor(themeManager.foregroundColor)
                         .bold()
 
-                    if let item = item {
-                        Text(item.title)
-                            .multilineTextAlignment(.center)
-                            .font(.custom("PlayfairDisplay-Regular", size: 36))
-                            .foregroundColor(themeManager.primaryText)
-                            .bold()
-
-                        Text(item.description)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                            .font(.custom("PlayfairDisplay-Italic", size: 17))
-                            .fixedSize(horizontal: false, vertical: true)
-                            .foregroundColor(themeManager.descriptionText)
-
-                        Image(documentName)
-                            .renderingMode(.template)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 150, height: 150)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .foregroundColor(themeManager.foregroundColor)
-                            .onTapGesture { showLinkSheet = true }
-                            .sheet(isPresented: $showLinkSheet) {
-                                ScentLinkSheet(
-                                    title: item.title,
-                                    linkURLString: item.link,
-                                    candleURLString: item.candle,
-                                    themeManager: themeManager
-                                )
-                                .presentationDragIndicator(.visible)
-                                .presentationDetents([.medium, .large])   // more height → no cropping
-                                .presentationCornerRadius(28)
-                            }
-
-                        Text(item.explanation)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                            .padding(.bottom)
-                            .italic()
-                            .font(.custom("PlayfairDisplay-Regular", size: 14))
-                            .fixedSize(horizontal: false, vertical: true)
-                            .foregroundColor(themeManager.descriptionText)
-
-                        if let about = item.about, !about.isEmpty {
-                            VStack(alignment: .center, spacing: 10) {
-                                Text("About the Scent")
-                                    .font(.custom("PlayfairDisplay-Regular", size: 18))
-                                    .foregroundColor(themeManager.foregroundColor)
-                                    .bold()
-                                    .multilineTextAlignment(.center)
-
-                                Text(about)
-                                    .font(.custom("PlayfairDisplay-Italic", size: 15))
-                                    .foregroundColor(themeManager.foregroundColor)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .lineSpacing(3)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .padding(16)
-                        }
-
-                        if let notice = item.notice, !notice.isEmpty {
-                            VStack(alignment: .center, spacing: 8) {
-                                HStack(spacing: 8) {
-                                    Text("Usage Note")
-                                        .font(.custom("PlayfairDisplay-Regular", size: 14))
-                                        .foregroundColor(themeManager.accent)
-                                        .bold()
-                                        .multilineTextAlignment(.center)
-                                }
-                                Text(notice)
-                                    .font(.custom("PlayfairDisplay-Regular", size: 12))
-                                    .foregroundColor(themeManager.foregroundColor)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .lineSpacing(2)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .padding(14)
-                            .background(Color.black.opacity(0.20))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(themeManager.accent.opacity(0.22), lineWidth: 1)
-                            )
-                            .padding(.horizontal, 12)
-                            .padding(.top, 8)
-                        }
-                    } else {
-                        ProgressView("Loading...")
-                            .padding(.top, 100)
-                    }
+                    Text(about)
+                        .font(.custom("PlayfairDisplay-Italic", size: 15))
+                        .foregroundColor(themeManager.foregroundColor)
+                        .lineSpacing(3)
+                        .multilineTextAlignment(.center)
                 }
-                .padding()
-                .onAppear { fetchItem() }
+                .padding(16)
             }
-            .navigationBarBackButtonHidden(true)
-        }
-    }
 
-    // If you don't already have this:
-    private func fetchItem() {
-        let db = Firestore.firestore()
-        db.collection("scents").document(documentName).getDocument { snapshot, error in
-            if let error = error {
-                print("❌ 获取 Firebase 数据失败: \(error)")
-                return
-            }
-            do {
-                if let data = try snapshot?.data(as: RecommendationItem.self) {
-                    self.item = data
-                } else {
-                    print("❌ 文档未找到或解码失败")
+            if let notice = item.notice, !notice.isEmpty {
+                VStack(spacing: 8) {
+                    Text("Usage Note")
+                        .font(.custom("PlayfairDisplay-Regular", size: 14))
+                        .foregroundColor(themeManager.accent)
+                        .bold()
+
+                    Text(notice)
+                        .font(.custom("PlayfairDisplay-Regular", size: 12))
+                        .foregroundColor(themeManager.foregroundColor)
+                        .lineSpacing(2)
+                        .multilineTextAlignment(.center)
                 }
-            } catch {
-                print("❌ 解码失败: \(error)")
+                .padding(14)
+                .background(Color.black.opacity(0.20))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(themeManager.accent.opacity(0.22), lineWidth: 1)
+                )
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
             }
         }
     }
@@ -1498,265 +1372,69 @@ struct ScentDetailView: View {
 
 
 struct ActivityDetailView: View {
-    @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
-    @EnvironmentObject var soundPlayer: SoundPlayer
-    
     let documentName: String
-    let soundDocumentName: String
-    @State private var item: RecommendationItem?
-    
+
     var body: some View {
-        ZStack{
-//            AppBackgroundView()
-//                .environmentObject(starManager)
-            
-            VStack(spacing: 20) {
-                // Activity
-                Text("Activity")
-                    .foregroundColor(themeManager.watermark)
-                    .font(.custom("PlayfairDisplay-Regular", size: 36))
-                    .bold()
-                
-                if let item = item {
-                    // Title
-                    Text(item.title)
-                        .multilineTextAlignment(.center)
-                        .font(.custom("PlayfairDisplay-Regular", size: 36))
-                        .foregroundColor(themeManager.primaryText)
-                        .bold()
-                    
-                    // Description
-                    Text(item.description)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .font(.custom("PlayfairDisplay-Italic", size: 17))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.descriptionText)
-                    
-                    // Image
-                    Image(documentName) // assumes .png in Assets
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 150, height: 150)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.foregroundColor)
-                    
-                    // Explanation
-                    Text(item.explanation)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .padding(.bottom)
-                        .italic()
-                        .font(.custom("PlayfairDisplay-Regular", size: 14))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.descriptionText)
-                } else {
-                    ProgressView("Loading...")
-                        .padding(.top, 100)
-                }
-            }
-            .padding()
-            .onAppear {
-                fetchItem()
-            }
-        }
-        .navigationBarBackButtonHidden(true)
-    }
-    
-    private func fetchItem() {
-        let db = Firestore.firestore()
-        db.collection("activities").document(documentName).getDocument { snapshot, error in
-            if let error = error {
-                print("❌ 获取 Firebase 数据失败: \(error)")
-                return
-            }
-            do {
-                if let data = try snapshot?.data(as: RecommendationItem.self) {
-                    self.item = data
-                } else {
-                    print("❌ 文档未找到或解码失败")
-                }
-            } catch {
-                print("❌ 解码失败: \(error)")
-            }
+        FirestoreDetailView(
+            section: "Activity",
+            collection: "activities",
+            documentName: documentName
+        ) { _ in
+            Image(documentName)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 150, height: 150)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .foregroundColor(themeManager.foregroundColor)
         }
     }
 }
 
+
 struct CareerDetailView: View {
-    @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
-    
     let documentName: String
-    @State private var item: RecommendationItem?
-    
+
     var body: some View {
-        ZStack{
-//            AppBackgroundView()
-//                .environmentObject(starManager)
-            
-            VStack(spacing: 20) {
-                // Career
-                Text("Career")
-                    .foregroundColor(themeManager.watermark)
-                    .font(.custom("PlayfairDisplay-Regular", size: 36))
-                    .bold()
-                
-                if let item = item {
-                    // Title
-                    Text(item.title)
-                        .multilineTextAlignment(.center)
-                        .font(.custom("PlayfairDisplay-Regular", size: 36))
-                        .foregroundColor(themeManager.primaryText)
-                        .bold()
-                    
-                    // Description
-                    Text(item.description)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .font(.custom("PlayfairDisplay-Italic", size: 17))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.descriptionText)
-                    
-                    // Image
-                    Image(documentName) // assumes .png in Assets
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 150, height: 150)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.foregroundColor)
-                    
-                    // Explanation
-                    Text(item.explanation)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .padding(.bottom)
-                        .italic()
-                        .font(.custom("PlayfairDisplay-Regular", size: 14))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.descriptionText)
-                } else {
-                    ProgressView("Loading...")
-                        .padding(.top, 100)
-                }
-            }
-            .padding()
-            .onAppear {
-                fetchItem()
-            }
-        }
-        .navigationBarBackButtonHidden(true)
-    }
-    
-    private func fetchItem() {
-        let db = Firestore.firestore()
-        db.collection("careers").document(documentName).getDocument { snapshot, error in
-            if let error = error {
-                print("❌ 获取 Firebase 数据失败: \(error)")
-                return
-            }
-            do {
-                if let data = try snapshot?.data(as: RecommendationItem.self) {
-                    self.item = data
-                } else {
-                    print("❌ 文档未找到或解码失败")
-                }
-            } catch {
-                print("❌ 解码失败: \(error)")
-            }
+        FirestoreDetailView(
+            section: "Career",
+            collection: "careers",
+            documentName: documentName
+        ) { _ in
+            Image(documentName)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 150, height: 150)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .foregroundColor(themeManager.foregroundColor)
         }
     }
 }
+
 
 
 struct RelationshipDetailView: View {
-    @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
-    
     let documentName: String
-    @State private var item: RecommendationItem?
-    
-    var body: some View {
-        ZStack{
-//            AppBackgroundView()
-//                .environmentObject(starManager)
 
-            VStack(spacing: 20) {
-                // Relationship
-                Text("Relationship")
-                    .foregroundColor(themeManager.watermark)
-                    .font(.custom("PlayfairDisplay-Regular", size: 36))
-                    .bold()
-                
-                if let item = item {
-                    // Title
-                    Text(item.title)
-                        .multilineTextAlignment(.center)
-                        .font(.custom("PlayfairDisplay-Regular", size: 36))
-                        .foregroundColor(themeManager.primaryText)
-                        .bold()
-                    
-                    // Description
-                    Text(item.description)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .font(.custom("PlayfairDisplay-Italic", size: 17))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.descriptionText)
-                    
-                    // Image
-                    Image(documentName) // assumes .png in Assets
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 150, height: 150)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .foregroundColor(themeManager.foregroundColor)
-                    
-                    // Explanation
-                    Text(item.explanation)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .padding(.bottom)
-                        .italic()
-                        .font(.custom("PlayfairDisplay-Regular", size: 14))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(themeManager.descriptionText)
-                    
-                    // three images
-                    
-                } else {
-                    ProgressView("Loading...")
-                        .padding(.top, 100)
-                }
-            }
-            .padding()
-            .onAppear {
-                fetchItem()
-            }
-        }
-        .navigationBarBackButtonHidden(true)
-    }
-    
-    private func fetchItem() {
-        let db = Firestore.firestore()
-        db.collection("relationships").document(documentName).getDocument { snapshot, error in
-            if let error = error {
-                print("❌ 获取 Firebase 数据失败: \(error)")
-                return
-            }
-            do {
-                if let data = try snapshot?.data(as: RecommendationItem.self) {
-                    self.item = data
-                } else {
-                    print("❌ 文档未找到或解码失败")
-                }
-            } catch {
-                print("❌ 解码失败: \(error)")
-            }
+    var body: some View {
+        FirestoreDetailView(
+            section: "Relationship",
+            collection: "relationships",
+            documentName: documentName
+        ) { _ in
+            Image(documentName)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 150, height: 150)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .foregroundColor(themeManager.foregroundColor)
+
+            // later: add your “three images” here
         }
     }
 }
