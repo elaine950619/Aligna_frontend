@@ -558,12 +558,12 @@ struct WelcomeSplashView: View {
 
 
 enum AlignaType {
-    static func logo() -> Font { .custom("CormorantGaramond-Bold", size: 38) }
+    static func logo() -> Font { .custom("CormorantGaramond-Bold", size: 50) }
     static func brandTitle() -> Font { .custom("Gloock-Regular", size: 34) }
 
     static func homeSubtitle() -> Font { .custom("Merriweather-Italic", size: 18) }
 
-    static func gridCategoryTitle() -> Font { .custom("Merriweather-Black", size: 18) }
+    static func gridCategoryTitle() -> Font { .custom("Merriweather-Bold", size: 18) }
     static func gridItemName() -> Font { .custom("Merriweather-Light", size: 16) }
 
     static func loadingSubtitle() -> Font { .custom("Merriweather-Italic", size: 16) }
@@ -2036,32 +2036,37 @@ struct RecommendationPagerView: View {
 
 struct CustomBackButton: View {
     @Environment(\.dismiss) private var dismiss
-    var iconSize: CGFloat = 20
-    var paddingSize: CGFloat = 10
-    var backgroundColor: Color = Color.black.opacity(0.3)
-    var iconColor: Color = .white
-    var topPadding: CGFloat = 12
-    var horizontalPadding: CGFloat = 12
-    
+    @EnvironmentObject var themeManager: ThemeManager
+
+    // Match the Account Detail look (clean icon, no circle)
+    var iconSize: CGFloat = 26
+    var topPadding: CGFloat = 20
+    var horizontalPadding: CGFloat = 20
+    var showsBackground: Bool = false
+
     var body: some View {
         VStack {
             HStack {
                 Button(action: { dismiss() }) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: iconSize, weight: .semibold))
-                        .foregroundColor(iconColor)
-                        .padding(paddingSize)
-//                        .background(backgroundColor)
+                        .foregroundColor(themeManager.foregroundColor)
+                        .padding(showsBackground ? 12 : 0)
+                        .background(showsBackground ? Color.white.opacity(0.10) : Color.clear)
                         .clipShape(Circle())
+                        .contentShape(Circle())
                 }
+
                 Spacer()
             }
             .padding(.top, topPadding)
             .padding(.horizontal, horizontalPadding)
+
             Spacer()
         }
     }
 }
+
 
 
 
@@ -6053,8 +6058,6 @@ final class AppleReauthCoordinator: NSObject, ASAuthorizationControllerDelegate,
     }
 }
 
-import Foundation
-import CoreLocation
 
 
 

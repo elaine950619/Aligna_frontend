@@ -29,6 +29,19 @@
 		54DE58E32DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */; };
 		54DE58E42DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DE2DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf */; };
 		54DE58E52DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */; };
+		B966DC942F2BE69A00051926 /* FirebaseAI in Frameworks */ = {isa = PBXBuildFile; productRef = B966DC932F2BE69A00051926 /* FirebaseAI */; };
+		B966DC962F2BE69A00051926 /* FirebaseAILogic in Frameworks */ = {isa = PBXBuildFile; productRef = B966DC952F2BE69A00051926 /* FirebaseAILogic */; };
+		B966DC982F2BE69A00051926 /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = B966DC972F2BE69A00051926 /* FirebaseAnalyticsCore */; };
+		B966DC9A2F2BE69A00051926 /* FirebaseAnalyticsIdentitySupport in Frameworks */ = {isa = PBXBuildFile; productRef = B966DC992F2BE69A00051926 /* FirebaseAnalyticsIdentitySupport */; };
+		B966DC9C2F2BE93700051926 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = B966DC9B2F2BE93700051926 /* FirebaseStorage */; };
+		B974A4042F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B974A4032F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf */; };
+		B974A4052F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B974A4032F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf */; };
+		B974A4062F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B974A4032F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf */; };
+		B974A4072F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B974A4032F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf */; };
+		B974A4092F351C0000AE4F1C /* Merriweather-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B974A4082F351C0000AE4F1C /* Merriweather-Bold.ttf */; };
+		B974A40A2F351C0000AE4F1C /* Merriweather-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B974A4082F351C0000AE4F1C /* Merriweather-Bold.ttf */; };
+		B974A40B2F351C0000AE4F1C /* Merriweather-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B974A4082F351C0000AE4F1C /* Merriweather-Bold.ttf */; };
+		B974A40C2F351C0000AE4F1C /* Merriweather-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B974A4082F351C0000AE4F1C /* Merriweather-Bold.ttf */; };
 		B9B23EF52F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23EF42F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf */; };
 		B9B23EF62F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23EF42F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf */; };
 		B9B23EF72F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23EF42F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf */; };
@@ -117,6 +130,8 @@
 		54DE58DA2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-VariableFont_opsz,wght.ttf"; sourceTree = "<group>"; };
 		54DE58DE2DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlayfairDisplay-Italic-VariableFont_wght.ttf"; sourceTree = "<group>"; };
 		54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlayfairDisplay-VariableFont_wght.ttf"; sourceTree = "<group>"; };
+		B974A4032F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlayfairDisplay-Bold.ttf"; sourceTree = "<group>"; };
+		B974A4082F351C0000AE4F1C /* Merriweather-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Merriweather-Bold.ttf"; sourceTree = "<group>"; };
 		B9B23EF42F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CormorantGaramond-SemiBold.ttf"; sourceTree = "<group>"; };
 		B9B23EF92F2199B300E620E2 /* CormorantGaramond-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CormorantGaramond-Bold.ttf"; sourceTree = "<group>"; };
 		B9B23F032F2199CC00E620E2 /* Gloock-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Gloock-Regular.ttf"; sourceTree = "<group>"; };
@@ -235,9 +250,14 @@
 			files = (
 				54C65BD02E6E230500A41F9A /* GoogleSignInSwift in Frameworks */,
 				54C65BC72E6E22D100A41F9A /* FirebaseAnalytics in Frameworks */,
+				B966DC9A2F2BE69A00051926 /* FirebaseAnalyticsIdentitySupport in Frameworks */,
+				B966DC9C2F2BE93700051926 /* FirebaseStorage in Frameworks */,
 				54C65BCE2E6E230500A41F9A /* GoogleSignIn in Frameworks */,
+				B966DC962F2BE69A00051926 /* FirebaseAILogic in Frameworks */,
 				54C65BC92E6E22D100A41F9A /* FirebaseAuth in Frameworks */,
 				54C65BCB2E6E22D100A41F9A /* FirebaseFirestore in Frameworks */,
+				B966DC942F2BE69A00051926 /* FirebaseAI in Frameworks */,
+				B966DC982F2BE69A00051926 /* FirebaseAnalyticsCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -277,8 +297,10 @@
 				B9B23EF92F2199B300E620E2 /* CormorantGaramond-Bold.ttf */,
 				B9B23F032F2199CC00E620E2 /* Gloock-Regular.ttf */,
 				B9B23F2B2F219EB800E620E2 /* Merriweather-Black.ttf */,
+				B974A4032F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf */,
 				B9B23F212F219E8A00E620E2 /* Merriweather-Italic.ttf */,
 				B9B23F492F230FAE00E620E2 /* CormorantGaramond-Bold.ttf */,
+				B974A4082F351C0000AE4F1C /* Merriweather-Bold.ttf */,
 				B9B23F352F219F1900E620E2 /* Merriweather-LightItalic.ttf */,
 				B9B23F262F219E9A00E620E2 /* Merriweather-Regular.ttf */,
 				B9B23F442F21A19200E620E2 /* Merriweather-Light.ttf */,
@@ -353,6 +375,11 @@
 				54C65BCA2E6E22D100A41F9A /* FirebaseFirestore */,
 				54C65BCD2E6E230500A41F9A /* GoogleSignIn */,
 				54C65BCF2E6E230500A41F9A /* GoogleSignInSwift */,
+				B966DC932F2BE69A00051926 /* FirebaseAI */,
+				B966DC952F2BE69A00051926 /* FirebaseAILogic */,
+				B966DC972F2BE69A00051926 /* FirebaseAnalyticsCore */,
+				B966DC992F2BE69A00051926 /* FirebaseAnalyticsIdentitySupport */,
+				B966DC9B2F2BE93700051926 /* FirebaseStorage */,
 			);
 			productName = AlignaTest;
 			productReference = 54DE58B02DC29A91008BE4B8 /* AlignaTest.app */;
@@ -461,6 +488,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B974A40A2F351C0000AE4F1C /* Merriweather-Bold.ttf in Resources */,
+				B974A4042F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf in Resources */,
 				B9B23F4D2F230FAE00E620E2 /* CormorantGaramond-Bold.ttf in Resources */,
 				B9B23F052F2199CC00E620E2 /* Gloock-Regular.ttf in Resources */,
 				54C65B912E6E12AD00A41F9A /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
@@ -484,6 +513,7 @@
 				B9B23F2E2F219EB800E620E2 /* Merriweather-Black.ttf in Resources */,
 				B9B23F242F219E8A00E620E2 /* Merriweather-Italic.ttf in Resources */,
 				B9B23EFA2F2199B300E620E2 /* CormorantGaramond-Bold.ttf in Resources */,
+				B974A40C2F351C0000AE4F1C /* Merriweather-Bold.ttf in Resources */,
 				B9B23EF52F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf in Resources */,
 				B9B23F4B2F230FAE00E620E2 /* CormorantGaramond-Bold.ttf in Resources */,
 				B9B23F072F2199CC00E620E2 /* Gloock-Regular.ttf in Resources */,
@@ -491,6 +521,7 @@
 				B9B23F472F21A19200E620E2 /* Merriweather-Light.ttf in Resources */,
 				B9B23F382F219F1900E620E2 /* Merriweather-LightItalic.ttf in Resources */,
 				54DE58E02DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
+				B974A4072F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf in Resources */,
 				54DE58E12DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -499,6 +530,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B974A4062F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf in Resources */,
 				54DE58E42DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
 				54DE58E52DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
 				B9B23F4C2F230FAE00E620E2 /* CormorantGaramond-Bold.ttf in Resources */,
@@ -511,6 +543,7 @@
 				B9B23F2C2F219EB800E620E2 /* Merriweather-Black.ttf in Resources */,
 				B9B23F042F2199CC00E620E2 /* Gloock-Regular.ttf in Resources */,
 				B9B23F232F219E8A00E620E2 /* Merriweather-Italic.ttf in Resources */,
+				B974A40B2F351C0000AE4F1C /* Merriweather-Bold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -518,6 +551,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B974A4052F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf in Resources */,
 				54DE58E22DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
 				54DE58E32DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
 				B9B23F4A2F230FAE00E620E2 /* CormorantGaramond-Bold.ttf in Resources */,
@@ -530,6 +564,7 @@
 				B9B23F2D2F219EB800E620E2 /* Merriweather-Black.ttf in Resources */,
 				B9B23F062F2199CC00E620E2 /* Gloock-Regular.ttf in Resources */,
 				B9B23F252F219E8A00E620E2 /* Merriweather-Italic.ttf in Resources */,
+				B974A4092F351C0000AE4F1C /* Merriweather-Bold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -993,6 +1028,27 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 54C65BCC2E6E230500A41F9A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignInSwift;
+		};
+		B966DC932F2BE69A00051926 /* FirebaseAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FirebaseAI;
+		};
+		B966DC952F2BE69A00051926 /* FirebaseAILogic */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FirebaseAILogic;
+		};
+		B966DC972F2BE69A00051926 /* FirebaseAnalyticsCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FirebaseAnalyticsCore;
+		};
+		B966DC992F2BE69A00051926 /* FirebaseAnalyticsIdentitySupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FirebaseAnalyticsIdentitySupport;
+		};
+		B966DC9B2F2BE93700051926 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 54C65BC52E6E22D100A41F9A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -6,7 +6,11 @@
 //
 
 import SwiftUI
+import UIKit
+import AVFoundation
 import FirebaseFirestore
+//import FirebaseFirestoreSwift
+import FirebaseStorage
 
 
 enum AlynnaType {
@@ -148,6 +152,155 @@ struct FirestoreDetailView<Extra: View>: View {
     }
 }
 
+struct ReasoningSheet: View {
+    let title: String
+    let reasoningText: String
+    let themeManager: ThemeManager
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var isDark: Bool { colorScheme == .dark }
+
+    var body: some View {
+        ZStack {
+            RadialGradient(
+                colors: [
+                    isDark ? Color.black.opacity(0.65) : themeManager.foregroundColor.opacity(0.18),
+                    .clear
+                ],
+                center: .top,
+                startRadius: 10,
+                endRadius: 400
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                Spacer().frame(height: 6)
+
+                GlassCard {
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                themeManager.foregroundColor.opacity(isDark ? 0.32 : 0.25),
+                                                .clear
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .frame(width: 40, height: 40)
+
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(themeManager.primaryText)
+                            }
+
+                            Text(title)
+                                .font(.custom("PlayfairDisplay-Regular", size: 22))
+                                .foregroundColor(themeManager.primaryText)
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.85)
+
+                            Spacer(minLength: 0)
+                        }
+
+                        Divider()
+                            .overlay((isDark ? Color.white : Color.black).opacity(0.20))
+
+                        Text("Reasoning")
+                            .font(.custom("PlayfairDisplay-SemiBold", size: 16))
+                            .foregroundColor(themeManager.primaryText)
+
+                        Text(reasoningText)
+                            .font(.custom("Merriweather-Regular", size: 14))
+                            .foregroundColor(themeManager.primaryText.opacity(0.85))
+                            .lineSpacing(4)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                Button(role: .cancel) { dismiss() } label: {
+                    Text("Close")
+                        .font(.system(size: 16, weight: .regular))
+                        .padding(.vertical, 6)
+                        .padding(.bottom, 8)
+                }
+                .foregroundColor(isDark ? themeManager.primaryText.opacity(0.85) : themeManager.accent)
+            }
+            .padding(.horizontal, 18)
+        }
+        .presentationDetents([.fraction(0.45), .medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
+    }
+}
+
+struct ClickableHeroImage: View {
+    @EnvironmentObject var themeManager: ThemeManager
+
+    let imageName: String
+    let clickStorageKey: String
+    let onTap: () -> Void
+
+    @AppStorage private var clickCount: Int
+    private var showHint: Bool { clickCount < 3 }
+
+    init(imageName: String, clickStorageKey: String, onTap: @escaping () -> Void) {
+        self.imageName = imageName
+        self.clickStorageKey = clickStorageKey
+        self.onTap = onTap
+        self._clickCount = AppStorage(wrappedValue: 0, clickStorageKey)
+    }
+
+    var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            Image(imageName)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 150, height: 150)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .foregroundColor(themeManager.foregroundColor)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    clickCount = min(clickCount + 1, 3)
+                    onTap()
+                }
+
+            ClickHint(isVisible: .constant(showHint), label: "Click")
+                .offset(x: 6, y: 6)
+        }
+    }
+}
+
+func defaultReasoning(for section: String) -> String {
+    switch section {
+    case "Place":
+        return "Placeholder reasoning: This place was chosen to help you feel grounded and calm today. Tap again later once the model reasoning is connected."
+    case "Color":
+        return "Placeholder reasoning: This color supports balance and clarity based on your current day’s tone."
+    case "Gemstone":
+        return "Placeholder reasoning: This gemstone was selected to encourage intuition and emotional steadiness."
+    case "Scent":
+        return "Placeholder reasoning: This scent aims to relax your nervous system and reduce overstimulation."
+    case "Sound":
+        return "Placeholder reasoning: This sound is meant to create a steady background for focus or rest."
+    case "Activity":
+        return "Placeholder reasoning: This activity supports gentle reflection and mental reset."
+    case "Relationship":
+        return "Placeholder reasoning: This relationship cue encourages softer communication and connection."
+    case "Career":
+        return "Placeholder reasoning: This career cue emphasizes thoughtful decisions over impulsive action."
+    default:
+        return "Placeholder reasoning: Your recommendation reasoning will appear here once the model output is connected."
+    }
+}
+
 
 struct PlayPauseButton: View {
     let isPlaying: Bool
@@ -233,9 +386,6 @@ struct VinylRecord: View {
         )
     }
 }
-
-import AVFoundation
-import FirebaseStorage
 
 @MainActor
 final class SoundPlayer: ObservableObject {
@@ -476,9 +626,6 @@ final class SoundPlayer: ObservableObject {
     }
 }
 
-import SwiftUI
-import AVFoundation
-
 struct PlayerPopup: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
@@ -666,7 +813,15 @@ private struct SoundExtraContent: View {
     let documentName: String
     let title: String
 
+    // Reasoning sheet (image tap)
+    @State private var showReasoning = false
+
+    // Player sheet (play button tap)
     @State private var showPlayer = false
+
+    // ✅ click hint (first 3 times)
+    @AppStorage("aligna.sound.click.count") private var soundClickCount: Int = 0
+    private var showSoundClickHint: Bool { soundClickCount < 3 }
 
     private var playRingFill: Color {
         colorScheme == .dark ? Color.white.opacity(0.10) : Color.black.opacity(0.06)
@@ -680,14 +835,34 @@ private struct SoundExtraContent: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            Image(documentName)
-                .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 150, height: 150)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .foregroundColor(themeManager.foregroundColor)
 
+            // ✅ Image tap = Reasoning
+            ZStack(alignment: .bottomTrailing) {
+                Image(documentName)
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 150, height: 150)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .foregroundColor(themeManager.foregroundColor)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        soundClickCount = min(soundClickCount + 1, 3)
+                        showReasoning = true
+                    }
+
+                ClickHint(isVisible: .constant(showSoundClickHint), label: "Click")
+                    .offset(x: 6, y: 6)
+            }
+            .sheet(isPresented: $showReasoning) {
+                ReasoningSheet(
+                    title: title,
+                    reasoningText: defaultReasoning(for: "Sound"),
+                    themeManager: themeManager
+                )
+            }
+
+            // ✅ Play button tap = Player popup
             Button { showPlayer = true } label: {
                 ZStack {
                     Circle()
@@ -703,18 +878,19 @@ private struct SoundExtraContent: View {
             }
             .buttonStyle(.plain)
             .padding(.top, 8)
-        }
-        .sheet(isPresented: $showPlayer) {
-            PlayerPopup(
-                documentName: documentName,
-                dismiss: { showPlayer = false }
-            )
-            .presentationDetents([.fraction(0.6), .large])
-            .presentationDragIndicator(.visible)
-            .presentationCornerRadius(24)
+            .sheet(isPresented: $showPlayer) {
+                PlayerPopup(
+                    documentName: documentName,
+                    dismiss: { showPlayer = false }
+                )
+                .presentationDetents([.fraction(0.6), .large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(24)
+            }
         }
     }
 }
+
 
 
 struct IconItem: Identifiable {
@@ -727,6 +903,8 @@ struct PlaceDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
     let documentName: String
 
+    @State private var showReasoning = false
+
     let iconItems = [
         IconItem(imageName: "botanical_garden", title: "Botanical\ngardens"),
         IconItem(imageName: "small_parks",     title: "Small\nparks"),
@@ -738,15 +916,22 @@ struct PlaceDetailView: View {
             section: "Place",
             collection: "places",
             documentName: documentName
-        ) { _ in
+        ) { item in
             VStack(spacing: 24) {
-                Image(documentName)
-                    .renderingMode(.template)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 150, height: 150)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .foregroundColor(themeManager.foregroundColor)
+
+                ClickableHeroImage(
+                    imageName: documentName,
+                    clickStorageKey: "aligna.place.click.count"
+                ) {
+                    showReasoning = true
+                }
+                .sheet(isPresented: $showReasoning) {
+                    ReasoningSheet(
+                        title: item.title,
+                        reasoningText: defaultReasoning(for: "Place"),
+                        themeManager: themeManager
+                    )
+                }
 
                 HStack(spacing: 40) {
                     ForEach(iconItems) { icon in
@@ -773,6 +958,7 @@ struct PlaceDetailView: View {
         }
     }
 }
+
 
 struct DailyAnchorView: View {
     @EnvironmentObject var themeManager: ThemeManager
@@ -986,6 +1172,7 @@ struct ClickHint: View {
 
 struct GemLinkSheet: View {
     let title: String
+    let reasoningText: String
     let linkURLString: String?
     let stoneURLString: String?
     let themeManager: ThemeManager
@@ -1053,6 +1240,20 @@ struct GemLinkSheet: View {
                                 (isDark ? Color.white : Color.black)
                                     .opacity(0.20)
                             )
+                        
+                        // reasoning summary
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Reasoning")
+                                .font(.custom("PlayfairDisplay-SemiBold", size: 16))
+                                .foregroundColor(themeManager.primaryText)
+
+                            Text(reasoningText)
+                                .font(.custom("Merriweather-Regular", size: 14))
+                                .foregroundColor(themeManager.primaryText.opacity(0.85))
+                                .lineSpacing(4)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
                         
                         // Primary button (Bracelet / Link)
                         if let s = linkURLString, let url = URL(string: s) {
@@ -1199,6 +1400,7 @@ private struct GemstoneExtraContent: View {
             .sheet(isPresented: $showLinkSheet) {
                 GemLinkSheet(
                     title: item.title,
+                    reasoningText: defaultReasoning(for: "Gemstone"),
                     linkURLString: item.link,
                     stoneURLString: item.stone,
                     themeManager: themeManager
@@ -1289,12 +1491,45 @@ struct ColorDetailView: View {
             collection: "colors",
             documentName: documentName
         ) { item in
-            VStack {
-                if let hex = colorHexMapping[item.name] {
+            ColorExtraContent(item: item, hex: colorHexMapping[item.name])
+        }
+    }
+}
+
+private struct ColorExtraContent: View {
+    @EnvironmentObject var themeManager: ThemeManager
+    let item: RecommendationItem
+    let hex: String?
+
+    @State private var showReasoning = false
+
+    // ✅ click hint (first 3 times)
+    @AppStorage("aligna.color.click.count") private var colorClickCount: Int = 0
+    private var showColorClickHint: Bool { colorClickCount < 3 }
+
+    var body: some View {
+        VStack(spacing: 18) {
+            if let hex = hex {
+                ZStack(alignment: .bottomTrailing) {
                     BreathingCircle(color: Color(hex: hex), diameter: 230, duration: 4)
                         .padding(.top, 32)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            colorClickCount = min(colorClickCount + 1, 3)
+                            showReasoning = true
+                        }
+
+                    ClickHint(isVisible: .constant(showColorClickHint), label: "Click")
+                        .offset(x: 6, y: 6)
                 }
             }
+        }
+        .sheet(isPresented: $showReasoning) {
+            ReasoningSheet(
+                title: item.title,
+                reasoningText: defaultReasoning(for: "Color"),
+                themeManager: themeManager
+            )
         }
     }
 }
@@ -1303,6 +1538,7 @@ struct ColorDetailView: View {
 
 struct ScentLinkSheet: View {
     let title: String
+    let reasoningText: String
     let linkURLString: String?
     let candleURLString: String?
     let themeManager: ThemeManager
@@ -1364,6 +1600,18 @@ struct ScentLinkSheet: View {
                                 .multilineTextAlignment(.leading)
 
                             Spacer(minLength: 0)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Reasoning")
+                                .font(.custom("PlayfairDisplay-SemiBold", size: 16))
+                                .foregroundColor(themeManager.primaryText)
+
+                            Text(reasoningText)
+                                .font(.custom("Merriweather-Regular", size: 14))
+                                .foregroundColor(themeManager.primaryText.opacity(0.85))
+                                .lineSpacing(4)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
 
                         Divider()
@@ -1520,6 +1768,7 @@ private struct ScentExtraContent: View {
             .sheet(isPresented: $showLinkSheet) {
                 ScentLinkSheet(
                     title: item.title,
+                    reasoningText: defaultReasoning(for: "Scent"),
                     linkURLString: item.link,
                     candleURLString: item.candle,
                     themeManager: themeManager
@@ -1576,20 +1825,25 @@ private struct ScentExtraContent: View {
 struct ActivityDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
     let documentName: String
+    @State private var showReasoning = false
 
     var body: some View {
         FirestoreDetailView(
             section: "Activity",
             collection: "activities",
             documentName: documentName
-        ) { _ in
-            Image(documentName)
-                .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 150, height: 150)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .foregroundColor(themeManager.foregroundColor)
+        ) { item in
+            ClickableHeroImage(
+                imageName: documentName,
+                clickStorageKey: "aligna.activity.click.count"
+            ) { showReasoning = true }
+            .sheet(isPresented: $showReasoning) {
+                ReasoningSheet(
+                    title: item.title,
+                    reasoningText: defaultReasoning(for: "Activity"),
+                    themeManager: themeManager
+                )
+            }
         }
     }
 }
@@ -1598,20 +1852,25 @@ struct ActivityDetailView: View {
 struct CareerDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
     let documentName: String
+    @State private var showReasoning = false
 
     var body: some View {
         FirestoreDetailView(
             section: "Career",
             collection: "careers",
             documentName: documentName
-        ) { _ in
-            Image(documentName)
-                .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 150, height: 150)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .foregroundColor(themeManager.foregroundColor)
+        ) { item in
+            ClickableHeroImage(
+                imageName: documentName,
+                clickStorageKey: "aligna.career.click.count"
+            ) { showReasoning = true }
+            .sheet(isPresented: $showReasoning) {
+                ReasoningSheet(
+                    title: item.title,
+                    reasoningText: defaultReasoning(for: "Career"),
+                    themeManager: themeManager
+                )
+            }
         }
     }
 }
@@ -1621,22 +1880,25 @@ struct CareerDetailView: View {
 struct RelationshipDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
     let documentName: String
+    @State private var showReasoning = false
 
     var body: some View {
         FirestoreDetailView(
             section: "Relationship",
             collection: "relationships",
             documentName: documentName
-        ) { _ in
-            Image(documentName)
-                .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 150, height: 150)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .foregroundColor(themeManager.foregroundColor)
-
-            // later: add your “three images” here
+        ) { item in
+            ClickableHeroImage(
+                imageName: documentName,
+                clickStorageKey: "aligna.relationship.click.count"
+            ) { showReasoning = true }
+            .sheet(isPresented: $showReasoning) {
+                ReasoningSheet(
+                    title: item.title,
+                    reasoningText: defaultReasoning(for: "Relationship"),
+                    themeManager: themeManager
+                )
+            }
         }
     }
 }

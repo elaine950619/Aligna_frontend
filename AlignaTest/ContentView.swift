@@ -51,7 +51,7 @@ extension DateFormatter {
 
 private struct TimelineHeader: View {
     var title: String = "Timeline"
-    var iconSize: CGFloat = 20
+    var iconSize: CGFloat = 26
     var paddingSize: CGFloat = 10
     var backgroundColor: Color = Color.black.opacity(0.3)
     var iconColor: Color = .white
@@ -65,10 +65,29 @@ private struct TimelineHeader: View {
         GeometryReader { geo in
             // use safe-area top for exact placement under the notch
             let top = geo.safeAreaInsets.top
-            var extraTop: CGFloat = 20
+            var extraTop: CGFloat = 10
 
             ZStack {
+                
+                // back button (leading)
+                HStack {
+                    Button(action: onBack) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: iconSize, weight: .semibold))
+                            .foregroundColor(themeManager.foregroundColor)
+//                            .padding(paddingSize)
+    //                        .background(backgroundColor)
+                            .clipShape(Circle())
+                            
+                    }
+                    Spacer()
+                }
+                .padding(.top, topPadding)
+                .padding(.horizontal, horizontalPadding)
                 Spacer()
+                
+                
+//                Spacer()
                 // centered title
                 VStack(spacing: 12) {
                     Text(title)
@@ -92,25 +111,8 @@ private struct TimelineHeader: View {
                         .blur(radius: 0.3)
                         .offset(y: -2)
                 }
-
-                // back button (leading)
-                HStack {
-                    Button(action: onBack) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: iconSize, weight: .semibold))
-                            .foregroundColor(iconColor)
-                            .padding(paddingSize)
-    //                        .background(backgroundColor)
-                            .clipShape(Circle())
-                            
-                    }
-                    Spacer()
-                }
-                .padding(.top, topPadding)
-                .padding(.horizontal, horizontalPadding)
-                Spacer()
             }
-            .padding(.top, max(top, 12) + extraTop)
+//            .padding(.top, max(top, 12))
             .padding(.horizontal, 20)
             .frame(height: 56 + max(top, 12), alignment: .bottom)   // slightly shorter than 64
             .background(
@@ -123,6 +125,41 @@ private struct TimelineHeader: View {
         .padding(.top, 12)                 // geometry reader needs a base height
     }
 }
+
+// Back button
+
+//struct CustomBackButton: View {
+//    @Environment(\.dismiss) private var dismiss
+//    @EnvironmentObject var themeManager: ThemeManager
+//
+//    // Match the Account Detail look (clean icon, no circle)
+//    var iconSize: CGFloat = 26
+//    var topPadding: CGFloat = 20
+//    var horizontalPadding: CGFloat = 20
+//    var showsBackground: Bool = false
+//
+//    var body: some View {
+//        VStack {
+//            HStack {
+//                Button(action: { dismiss() }) {
+//                    Image(systemName: "chevron.left")
+//                        .font(.system(size: iconSize, weight: .semibold))
+//                        .foregroundColor(themeManager.foregroundColor)
+//                        .padding(showsBackground ? 12 : 0)
+//                        .background(showsBackground ? Color.white.opacity(0.10) : Color.clear)
+//                        .clipShape(Circle())
+//                        .contentShape(Circle())
+//                }
+//
+//                Spacer()
+//            }
+//            .padding(.top, topPadding)
+//            .padding(.horizontal, horizontalPadding)
+//
+//            Spacer()
+//        }
+//    }
+//}
 
 private struct HeaderHeightKey: PreferenceKey {
   static var defaultValue: CGFloat = 0
