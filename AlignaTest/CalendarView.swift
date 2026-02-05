@@ -185,15 +185,17 @@ struct CalendarView: View {
                 }
             }
 
-            // Weekday row
-            HStack {
+            // Weekday row (aligned to grid)
+            LazyVGrid(columns: columns, spacing: 2) {
                 ForEach(shortWeekdaySymbols, id: \.self) { wd in
                     Text(wd)
                         .font(TimelineType.date14MerriweatherRegular())
                         .lineSpacing(TimelineType.date14LineSpacing)
-                        .foregroundColor(themeManager.descriptionText.opacity(0.9))
+                        .foregroundColor(themeManager.foregroundColor.opacity(0.9)) // ✅ match brown labels
+                        .frame(width: 44, alignment: .center) // ✅ same as DayCell width
                 }
             }
+
 
             // Grid
             LazyVGrid(columns: columns, spacing: 2) {
