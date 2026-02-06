@@ -27,7 +27,9 @@ struct JournalView: View {
     
     var body: some View {
         ZStack {
-            BackgroundSky().environmentObject(themeManager)
+            AppBackgroundView()
+                .environmentObject(themeManager)
+                .ignoresSafeArea()
             
             // Page content
             VStack(spacing: 24) {
@@ -72,7 +74,7 @@ struct JournalView: View {
                 Button {
                     Task { await saveEntryAndClose() }
                 } label: {
-                    Text("Complete Check-in")
+                    Text("Complete")
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)

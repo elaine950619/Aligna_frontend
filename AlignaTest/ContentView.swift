@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+import FirebaseAuth
+import FirebaseFirestore
+
 
 struct NoDataMessage: View {
     @EnvironmentObject var themeManager: ThemeManager
@@ -126,40 +129,17 @@ private struct TimelineHeader: View {
     }
 }
 
-// Back button
 
-//struct CustomBackButton: View {
-//    @Environment(\.dismiss) private var dismiss
-//    @EnvironmentObject var themeManager: ThemeManager
-//
-//    // Match the Account Detail look (clean icon, no circle)
-//    var iconSize: CGFloat = 26
-//    var topPadding: CGFloat = 20
-//    var horizontalPadding: CGFloat = 20
-//    var showsBackground: Bool = false
-//
-//    var body: some View {
-//        VStack {
-//            HStack {
-//                Button(action: { dismiss() }) {
-//                    Image(systemName: "chevron.left")
-//                        .font(.system(size: iconSize, weight: .semibold))
-//                        .foregroundColor(themeManager.foregroundColor)
-//                        .padding(showsBackground ? 12 : 0)
-//                        .background(showsBackground ? Color.white.opacity(0.10) : Color.clear)
-//                        .clipShape(Circle())
-//                        .contentShape(Circle())
-//                }
-//
-//                Spacer()
-//            }
-//            .padding(.top, topPadding)
-//            .padding(.horizontal, horizontalPadding)
-//
-//            Spacer()
-//        }
-//    }
-//}
+
+extension DateFormatter {
+    static let appDayKey: DateFormatter = {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        return df
+    }()
+}
+
+
 
 private struct HeaderHeightKey: PreferenceKey {
   static var defaultValue: CGFloat = 0
@@ -285,7 +265,51 @@ struct ContentView: View {
     
     @State private var selectedDate = Date()
     @StateObject private var dailyVM: DailyViewModel
+    @State private var journalText: String = ""
+    @State private var isLoadingJournal: Bool = false
+
+    
     private let enableLoading: Bool
+    
+    private func loadJournal(for date: Date) {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        let ds = DateFormatter.appDayKey.string(from: date)
+        let db = Firestore.firestore()
+
+        isLoadingJournal = true
+        journalText = ""
+
+        // 1) Try under daily_recommendation (same logic as JournalView)
+        db.collection("daily_recommendation")
+            .whereField("uid", isEqualTo: uid)
+            .whereField("createdAt", isEqualTo: ds)
+            .limit(to: 1)
+            .getDocuments { snap, _ in
+                if let recDoc = snap?.documents.first {
+                    db.collection("daily_recommendation")
+                        .document(recDoc.documentID)
+                        .collection("journals")
+                        .order(by: "createdAt", descending: false)
+                        .limit(to: 1)
+                        .getDocuments { jSnap, _ in
+                            DispatchQueue.main.async {
+                                isLoadingJournal = false
+                                journalText = jSnap?.documents.first?.data()["text"] as? String ?? ""
+                            }
+                        }
+                } else {
+                    // 2) fallback: users/{uid}/journals/{yyyy-MM-dd}
+                    db.collection("users").document(uid)
+                        .collection("journals").document(ds)
+                        .getDocument { doc, _ in
+                            DispatchQueue.main.async {
+                                isLoadingJournal = false
+                                journalText = (doc?.data()?["text"] as? String) ?? ""
+                            }
+                        }
+                }
+            }
+    }
 
     init(dailyVM: DailyViewModel = DailyViewModel(),
          enableLoading: Bool = true) {
@@ -337,10 +361,13 @@ struct ContentView: View {
                         .cornerRadius(20)
                         .onAppear {
                             if enableLoading { dailyVM.load(for: selectedDate) }
+                            loadJournal(for: selectedDate)
                         }
                         .onChange(of: selectedDate) {
                             if enableLoading { dailyVM.load(for: selectedDate) }
+                            loadJournal(for: selectedDate)
                         }
+
                         .padding(.horizontal, 16)
                         
                         Group {
@@ -381,6 +408,66 @@ struct ContentView: View {
                         }
                     }
                     .padding(.top)
+                    
+                    // --- Journal panel at bottom ---
+                    NavigationLink {
+                        JournalView(date: selectedDate)
+                            .environmentObject(themeManager)
+                            .environmentObject(starManager)
+                            .environmentObject(viewModel)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Image(systemName: "book.closed")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(themeManager.accent)
+
+                                Text("Journal")
+                                    .font(TimelineType.cardTitle18MerriweatherBlack())
+                                    .lineSpacing(TimelineType.cardTitle18LineSpacing)
+                                    .foregroundColor(themeManager.primaryText)
+
+                                Spacer()
+
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(themeManager.descriptionText.opacity(0.8))
+                            }
+
+                            if isLoadingJournal {
+                                Text("Loading…")
+                                    .font(TimelineType.cardBody14MerriweatherRegular())
+                                    .lineSpacing(TimelineType.cardBody14LineSpacing)
+                                    .foregroundColor(themeManager.descriptionText)
+                            } else if journalText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                Text("Tap to write your daily check-in…")
+                                    .font(TimelineType.cardBody14MerriweatherRegular())
+                                    .lineSpacing(TimelineType.cardBody14LineSpacing)
+                                    .foregroundColor(themeManager.descriptionText)
+                            } else {
+                                Text(journalText)
+                                    .font(TimelineType.cardBody14MerriweatherRegular())
+                                    .lineSpacing(TimelineType.cardBody14LineSpacing)
+                                    .foregroundColor(themeManager.descriptionText)
+                                    .lineLimit(2)
+                            }
+                        }
+                        .padding(.vertical, 14)
+                        .padding(.horizontal, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(themeManager.panelFill)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                        .stroke(themeManager.panelStrokeHi.opacity(0.9), lineWidth: 1)
+                                )
+                        )
+                        .shadow(color: .black.opacity(themeManager.isNight ? 0.12 : 0.10), radius: 10, y: 6)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 20)
+
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
