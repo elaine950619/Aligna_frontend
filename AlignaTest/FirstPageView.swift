@@ -101,7 +101,7 @@ func currentMoonPhaseLabel(for date: Date = Date()) -> String {
         timeZone: .init(secondsFromGMT: 0),
         year: 2000, month: 1, day: 6, hour: 18, minute: 14
     ).date!
-    
+
     let days = date.timeIntervalSince(anchor) / 86400
     let phase = (days - floor(days / synodic) * synodic) // [0, synodic)
     switch phase {
@@ -231,7 +231,7 @@ import SwiftUI
 
 struct LoadingView: View {
     var onStartLoading: (() -> Void)? = nil
-    
+
     @State private var loadingMessages = [
         "Aligning with the cosmos",
         "Reading celestial patterns",
@@ -247,7 +247,7 @@ struct LoadingView: View {
     @State private var pulse = false
     @State private var dotPhase: CGFloat = 0
     @State private var bounce = false
-    
+
     @State private var showWelcome = false
     @State private var currentLocation: String = "Your Current Location"
     @State private var zodiacSign: String = ""
@@ -362,7 +362,7 @@ struct LoadingView: View {
                             .font(AlignaType.loadingSubtitle())  // Merriweather Italic 16
                             .lineSpacing(AlignaType.body16LineSpacing)
                             .foregroundColor(.white.opacity(0.9))
-                            
+
                         HStack(spacing: 6) {
                             ForEach(0..<3) { i in
                                 Circle()
@@ -473,7 +473,7 @@ struct WelcomeSplashView: View {
         ZStack {
             AppBackgroundView()
                 .environmentObject(starManager)
-            
+
             RadialGradient(
                 colors: [Color.white.opacity(0.06), .clear],
                 center: .center,
@@ -494,14 +494,14 @@ struct WelcomeSplashView: View {
                     .frame(width: disk, height: disk)
                     .foregroundColor(iconColor)
                     .shadow(color: iconColor.opacity(0.35), radius: 22, x: 0, y: 8)
-                
+
                 // Brand + hairline underline
                 VStack(spacing: 6) {
                     Text("Alynna")
                         .font(AlignaType.brandTitle())
                        .lineSpacing(40 - 34)
                        .foregroundColor(.white)
-                
+
                     Rectangle()
                         .fill(
                             LinearGradient(
@@ -582,7 +582,8 @@ struct FirstPageView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var viewModel: OnboardingViewModel
-    
+    @EnvironmentObject var reasoningStore: DailyReasoningStore
+
     @AppStorage("lastRecommendationDate") var lastRecommendationDate: String = ""
     @AppStorage("lastRecommendationPlace") var lastRecommendationPlace: String = ""   // ✅ NEW
     @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
@@ -591,14 +592,14 @@ struct FirstPageView: View {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
     @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
     @State private var isFetchingToday: Bool = false
-    
+
     @State private var isMantraExpanded: Bool = false
 
     // 🔐 当天是否已经触发过一次“自动兜底重拉”
     @AppStorage("todayAutoRefetchDone") private var todayAutoRefetchDone: String = ""
     // 本次进程是否已经安排过 watchdog 计时器（避免重复安排）
     @State private var autoRefetchScheduled = false
-    
+
     // === 放在 FirstPageView 的属性区（和其他 @State / @AppStorage 放一起）===
 
     // NEW: 认证监听 + 看门狗计数（跨天持久）
@@ -614,16 +615,16 @@ struct FirstPageView: View {
 
     @StateObject private var locationManager = LocationManager()
     @State private var recommendationTitles: [String: String] = [:]
-    
+
     @State private var selectedDate = Date()
-    
+
     @State private var bootPhase: BootPhase = .loading
     @State private var splashLocation: String = "Your Current Location"
     @State private var splashZodiac: String = ""
     @State private var splashMoon: String = ""
-    
+
     @State private var didBootVisuals = false
-    
+
     private func ensureDefaultsIfMissing() {
         // If nothing loaded yet, supply local demo content
         if viewModel.recommendations.isEmpty {
@@ -635,7 +636,7 @@ struct FirstPageView: View {
             recommendationTitles = DesignRecs.titles
         }
     }
-    
+
     private var updatedOnText: String {
         let date = lastRecommendationDate.trimmingCharacters(in: .whitespacesAndNewlines)
         let dateText = date.isEmpty ? todayString() : date
@@ -650,7 +651,7 @@ struct FirstPageView: View {
         }
     }
 
-    
+
     private var mainContent: some View {
         NavigationStack {
             ZStack {
@@ -667,7 +668,7 @@ struct FirstPageView: View {
                     VStack(spacing: minLength * 0.015) {
                         // 顶部按钮
                         HStack {
-                            
+
                             HStack(spacing: geometry.size.width * 0.035) {
                                 // Timeline / calendar
                                 NavigationLink(
@@ -833,12 +834,12 @@ struct FirstPageView: View {
 //        AlignaWidgetStore.save(snap) // ↩︎ 写入 App Group + 刷新 Widget
     }
 
-    
+
     // 冷启动只看“是否已登录 + 本地标记”来分流；不再在这里查 Firestore 决定是否强拉 Onboarding。
     // === 替换你原来的 startInitialLoad()（整段替换） ===
     private func startInitialLoad() {
-        
-        
+
+
         #if DEBUG
         if _isPreview { bootPhase = .main; return }
         #endif
@@ -916,7 +917,7 @@ struct FirstPageView: View {
         ref.getDocument { snap, _ in
             defer { done() }
             guard let data = snap?.data() else { return }
-            
+
 
             // birth date
             if let ts = data["birthday"] as? Timestamp {
@@ -944,7 +945,7 @@ struct FirstPageView: View {
 
     // 原先 startInitialLoad 的主体逻辑移到这里（不修改其内容）
     private func proceedNormalBoot() {
-        
+
         startAutoRefetchWatchdog(delay: 8.0)
         locationManager.requestLocation()
 
@@ -962,6 +963,9 @@ struct FirstPageView: View {
         waitUntilRecommendationsReady(timeout: 12) { group.leave() }
 
         group.notify(queue: .main) {
+            // Keep DailyReasoningStore in sync for detail sheets.
+            // (If the doc doesn't exist yet, it'll become available after fetch/save.)
+            self.reasoningStore.load(for: Date())
             resolveSplashInfoAndAdvance()
         }
     }
@@ -1139,7 +1143,7 @@ struct FirstPageView: View {
                     startInitialLoad()
                 })
                 .ignoresSafeArea()
-                
+
             case .onboarding:
                 NavigationStack {
                     if shouldOnboardAfterSignIn {
@@ -1156,7 +1160,7 @@ struct FirstPageView: View {
                             .navigationBarBackButtonHidden(true)
                     }
                 }
-                
+
             case .infoSplash:
                 WelcomeSplashView(location: splashLocation,
                                   zodiac: splashZodiac,
@@ -1170,7 +1174,7 @@ struct FirstPageView: View {
                     }
                 }
                 .ignoresSafeArea()
-                
+
             case .main:
                 mainContent // (extract your existing NavigationStack content into a computed var)
             }
@@ -1184,13 +1188,13 @@ struct FirstPageView: View {
             themeManager.appBecameActive()
         }
     }
-    
+
 
     private func fetchAllRecommendationTitles() {
         #if DEBUG
         if _isPreview { return }
         #endif
-        
+
         let db = Firestore.firestore()
 
         for (rawCategory, rawDoc) in viewModel.recommendations {
@@ -1289,7 +1293,7 @@ struct FirstPageView: View {
     }
 
 
-    
+
     // 当天字符串
     private func todayString() -> String {
         let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
@@ -1302,7 +1306,7 @@ struct FirstPageView: View {
             .collection("daily_recommendation")
             .document("\(uid)_\(day)")
     }
-    
+
     /// ✅ 当 FastAPI 生成失败时，把本地默认推荐也写入 daily_recommendation（用于 Timeline/Calendar 回看）
     /// - Note: 使用同一个 docId = uid_yyyy-MM-dd，后续如果 FastAPI 成功，会覆盖掉默认值。
     private func saveDefaultDailyRecommendationToCalendar(
@@ -1311,7 +1315,6 @@ struct FirstPageView: View {
         docRef: DocumentReference,
         reason: String
     ) {
-        // 只写“规范写法”的 key，保证 Timeline/DailyViewModel 能正常读取
         let normalized: [String: String] = DesignRecs.docs.reduce(into: [:]) { acc, kv in
             if let canon = canonicalCategory(from: kv.key) {
                 acc[canon] = sanitizeDocumentName(kv.value)
@@ -1322,7 +1325,7 @@ struct FirstPageView: View {
         data["uid"] = userId
         data["createdAt"] = today
         data["mantra"] = DesignRecs.mantra
-        
+
         let fallbackPlace = {
             let p1 = viewModel.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines)
             if !p1.isEmpty { return p1 }
@@ -1337,10 +1340,16 @@ struct FirstPageView: View {
             self.lastRecommendationPlace = fallbackPlace
         }
 
-        
         data["isDefault"] = true
         data["fallbackReason"] = reason
         data["updatedAt"] = FieldValue.serverTimestamp()
+
+        // ✅ NEW: default per-category reasoning map
+        var reasoningMap: [String: String] = [:]
+        for canonKey in normalized.keys {
+            reasoningMap[canonKey] = defaultReasoning(for: canonKey)
+        }
+        data["reasoning"] = reasoningMap
 
         docRef.setData(data, merge: true) { err in
             if let err = err {
@@ -1350,6 +1359,7 @@ struct FirstPageView: View {
             }
         }
     }
+
 
     // 等待定位后只发一次请求（最多等 8 秒）
     private func waitForLocationThenRequest(uid: String, today: String, docRef: DocumentReference) {
@@ -1378,7 +1388,7 @@ struct FirstPageView: View {
         attempt()
     }
 
-    
+
 
     private func fetchAndSaveRecommendationIfNeeded() {
         guard let uid = Auth.auth().currentUser?.uid else {
@@ -1399,11 +1409,22 @@ struct FirstPageView: View {
                 print("❌ 查询今日推荐失败：\(err.localizedDescription)")
                 return
             }
-            if (snap?.exists ?? false) {
-                print("📌 今日已有推荐（docId 命中），不重复生成")
-                lastRecommendationDate = today
-                loadTodayRecommendation(day: today)
-                return
+            if let snap = snap, snap.exists {
+                let data = snap.data() ?? [:]
+
+                // If today's doc exists but has no reasoning, regenerate to backfill reasoning.
+                // This fixes the case where you deleted/recreated a doc while backend didn't
+                // provide mapping, or an older writer created the doc without reasoning.
+                let hasReasoning = (data["reasoning"] != nil) || (data["mapping"] != nil)
+                if hasReasoning {
+                    print("📌 今日已有推荐（docId 命中），不重复生成")
+                    lastRecommendationDate = today
+                    loadTodayRecommendation(day: today)
+                    return
+                } else {
+                    print("⚠️ 今日 doc 存在但缺少 reasoning/mapping，将触发重拉以补全")
+                    // fall through to generation path below
+                }
             }
 
 
@@ -1417,7 +1438,7 @@ struct FirstPageView: View {
         }
     }
 
-    
+
     private func fetchFromFastAPIAndSave(
         coord: CLLocationCoordinate2D,
         userId: String,
@@ -1523,11 +1544,84 @@ struct FirstPageView: View {
                    let recs = parsed["recommendations"] as? [String: String],
                    let mantra = parsed["mantra"] as? String {
 
+                    // ✅ Optional per-category reasoning from backend.
+                    // Supports your new shape:
+                    //   "mapping": { "Place": "...", "Color": "...", ... }
+                    // and legacy:
+                    //   "reasoning": { ... }
+                    func coerceStringDict(_ any: Any?) -> [String: String] {
+                        if let dict = any as? [String: String] {
+                            return dict
+                        }
+                        guard let dict = any as? [String: Any] else { return [:] }
+                        return dict.reduce(into: [String: String]()) { acc, pair in
+                            if let s = pair.value as? String { acc[pair.key] = s }
+                        }
+                    }
+
+                    print("🧠 FastAPI parsed keys:", parsed.keys.sorted())
+                    if let v = parsed["mapping"] { print("🧠 FastAPI mapping type:", String(describing: type(of: v))) }
+                    if let v = parsed["reasoning"] { print("🧠 FastAPI reasoning type:", String(describing: type(of: v))) }
+
+                    // Backend may return mapping nested under explanation:
+                    // {
+                    //   "recommendations": { ... },
+                    //   "mantra": "...",
+                    //   "explanation": {
+                    //      "mapping": { "Place": "...", ... },
+                    //      "reasoning_summary": "..."
+                    //   }
+                    // }
+                    let rawReasoning: [String: String] = {
+                        if let mappingAny = parsed["mapping"] {
+                            return coerceStringDict(mappingAny)
+                        }
+                        if let explanation = parsed["explanation"] as? [String: Any] {
+                            if let mappingAny = explanation["mapping"] {
+                                return coerceStringDict(mappingAny)
+                            }
+                            if let reasoningAny = explanation["reasoning"] as? [String: Any] {
+                                if let nested = reasoningAny["mapping"] {
+                                    return coerceStringDict(nested)
+                                }
+                                return coerceStringDict(reasoningAny)
+                            }
+                        }
+                        if let reasoningAny = parsed["reasoning"] as? [String: Any] {
+                            if let nested = reasoningAny["mapping"] {
+                                return coerceStringDict(nested)
+                            }
+                            return coerceStringDict(reasoningAny)
+                        }
+                        if let reasoning = parsed["reasoning"] as? [String: String] {
+                            return reasoning
+                        }
+                        return [:]
+                    }()
+
+                    let reasoningSummary: String? = {
+                        if let s = parsed["reasoning_summary"] as? String { return s }
+                        if let explanation = parsed["explanation"] as? [String: Any],
+                           let s = explanation["reasoning_summary"] as? String {
+                            return s
+                        }
+                        return nil
+                    }()
+
+                    print("🧠 FastAPI rawReasoning count:", rawReasoning.count, "keys:", rawReasoning.keys.sorted())
+
                     DispatchQueue.main.async {
                         // ✅ 把后端 recommendations 的 key 统一成规范写法
                         let normalized: [String: String] = recs.reduce(into: [:]) { acc, kv in
                             if let canon = canonicalCategory(from: kv.key) {
                                 acc[canon] = sanitizeDocumentName(kv.value)
+                            }
+                        }
+
+                        // ✅ NEW: normalize reasoning keys too (same canon keys as normalized)
+                        let normalizedReasoning: [String: String] = rawReasoning.reduce(into: [:]) { acc, kv in
+                            if let canon = canonicalCategory(from: kv.key) {
+                                acc[canon] = kv.value
                             }
                         }
 
@@ -1554,7 +1648,23 @@ struct FirstPageView: View {
                         recommendationData["uid"] = userId
                         recommendationData["createdAt"] = today
                         recommendationData["mantra"] = mantra
-                        recommendationData["generatedPlace"] = lastRecommendationPlace     // ✅ NEW
+                        recommendationData["generatedPlace"] = lastRecommendationPlace
+
+                        // ✅ Write reasoning into Firestore only when backend provides it.
+                        // Avoid overwriting with placeholders, so missing reasoning is obvious.
+                        if !normalizedReasoning.isEmpty {
+                            recommendationData["reasoning"] = normalizedReasoning
+                            // Also store under "mapping" for forward compatibility with backend naming.
+                            recommendationData["mapping"] = normalizedReasoning
+                        } else {
+                            recommendationData["reasoning"] = FieldValue.delete()
+                            recommendationData["mapping"] = FieldValue.delete()
+                            print("⚠️ Backend did not provide reasoning/mapping; not writing placeholder reasoning.")
+                        }
+
+                        if let reasoningSummary, !reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            recommendationData["reasoning_summary"] = reasoningSummary
+                        }
 
                         // ✅ 如果之前写过默认值，这里要显式“转正”
                         recommendationData["isDefault"] = false
@@ -1567,6 +1677,13 @@ struct FirstPageView: View {
                             } else {
                                 print("✅ 今日推荐已保存（幂等写入）")
                             }
+                        }
+
+                        // Refresh reasoning store for detail sheets
+                        if let d = DateFormatter.appDayKey.date(from: today) {
+                            self.reasoningStore.load(for: d)
+                        } else {
+                            self.reasoningStore.load(for: Date())
                         }
 
                         persistWidgetSnapshotFromViewModel()
@@ -1609,13 +1726,13 @@ struct FirstPageView: View {
         }.resume()
     }
 
-    
-    
-    
+
+
+
     private func navItemView(title: String, geometry: GeometryProxy) -> some View {
         let documentName = viewModel.recommendations[title] ?? ""
         let startCat = RecCategory(rawValue: title) // "Place" -> .Place
-        
+
         return Group {
             if let startCat, !documentName.isEmpty {
                         NavigationLink {
@@ -1638,7 +1755,7 @@ struct FirstPageView: View {
                             .frame(width: geometry.size.width * 0.18)  // slightly smaller to balance text
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                             .shadow(radius: 1.5)
-                        
+
                         // 推荐名称（小字体，紧贴图标）
                         Text(recommendationTitles[title] ?? "")
                             .font(AlignaType.gridItemName())
@@ -1647,7 +1764,7 @@ struct FirstPageView: View {
                             .multilineTextAlignment(.center)
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
-                        
+
                         // 类别标题（和上面稍微拉开）
                         Text(title)
                             .font(AlignaType.gridCategoryTitle())
@@ -1667,11 +1784,11 @@ struct FirstPageView: View {
                             .scaledToFit()
                             .frame(width: geometry.size.width * 0.18)
                             .foregroundColor(themeManager.foregroundColor.opacity(0.4))
-                        
+
                         Text("Loading")
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.033))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.5))
-                        
+
                         Text(title)
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.05))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.5))
@@ -1680,9 +1797,9 @@ struct FirstPageView: View {
             }
         }
     }
-    
-    
-    
+
+
+
     @ViewBuilder
     private func viewForCategory(title: String, documentName: String) -> some View {
         switch title {
@@ -1709,8 +1826,8 @@ struct FirstPageView: View {
             Text("⚠️ Unknown Category")
         }
     }
-    
-    
+
+
     private func loadTodayRecommendation(day: String? = nil) {
         guard let userId = Auth.auth().currentUser?.uid else {
             print("❌ 未登录，无法获取推荐")
@@ -1954,11 +2071,11 @@ enum RecCategory: String, CaseIterable, Identifiable {
 struct RecommendationPagerView: View {
     let docsByCategory: [RecCategory: String]
     @State var selected: RecCategory
-    
+
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
-    
+
     var body: some View {
         ZStack {
             // Full-bleed background
@@ -1983,7 +2100,7 @@ struct RecommendationPagerView: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .automatic))
-            
+
             CustomBackButton(
 //                iconSize: 18,
 ////                paddingSize: 8,
@@ -2001,7 +2118,7 @@ struct RecommendationPagerView: View {
         .toolbar(.hidden, for: .navigationBar) // if you don’t want any bar at all
         .preferredColorScheme(themeManager.preferredColorScheme)
     }
-    
+
     @ViewBuilder
     private func pageView(for cat: RecCategory, documentName: String) -> some View {
         switch cat {
@@ -2089,7 +2206,7 @@ class OnboardingViewModel: ObservableObject {
     @Published var currentCoordinate: CLLocationCoordinate2D?
     @Published var recommendations: [String: String] = [:]
     @Published var dailyMantra: String = ""
-    
+
     // ✅ 新增：Step3 的五个答案
     @Published var scent_dislike: Set<String> = []     // 多选
     @Published var act_prefer: String = ""             // 单选，可清空
@@ -2107,7 +2224,7 @@ struct StaggeredAppear: ViewModifier {
     let index: Int
     @Binding var show: Bool
     var baseDelay: Double = 0.08
-    
+
     func body(content: Content) -> some View {
         content
             .opacity(show ? 1 : 0)
@@ -2196,35 +2313,35 @@ struct StaggeredLetters: View {
 struct OnboardingOpeningPage: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
-    
+
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
                 let minLength = min(geometry.size.width, geometry.size.height)
-                
+
                 ZStack {
                     AppBackgroundView(mode: .night)
                         .environmentObject(starManager)
                         .environmentObject(themeManager)
-                    
+
                     VStack(spacing: minLength * 0.04) {
                         Spacer()
-                        
+
                         Text("Alynna")
                             .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.12))
                             .foregroundColor(themeManager.fixedNightTextPrimary)
-                        
+
                         Text("FIND YOUR FLOW")
                             .font(.subheadline)
                             .foregroundColor(themeManager.fixedNightTextSecondary)
-                        
+
                         Image("openingSymbol")
                             .resizable()
                             .scaledToFit()
                             .frame(width: minLength * 0.35)
-                        
+
                         Spacer()
-                        
+
                         // Sign Up（按钮本身用白底黑字，保持原样）
                         NavigationLink(destination: RegisterPageView()
                             .environmentObject(starManager)
@@ -2264,7 +2381,7 @@ struct OnboardingOpeningPage: View {
                             .font(.footnote)
                             .foregroundColor(themeManager.fixedNightTextTertiary)
                             .padding(.top, 10)
-                        
+
                         Spacer()
                     }
                     .padding(.bottom, geometry.size.height * 0.05)
@@ -2297,7 +2414,7 @@ struct RegisterPageView: View {
     @State private var navigateToOnboarding = false
     @State private var navigateToLogin = false
     @State private var currentNonce: String? = nil
-    
+
     @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
     @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
@@ -2572,23 +2689,23 @@ struct RegisterPageView: View {
             showAlert = true
             return
         }
-        
+
         // ✅ 关键：在调用 createUser 之前，先打上“需要 Onboarding”的标记
         hasCompletedOnboarding = false
         isLoggedIn = false
         shouldOnboardAfterSignIn = true
-        
+
         Auth.auth().createUser(withEmail: email, password: password) { result, error in
             if let error = error {
                 // 特殊处理：邮箱已经被注册 → 引导去登录
                 if let errCode = AuthErrorCode(rawValue: error._code),
                    errCode == .emailAlreadyInUse {
-                    
+
                     // 这个情况其实是“老用户”，所以这里顺便把标记改回来也可以
                     shouldOnboardAfterSignIn = false
                     isLoggedIn = false
                     hasCompletedOnboarding = false
-                    
+
                     alertMessage = "This email is already in use. Redirecting to Sign In..."
                     showAlert = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
@@ -2596,16 +2713,16 @@ struct RegisterPageView: View {
                     }
                     return
                 }
-                
+
                 // 其他错误，直接弹出
                 alertMessage = error.localizedDescription
                 showAlert = true
                 return
             }
-            
+
             // ✅ 账号创建成功：发验证邮件（就算失败也不影响继续 Onboarding）
             result?.user.sendEmailVerification(completion: nil)
-            
+
             // 此时 FirstPageView 那个监听已经看到 shouldOnboardAfterSignIn = true，
             // 不会把你拉去首页，只会保持在 .onboarding。
             // 这里我们用本页的 NavigationStack 去推 OnboardingStep1。
@@ -2676,7 +2793,7 @@ struct OnboardingStep1: View {
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var starManager: StarAnimationManager
-    
+
     @State private var goOpening = false
 
 
@@ -3138,11 +3255,11 @@ struct PlaceResult: Identifiable, Hashable {
     let name: String
     let subtitle: String
     let coordinate: CLLocationCoordinate2D
-    
+
     static func == (lhs: PlaceResult, rhs: PlaceResult) -> Bool {
         lhs.id == rhs.id
     }
-    
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
         hasher.combine(name)
@@ -3859,6 +3976,47 @@ struct OnboardingFinalStep: View {
                 if let parsed = try JSONSerialization.jsonObject(with: cleanedData) as? [String: Any],
                    let recs = parsed["recommendations"] as? [String: String],
                    let mantraText = parsed["mantra"] as? String {
+
+                    // Optional per-category reasoning from backend.
+                    // Supports:
+                    //  - top-level "mapping": { "Place": "...", ... }
+                    //  - legacy "reasoning": { ... } or "reasoning": { "mapping": { ... } }
+                    func coerceStringDict(_ any: Any?) -> [String: String] {
+                        if let dict = any as? [String: String] { return dict }
+                        guard let dict = any as? [String: Any] else { return [:] }
+                        return dict.reduce(into: [String: String]()) { acc, pair in
+                            if let s = pair.value as? String { acc[pair.key] = s }
+                        }
+                    }
+
+                    let rawReasoning: [String: String] = {
+                        if let mappingAny = parsed["mapping"] {
+                            return coerceStringDict(mappingAny)
+                        }
+                        if let explanation = parsed["explanation"] as? [String: Any] {
+                            if let mappingAny = explanation["mapping"] {
+                                return coerceStringDict(mappingAny)
+                            }
+                            if let reasoningAny = explanation["reasoning"] as? [String: Any] {
+                                if let nested = reasoningAny["mapping"] {
+                                    return coerceStringDict(nested)
+                                }
+                                return coerceStringDict(reasoningAny)
+                            }
+                        }
+                        if let reasoningAny = parsed["reasoning"] as? [String: Any] {
+                            if let nested = reasoningAny["mapping"] {
+                                return coerceStringDict(nested)
+                            }
+                            return coerceStringDict(reasoningAny)
+                        }
+                        if let reasoning = parsed["reasoning"] as? [String: String] {
+                            return reasoning
+                        }
+                        return [:]
+                    }()
+
+                    print("🧠 FastAPI(raw) reasoning count:", rawReasoning.count, "keys:", rawReasoning.keys.sorted())
                     DispatchQueue.main.async {
                         viewModel.recommendations = recs
                         self.isLoading = false
@@ -3871,6 +4029,13 @@ struct OnboardingFinalStep: View {
                         recommendationData["uid"] = userId
                         recommendationData["createdAt"] = createdAt
                         recommendationData["mantra"] = mantraText
+
+                        // Write reasoning only when provided by backend.
+                        if !rawReasoning.isEmpty {
+                            // Write backend keys as-is (FastAPI returns canonical keys like "Place", "Color", ...)
+                            recommendationData["reasoning"] = rawReasoning
+                            recommendationData["mapping"] = rawReasoning
+                        }
 
                         let docId = "\(userId)_\(createdAt)"
                         Firestore.firestore()
@@ -4657,7 +4822,7 @@ struct AccountDetailView: View {
     @State private var birthTime: Date = Date()
     @State private var birthPlace: String = ""
     @State private var currentPlace: String = ""
-    
+
     // Birth location & timezone & raw input (for exact display)
     @State private var birthLat: Double = 0
     @State private var birthLng: Double = 0
@@ -4678,8 +4843,8 @@ struct AccountDetailView: View {
     @State private var isBusy = false
     @State private var showDeleteAlert = false
     @State private var errorMessage: String?
-    
-    
+
+
     // 保持定位器存活，避免回调丢失
     @State private var activeLocationFetcher: OneShotLocationFetcher?
 
@@ -5144,7 +5309,7 @@ private extension AccountDetailView {
         .padding(.vertical, 6)
     }
 
-    
+
     func infoRowWithTrailingButton(
         title: String,
         value: String,
@@ -5372,7 +5537,7 @@ private extension AccountDetailView {
             callback?(.failure(error)); callback = nil
         }
     }
-    
+
     func refreshCurrentPlace() {
         // 防抖：忙时不再进入
         if isBusy { return }
@@ -5477,7 +5642,7 @@ private extension AccountDetailView {
             }
         }
     }
-    
+
 }
 
 // === One-shot 定位器 ===
@@ -5968,7 +6133,7 @@ private extension AccountDetailView {
             else { print("✅ Google session disconnected") }
         }
     }
-    
+
     // ===== Astrology glue (no extra conversion) =====
 
     // Merge local civil date & time (your existing helper already uses .current)
@@ -6179,13 +6344,13 @@ struct CollapsibleSection<Content: View>: View {
     let content: Content
     let width: CGFloat
     @State private var isExpanded = false
-    
+
     init(title: String, width: CGFloat, @ViewBuilder content: () -> Content) {
         self.title = title
         self.content = content()
         self.width = width
     }
-    
+
     var body: some View {
         DisclosureGroup(isExpanded: $isExpanded) {
             content
@@ -6247,7 +6412,7 @@ func randomNonceString(length: Int = 32) -> String {
     Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
     var result = ""
     var remainingLength = length
-    
+
     while remainingLength > 0 {
         let randoms: [UInt8] = (0..<16).map { _ in
             var random: UInt8 = 0
@@ -6257,7 +6422,7 @@ func randomNonceString(length: Int = 32) -> String {
             }
             return random
         }
-        
+
         randoms.forEach { random in
             if remainingLength == 0 { return }
             if random < charset.count {
@@ -6266,7 +6431,7 @@ func randomNonceString(length: Int = 32) -> String {
             }
         }
     }
-    
+
     return result
 }
 
@@ -6377,5 +6542,5 @@ extension ThemeManager {
         .environmentObject(ThemeManager())
         .environmentObject(OnboardingViewModel())
         .environmentObject(SoundPlayer())
-        
+
 }

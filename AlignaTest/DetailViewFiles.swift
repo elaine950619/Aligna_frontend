@@ -9,8 +9,153 @@ import SwiftUI
 import UIKit
 import AVFoundation
 import FirebaseFirestore
-//import FirebaseFirestoreSwift
 import FirebaseStorage
+import FirebaseAuth
+
+@MainActor
+final class DailyReasoningStore: ObservableObject {
+    @Published var map: [String: String] = [:]
+
+    func load(for date: Date) {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        let ds = DateFormatter.appDayKey.string(from: date)
+
+        let db = Firestore.firestore()
+        let fixedDocRef = db.collection("daily_recommendation").document("\(uid)_\(ds)")
+
+        func extractMapping(from data: [String: Any]) -> [String: String] {
+            // Helper to coerce a [String: Any] dictionary into [String: String]
+            func coerceToStringDict(_ anyDict: [String: Any]) -> [String: String] {
+                anyDict.reduce(into: [String: String]()) { result, pair in
+                    if let s = pair.value as? String { result[pair.key] = s }
+                }
+            }
+
+            // Try multiple schema variants for reasoning mapping
+            // 1) New schema: top-level "mapping": { "Place": "...", ... }
+            if let directAny = data["mapping"] as? [String: Any] {
+                return coerceToStringDict(directAny)
+            }
+
+            // 2) Nested schema: "reasoning": { "mapping": { ... } }
+            if let reasoning = data["reasoning"] as? [String: Any],
+               let nestedAny = reasoning["mapping"] as? [String: Any] {
+                return coerceToStringDict(nestedAny)
+            }
+
+            // 3) Legacy schema: "reasoning": { "Place": "...", ... } as flat [String: Any]
+            if let legacyAny = data["reasoning"] as? [String: Any] {
+                return coerceToStringDict(legacyAny)
+            }
+
+            return [:]
+        }
+
+        // 1) Prefer deterministic doc id (uid_yyyy-MM-dd)
+        fixedDocRef.getDocument { snap, err in
+            if let err = err {
+                print("❌ reasoning getDocument error:", err)
+                return
+            }
+
+            if let snap = snap, snap.exists, let data = snap.data() {
+                print("📄 daily_recommendation(fixed) keys:", Array(data.keys))
+                let mapping = extractMapping(from: data)
+                if !mapping.isEmpty {
+                    DispatchQueue.main.async {
+                        self.map = mapping
+                        print("✅ reasoning loaded keys:", mapping.keys.sorted())
+                    }
+                    return
+                } else {
+                    // Fixed doc exists but doesn't contain reasoning/mapping.
+                    // This can happen if the doc was created by an older app version,
+                    // or if another writer didn't persist reasoning.
+                    print("⚠️ fixed doc has no reasoning/mapping; falling back to uid+createdAt query")
+                }
+            }
+
+            // 2) Fallback: query legacy/random doc ids by uid + createdAt
+            db.collection("daily_recommendation")
+                .whereField("uid", isEqualTo: uid)
+                .whereField("createdAt", isEqualTo: ds)
+                .getDocuments { snap, err in
+                    if let err = err {
+                        print("❌ reasoning query error:", err)
+                        return
+                    }
+                    guard let docs = snap?.documents, !docs.isEmpty else {
+                        print("⚠️ no daily_recommendation doc for reasoning on", ds)
+                        DispatchQueue.main.async { self.map = [:] }
+                        return
+                    }
+
+                    // Prefer latest updatedAt when multiple docs exist
+                    let best = docs.max { a, b in
+                        let ta = (a.data()["updatedAt"] as? Timestamp)?.dateValue() ?? .distantPast
+                        let tb = (b.data()["updatedAt"] as? Timestamp)?.dateValue() ?? .distantPast
+                        return ta < tb
+                    } ?? docs[0]
+
+                    let data = best.data()
+                    print("📄 daily_recommendation(fallback) keys:", Array(data.keys))
+                    let mapping = extractMapping(from: data)
+                    DispatchQueue.main.async {
+                        self.map = mapping
+                        print("✅ reasoning loaded keys:", mapping.keys.sorted())
+                    }
+
+                    // Optional: backfill fixed doc for future fast loads
+                    if !mapping.isEmpty {
+                        fixedDocRef.setData(["reasoning": mapping], merge: true) { e in
+                            if let e = e {
+                                print("⚠️ backfill reasoning into fixed doc failed:", e)
+                            } else {
+                                print("✅ backfilled reasoning into fixed doc")
+                            }
+                        }
+                    }
+                }
+        }
+    }
+
+    func text(for section: String) -> String {
+        // Prefer actual Firebase reasoning if available; fall back to placeholder.
+        if map.isEmpty {
+            print("⚠️ DailyReasoningStore.map is empty, using placeholder for section=\(section)")
+            return defaultReasoning(for: section)
+        }
+
+        // 1) Exact key match (e.g. "Sound")
+        if let value = map[section] {
+            return value
+        }
+
+        // 2) Case-insensitive / simple normalization (e.g. "sound" vs "Sound")
+        let lower = section.lowercased()
+        if let value = map[lower] {
+            return value
+        }
+
+        if let pair = map.first(where: { $0.key.lowercased() == lower }) {
+            print("ℹ️ Using reasoning[\(pair.key)] for section=\(section)")
+            return pair.value
+        }
+
+        // 3) Nothing matched → log available keys and use placeholder
+        print("⚠️ No reasoning found for section=\(section). Available keys: \(Array(map.keys))")
+        return defaultReasoning(for: section)
+    }
+}
+
+
+private extension DateFormatter {
+    static let yyyyMMdd: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+}
 
 
 enum AlynnaType {
@@ -52,45 +197,47 @@ struct DetailScaffold<MainContent: View>: View {
     }
 
     var body: some View {
-        VStack(spacing: 20) {
-            // Section label
-            Text(section)
-                .foregroundColor(themeManager.watermark)
-                .font(AlynnaType.sectionTitle30Black())
-                .lineSpacing(AlynnaType.sectionTitle30LineSpacing)
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 20) {
+                // Section label
+                Text(section)
+                    .foregroundColor(themeManager.watermark)
+                    .font(AlynnaType.sectionTitle30Black())
+                    .lineSpacing(AlynnaType.sectionTitle30LineSpacing)
 
-            // Title
-            Text(item.title)
-                .multilineTextAlignment(.center)
-                .foregroundColor(themeManager.primaryText)
-                .font(AlynnaType.cardName32Black())
-                .lineSpacing(AlynnaType.cardName32LineSpacing)
+                // Title
+                Text(item.title)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(themeManager.primaryText)
+                    .font(AlynnaType.cardName32Black())
+                    .lineSpacing(AlynnaType.cardName32LineSpacing)
 
-            // Description
-            Text(item.description)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-                .font(AlynnaType.desc18Italic())
-                .lineSpacing(AlynnaType.desc18LineSpacing)
-                .fixedSize(horizontal: false, vertical: true)
-                .foregroundColor(themeManager.descriptionText)
+                // Description
+                Text(item.description)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                    .font(AlynnaType.desc18Italic())
+                    .lineSpacing(AlynnaType.desc18LineSpacing)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .foregroundColor(themeManager.descriptionText)
 
-            // Custom middle content (image, icons, breathing, link sheets, play button, etc.)
-            mainContent
+                // Custom middle content
+                mainContent
 
-            // Explanation
-            Text(item.explanation)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-                .padding(.bottom)
-                .fixedSize(horizontal: false, vertical: true)
-                .font(AlynnaType.explain14Regular())
-                .lineSpacing(AlynnaType.explain14LineSpacing)
-                .foregroundColor(Color(hex: "#B9A08B").opacity(0.7))
+                // Explanation
+                Text(item.explanation)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                    .padding(.bottom)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .font(AlynnaType.explain14Regular())
+                    .lineSpacing(AlynnaType.explain14LineSpacing)
+                    .foregroundColor(Color(hex: "#B9A08B").opacity(0.7))
+            }
+            .padding()
+            .padding(.top, 36)
+            .frame(maxWidth: .infinity, alignment: .top)
         }
-        .padding()
-        .padding(.top, 36)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }
 
@@ -349,7 +496,7 @@ struct ProgressBar: View {
 struct VinylRecord: View {
     let isRotating: Bool
     let centerImageName: String
-    
+
     var body: some View {
         ZStack {
             // The vinyl disc
@@ -367,7 +514,7 @@ struct VinylRecord: View {
                     Circle()
                         .stroke(Color.gray.opacity(0.3), lineWidth: 2)
                 )
-            
+
             // The center label
             Image(centerImageName)
                 .resizable()
@@ -630,42 +777,42 @@ struct PlayerPopup: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var soundPlayer: SoundPlayer
-    
+
     let documentName: String
     let dismiss: () -> Void
-    
+
     @State private var isPlaying = false
     @State private var isRotating = false
     @State private var progress: Double = 0
     @State private var duration: TimeInterval = 0
     @State private var currentTime: TimeInterval = 0
     @State private var timer: Timer?
-    
+
     var body: some View {
         ZStack {
             AppBackgroundView()
                 .environmentObject(starManager)
-            
+
             // Glassy background for the sheet content
             RoundedRectangle(cornerRadius: 24)
                 .fill(.ultraThinMaterial)
                 .ignoresSafeArea()
-            
+
             VStack(spacing: 18) {
                 // Handle + Title
                 Capsule()
                     .fill(Color.white.opacity(0.25))
                     .frame(width: 36, height: 4)
                     .padding(.top, 8)
-                
+
                 Text("Now Playing")
                     .font(.custom("PlayfairDisplay-Regular", size: 18))
                     .foregroundColor(themeManager.primaryText.opacity(0.8))
-                
+
                 // Vinyl
                 VinylRecord(isRotating: isRotating, centerImageName: documentName)
                     .frame(height: 260)
-                
+
                 // Title / subtitle
                 VStack(spacing: 4) {
                     Text(documentName.replacingOccurrences(of: "_", with: " ").capitalized)
@@ -675,7 +822,7 @@ struct PlayerPopup: View {
                         .font(.custom("PlayfairDisplay-Regular", size: 13))
                         .foregroundColor(.white.opacity(0.7))
                 }
-                
+
                 // Controls
                 HStack(spacing: 22) {
                     RoundGlyphButton(system: "shuffle") {}
@@ -685,7 +832,7 @@ struct PlayerPopup: View {
                     RoundGlyphButton(system: "list.bullet") {}
                 }
                 .padding(.top, 6)
-                
+
                 // Progress + times
                 VStack(spacing: 10) {
                     ProgressBar(
@@ -696,7 +843,7 @@ struct PlayerPopup: View {
                         )
                     )
                     .frame(width: 320, height: 8)
-                    
+
                     HStack {
                         Text(timeString(currentTime))
                         Spacer()
@@ -706,13 +853,13 @@ struct PlayerPopup: View {
                     .foregroundColor(.white.opacity(0.75))
                     .frame(width: 320)
                 }
-                
+
                 // Close
                 Button("Close") { dismiss() }
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(.white.opacity(0.9))
                     .padding(.top, 6)
-                
+
                 Spacer(minLength: 8)
             }
             .padding(.horizontal, 16)
@@ -720,7 +867,7 @@ struct PlayerPopup: View {
         .onAppear { prepareAndStartIfNeeded() }
         .onDisappear { stopTimer() }
     }
-    
+
     // MARK: - Playback
     private func prepareAndStartIfNeeded() {
         if soundPlayer.player == nil {
@@ -733,7 +880,7 @@ struct PlayerPopup: View {
         duration = soundPlayer.player?.duration ?? 0
         startTimer()
     }
-    
+
     private func togglePlay() {
         if isPlaying {
             soundPlayer.player?.pause()
@@ -753,7 +900,7 @@ struct PlayerPopup: View {
             startTimer()
         }
     }
-    
+
     private func startTimer() {
         stopTimer()
         timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in
@@ -767,12 +914,12 @@ struct PlayerPopup: View {
             }
         }
     }
-    
+
     private func stopTimer() {
         timer?.invalidate()
         timer = nil
     }
-    
+
     private func timeString(_ t: TimeInterval) -> String {
         let m = Int(t) / 60
         let s = Int(t) % 60
@@ -808,6 +955,7 @@ private struct SoundExtraContent: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var soundPlayer: SoundPlayer
+    @EnvironmentObject var reasoningStore: DailyReasoningStore
     @Environment(\.colorScheme) private var colorScheme
 
     let documentName: String
@@ -857,7 +1005,7 @@ private struct SoundExtraContent: View {
             .sheet(isPresented: $showReasoning) {
                 ReasoningSheet(
                     title: title,
-                    reasoningText: defaultReasoning(for: "Sound"),
+                    reasoningText: reasoningStore.text(for: "Sound"),
                     themeManager: themeManager
                 )
             }
@@ -901,6 +1049,8 @@ struct IconItem: Identifiable {
 
 struct PlaceDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var reasoningStore: DailyReasoningStore
+
     let documentName: String
 
     @State private var showReasoning = false
@@ -928,7 +1078,7 @@ struct PlaceDetailView: View {
                 .sheet(isPresented: $showReasoning) {
                     ReasoningSheet(
                         title: item.title,
-                        reasoningText: defaultReasoning(for: "Place"),
+                        reasoningText: reasoningStore.text(for: "Place"),
                         themeManager: themeManager
                     )
                 }
@@ -964,10 +1114,10 @@ struct DailyAnchorView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.colorScheme) private var colorScheme
     let text: String
-    
+
     @State private var pulse = false
     @State private var shimmer = false
-    
+
     private var quoteMarkColor: Color {
         colorScheme == .dark ? Color.white.opacity(0.45) : Color.black.opacity(0.35)
     }
@@ -977,7 +1127,7 @@ struct DailyAnchorView: View {
     private var quoteShadowColor: Color {
         colorScheme == .dark ? Color.white.opacity(0.18) : Color.black.opacity(0.10)
     }
-    
+
     var body: some View {
         VStack(spacing: 16) {
             // Top gradient divider
@@ -1029,7 +1179,7 @@ struct DailyAnchorView: View {
                         RoundedRectangle(cornerRadius: 18)
                             .stroke((colorScheme == .dark ? Color.white : Color.black).opacity(0.08), lineWidth: 1)
                     )
-                    
+
                 Text("“")
                     .font(.custom("PlayfairDisplay-Bold", size: 28))
                     .foregroundColor(quoteMarkColor)
@@ -1038,7 +1188,7 @@ struct DailyAnchorView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .padding(8)
                     .animation(.easeInOut(duration: 6).repeatForever(autoreverses: true), value: shimmer)
-                
+
                 Text("”")
                     .font(.custom("PlayfairDisplay-Bold", size: 28))
                     .foregroundColor(quoteMarkColor)
@@ -1176,13 +1326,13 @@ struct GemLinkSheet: View {
     let linkURLString: String?
     let stoneURLString: String?
     let themeManager: ThemeManager
-    
+
     @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
 
     private var isDark: Bool { colorScheme == .dark }
-    
+
     var body: some View {
         ZStack {
             // Background halo adapts to theme
@@ -1198,10 +1348,10 @@ struct GemLinkSheet: View {
                 endRadius: 400
             )
             .ignoresSafeArea()
-            
+
             VStack(spacing: 16) {
                 Spacer().frame(height: 6)
-                
+
                 GlassCard {
                     VStack(spacing: 14) {
                         // Icon + title
@@ -1219,28 +1369,28 @@ struct GemLinkSheet: View {
                                         )
                                     )
                                     .frame(width: 40, height: 40)
-                                
+
                                 Image(systemName: "diamond.fill")
                                     .font(.system(size: 18, weight: .bold))
                                     .foregroundColor(themeManager.primaryText)
                             }
-                            
+
                             Text(title)
                                 .font(.custom("PlayfairDisplay-Regular", size: 22))
                                 .foregroundColor(themeManager.primaryText)
                                 .lineLimit(2)
                                 .minimumScaleFactor(0.85)
                                 .multilineTextAlignment(.leading)
-                            
+
                             Spacer(minLength: 0)
                         }
-                        
+
                         Divider()
                             .overlay(
                                 (isDark ? Color.white : Color.black)
                                     .opacity(0.20)
                             )
-                        
+
                         // reasoning summary
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Reasoning")
@@ -1254,7 +1404,7 @@ struct GemLinkSheet: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
 
-                        
+
                         // Primary button (Bracelet / Link)
                         if let s = linkURLString, let url = URL(string: s) {
                             Button {
@@ -1269,7 +1419,7 @@ struct GemLinkSheet: View {
                             }
                             .buttonStyle(GradientButtonStyle())
                         }
-                        
+
                         // Secondary button (Stone)
                         if let s = stoneURLString, let url = URL(string: s) {
                             Button {
@@ -1301,7 +1451,7 @@ struct GemLinkSheet: View {
                             }
                             .foregroundColor(themeManager.primaryText)
                         }
-                        
+
                         // Utility row (copy links)
                         HStack(spacing: 12) {
                             if let s = linkURLString {
@@ -1325,7 +1475,7 @@ struct GemLinkSheet: View {
                         .foregroundColor(isDark ? .white.opacity(0.6) : .secondary)
                     }
                 }
-                
+
                 // Close in accent for light, softer in dark
                 Button(role: .cancel) { dismiss() } label: {
                     Text("Close")
@@ -1345,7 +1495,7 @@ struct GemLinkSheet: View {
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
     }
-    
+
     private func haptics() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
@@ -1355,6 +1505,8 @@ struct GemLinkSheet: View {
 
 struct GemstoneDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var reasoningStore: DailyReasoningStore
+
     let documentName: String
 
     var body: some View {
@@ -1370,6 +1522,8 @@ struct GemstoneDetailView: View {
 
 private struct GemstoneExtraContent: View {
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var reasoningStore: DailyReasoningStore
+
 
     let documentName: String
     let item: RecommendationItem
@@ -1400,7 +1554,7 @@ private struct GemstoneExtraContent: View {
             .sheet(isPresented: $showLinkSheet) {
                 GemLinkSheet(
                     title: item.title,
-                    reasoningText: defaultReasoning(for: "Gemstone"),
+                    reasoningText: reasoningStore.text(for: "Gemstone"),
                     linkURLString: item.link,
                     stoneURLString: item.stone,
                     themeManager: themeManager
@@ -1421,9 +1575,9 @@ struct BreathingCircle: View {
     let color: Color
     let diameter: CGFloat      // overall diameter
     let duration: Double   // one full in-out cycle
-    
+
     @State private var animateRing = false
-    
+
     var body: some View {
         ZStack {
             // Outer ring that expands/fades
@@ -1432,7 +1586,7 @@ struct BreathingCircle: View {
                 .frame(width: diameter, height: diameter)
                 .scaleEffect(animateRing ? 1.0 : 0.7)
                 .opacity(animateRing ? 0.0 : 1.0)  // fades out as it expands
-            
+
             // Solid center dot
             Circle()
                 .fill(color)
@@ -1454,7 +1608,7 @@ struct BreathingCircle: View {
 
 struct SetColorButton: View {
     let action: ()->Void
-    
+
     var body: some View {
         Button(action: action) {
             Text("Set as Today’s Color")
@@ -1476,6 +1630,8 @@ struct SetColorButton: View {
 }
 
 struct ColorDetailView: View {
+    @EnvironmentObject var reasoningStore: DailyReasoningStore
+
     let documentName: String
 
     private let colorHexMapping: [String:String] = [
@@ -1498,6 +1654,8 @@ struct ColorDetailView: View {
 
 private struct ColorExtraContent: View {
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var reasoningStore: DailyReasoningStore
+
     let item: RecommendationItem
     let hex: String?
 
@@ -1527,7 +1685,7 @@ private struct ColorExtraContent: View {
         .sheet(isPresented: $showReasoning) {
             ReasoningSheet(
                 title: item.title,
-                reasoningText: defaultReasoning(for: "Color"),
+                reasoningText: reasoningStore.text(for: "Color"),
                 themeManager: themeManager
             )
         }
@@ -1601,7 +1759,7 @@ struct ScentLinkSheet: View {
 
                             Spacer(minLength: 0)
                         }
-                        
+
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Reasoning")
                                 .font(.custom("PlayfairDisplay-SemiBold", size: 16))
@@ -1719,6 +1877,8 @@ struct ScentLinkSheet: View {
 
 
 struct ScentDetailView: View {
+    @EnvironmentObject var reasoningStore: DailyReasoningStore
+
     let documentName: String
 
     var body: some View {
@@ -1734,6 +1894,7 @@ struct ScentDetailView: View {
 
 private struct ScentExtraContent: View {
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var reasoningStore: DailyReasoningStore
 
     let documentName: String
     let item: RecommendationItem
@@ -1768,7 +1929,7 @@ private struct ScentExtraContent: View {
             .sheet(isPresented: $showLinkSheet) {
                 ScentLinkSheet(
                     title: item.title,
-                    reasoningText: defaultReasoning(for: "Scent"),
+                    reasoningText: reasoningStore.text(for: "Scent"),
                     linkURLString: item.link,
                     candleURLString: item.candle,
                     themeManager: themeManager
@@ -1778,21 +1939,21 @@ private struct ScentExtraContent: View {
                 .presentationCornerRadius(28)
             }
 
-            if let about = item.about, !about.isEmpty {
-                VStack(spacing: 10) {
-                    Text("About the Scent")
-                        .font(.custom("PlayfairDisplay-Regular", size: 18))
-                        .foregroundColor(themeManager.foregroundColor)
-                        .bold()
-
-                    Text(about)
-                        .font(.custom("PlayfairDisplay-Italic", size: 15))
-                        .foregroundColor(themeManager.foregroundColor)
-                        .lineSpacing(3)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(16)
-            }
+//            if let about = item.about, !about.isEmpty {
+//                VStack(spacing: 10) {
+//                    Text("About the Scent")
+//                        .font(.custom("PlayfairDisplay-Regular", size: 18))
+//                        .foregroundColor(themeManager.foregroundColor)
+//                        .bold()
+//
+//                    Text(about)
+//                        .font(.custom("PlayfairDisplay-Italic", size: 15))
+//                        .foregroundColor(themeManager.foregroundColor)
+//                        .lineSpacing(3)
+//                        .multilineTextAlignment(.center)
+//                }
+//                .padding(16)
+//            }
 
             if let notice = item.notice, !notice.isEmpty {
                 VStack(spacing: 8) {
@@ -1824,6 +1985,8 @@ private struct ScentExtraContent: View {
 
 struct ActivityDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var reasoningStore: DailyReasoningStore
+
     let documentName: String
     @State private var showReasoning = false
 
@@ -1840,7 +2003,7 @@ struct ActivityDetailView: View {
             .sheet(isPresented: $showReasoning) {
                 ReasoningSheet(
                     title: item.title,
-                    reasoningText: defaultReasoning(for: "Activity"),
+                    reasoningText: reasoningStore.text(for: "Activity"),
                     themeManager: themeManager
                 )
             }
@@ -1851,6 +2014,8 @@ struct ActivityDetailView: View {
 
 struct CareerDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var reasoningStore: DailyReasoningStore
+
     let documentName: String
     @State private var showReasoning = false
 
@@ -1867,7 +2032,7 @@ struct CareerDetailView: View {
             .sheet(isPresented: $showReasoning) {
                 ReasoningSheet(
                     title: item.title,
-                    reasoningText: defaultReasoning(for: "Career"),
+                    reasoningText: reasoningStore.text(for: "Career"),
                     themeManager: themeManager
                 )
             }
@@ -1879,6 +2044,9 @@ struct CareerDetailView: View {
 
 struct RelationshipDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var reasoningStore: DailyReasoningStore
+
+
     let documentName: String
     @State private var showReasoning = false
 
@@ -1895,7 +2063,7 @@ struct RelationshipDetailView: View {
             .sheet(isPresented: $showReasoning) {
                 ReasoningSheet(
                     title: item.title,
-                    reasoningText: defaultReasoning(for: "Relationship"),
+                    reasoningText: reasoningStore.text(for: "Relationship"),
                     themeManager: themeManager
                 )
             }

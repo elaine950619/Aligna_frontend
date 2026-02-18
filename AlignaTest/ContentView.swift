@@ -319,6 +319,7 @@ struct ContentView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var viewModel: OnboardingViewModel
+    @EnvironmentObject var reasoningStore: DailyReasoningStore
     
     @Environment(\.dismiss) private var dismiss
 //    @State private var headerHeight: CGFloat = 0
@@ -362,10 +363,12 @@ struct ContentView: View {
                         .onAppear {
                             if enableLoading { dailyVM.load(for: selectedDate) }
                             loadJournal(for: selectedDate)
+                            reasoningStore.load(for: selectedDate)
                         }
                         .onChange(of: selectedDate) {
                             if enableLoading { dailyVM.load(for: selectedDate) }
                             loadJournal(for: selectedDate)
+                            reasoningStore.load(for: selectedDate) 
                         }
 
                         .padding(.horizontal, 16)
@@ -388,6 +391,65 @@ struct ContentView: View {
                         }
                         .id(selectedDate)
                         
+                        // --- Journal panel at bottom ---
+                        NavigationLink {
+                            JournalView(date: selectedDate)
+                                .environmentObject(themeManager)
+                                .environmentObject(starManager)
+                                .environmentObject(viewModel)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack {
+                                    Image(systemName: "book.closed")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(themeManager.accent)
+
+                                    Text("Journal")
+                                        .font(TimelineType.cardTitle18MerriweatherBlack())
+                                        .lineSpacing(TimelineType.cardTitle18LineSpacing)
+                                        .foregroundColor(themeManager.primaryText)
+
+                                    Spacer()
+
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(themeManager.descriptionText.opacity(0.8))
+                                }
+
+                                if isLoadingJournal {
+                                    Text("Loading…")
+                                        .font(TimelineType.cardBody14MerriweatherRegular())
+                                        .lineSpacing(TimelineType.cardBody14LineSpacing)
+                                        .foregroundColor(themeManager.descriptionText)
+                                } else if journalText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                    Text("Tap to write your daily check-in…")
+                                        .font(TimelineType.cardBody14MerriweatherRegular())
+                                        .lineSpacing(TimelineType.cardBody14LineSpacing)
+                                        .foregroundColor(themeManager.descriptionText)
+                                } else {
+                                    Text(journalText)
+                                        .font(TimelineType.cardBody14MerriweatherRegular())
+                                        .lineSpacing(TimelineType.cardBody14LineSpacing)
+                                        .foregroundColor(themeManager.descriptionText)
+                                        .lineLimit(2)
+                                }
+                            }
+                            .padding(.vertical, 14)
+                            .padding(.horizontal, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .fill(themeManager.panelFill)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                            .stroke(themeManager.panelStrokeHi.opacity(0.9), lineWidth: 1)
+                                    )
+                            )
+                            .shadow(color: .black.opacity(themeManager.isNight ? 0.12 : 0.10), radius: 10, y: 6)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 20)
+                        
                         // Build an ordered list of items for the categories you care about
                         let dayItems: [SuggestionItem] = allCategories.compactMap { cat in
                             dailyVM.items.first(where: { $0.category == cat })
@@ -408,66 +470,6 @@ struct ContentView: View {
                         }
                     }
                     .padding(.top)
-                    
-                    // --- Journal panel at bottom ---
-                    NavigationLink {
-                        JournalView(date: selectedDate)
-                            .environmentObject(themeManager)
-                            .environmentObject(starManager)
-                            .environmentObject(viewModel)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                Image(systemName: "book.closed")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(themeManager.accent)
-
-                                Text("Journal")
-                                    .font(TimelineType.cardTitle18MerriweatherBlack())
-                                    .lineSpacing(TimelineType.cardTitle18LineSpacing)
-                                    .foregroundColor(themeManager.primaryText)
-
-                                Spacer()
-
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(themeManager.descriptionText.opacity(0.8))
-                            }
-
-                            if isLoadingJournal {
-                                Text("Loading…")
-                                    .font(TimelineType.cardBody14MerriweatherRegular())
-                                    .lineSpacing(TimelineType.cardBody14LineSpacing)
-                                    .foregroundColor(themeManager.descriptionText)
-                            } else if journalText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                Text("Tap to write your daily check-in…")
-                                    .font(TimelineType.cardBody14MerriweatherRegular())
-                                    .lineSpacing(TimelineType.cardBody14LineSpacing)
-                                    .foregroundColor(themeManager.descriptionText)
-                            } else {
-                                Text(journalText)
-                                    .font(TimelineType.cardBody14MerriweatherRegular())
-                                    .lineSpacing(TimelineType.cardBody14LineSpacing)
-                                    .foregroundColor(themeManager.descriptionText)
-                                    .lineLimit(2)
-                            }
-                        }
-                        .padding(.vertical, 14)
-                        .padding(.horizontal, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(themeManager.panelFill)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                        .stroke(themeManager.panelStrokeHi.opacity(0.9), lineWidth: 1)
-                                )
-                        )
-                        .shadow(color: .black.opacity(themeManager.isNight ? 0.12 : 0.10), radius: 10, y: 6)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 20)
-
                 }
             }
             .toolbar(.hidden, for: .navigationBar)

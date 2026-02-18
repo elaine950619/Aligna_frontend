@@ -40,6 +40,7 @@ struct RootRouter: View {
     @StateObject private var themeManager = ThemeManager()
     @StateObject private var onboardingViewModel = OnboardingViewModel()
     @StateObject private var soundPlayer = SoundPlayer()        // ✅ 新增：全局音频播放器
+    @StateObject private var reasoningStore = DailyReasoningStore()
 
     // 路由状态
     @State private var isReady = false
@@ -64,6 +65,7 @@ struct RootRouter: View {
                 .environmentObject(themeManager)
                 .environmentObject(onboardingViewModel)
                 .environmentObject(soundPlayer)  // ✅ 注入
+                .environmentObject(reasoningStore)
                 .preferredColorScheme(themeManager.isNight ? .dark : .light)
             } else {
                 // 已登录 → 首页
@@ -72,6 +74,7 @@ struct RootRouter: View {
                     .environmentObject(themeManager)
                     .environmentObject(onboardingViewModel)
                     .environmentObject(soundPlayer)  // ✅ 注入
+                    .environmentObject(reasoningStore)
                     .preferredColorScheme(themeManager.isNight ? .dark : .light)
             }
         }
