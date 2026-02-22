@@ -101,7 +101,7 @@ func currentMoonPhaseLabel(for date: Date = Date()) -> String {
         timeZone: .init(secondsFromGMT: 0),
         year: 2000, month: 1, day: 6, hour: 18, minute: 14
     ).date!
-
+    
     let days = date.timeIntervalSince(anchor) / 86400
     let phase = (days - floor(days / synodic) * synodic) // [0, synodic)
     switch phase {
@@ -231,7 +231,7 @@ import SwiftUI
 
 struct LoadingView: View {
     var onStartLoading: (() -> Void)? = nil
-
+    
     @State private var loadingMessages = [
         "Aligning with the cosmos",
         "Reading celestial patterns",
@@ -247,7 +247,7 @@ struct LoadingView: View {
     @State private var pulse = false
     @State private var dotPhase: CGFloat = 0
     @State private var bounce = false
-
+    
     @State private var showWelcome = false
     @State private var currentLocation: String = "Your Current Location"
     @State private var zodiacSign: String = ""
@@ -260,7 +260,6 @@ struct LoadingView: View {
                     .environmentObject(starManager)
 
                 // === Nebula effects ===
-                // Blue nebula
                 Circle()
                     .fill(Color(.sRGB, red: 59/255, green: 130/255, blue: 246/255, opacity: 0.10))
                     .frame(width: 384, height: 384)
@@ -268,7 +267,6 @@ struct LoadingView: View {
                     .blur(radius: 48)
                     .offset(x: geo.size.width * -0.17, y: geo.size.height * -0.25)
 
-                // Purple nebula
                 Circle()
                     .fill(Color(.sRGB, red: 168/255, green: 85/255, blue: 247/255, opacity: 0.10))
                     .frame(width: 320, height: 320)
@@ -278,7 +276,10 @@ struct LoadingView: View {
 
                 // === Central radial glow ===
                 RadialGradient(
-                    gradient: Gradient(colors: [Color.white.opacity(0.05), .clear]),
+                    gradient: Gradient(colors: [
+                        themeManager.primaryText.opacity(themeManager.isNight ? 0.05 : 0.08),
+                        .clear
+                    ]),
                     center: .center,
                     startRadius: 0,
                     endRadius: min(geo.size.width, geo.size.height) * 0.5
@@ -295,10 +296,10 @@ struct LoadingView: View {
 
                         Image("appLogo")
                             .resizable()
-                            .renderingMode(.template)   // 使用 template 方便着色
+                            .renderingMode(.template)
                             .scaledToFit()
                             .frame(width: disk, height: disk)
-                            .foregroundColor(iconColor)  // 月亮等标识颜色 = 主题文字颜色
+                            .foregroundColor(iconColor)
                             .shadow(color: iconColor.opacity(0.35), radius: 24, x: 0, y: 8)
                             .scaleEffect(pulse ? 1.04 : 1.0)
                             .animation(
@@ -315,15 +316,19 @@ struct LoadingView: View {
                     // Brand title + thin underline + shimmer
                     VStack(spacing: 8) {
                         Text("Alynna")
-                            .font(AlignaType.brandTitle())       // Gloock 34
-                            .lineSpacing(40 - 34)                // 6
-                            .foregroundColor(.white)
+                            .font(AlignaType.brandTitle())
+                            .lineSpacing(40 - 34)
+                            .foregroundColor(themeManager.primaryText)   // ✅ 关键：跟随主题
                             .shimmer()
 
                         Rectangle()
                             .fill(
                                 LinearGradient(
-                                    colors: [.clear, .white.opacity(0.6), .clear],
+                                    colors: [
+                                        .clear,
+                                        themeManager.primaryText.opacity(0.6), // ✅ 跟随主题
+                                        .clear
+                                    ],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -334,19 +339,19 @@ struct LoadingView: View {
                     // Spinner (two rings)
                     ZStack {
                         Circle()
-                            .stroke(Color.white.opacity(0.20), lineWidth: 2)
+                            .stroke(themeManager.primaryText.opacity(0.20), lineWidth: 2) // ✅
                             .frame(width: 64, height: 64)
 
                         Circle()
                             .trim(from: 0, to: 0.25)
-                            .stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                            .stroke(themeManager.primaryText, style: StrokeStyle(lineWidth: 2, lineCap: .round)) // ✅
                             .frame(width: 64, height: 64)
                             .rotationEffect(.degrees(spinFast ? 360 : 0))
                             .animation(.linear(duration: 1.0).repeatForever(autoreverses: false), value: spinFast)
 
                         Circle()
                             .trim(from: 0, to: 0.25)
-                            .stroke(Color.white.opacity(0.4), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                            .stroke(themeManager.primaryText.opacity(0.4), style: StrokeStyle(lineWidth: 2, lineCap: .round)) // ✅
                             .frame(width: 48, height: 48)
                             .rotationEffect(.degrees(spinSlow ? 360 : 0))
                             .animation(.linear(duration: 2.0).repeatForever(autoreverses: false), value: spinSlow)
@@ -359,14 +364,14 @@ struct LoadingView: View {
                     // Loading text + bouncing dots
                     VStack(spacing: 12) {
                         Text(loadingMessages[msgIndex])
-                            .font(AlignaType.loadingSubtitle())  // Merriweather Italic 16
+                            .font(AlignaType.loadingSubtitle())
                             .lineSpacing(AlignaType.body16LineSpacing)
-                            .foregroundColor(.white.opacity(0.9))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.90)) // ✅
 
                         HStack(spacing: 6) {
                             ForEach(0..<3) { i in
                                 Circle()
-                                    .fill(Color.white.opacity(0.6))
+                                    .fill(themeManager.primaryText.opacity(0.55)) // ✅
                                     .frame(width: 8, height: 8)
                                     .offset(y: bounce ? -6 : 0)
                                     .animation(
@@ -385,21 +390,17 @@ struct LoadingView: View {
                 .padding(16)
             }
             .onAppear {
-                // Rotate messages every 2s
                 Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { _ in
                     withAnimation(.easeInOut(duration: 0.25)) {
                         msgIndex = (msgIndex + 1) % loadingMessages.count
                     }
                 }
-                withAnimation {
-                    dotPhase = 1
-                }
+                withAnimation { dotPhase = 1 }
             }
             .preferredColorScheme(themeManager.preferredColorScheme)
         }
     }
 
-    // mimic three “animate-bounce-dot-*” offsets
     private func dotOffset(for i: Int) -> CGFloat {
         let up = (Int(dotPhase) + i) % 2 == 0
         return up ? -4 : 0
@@ -473,7 +474,7 @@ struct WelcomeSplashView: View {
         ZStack {
             AppBackgroundView()
                 .environmentObject(starManager)
-
+            
             RadialGradient(
                 colors: [Color.white.opacity(0.06), .clear],
                 center: .center,
@@ -494,18 +495,18 @@ struct WelcomeSplashView: View {
                     .frame(width: disk, height: disk)
                     .foregroundColor(iconColor)
                     .shadow(color: iconColor.opacity(0.35), radius: 22, x: 0, y: 8)
-
+                
                 // Brand + hairline underline
                 VStack(spacing: 6) {
                     Text("Alynna")
                         .font(AlignaType.brandTitle())
-                       .lineSpacing(40 - 34)
-                       .foregroundColor(.white)
+                        .lineSpacing(40 - 34)
+                        .foregroundColor(themeManager.primaryText)
 
                     Rectangle()
                         .fill(
                             LinearGradient(
-                                colors: [.clear, .white.opacity(0.7), .clear],
+                                colors: [.clear, themeManager.primaryText.opacity(0.7), .clear],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -549,13 +550,13 @@ struct WelcomeSplashView: View {
                 .frame(width: 24, alignment: .leading)
 
             Text(text)
-                .foregroundColor(.white.opacity(textOpacity))
+                .foregroundColor(themeManager.primaryText.opacity(textOpacity))
                 .font(.custom("Merriweather-Regular", size: 16))
                 .lineSpacing(AlignaType.body16LineSpacing)
+
         }
     }
 }
-
 
 enum AlignaType {
     static func logo() -> Font { .custom("CormorantGaramond-Bold", size: 50) }
@@ -582,8 +583,9 @@ struct FirstPageView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var viewModel: OnboardingViewModel
+    
     @EnvironmentObject var reasoningStore: DailyReasoningStore
-
+    
     @AppStorage("lastRecommendationDate") var lastRecommendationDate: String = ""
     @AppStorage("lastRecommendationPlace") var lastRecommendationPlace: String = ""   // ✅ NEW
     @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
@@ -592,17 +594,15 @@ struct FirstPageView: View {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
     @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
     @State private var isFetchingToday: Bool = false
-
+    
     @State private var isMantraExpanded: Bool = false
+    
+    @State private var showReasoningBubble: Bool = false
 
-    // 🔐 当天是否已经触发过一次“自动兜底重拉”
     @AppStorage("todayAutoRefetchDone") private var todayAutoRefetchDone: String = ""
-    // 本次进程是否已经安排过 watchdog 计时器（避免重复安排）
+
     @State private var autoRefetchScheduled = false
 
-    // === 放在 FirstPageView 的属性区（和其他 @State / @AppStorage 放一起）===
-
-    // NEW: 认证监听 + 看门狗计数（跨天持久）
     @State private var authListenerHandle: AuthStateDidChangeListenerHandle? = nil
     @State private var authWaitTimedOut = false
 
@@ -615,16 +615,18 @@ struct FirstPageView: View {
 
     @StateObject private var locationManager = LocationManager()
     @State private var recommendationTitles: [String: String] = [:]
-
+    
     @State private var selectedDate = Date()
-
+    
     @State private var bootPhase: BootPhase = .loading
     @State private var splashLocation: String = "Your Current Location"
     @State private var splashZodiac: String = ""
     @State private var splashMoon: String = ""
-
+    
     @State private var didBootVisuals = false
+    @State private var alynnaFrame: CGRect = .zero
 
+    
     private func ensureDefaultsIfMissing() {
         // If nothing loaded yet, supply local demo content
         if viewModel.recommendations.isEmpty {
@@ -636,7 +638,15 @@ struct FirstPageView: View {
             recommendationTitles = DesignRecs.titles
         }
     }
+    
+    private struct AlynnaFrameKey: PreferenceKey {
+        static var defaultValue: CGRect = .zero
+        static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+            value = nextValue()
+        }
+    }
 
+    
     private var updatedOnText: String {
         let date = lastRecommendationDate.trimmingCharacters(in: .whitespacesAndNewlines)
         let dateText = date.isEmpty ? todayString() : date
@@ -650,8 +660,11 @@ struct FirstPageView: View {
             return "Updated on \(dateText), \(p)"
         }
     }
+    private var updatedOnFooterText: String {
+        updatedOnText.replacingOccurrences(of: "Updated on", with: "updated on")
+    }
 
-
+    
     private var mainContent: some View {
         NavigationStack {
             ZStack {
@@ -668,7 +681,7 @@ struct FirstPageView: View {
                     VStack(spacing: minLength * 0.015) {
                         // 顶部按钮
                         HStack {
-
+                            
                             HStack(spacing: geometry.size.width * 0.035) {
                                 // Timeline / calendar
                                 NavigationLink(
@@ -701,13 +714,6 @@ struct FirstPageView: View {
 
                             HStack(spacing: geometry.size.width * 0.02) {
 
-                                Text(updatedOnText)
-                                    .font(Font.custom("PlayfairDisplay-Italic", size: minLength * 0.04)) // ✅ 与 mantra 一致
-                                    .foregroundColor(themeManager.foregroundColor.opacity(0.7))
-                                    .lineLimit(1)
-                                    .truncationMode(.tail)
-                                    .minimumScaleFactor(0.6)
-
                                 if isLoggedIn {
                                     NavigationLink(
                                         destination: AccountDetailView(viewModel: OnboardingViewModel())
@@ -737,14 +743,37 @@ struct FirstPageView: View {
                             .padding(.trailing, geometry.size.width * 0.05)
 
                         }
-//                        .padding(.top, 120)
-//                        .padding(.horizontal, geometry.size.width * 0.05)
 
-                        Text("Alynna")
-                            .font(AlignaType.logo())
-                            .lineSpacing(AlignaType.logoLineSpacing)
-                            .foregroundColor(themeManager.foregroundColor)
-                            .padding(.top, 20)
+                        // ✅ 只保留按钮本身（气泡放到全局 overlay）
+                        Button {
+                            if viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                debugAndRefreshReasoningSummaryFromFirestore()
+                            }
+
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.86)) {
+                                showReasoningBubble.toggle()
+                            }
+                        } label: {
+                            Text("Alynna")
+                                .font(AlignaType.logo())
+                                .lineSpacing(AlignaType.logoLineSpacing)
+                                .foregroundColor(themeManager.foregroundColor)
+                                .padding(.top, 20)
+                                // ✅ 把 Alynna 的真实位置传出去（在 GeometryReader 的坐标系里）
+                                .background(
+                                    GeometryReader { proxy in
+                                        Color.clear.preference(
+                                            key: AlynnaFrameKey.self,
+                                            value: proxy.frame(in: .named("HomeSpace"))
+                                        )
+                                    }
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .onPreferenceChange(AlynnaFrameKey.self) { alynnaFrame = $0 }
+
+
+
 
                         Button {
                             withAnimation(.easeInOut(duration: 0.2)) {
@@ -752,12 +781,12 @@ struct FirstPageView: View {
                             }
                         } label: {
                             Text(viewModel.dailyMantra)
-                                .font(Font.custom("PlayfairDisplay-Italic",
-                                                  size: minLength * 0.04))
+                                .font(AlignaType.homeSubtitle())
+                                .lineSpacing(AlignaType.descLineSpacing) // 26-18=8
                                 .multilineTextAlignment(.center)
                                 .foregroundColor(themeManager.foregroundColor.opacity(0.7))
                                 .padding(.horizontal, geometry.size.width * 0.1)
-                                .lineLimit(isMantraExpanded ? nil : 1)     // ✅ 折叠：最多 1 行
+                                .lineLimit(isMantraExpanded ? nil : 2)     // ✅ 折叠：最多 1 行
                                 .truncationMode(.tail)                    // ✅ 超出：显示 "..."
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -804,17 +833,55 @@ struct FirstPageView: View {
                         ensureDefaultsIfMissing()
                         fetchAllRecommendationTitles()
                     }
+                    .coordinateSpace(name: "HomeSpace")
+                    .overlay(alignment: .topLeading) {
+                        if showReasoningBubble {
+
+                            // ✅ （推荐）透明遮罩：点空白处关闭
+                            Color.black.opacity(0.001)
+                                .ignoresSafeArea()
+                                .onTapGesture {
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
+                                        showReasoningBubble = false
+                                    }
+                                }
+                                .zIndex(99998)
+
+                            ReasoningBubbleView(
+                                text: viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                    ? "No reasoning summary available yet."
+                                    : viewModel.reasoningSummary,
+                                textColor: themeManager.foregroundColor.opacity(0.92)
+                            ) {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
+                                    showReasoningBubble = false
+                                }
+                            }
+                            // ✅ 精准定位：紧贴在 Alynna 标志正下方
+                            .frame(maxWidth: 320, alignment: .center)
+                            .position(
+                                x: alynnaFrame.midX,
+                                y: alynnaFrame.maxY + 14   // ⭐️ 距离 Alynna 底部的间距，可微调 10~18
+                            )
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                            .zIndex(99999)
+                        }
+                    }
                 }
             }
             // ✅ 只作用在首页这个 ZStack 上，push 新页面后不会带过去
             .safeAreaInset(edge: .bottom) {
-                Text("The daily rhythms above are derived from integrated modeling of Earth observation, climate, air-quality, physiological, and astrological data, updated in real time.")
-                    .font(.system(size: 10))
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(themeManager.foregroundColor.opacity(0.28))
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 0)
+                (
+                    Text("The daily rhythms above are derived from integrated modeling of Earth observation, climate, air-quality, physiological, and astrological data, ")
+                    + Text("\(updatedOnFooterText).").bold()
+                )
+                .font(.system(size: 10))
+                .multilineTextAlignment(.center)
+                .foregroundColor(themeManager.foregroundColor.opacity(0.28))
+                .padding(.horizontal, 24)
+                .padding(.bottom, 0)
             }
+
         }
         .navigationViewStyle(.stack)
         .toolbar(.hidden, for: .navigationBar)
@@ -834,12 +901,12 @@ struct FirstPageView: View {
 //        AlignaWidgetStore.save(snap) // ↩︎ 写入 App Group + 刷新 Widget
     }
 
-
+    
     // 冷启动只看“是否已登录 + 本地标记”来分流；不再在这里查 Firestore 决定是否强拉 Onboarding。
     // === 替换你原来的 startInitialLoad()（整段替换） ===
     private func startInitialLoad() {
-
-
+        
+        
         #if DEBUG
         if _isPreview { bootPhase = .main; return }
         #endif
@@ -917,7 +984,7 @@ struct FirstPageView: View {
         ref.getDocument { snap, _ in
             defer { done() }
             guard let data = snap?.data() else { return }
-
+            
 
             // birth date
             if let ts = data["birthday"] as? Timestamp {
@@ -945,7 +1012,7 @@ struct FirstPageView: View {
 
     // 原先 startInitialLoad 的主体逻辑移到这里（不修改其内容）
     private func proceedNormalBoot() {
-
+        
         startAutoRefetchWatchdog(delay: 8.0)
         locationManager.requestLocation()
 
@@ -963,10 +1030,12 @@ struct FirstPageView: View {
         waitUntilRecommendationsReady(timeout: 12) { group.leave() }
 
         group.notify(queue: .main) {
-            // Keep DailyReasoningStore in sync for detail sheets.
+            
             // (If the doc doesn't exist yet, it'll become available after fetch/save.)
             self.reasoningStore.load(for: Date())
             resolveSplashInfoAndAdvance()
+
+            
         }
     }
 
@@ -1143,7 +1212,7 @@ struct FirstPageView: View {
                     startInitialLoad()
                 })
                 .ignoresSafeArea()
-
+                        
             case .onboarding:
                 NavigationStack {
                     if shouldOnboardAfterSignIn {
@@ -1160,41 +1229,38 @@ struct FirstPageView: View {
                             .navigationBarBackButtonHidden(true)
                     }
                 }
-
             case .infoSplash:
-                WelcomeSplashView(location: splashLocation,
-                                  zodiac: splashZodiac,
-                                  moon: splashMoon)
-                .environmentObject(starManager)
-                .environmentObject(themeManager)
-                .onAppear {
-                    // Show the splash briefly, then go main
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                        withAnimation(.easeInOut) { bootPhase = .main }
+                            WelcomeSplashView(location: splashLocation,
+                                                zodiac: splashZodiac,
+                                                moon: splashMoon)
+                            .environmentObject(starManager)
+                            .environmentObject(themeManager)
+                            .onAppear {
+                                // Show the splash briefly, then go main
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                    withAnimation(.easeInOut) { bootPhase = .main }
+                                }
+                            }
+                            .ignoresSafeArea()
+                                    
+                        case .main:
+                            mainContent // (extract your existing NavigationStack content into a computed var)
+                        }
+                    }
+                    .onAppear {
+                        // run once on cold start
+                        guard !didBootVisuals else { return }
+                        didBootVisuals = true
+
+                        starManager.animateStar = true
+                        themeManager.appBecameActive()
                     }
                 }
-                .ignoresSafeArea()
-
-            case .main:
-                mainContent // (extract your existing NavigationStack content into a computed var)
-            }
-        }
-        .onAppear {
-            // run once on cold start
-            guard !didBootVisuals else { return }
-            didBootVisuals = true
-
-            starManager.animateStar = true
-            themeManager.appBecameActive()
-        }
-    }
-
-
     private func fetchAllRecommendationTitles() {
         #if DEBUG
         if _isPreview { return }
         #endif
-
+        
         let db = Firestore.firestore()
 
         for (rawCategory, rawDoc) in viewModel.recommendations {
@@ -1293,7 +1359,7 @@ struct FirstPageView: View {
     }
 
 
-
+    
     // 当天字符串
     private func todayString() -> String {
         let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
@@ -1306,7 +1372,7 @@ struct FirstPageView: View {
             .collection("daily_recommendation")
             .document("\(uid)_\(day)")
     }
-
+    
     /// ✅ 当 FastAPI 生成失败时，把本地默认推荐也写入 daily_recommendation（用于 Timeline/Calendar 回看）
     /// - Note: 使用同一个 docId = uid_yyyy-MM-dd，后续如果 FastAPI 成功，会覆盖掉默认值。
     private func saveDefaultDailyRecommendationToCalendar(
@@ -1315,6 +1381,7 @@ struct FirstPageView: View {
         docRef: DocumentReference,
         reason: String
     ) {
+        // 只写“规范写法”的 key，保证 Timeline/DailyViewModel 能正常读取
         let normalized: [String: String] = DesignRecs.docs.reduce(into: [:]) { acc, kv in
             if let canon = canonicalCategory(from: kv.key) {
                 acc[canon] = sanitizeDocumentName(kv.value)
@@ -1325,7 +1392,7 @@ struct FirstPageView: View {
         data["uid"] = userId
         data["createdAt"] = today
         data["mantra"] = DesignRecs.mantra
-
+        
         let fallbackPlace = {
             let p1 = viewModel.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines)
             if !p1.isEmpty { return p1 }
@@ -1340,10 +1407,11 @@ struct FirstPageView: View {
             self.lastRecommendationPlace = fallbackPlace
         }
 
+        
         data["isDefault"] = true
         data["fallbackReason"] = reason
         data["updatedAt"] = FieldValue.serverTimestamp()
-
+        
         // ✅ NEW: default per-category reasoning map
         var reasoningMap: [String: String] = [:]
         for canonKey in normalized.keys {
@@ -1359,7 +1427,6 @@ struct FirstPageView: View {
             }
         }
     }
-
 
     // 等待定位后只发一次请求（最多等 8 秒）
     private func waitForLocationThenRequest(uid: String, today: String, docRef: DocumentReference) {
@@ -1388,7 +1455,7 @@ struct FirstPageView: View {
         attempt()
     }
 
-
+    
 
     private func fetchAndSaveRecommendationIfNeeded() {
         guard let uid = Auth.auth().currentUser?.uid else {
@@ -1438,7 +1505,7 @@ struct FirstPageView: View {
         }
     }
 
-
+    
     private func fetchFromFastAPIAndSave(
         coord: CLLocationCoordinate2D,
         userId: String,
@@ -1543,7 +1610,7 @@ struct FirstPageView: View {
                 if let parsed = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let recs = parsed["recommendations"] as? [String: String],
                    let mantra = parsed["mantra"] as? String {
-
+                    
                     // ✅ Optional per-category reasoning from backend.
                     // Supports your new shape:
                     //   "mapping": { "Place": "...", "Color": "...", ... }
@@ -1610,6 +1677,11 @@ struct FirstPageView: View {
 
                     print("🧠 FastAPI rawReasoning count:", rawReasoning.count, "keys:", rawReasoning.keys.sorted())
 
+
+                    let reasoning = (parsed["reasoning_summary"] as? String)
+                        ?? (parsed["reasoningSummary"] as? String)
+                        ?? ""
+
                     DispatchQueue.main.async {
                         // ✅ 把后端 recommendations 的 key 统一成规范写法
                         let normalized: [String: String] = recs.reduce(into: [:]) { acc, kv in
@@ -1617,7 +1689,7 @@ struct FirstPageView: View {
                                 acc[canon] = sanitizeDocumentName(kv.value)
                             }
                         }
-
+                        
                         // ✅ NEW: normalize reasoning keys too (same canon keys as normalized)
                         let normalizedReasoning: [String: String] = rawReasoning.reduce(into: [:]) { acc, kv in
                             if let canon = canonicalCategory(from: kv.key) {
@@ -1629,6 +1701,8 @@ struct FirstPageView: View {
                         viewModel.recommendations = normalized
                         viewModel.dailyMantra = mantra
                         lastRecommendationDate = today
+                        viewModel.reasoningSummary = reasoning
+
 
                         // ✅ 先用一个“可用的地点”占位（立即显示），随后用反地理编码精确覆盖
                         let guessedPlace = viewModel.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1648,7 +1722,7 @@ struct FirstPageView: View {
                         recommendationData["uid"] = userId
                         recommendationData["createdAt"] = today
                         recommendationData["mantra"] = mantra
-                        recommendationData["generatedPlace"] = lastRecommendationPlace
+                        recommendationData["generatedPlace"] = lastRecommendationPlace// ✅ NEW
 
                         // ✅ Write reasoning into Firestore only when backend provides it.
                         // Avoid overwriting with placeholders, so missing reasoning is obvious.
@@ -1665,6 +1739,8 @@ struct FirstPageView: View {
                         if let reasoningSummary, !reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                             recommendationData["reasoning_summary"] = reasoningSummary
                         }
+                        recommendationData["reasoning_summary"] = reasoning
+
 
                         // ✅ 如果之前写过默认值，这里要显式“转正”
                         recommendationData["isDefault"] = false
@@ -1678,7 +1754,7 @@ struct FirstPageView: View {
                                 print("✅ 今日推荐已保存（幂等写入）")
                             }
                         }
-
+                        
                         // Refresh reasoning store for detail sheets
                         if let d = DateFormatter.appDayKey.date(from: today) {
                             self.reasoningStore.load(for: d)
@@ -1726,13 +1802,13 @@ struct FirstPageView: View {
         }.resume()
     }
 
-
-
-
+    
+    
+    
     private func navItemView(title: String, geometry: GeometryProxy) -> some View {
         let documentName = viewModel.recommendations[title] ?? ""
         let startCat = RecCategory(rawValue: title) // "Place" -> .Place
-
+        
         return Group {
             if let startCat, !documentName.isEmpty {
                         NavigationLink {
@@ -1755,7 +1831,7 @@ struct FirstPageView: View {
                             .frame(width: geometry.size.width * 0.18)  // slightly smaller to balance text
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                             .shadow(radius: 1.5)
-
+                        
                         // 推荐名称（小字体，紧贴图标）
                         Text(recommendationTitles[title] ?? "")
                             .font(AlignaType.gridItemName())
@@ -1765,6 +1841,7 @@ struct FirstPageView: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
 
+                        
                         // 类别标题（和上面稍微拉开）
                         Text(title)
                             .font(AlignaType.gridCategoryTitle())
@@ -1784,11 +1861,11 @@ struct FirstPageView: View {
                             .scaledToFit()
                             .frame(width: geometry.size.width * 0.18)
                             .foregroundColor(themeManager.foregroundColor.opacity(0.4))
-
+                        
                         Text("Loading")
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.033))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.5))
-
+                        
                         Text(title)
                             .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.05))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.5))
@@ -1797,9 +1874,9 @@ struct FirstPageView: View {
             }
         }
     }
-
-
-
+    
+    
+    
     @ViewBuilder
     private func viewForCategory(title: String, documentName: String) -> some View {
         switch title {
@@ -1812,10 +1889,10 @@ struct FirstPageView: View {
         case "Scent":
             ScentDetailView(documentName: documentName)
         case "Activity":
-            ActivityDetailView(
-                documentName: documentName
-//                soundDocumentName: viewModel.recommendations["Sound"] ?? ""
-            )
+                    ActivityDetailView(
+                        documentName: documentName
+        //                soundDocumentName: viewModel.recommendations["Sound"] ?? ""
+                    )
         case "Sound":
             SoundDetailView(documentName: documentName)
         case "Career":
@@ -1826,8 +1903,8 @@ struct FirstPageView: View {
             Text("⚠️ Unknown Category")
         }
     }
-
-
+    
+    
     private func loadTodayRecommendation(day: String? = nil) {
         guard let userId = Auth.auth().currentUser?.uid else {
             print("❌ 未登录，无法获取推荐")
@@ -1841,55 +1918,79 @@ struct FirstPageView: View {
         func applyDailyData(_ data: [String: Any]) {
             var recs: [String: String] = [:]
             var fetchedMantra = ""
+            var fetchedReasoning = ""
+
             let fetchedPlace = (data["generatedPlace"] as? String ?? "")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
 
             for (key, value) in data {
-                if key == "mantra", let mantraText = value as? String {
-                    fetchedMantra = mantraText
+
+                // ✅ mantra：你之前漏了这段，导致第二次打开时被覆盖为空
+                if key == "mantra", let s = value as? String {
+                    fetchedMantra = s
                     continue
                 }
 
-                // ✅ 跳过元数据字段（包含 generatedPlace）
+                // ✅ reasoning summary：支持两种 key
+                if (key == "reasoning_summary" || key == "reasoningSummary"),
+                   let s = value as? String {
+                    fetchedReasoning = s
+                    continue
+                }
+
+                // ✅ 跳过元数据字段
                 if key == "uid"
                     || key == "createdAt"
                     || key == "updatedAt"
                     || key == "isDefault"
                     || key == "fallbackReason"
-                    || key == "generatedPlace" {
+                    || key == "generatedPlace"
+                    || key == "mantra"
+                    || key == "reasoning_summary"
+                    || key == "reasoningSummary" {
                     continue
                 }
 
-                // ✅ 关键：把后端 key 做大小写无关匹配 → 规范写法
+                // ✅ 推荐类别字段（大小写无关→规范写法）
                 if let canon = canonicalCategory(from: key), let str = value as? String {
                     recs[canon] = sanitizeDocumentName(str)
-                } else {
-                    // 允许存在其它字段，不影响
-                    // print("ℹ️ 忽略非推荐字段或未知类别：\(key)")
                 }
             }
 
             DispatchQueue.main.async {
-                // ✅ 稳定：即使反复进入/返回首页，也只会读取“固定 docId”那一条
                 self.lastRecommendationDate = today
 
-                // ✅ NEW：写入本次 recommendation 生成地点（用于首页 Updated on）
                 if !fetchedPlace.isEmpty {
                     self.lastRecommendationPlace = fetchedPlace
                 }
 
                 self.viewModel.recommendations = recs
-                self.viewModel.dailyMantra = fetchedMantra
+
+                // ✅ 只有在 Firestore 真有 mantra 时才覆盖；避免把已有 UI 文本刷成空
+                let mantraTrim = fetchedMantra.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !mantraTrim.isEmpty {
+                    self.viewModel.dailyMantra = fetchedMantra
+                } else {
+                    // 诊断日志：帮助你确认 Firestore 是否写入了 mantra
+                    print("⚠️ Firestore 今日文档没有 mantra 或为空（docId=\(userId)_\(today)）")
+                }
+
+                let reasoningTrim = fetchedReasoning.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !reasoningTrim.isEmpty {
+                    self.viewModel.reasoningSummary = fetchedReasoning
+                } else {
+                    print("⚠️ Firestore 今日文档没有 reasoning_summary 或为空（docId=\(userId)_\(today)）")
+                }
 
                 self.ensureDefaultsIfMissing()
                 self.fetchAllRecommendationTitles()
                 self.persistWidgetSnapshotFromViewModel()
 
-                print("✅ 成功加载今日推荐（固定 docId 优先）：\(recs), place=\(fetchedPlace)")
+                print("✅ 成功加载今日推荐（固定 docId 优先）：\(recs), mantra=\(!mantraTrim.isEmpty), reasoning=\(!reasoningTrim.isEmpty), place=\(fetchedPlace)")
             }
         }
 
-        // 1) ✅ 优先读取固定 docId：uid_yyyy-MM-dd（稳定，不会随机）
+        // 1) ✅ 优先读取固定 docId：uid_yyyy-MM-dd
         fixedDocRef.getDocument { snap, err in
             if let err = err {
                 print("❌ 读取今日固定 docId 失败：\(err.localizedDescription)；使用本地默认内容")
@@ -1904,7 +2005,7 @@ struct FirstPageView: View {
                 return
             }
 
-            // 2) 兼容旧数据：如果历史上同一天被写入过“随机 docId”文档，这里回退查询
+            // 2) 兼容旧数据：回退查询随机 docId 文档
             db.collection("daily_recommendation")
                 .whereField("uid", isEqualTo: userId)
                 .whereField("createdAt", isEqualTo: today)
@@ -1925,7 +2026,6 @@ struct FirstPageView: View {
                         return
                     }
 
-                    // 选“最可能最新”的一条：优先按 updatedAt 最大；没有就取第一条
                     let best = docs.max { a, b in
                         let ta = (a.data()["updatedAt"] as? Timestamp)?.dateValue() ?? .distantPast
                         let tb = (b.data()["updatedAt"] as? Timestamp)?.dateValue() ?? .distantPast
@@ -1935,7 +2035,7 @@ struct FirstPageView: View {
                     let data = best.data()
                     applyDailyData(data)
 
-                    // 3) ✅ 迁移：把这条写入固定 docId，之后就不会再“返回随机刷新”
+                    // 3) ✅ 迁移写回固定 docId
                     var migrated = data
                     migrated["uid"] = userId
                     migrated["createdAt"] = today
@@ -1951,6 +2051,50 @@ struct FirstPageView: View {
                 }
         }
     }
+    
+    private func debugAndRefreshReasoningSummaryFromFirestore(day: String? = nil) {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            print("❌ debugReasoning: 未登录")
+            return
+        }
+
+        let today = day ?? todayString()
+        let docRef = todayDocRef(uid: uid, day: today)
+
+        docRef.getDocument { snap, err in
+            if let err = err {
+                print("❌ debugReasoning: 读取 docId=\(uid)_\(today) 失败：\(err.localizedDescription)")
+                return
+            }
+
+            guard let snap = snap, snap.exists, let data = snap.data() else {
+                print("⚠️ debugReasoning: 今日文档不存在（docId=\(uid)_\(today)）")
+                return
+            }
+
+            // ✅ 打印全部 keys，帮你确认到底写进去了什么字段
+            let keys = data.keys.sorted()
+            print("🔎 debugReasoning: keys = \(keys)")
+
+            // ✅ 尝试读取两种 key
+            let r1 = (data["reasoning_summary"] as? String) ?? ""
+            let r2 = (data["reasoningSummary"] as? String) ?? ""
+            let reasoning = [r1, r2]
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .first(where: { !$0.isEmpty }) ?? ""
+
+            if reasoning.isEmpty {
+                print("⚠️ debugReasoning: reasoning 为空。reasoning_summary=\(r1.count) chars, reasoningSummary=\(r2.count) chars")
+            } else {
+                print("✅ debugReasoning: 拿到 reasoning，长度=\(reasoning.count)")
+                DispatchQueue.main.async {
+                    self.viewModel.reasoningSummary = reasoning
+                }
+            }
+        }
+    }
+
+
 
 
 
@@ -2001,6 +2145,88 @@ struct FirstPageView: View {
         return String(raw.unicodeScalars.map { allowed.contains($0) ? Character($0) : "_" }).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
+
+// MARK: - Reasoning Bubble UI
+
+struct ReasoningBubbleView: View {
+    let text: String
+    let textColor: Color
+    let onClose: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top) {
+                Text(text)
+                    .font(.custom("PlayfairDisplay-Regular", size: 14))
+                    .foregroundColor(textColor)
+                    .lineSpacing(6)
+                    .multilineTextAlignment(.leading)
+
+                Spacer(minLength: 10)
+
+                Button(action: onClose) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(textColor.opacity(0.8))
+                        .padding(8)
+                        .background(Color.white.opacity(0.06))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(14)
+        .background(
+            SpeechBubbleShape(tailWidth: 18, tailHeight: 10, tailOffsetX: 0)
+                .fill(Color.black.opacity(0.72))
+        )
+        .overlay(
+            SpeechBubbleShape(tailWidth: 18, tailHeight: 10, tailOffsetX: 0)
+                .stroke(Color.white.opacity(0.14), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.35), radius: 14, x: 0, y: 8)
+        .accessibilityLabel("Reasoning summary bubble")
+    }
+}
+
+struct SpeechBubbleShape: Shape {
+    var cornerRadius: CGFloat = 18
+    var tailWidth: CGFloat = 18
+    var tailHeight: CGFloat = 10
+    /// tailOffsetX: 0 means centered; negative moves left, positive moves right
+    var tailOffsetX: CGFloat = 0
+
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+
+        // Bubble rect is lowered to make room for the tail on top
+        let bubbleRect = CGRect(
+            x: rect.minX,
+            y: rect.minY + tailHeight,
+            width: rect.width,
+            height: rect.height - tailHeight
+        )
+
+        // Rounded rect
+        p.addRoundedRect(in: bubbleRect, cornerSize: CGSize(width: cornerRadius, height: cornerRadius))
+
+        // Tail (top-middle)
+        let centerX = rect.midX + tailOffsetX
+        let tailHalf = tailWidth / 2
+
+        let a = CGPoint(x: centerX - tailHalf, y: bubbleRect.minY)
+        let b = CGPoint(x: centerX, y: rect.minY)
+        let c = CGPoint(x: centerX + tailHalf, y: bubbleRect.minY)
+
+        p.move(to: a)
+        p.addLine(to: b)
+        p.addLine(to: c)
+        p.closeSubpath()
+
+        return p
+    }
+}
+
 
 
 enum DesignRecs {
@@ -2071,11 +2297,11 @@ enum RecCategory: String, CaseIterable, Identifiable {
 struct RecommendationPagerView: View {
     let docsByCategory: [RecCategory: String]
     @State var selected: RecCategory
-
+    
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
-
+    
     var body: some View {
         ZStack {
             // Full-bleed background
@@ -2100,14 +2326,14 @@ struct RecommendationPagerView: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .automatic))
-
+            
             CustomBackButton(
-//                iconSize: 18,
-////                paddingSize: 8,
-//                backgroundColor: Color.black.opacity(0.3),
-//                iconColor: themeManager.foregroundColor,
-////                topPadding: 120,
-//                horizontalPadding: 24
+                //                iconSize: 18,
+                ////                paddingSize: 8,
+                //                backgroundColor: Color.black.opacity(0.3),
+                //                iconColor: themeManager.foregroundColor,
+                ////                topPadding: 120,
+                //                horizontalPadding: 24
             )
             .onTapGesture {
                 dismiss()          // pop back to FirstPageView
@@ -2118,7 +2344,7 @@ struct RecommendationPagerView: View {
         .toolbar(.hidden, for: .navigationBar) // if you don’t want any bar at all
         .preferredColorScheme(themeManager.preferredColorScheme)
     }
-
+    
     @ViewBuilder
     private func pageView(for cat: RecCategory, documentName: String) -> some View {
         switch cat {
@@ -2160,7 +2386,7 @@ struct CustomBackButton: View {
     var topPadding: CGFloat = 20
     var horizontalPadding: CGFloat = 20
     var showsBackground: Bool = false
-
+    
     var body: some View {
         VStack {
             HStack {
@@ -2173,17 +2399,14 @@ struct CustomBackButton: View {
                         .clipShape(Circle())
                         .contentShape(Circle())
                 }
-
                 Spacer()
             }
             .padding(.top, topPadding)
             .padding(.horizontal, horizontalPadding)
-
             Spacer()
         }
     }
 }
-
 
 
 
@@ -2206,7 +2429,9 @@ class OnboardingViewModel: ObservableObject {
     @Published var currentCoordinate: CLLocationCoordinate2D?
     @Published var recommendations: [String: String] = [:]
     @Published var dailyMantra: String = ""
+    @Published var reasoningSummary: String = ""
 
+    
     // ✅ 新增：Step3 的五个答案
     @Published var scent_dislike: Set<String> = []     // 多选
     @Published var act_prefer: String = ""             // 单选，可清空
@@ -2224,7 +2449,7 @@ struct StaggeredAppear: ViewModifier {
     let index: Int
     @Binding var show: Bool
     var baseDelay: Double = 0.08
-
+    
     func body(content: Content) -> some View {
         content
             .opacity(show ? 1 : 0)
@@ -2262,7 +2487,7 @@ struct AlignaHeading: View {
         HStack(spacing: letterSpacing) {
             ForEach(letters.indices, id: \.self) { i in
                 Text(String(letters[i]))
-                    .font(Font.custom("PlayfairDisplay-Regular", size: fontSize))
+                    .font(Font.custom("CormorantGaramond-Bold", size: fontSize))
                     .foregroundColor(textColor)
                     .opacity(show ? 1 : 0)
                     .offset(y: show ? 0 : 8)
@@ -2313,41 +2538,41 @@ struct StaggeredLetters: View {
 struct OnboardingOpeningPage: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
                 let minLength = min(geometry.size.width, geometry.size.height)
-
+                
                 ZStack {
                     AppBackgroundView(mode: .night)
                         .environmentObject(starManager)
                         .environmentObject(themeManager)
-
+                    
                     VStack(spacing: minLength * 0.04) {
                         Spacer()
-
+                        
                         Text("Alynna")
-                            .font(Font.custom("PlayfairDisplay-Regular", size: minLength * 0.12))
+                            .font(Font.custom("CormorantGaramond-Bold", size: minLength * 0.12))
                             .foregroundColor(themeManager.fixedNightTextPrimary)
-
+                        
                         Text("FIND YOUR FLOW")
-                            .font(.subheadline)
+                            .font(AlignaTypography.font(.subheadline))
                             .foregroundColor(themeManager.fixedNightTextSecondary)
-
+                        
                         Image("openingSymbol")
                             .resizable()
                             .scaledToFit()
                             .frame(width: minLength * 0.35)
-
+                        
                         Spacer()
-
+                        
                         // Sign Up（按钮本身用白底黑字，保持原样）
                         NavigationLink(destination: RegisterPageView()
                             .environmentObject(starManager)
                             .environmentObject(themeManager)) {
                                 Text("Sign Up")
-                                    .font(.headline)
+                                    .font(AlignaTypography.font(.headline))
                                     .frame(maxWidth: .infinity)
                                     .padding()
                                     .background(Color.white.opacity(0.9))
@@ -2363,7 +2588,7 @@ struct OnboardingOpeningPage: View {
                             .environmentObject(themeManager)
                             .environmentObject(OnboardingViewModel())) {
                                 Text("Log In")
-                                    .font(.headline)
+                                    .font(AlignaTypography.font(.headline))
                                     .frame(maxWidth: .infinity)
                                     .padding()
                                     .background(Color.white.opacity(0.1))
@@ -2378,10 +2603,10 @@ struct OnboardingOpeningPage: View {
                             }
 
                         Text("Welcome to the Journal of Alynna")
-                            .font(.footnote)
+                            .font(AlignaTypography.font(.footnote))
                             .foregroundColor(themeManager.fixedNightTextTertiary)
                             .padding(.top, 10)
-
+                        
                         Spacer()
                     }
                     .padding(.bottom, geometry.size.height * 0.05)
@@ -2414,10 +2639,12 @@ struct RegisterPageView: View {
     @State private var navigateToOnboarding = false
     @State private var navigateToLogin = false
     @State private var currentNonce: String? = nil
-
+    
     @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
     @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
+    
+    @StateObject private var appleAuth = AppleAuthManager()
 
 
     // 入场动画控制
@@ -2467,7 +2694,7 @@ struct RegisterPageView: View {
                                     letterSpacing: minL * 0.005
                                 )
                                 Text("Create Account")
-                                    .font(.custom("PlayfairDisplay-Regular", size: 28))
+                                    .font(.custom("CormorantGaramond-Regular", size: 28))
                                     .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.9))
                             }
                             .padding(.top, h * 0.01)
@@ -2526,7 +2753,7 @@ struct RegisterPageView: View {
 
                             Button(action: { registerWithEmailPassword() }) {
                                 Text("Register & Send Email")
-                                    .font(.headline)
+                                    .font(AlignaTypography.font(.headline))
                                     .padding()
                                     .frame(maxWidth: .infinity)
                                     .background(themeManager.fixedNightTextPrimary)
@@ -2542,7 +2769,7 @@ struct RegisterPageView: View {
                         // 第三方登录
                         VStack(spacing: socialGap) {
                             Text("Or register with")
-                                .font(.footnote)
+                                .font(AlignaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                                 .staggered(5, show: $showIntro)
 
@@ -2594,46 +2821,75 @@ struct RegisterPageView: View {
                                 }
                                 .staggered(6, show: $showIntro)
 
-                                // Apple
-                                SignInWithAppleButton(
-                                    .signUp,
-                                    onRequest: { request in
-                                        let nonce = randomNonceString()
-                                        currentNonce = nonce
-                                        request.requestedScopes = [.fullName, .email]
-                                        request.nonce = sha256(nonce)
-                                        // 进入 Apple 注册流程也先打上标记
-                                        hasCompletedOnboarding = false
-                                        isLoggedIn = false
-                                        shouldOnboardAfterSignIn = true
-                                    },
-                                    onCompletion: { result in
+                                // Apple (custom - reliable)
+                                Button {
+                                    // 1) 预设标记
+                                    hasCompletedOnboarding = false
+                                    isLoggedIn = false
+                                    shouldOnboardAfterSignIn = true
+
+                                    // 2) nonce
+                                    let nonce = randomNonceString()
+                                    currentNonce = nonce
+
+                                    print("🍎 [Apple] Tap -> start authorization. nonce=\(nonce)")
+
+                                    // 3) 启动 Apple 授权
+                                    appleAuth.startSignUp(nonce: nonce) { result in
+                                        // ✅ nonce 必须存在
+                                        guard let raw = currentNonce, !raw.isEmpty else {
+                                            DispatchQueue.main.async {
+                                                shouldOnboardAfterSignIn = false
+                                                alertMessage = "Missing nonce. Please try again."
+                                                showAlert = true
+                                            }
+                                            return
+                                        }
+
                                         handleAppleFromRegister(
                                             result: result,
-                                            rawNonce: currentNonce ?? "",
+                                            rawNonce: raw,
                                             onNewUserGoOnboarding: {
-                                                shouldOnboardAfterSignIn = true
-                                                navigateToOnboarding = true
+                                                DispatchQueue.main.async {
+                                                    shouldOnboardAfterSignIn = true
+                                                    navigateToOnboarding = true
+                                                }
                                             },
                                             onExistingUserGoLogin: { msg in
-                                                shouldOnboardAfterSignIn = false
-                                                alertMessage = msg; showAlert = true
+                                                DispatchQueue.main.async {
+                                                    shouldOnboardAfterSignIn = false
+                                                    alertMessage = msg
+                                                    showAlert = true
+                                                }
                                                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                                                     navigateToLogin = true
                                                 }
                                             },
                                             onError: { message in
-                                                shouldOnboardAfterSignIn = false
-                                                alertMessage = message; showAlert = true
+                                                DispatchQueue.main.async {
+                                                    shouldOnboardAfterSignIn = false
+                                                    alertMessage = message
+                                                    showAlert = true
+                                                }
                                             }
                                         )
                                     }
-                                )
 
-                                .frame(width: 160, height: 50)
-                                .signInWithAppleButtonStyle(.black) // 固定黑色样式更稳
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "applelogo")
+                                            .font(.system(size: 18, weight: .semibold))
+                                        Text("Sign up")
+                                            .font(.system(size: 16, weight: .semibold))
+                                    }
+                                    .frame(width: 160, height: 50)
+                                    .foregroundColor(.white)
+                                    .background(Color.black)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                }
+                                .buttonStyle(.plain)
                                 .staggered(7, show: $showIntro)
+
                             }
                         }
                         .padding(.horizontal, w * 0.1)
@@ -2689,23 +2945,23 @@ struct RegisterPageView: View {
             showAlert = true
             return
         }
-
+        
         // ✅ 关键：在调用 createUser 之前，先打上“需要 Onboarding”的标记
         hasCompletedOnboarding = false
         isLoggedIn = false
         shouldOnboardAfterSignIn = true
-
+        
         Auth.auth().createUser(withEmail: email, password: password) { result, error in
             if let error = error {
                 // 特殊处理：邮箱已经被注册 → 引导去登录
                 if let errCode = AuthErrorCode(rawValue: error._code),
                    errCode == .emailAlreadyInUse {
-
+                    
                     // 这个情况其实是“老用户”，所以这里顺便把标记改回来也可以
                     shouldOnboardAfterSignIn = false
                     isLoggedIn = false
                     hasCompletedOnboarding = false
-
+                    
                     alertMessage = "This email is already in use. Redirecting to Sign In..."
                     showAlert = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
@@ -2713,16 +2969,16 @@ struct RegisterPageView: View {
                     }
                     return
                 }
-
+                
                 // 其他错误，直接弹出
                 alertMessage = error.localizedDescription
                 showAlert = true
                 return
             }
-
+            
             // ✅ 账号创建成功：发验证邮件（就算失败也不影响继续 Onboarding）
             result?.user.sendEmailVerification(completion: nil)
-
+            
             // 此时 FirstPageView 那个监听已经看到 shouldOnboardAfterSignIn = true，
             // 不会把你拉去首页，只会保持在 .onboarding。
             // 这里我们用本页的 NavigationStack 去推 OnboardingStep1。
@@ -2734,18 +2990,64 @@ struct RegisterPageView: View {
 
 }
 
+final class AppleAuthManager: NSObject, ObservableObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+
+    private var completion: ((Result<ASAuthorization, Error>) -> Void)?
+
+    func startSignUp(nonce: String, completion: @escaping (Result<ASAuthorization, Error>) -> Void) {
+        self.completion = completion
+
+        let provider = ASAuthorizationAppleIDProvider()
+        let request = provider.createRequest()
+        request.requestedScopes = [.fullName, .email]
+
+        // 你的项目里已有 sha256(nonce)，直接用
+        request.nonce = sha256(nonce)
+
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        controller.delegate = self
+        controller.presentationContextProvider = self
+        controller.performRequests()
+    }
+
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+        print("🍎 [Apple] didCompleteWithAuthorization")
+        completion?(.success(authorization))
+        completion = nil
+    }
+
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        print("🍎 [Apple] didCompleteWithError: \(error.localizedDescription)")
+        completion?(.failure(error))
+        completion = nil
+    }
+
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        // 取当前 key window
+        let scenes = UIApplication.shared.connectedScenes
+        let windowScene = scenes.first { $0.activationState == .foregroundActive } as? UIWindowScene
+        let window = windowScene?.windows.first { $0.isKeyWindow } ?? UIWindow()
+        return window
+    }
+}
+
+
 extension View {
     func hideKeyboardOnTapOutside<T: Hashable>(_ focus: FocusState<T?>.Binding) -> some View {
         self
-            .contentShape(Rectangle()) // 让空白也可点
-            .simultaneousGesture(TapGesture().onEnded {
-                focus.wrappedValue = nil
-            })
-            .gesture(DragGesture().onChanged { _ in
-                focus.wrappedValue = nil
-            })
+            .contentShape(Rectangle())
+            .simultaneousGesture(
+                TapGesture().onEnded { focus.wrappedValue = nil }
+            )
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 12).onChanged { _ in
+                    focus.wrappedValue = nil
+                }
+            )
     }
 }
+
+
 import SwiftUI
 import MapKit
 
@@ -2768,14 +3070,14 @@ struct AlignaTopHeader: View {
                     .padding(.top, 6)
             }
             Text("Alynna")
-                .font(Font.custom("PlayfairDisplay-Regular", size: 34))
+                .font(Font.custom("Merriweather-Regular", size: 34))
                 .foregroundColor(.white)
         }
     }
 }
 extension Text {
     func onboardingQuestionStyle() -> some View {
-        self.font(.custom("PlayfairDisplay-Regular", size: 17)) // 统一字号
+        self.font(.custom("Merriweather-Regular", size: 17)) // 统一字号
             .foregroundColor(.white) // 统一颜色
             .multilineTextAlignment(.center) // 统一居中
             .frame(maxWidth: .infinity)
@@ -2793,9 +3095,8 @@ struct OnboardingStep1: View {
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var starManager: StarAnimationManager
-
+    
     @State private var goOpening = false
-
 
     private let panelBG = Color.white.opacity(0.08)
     private let stroke   = Color.white.opacity(0.25)
@@ -2820,6 +3121,7 @@ struct OnboardingStep1: View {
                 AppBackgroundView(mode: .night)
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
+
                 ScrollView {
                     VStack(spacing: minLength * 0.045) {
                         // 顶部
@@ -2866,8 +3168,10 @@ struct OnboardingStep1: View {
                                                 .padding()
                                                 .background(viewModel.gender == gender ? Color.white : panelBG)
                                                 .foregroundColor(viewModel.gender == gender ? .black : .white)
-                                                .overlay(RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(stroke, lineWidth: 1))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 10)
+                                                        .stroke(stroke, lineWidth: 1)
+                                                )
                                                 .cornerRadius(10)
                                         }
                                     }
@@ -2879,23 +3183,30 @@ struct OnboardingStep1: View {
                                 Text("Status")
                                     .onboardingQuestionStyle()
 
-                                HStack(spacing: 10) {
-                                    ForEach(["Single", "In a relationship", "Other"], id: \.self) { status in
-                                        Button {
-                                            viewModel.relationshipStatus = status
-                                        } label: {
-                                            Text(status)
-                                                .frame(maxWidth: .infinity)
-                                                .padding()
-                                                .background(viewModel.relationshipStatus == status ? Color.white : panelBG)
-                                                .foregroundColor(viewModel.relationshipStatus == status ? .black : .white)
-                                                .overlay(RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(stroke, lineWidth: 1))
-                                                .cornerRadius(10)
-                                        }
+                                // ✅ Fix: avoid overflow by NOT adding horizontal padding outside the fixed width frame
+                                GeometryReader { geo in
+                                    let total = geo.size.width
+                                    let spacing: CGFloat = 10
+                                    let available = total - spacing * 2
+
+                                    // left/right a bit narrower, middle wider
+                                    let sideW = available * 0.25
+                                    let midW  = available - sideW * 2
+
+                                    HStack(spacing: spacing) {
+                                        statusButton("Single")
+                                            .frame(width: sideW)
+
+                                        statusButton("In a relationship")
+                                            .frame(width: midW)
+
+                                        statusButton("Other")
+                                            .frame(width: sideW)
                                     }
                                 }
+                                .frame(height: 52)
                             }
+
                         }
                         .padding(.horizontal)
 
@@ -2952,8 +3263,10 @@ struct OnboardingStep1: View {
                                         .padding(12)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .background(panelBG)
-                                        .overlay(RoundedRectangle(cornerRadius: 10)
-                                            .stroke(Color.white.opacity(0.25), lineWidth: 1))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                                        )
                                         .cornerRadius(10)
                                     }
                                 }
@@ -2962,20 +3275,22 @@ struct OnboardingStep1: View {
                         .padding(.horizontal)
 
                         // Continue
-                        NavigationLink(destination: OnboardingStep2(viewModel: viewModel)
-                            .environmentObject(themeManager)) {
-                                Text("Continue")
-                                    .font(.headline)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(isFormComplete ? Color.white : Color.white.opacity(0.1))
-                                    .foregroundColor(isFormComplete ? .black : .white)
-                                    .cornerRadius(16)
-                                    .shadow(color: .white.opacity(isFormComplete ? 0.15 : 0),
-                                            radius: 8, x: 0, y: 4)
-                            }
-                            .padding(.horizontal)
-                            .disabled(!isFormComplete)
+                        NavigationLink(
+                            destination: OnboardingStep2(viewModel: viewModel)
+                                .environmentObject(themeManager)
+                        ) {
+                            Text("Continue")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(isFormComplete ? Color.white : Color.white.opacity(0.1))
+                                .foregroundColor(isFormComplete ? .black : .white)
+                                .cornerRadius(16)
+                                .shadow(color: .white.opacity(isFormComplete ? 0.15 : 0),
+                                        radius: 8, x: 0, y: 4)
+                        }
+                        .padding(.horizontal)
+                        .disabled(!isFormComplete)
 
                         // Back
                         Button {
@@ -3002,7 +3317,6 @@ struct OnboardingStep1: View {
                         .frame(height: geometry.safeAreaInsets.top + 8)
                         .allowsHitTesting(false)
                 }
-                // 给底部 Home 指示条留点空间，手感更好
                 .safeAreaInset(edge: .bottom) {
                     Color.clear
                         .frame(height: max(12, geometry.safeAreaInsets.bottom))
@@ -3010,8 +3324,7 @@ struct OnboardingStep1: View {
                 }
             }
             .preferredColorScheme(.dark)
-            .onAppear {
-            }
+            .onAppear { }
         }
     }
 
@@ -3021,6 +3334,27 @@ struct OnboardingStep1: View {
         !viewModel.relationshipStatus.isEmpty &&
         !viewModel.birthPlace.isEmpty
     }
+    @ViewBuilder
+    private func statusButton(_ status: String) -> some View {
+        Button {
+            viewModel.relationshipStatus = status
+        } label: {
+            Text(status)
+                .lineLimit(1)
+                .minimumScaleFactor(0.95)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        // only vertical padding so width won't expand beyond .frame(width:)
+        .padding(.vertical, 10)
+        .background(viewModel.relationshipStatus == status ? Color.white : panelBG)
+        .foregroundColor(viewModel.relationshipStatus == status ? .black : .white)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(stroke, lineWidth: 1)
+        )
+        .cornerRadius(10)
+    }
+    
 
     private func performBirthSearch(query: String) {
         let request = MKLocalSearch.Request()
@@ -3255,11 +3589,11 @@ struct PlaceResult: Identifiable, Hashable {
     let name: String
     let subtitle: String
     let coordinate: CLLocationCoordinate2D
-
+    
     static func == (lhs: PlaceResult, rhs: PlaceResult) -> Bool {
         lhs.id == rhs.id
     }
-
+    
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
         hasher.combine(name)
@@ -3751,7 +4085,7 @@ struct OnboardingFinalStep: View {
                             uploadUserInfo()
                         } label: {
                             Text("Confirm")
-                                .font(.headline)
+                                .font(AlignaTypography.font(.headline))
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(Color.white)
@@ -3768,7 +4102,7 @@ struct OnboardingFinalStep: View {
                             dismiss()
                         } label: {
                             Text("Back")
-                                .font(.headline)
+                                .font(AlignaTypography.font(.headline))
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(Color.white.opacity(0.1))
@@ -3798,18 +4132,39 @@ struct OnboardingFinalStep: View {
             }
             // 监听坐标，做反向地理编码
             .onReceive(locationManager.$currentLocation.compactMap { $0 }) { coord in
+                // ✅ 如果已经有可用城市名，就不重复解析
+                if !viewModel.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                   !isCoordinateLikeString(viewModel.currentPlace) {
+                    return
+                }
+
+                // ✅ 允许同一个页面多次尝试（第一次失败也能重试）
                 guard !didAttemptReverseGeocode else { return }
                 didAttemptReverseGeocode = true
-                reverseGeocode(coord) { place in
-                    if let place = place {
-                        viewModel.currentPlace = place
-                        viewModel.currentCoordinate = coord
-                        locationMessage = "✓ Current Place detected: \(place)"
-                    } else {
-                        locationMessage = "Location acquired, resolving address failed."
+
+                // ✅ 用你文件里更稳的 getAddressFromCoordinate（带重试 + 过滤）
+                getAddressFromCoordinate(coord, preferredLocale: .current) { place in
+                    DispatchQueue.main.async {
+                        if let place = place, !place.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            viewModel.currentPlace = place
+                            viewModel.currentCoordinate = coord
+                            locationMessage = "✓ Current Place detected: \(place)"
+                        } else {
+                            // ✅ 失败也先显示坐标，避免“看不到定位”
+                            viewModel.currentCoordinate = coord
+                            let coordText = String(format: "%.4f, %.4f", coord.latitude, coord.longitude)
+                            viewModel.currentPlace = coordText
+                            locationMessage = "Location acquired, resolving address failed."
+
+                            // ✅ 关键：给一次“自动重试机会”
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                                didAttemptReverseGeocode = false
+                            }
+                        }
                     }
                 }
             }
+
             // 监听权限
             .onReceive(locationManager.$locationStatus.compactMap { $0 }) { status in
                 switch status {
@@ -3842,10 +4197,10 @@ struct OnboardingFinalStep: View {
             (
                 Text("\(title): ")
                     .italic()
-                    .font(.custom("PlayfairDisplay-Regular", size: fontSize))
+                    .font(.custom("Merriweather-Regular", size: fontSize))
                 +
                 Text(value)
-                    .font(.custom("PlayfairDisplay-Regular", size: fontSize))
+                    .font(.custom("Merriweather-Regular", size: fontSize))
             )
             .foregroundColor(.white)
             .lineSpacing(lineSpacing) // ⬅️ 单项内部行距（多行时生效）
@@ -3976,7 +4331,8 @@ struct OnboardingFinalStep: View {
                 if let parsed = try JSONSerialization.jsonObject(with: cleanedData) as? [String: Any],
                    let recs = parsed["recommendations"] as? [String: String],
                    let mantraText = parsed["mantra"] as? String {
-
+                    
+                    
                     // Optional per-category reasoning from backend.
                     // Supports:
                     //  - top-level "mapping": { "Place": "...", ... }
@@ -4017,6 +4373,7 @@ struct OnboardingFinalStep: View {
                     }()
 
                     print("🧠 FastAPI(raw) reasoning count:", rawReasoning.count, "keys:", rawReasoning.keys.sorted())
+                    
                     DispatchQueue.main.async {
                         viewModel.recommendations = recs
                         self.isLoading = false
@@ -4029,8 +4386,8 @@ struct OnboardingFinalStep: View {
                         recommendationData["uid"] = userId
                         recommendationData["createdAt"] = createdAt
                         recommendationData["mantra"] = mantraText
-
-                        // Write reasoning only when provided by backend.
+                        
+                        
                         if !rawReasoning.isEmpty {
                             // Write backend keys as-is (FastAPI returns canonical keys like "Place", "Color", ...)
                             recommendationData["reasoning"] = rawReasoning
@@ -4154,10 +4511,10 @@ struct AccountPageView: View {
 
                         VStack(spacing: 6) {
                             Text("Welcome Back")
-                                .font(.title3)
+                                .font(AlignaTypography.font(.title3))
                                 .foregroundColor(themeManager.fixedNightTextPrimary)
                             Text("Sign in to continue your journey")
-                                .font(.subheadline)
+                                .font(AlignaTypography.font(.subheadline))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                         }
                         .multilineTextAlignment(.center)
@@ -4245,7 +4602,7 @@ struct AccountPageView: View {
                                     showAlert = true
                                 }
                             }
-                            .font(.footnote)
+                            .font(AlignaTypography.font(.footnote))
                             .foregroundColor(themeManager.fixedNightTextSecondary)
                             .underline()
                         }
@@ -4293,7 +4650,7 @@ struct AccountPageView: View {
                         HStack {
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
                             Text("or login with")
-                                .font(.footnote)
+                                .font(AlignaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
                         }
@@ -4381,7 +4738,7 @@ struct AccountPageView: View {
                         // 去注册
                         HStack {
                             Text("Don't have an account?")
-                                .font(.footnote)
+                                .font(AlignaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             NavigationLink(
                                 destination: RegisterPageView()
@@ -4390,7 +4747,7 @@ struct AccountPageView: View {
                                     .environmentObject(viewModel)
                             ) {
                                 Text("Sign Up")
-                                    .font(.footnote)
+                                    .font(AlignaTypography.font(.footnote))
                                     .foregroundColor(themeManager.fixedNightTextPrimary)
                                     .underline()
                             }
@@ -4641,12 +4998,32 @@ func handleAppleFromRegister(
     onExistingUserGoLogin: @escaping (_ message: String) -> Void,
     onError: @escaping (String) -> Void
 ) {
+    // ✅ rawNonce 必须存在
+    guard !rawNonce.isEmpty else {
+        DispatchQueue.main.async {
+            onError("Missing nonce. Please try again.")
+        }
+        return
+    }
+
     switch result {
     case .success(let authResults):
-        guard let appleIDCredential = authResults.credential as? ASAuthorizationAppleIDCredential,
-              let identityToken = appleIDCredential.identityToken,
-              let tokenString = String(data: identityToken, encoding: .utf8) else {
-            onError("Apple sign in failed, cannot extract identity token")
+        guard
+            let appleIDCredential = authResults.credential as? ASAuthorizationAppleIDCredential
+        else {
+            DispatchQueue.main.async {
+                onError("Apple sign in failed: invalid credential.")
+            }
+            return
+        }
+
+        guard
+            let identityToken = appleIDCredential.identityToken,
+            let tokenString = String(data: identityToken, encoding: .utf8)
+        else {
+            DispatchQueue.main.async {
+                onError("Apple sign in failed: cannot extract identity token.")
+            }
             return
         }
 
@@ -4658,15 +5035,19 @@ func handleAppleFromRegister(
 
         Auth.auth().signIn(with: credential) { _, error in
             if let error = error {
-                onError("Apple sign in failed: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    onError("Apple sign in failed: \(error.localizedDescription)")
+                }
                 return
             }
-            // ⚠️ 关键：按“资料完整度”来分流
+
+            // ✅ 按“资料完整度”分流
             determineRegistrationPathForCurrentUser { path in
                 DispatchQueue.main.async {
                     switch path {
                     case .needsOnboarding:
                         onNewUserGoOnboarding()
+
                     case .existingAccount:
                         onExistingUserGoLogin("This Apple ID is already registered. Redirecting to Sign In…")
                         try? Auth.auth().signOut()
@@ -4676,9 +5057,12 @@ func handleAppleFromRegister(
         }
 
     case .failure(let error):
-        onError("Apple authorization failed: \(error.localizedDescription)")
+        DispatchQueue.main.async {
+            onError("Apple authorization failed: \(error.localizedDescription)")
+        }
     }
 }
+
 
 // ===============================
 // 辅助：基于“资料完整度”的分流（新增）
@@ -4801,6 +5185,57 @@ import FirebaseCore
 import GoogleSignIn
 import UIKit
 
+// MARK: - Typography
+private enum AlignaTypography {
+    /// Home page body font (used for the mantra).
+    static let homeBodyFontName = "Merriweather-Regular"
+
+    /// Keep the same *size* as a system text style, only swap the font face.
+    static func font(_ textStyle: UIFont.TextStyle) -> Font {
+        .custom(homeBodyFontName, size: UIFont.preferredFont(forTextStyle: textStyle).pointSize)
+    }
+}
+
+struct AlignaCardStyle: ViewModifier {
+    @EnvironmentObject var themeManager: ThemeManager
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(
+                        themeManager.isNight
+                        ? Color.white.opacity(0.04)
+                        : Color.white.opacity(0.30)   // ✅ Day mode 核心
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(
+                        themeManager.isNight
+                        ? Color.white.opacity(0.12)
+                        : Color.black.opacity(0.08), // ✅ Day mode 用深色边框
+                        lineWidth: 1
+                    )
+            )
+            .shadow(
+                color: themeManager.isNight
+                ? Color.black.opacity(0.15)
+                : Color.black.opacity(0.08),       // ✅ 轻微层级
+                radius: 10,
+                x: 0,
+                y: 6
+            )
+    }
+}
+
+extension View {
+    func alignaCard() -> some View {
+        self.modifier(AlignaCardStyle())
+    }
+}
+
+
 struct AccountDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
@@ -4822,7 +5257,7 @@ struct AccountDetailView: View {
     @State private var birthTime: Date = Date()
     @State private var birthPlace: String = ""
     @State private var currentPlace: String = ""
-
+    
     // Birth location & timezone & raw input (for exact display)
     @State private var birthLat: Double = 0
     @State private var birthLng: Double = 0
@@ -4843,8 +5278,8 @@ struct AccountDetailView: View {
     @State private var isBusy = false
     @State private var showDeleteAlert = false
     @State private var errorMessage: String?
-
-
+    
+    
     // 保持定位器存活，避免回调丢失
     @State private var activeLocationFetcher: OneShotLocationFetcher?
 
@@ -5019,32 +5454,44 @@ private extension AccountDetailView {
                 if editingNickname {
                     TextField("Nickname", text: $nickname)
                         .multilineTextAlignment(.center)
-                        .font(.custom("PlayfairDisplay-Regular", size: 36))
+                        .font(.custom("Merriweather-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
                         .tint(themeManager.accent)
                         .textInputAutocapitalization(.words)
                         .disableAutocorrection(true)
 
                     HStack(spacing: 10) {
-                        Button { saveField(FSKeys.nickname, value: nickname) { editingNickname = false } }
-                        label: { Image(systemName: "checkmark.circle.fill").font(.title2) }
+                        Button {
+                            saveField(FSKeys.nickname, value: nickname) {
+                                editingNickname = false
+                            }
+                        } label: {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.title2)
+                        }
 
-                        Button { editingNickname = false; loadUser() }
-                        label: { Image(systemName: "xmark.circle.fill").font(.title2) }
+                        Button {
+                            editingNickname = false
+                            loadUser()
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title2)
+                        }
                     }
                     .foregroundColor(themeManager.accent)
                 } else {
                     Text(nickname.isEmpty ? "—" : nickname)
-                        .font(.system(size: 36, weight: .bold, design: .serif))
+                        .font(.custom("Merriweather-Regular", size: 36)) // ✅ 与编辑态完全一致
                         .foregroundColor(themeManager.primaryText)
 
                     Button { editingNickname = true } label: {
-                        Image(systemName: "pencil").font(.title3).foregroundColor(themeManager.accent)
+                        Image(systemName: "pencil")
+                            .font(.title3)
+                            .foregroundColor(themeManager.accent)
                     }
                 }
             }
 
-            // Inline zodiac row — use locally computed texts to avoid "Unknown"
             ZodiacInlineRow(
                 sunText:  sunSignText,
                 moonText: moonSignText,
@@ -5056,20 +5503,14 @@ private extension AccountDetailView {
         .padding(.vertical, 16)
     }
 
-
-
     var personalInfoCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Personal Information")
-                .font(.title3.weight(.semibold))
+                .font(AlignaTypography.font(.title3)).fontWeight(.semibold)
                 .foregroundColor(themeManager.primaryText)
 
             VStack(spacing: 12) {
-                // === Birthday | Birth Time ===
-                // === Birthday | Birth Time ===
-                // === Birthday | Birth Time ===
                 HStack(spacing: 12) {
-                    // Birthday —— 显示“日期”
                     infoRow(
                         title: "Birthday",
                         value: Self.birthDateDisplayFormatter.string(from: birthday),
@@ -5085,15 +5526,12 @@ private extension AccountDetailView {
                                     .labelsHidden()
                             ),
                             onSave: {
-                                saveBirthDateOnly(newDate: birthday) {
-                                    showBirthdaySheet = false
-                                }
+                                saveBirthDateOnly(newDate: birthday) { showBirthdaySheet = false }
                             },
                             onCancel: { showBirthdaySheet = false }
                         )
                     }
 
-                    // Birth Time —— 显示 “时:分 am/pm（或系统 24h）”
                     infoRow(
                         title: "Birth Time",
                         value: BirthTimeUtils.displayFormatter.string(from: birthTime).lowercased(),
@@ -5109,18 +5547,13 @@ private extension AccountDetailView {
                                     .labelsHidden()
                             ),
                             onSave: {
-                                saveBirthTimeOnly(newTime: birthTime) {
-                                    showBirthTimeSheet = false
-                                }
+                                saveBirthTimeOnly(newTime: birthTime) { showBirthTimeSheet = false }
                             },
                             onCancel: { showBirthTimeSheet = false }
                         )
                     }
                 }
 
-
-
-                // === Birth Place | Current Place ===
                 HStack(spacing: 12) {
                     infoRowEditableText(
                         title: "Birth Place",
@@ -5141,10 +5574,7 @@ private extension AccountDetailView {
                 }
             }
             .padding()
-            .background(Color.white.opacity(themeManager.isNight ? 0.05 : 0.08),
-                        in: RoundedRectangle(cornerRadius: 18))
-            .overlay(RoundedRectangle(cornerRadius: 18)
-                .stroke(Color.white.opacity(themeManager.isNight ? 0.08 : 0.06), lineWidth: 1))
+            .alignaCard()
         }
     }
 
@@ -5155,7 +5585,7 @@ private extension AccountDetailView {
                 .environmentObject(themeManager)
                 .environmentObject(viewModel)
         } label: {
-            rowCard(icon: "calendar", title: "Timeline", subtitle: "View your cosmic journey history")
+            rowCard(icon: "calendar", title: "Timeline", subtitle: "View your rhythm journey")
         }
     }
 
@@ -5164,24 +5594,31 @@ private extension AccountDetailView {
             HStack(spacing: 10) {
                 Image(systemName: "sparkles").foregroundColor(themeManager.accent)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("App Theme").font(.headline).foregroundColor(themeManager.primaryText)
-                    Text("Customize appearance").font(.subheadline).foregroundColor(themeManager.descriptionText)
+                    Text("App Theme")
+                        .font(AlignaTypography.font(.headline))
+                        .foregroundColor(themeManager.primaryText)
+                    Text("Customize appearance")
+                        .font(AlignaTypography.font(.subheadline))
+                        .foregroundColor(themeManager.descriptionText)
                 }
             }
             HStack(spacing: 12) { themeOption(.light); themeOption(.dark); themeOption(.auto) }
         }
         .padding()
-        .background(Color.white.opacity(themeManager.isNight ? 0.05 : 0.08),
-                    in: RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18)
-            .stroke(Color.white.opacity(themeManager.isNight ? 0.08 : 0.06), lineWidth: 1))
+        .alignaCard()
     }
 
     var aboutCard: some View {
-        NavigationLink { Text("About Alynna").padding() } label: {
-            rowCard(icon: "info.circle",
-                    title: "About Alynna",
-                    subtitle: "Learn more about the app and privacy")
+        NavigationLink {
+            AboutAlignaView()
+                .navigationTitle("About Aligna")
+                .navigationBarTitleDisplayMode(.inline)
+        } label: {
+            rowCard(
+                icon: "info.circle",
+                title: "About Aligna",
+                subtitle: "More about the app and privacy"
+            )
         }
     }
 
@@ -5200,104 +5637,149 @@ private extension AccountDetailView {
         Button(role: .destructive) { showDeleteAlert = true } label: {
             HStack(spacing: 12) {
                 Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(Color.red.opacity(themeManager.isNight ? 0.92 : 0.78))
+
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Delete Account").font(.headline).foregroundColor(.white)
-                    Text("Permanently delete your account and data")
-                        .font(.subheadline)
+                    Text("Delete Account")
+                        .font(AlignaTypography.font(.headline))
+                        .foregroundColor(Color.red.opacity(themeManager.isNight ? 0.92 : 0.78))
+
+                    Text("Permanently delete your account")
+                        .font(AlignaTypography.font(.subheadline))
                         .foregroundColor(themeManager.descriptionText)
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
+
                 Spacer()
+
                 Image(systemName: "chevron.right")
+                    .foregroundColor(Color.red.opacity(themeManager.isNight ? 0.90 : 0.70))
             }
             .padding()
             .frame(maxWidth: .infinity)
-            .background(Color.red.opacity(0.18), in: RoundedRectangle(cornerRadius: 18))
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.red.opacity(0.35), lineWidth: 1))
-            .foregroundColor(.white)
+            .background(
+                Color.red.opacity(themeManager.isNight ? 0.22 : 0.14),
+                in: RoundedRectangle(cornerRadius: 18)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(Color.red.opacity(themeManager.isNight ? 0.55 : 0.35), lineWidth: 1)
+            )
         }
     }
+
     var astrologyCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Astrology (approximate)")
-                .font(.title3.weight(.semibold))
+                .font(AlignaTypography.font(.title3)).fontWeight(.semibold)
                 .foregroundColor(themeManager.primaryText)
 
             VStack(spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Sun sign").font(.footnote).foregroundColor(themeManager.descriptionText)
-                        Text(sunSignText).font(.headline).foregroundColor(themeManager.primaryText)
+                        Text("Sun sign")
+                            .font(AlignaTypography.font(.footnote))
+                            .foregroundColor(themeManager.descriptionText)
+                        Text(sunSignText)
+                            .font(AlignaTypography.font(.headline))
+                            .foregroundColor(themeManager.primaryText)
                     }
                     Spacer()
                 }
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Moon sign").font(.footnote).foregroundColor(themeManager.descriptionText)
-                        Text(moonSignText).font(.headline).foregroundColor(themeManager.primaryText)
+                        Text("Moon sign")
+                            .font(AlignaTypography.font(.footnote))
+                            .foregroundColor(themeManager.descriptionText)
+                        Text(moonSignText)
+                            .font(AlignaTypography.font(.headline))
+                            .foregroundColor(themeManager.primaryText)
                     }
                     Spacer()
                 }
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Ascendant").font(.footnote).foregroundColor(themeManager.descriptionText)
-                        Text(ascSignText).font(.headline).foregroundColor(themeManager.primaryText)
+                        Text("Ascendant")
+                            .font(AlignaTypography.font(.footnote))
+                            .foregroundColor(themeManager.descriptionText)
+                        Text(ascSignText)
+                            .font(AlignaTypography.font(.headline))
+                            .foregroundColor(themeManager.primaryText)
                     }
                     Spacer()
                 }
                 Text("Note: Lightweight astronomical approximations; values near sign cusps may vary slightly.")
-                    .font(.footnote)
+                    .font(AlignaTypography.font(.footnote))
                     .foregroundColor(themeManager.descriptionText)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding()
             .background(Color.white.opacity(themeManager.isNight ? 0.05 : 0.08),
                         in: RoundedRectangle(cornerRadius: 18))
-            .overlay(RoundedRectangle(cornerRadius: 18)
-                .stroke(Color.white.opacity(themeManager.isNight ? 0.08 : 0.06), lineWidth: 1))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(
+                                Color.white.opacity(
+                                    themeManager.isNight ? 0.10 : 0.22
+                                ),
+                                lineWidth: 1
+                            )
+            )
         }
     }
-
 }
 
 // MARK: - Reusable UI
 private extension AccountDetailView {
+
     func rowCard(icon: String, title: String, subtitle: String) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: icon).foregroundColor(themeManager.accent)
+            Image(systemName: icon)
+                .foregroundColor(themeManager.accent)
+
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.headline).foregroundColor(themeManager.primaryText)
-                Text(subtitle).font(.subheadline).foregroundColor(themeManager.descriptionText)
+                Text(title)
+                    .font(AlignaTypography.font(.headline))
+                    .foregroundColor(themeManager.primaryText)
+
+                Text(subtitle)
+                    .font(AlignaTypography.font(.subheadline))
+                    .foregroundColor(themeManager.descriptionText)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
+
             Spacer()
-            Image(systemName: "chevron.right").foregroundColor(themeManager.primaryText.opacity(0.9))
+
+            Image(systemName: "chevron.right")
+                .foregroundColor(themeManager.primaryText.opacity(0.9))
         }
         .padding()
+
+
         .frame(maxWidth: .infinity)
-        .background(Color.white.opacity(themeManager.isNight ? 0.05 : 0.08), in: RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(themeManager.isNight ? 0.08 : 0.06), lineWidth: 1))
+        .alignaCard()
     }
 
     func infoRow(title: String, value: String, editable: Bool, onEdit: @escaping () -> Void) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             // 上面一行：标题
             Text(title)
-                .font(.footnote)
+                .font(AlignaTypography.font(.footnote))
                 .foregroundColor(themeManager.descriptionText)
 
             // 下面一行：内容 + 小笔 靠在一起
             HStack(spacing: 6) {
                 Text(value)
-                    .font(.headline)
+                    .font(AlignaTypography.font(.headline))
                     .foregroundColor(themeManager.primaryText)
 
                 if editable {
                     Button(action: onEdit) {
                         Image(systemName: "pencil")
-                            .font(.body.weight(.semibold))
+                            .font(AlignaTypography.font(.body))
+                            .fontWeight(.semibold)
                             .foregroundColor(themeManager.accent)
                     }
                     .buttonStyle(.plain)
@@ -5309,7 +5791,6 @@ private extension AccountDetailView {
         .padding(.vertical, 6)
     }
 
-
     func infoRowWithTrailingButton(
         title: String,
         value: String,
@@ -5319,18 +5800,19 @@ private extension AccountDetailView {
         VStack(alignment: .leading, spacing: 4) {
             // 上面一行：标题
             Text(title)
-                .font(.footnote)
+                .font(AlignaTypography.font(.footnote))
                 .foregroundColor(themeManager.descriptionText)
 
             // 下面一行：内容 + 按钮 靠在一起
             HStack(spacing: 6) {
                 Text(value)
-                    .font(.headline)
+                    .font(AlignaTypography.font(.headline))
                     .foregroundColor(themeManager.primaryText)
 
                 Button(action: onTap) {
                     Image(systemName: systemImage)
-                        .font(.body.weight(.semibold))
+                        .font(AlignaTypography.font(.body))
+                        .fontWeight(.semibold)
                         .foregroundColor(themeManager.accent)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 2)
@@ -5344,8 +5826,6 @@ private extension AccountDetailView {
         .padding(.vertical, 6)
     }
 
-
-
     func infoRowEditableText(
         title: String,
         text: Binding<String>,
@@ -5356,7 +5836,7 @@ private extension AccountDetailView {
         VStack(alignment: .leading, spacing: 4) {
             // 上面一行：标题
             Text(title)
-                .font(.footnote)
+                .font(AlignaTypography.font(.footnote))
                 .foregroundColor(themeManager.descriptionText)
 
             // 下面一行：内容 / TextField + 图标 靠在一起
@@ -5367,10 +5847,10 @@ private extension AccountDetailView {
                         .disableAutocorrection(true)
                         .tint(themeManager.accent)
                         .foregroundColor(themeManager.primaryText)
-                        .font(.headline)
+                        .font(AlignaTypography.font(.headline))
                 } else {
                     Text(text.wrappedValue.isEmpty ? "—" : text.wrappedValue)
-                        .font(.headline)
+                        .font(AlignaTypography.font(.headline))
                         .foregroundColor(themeManager.primaryText)
                 }
 
@@ -5378,18 +5858,19 @@ private extension AccountDetailView {
                     HStack(spacing: 10) {
                         Button(action: onSave) {
                             Image(systemName: "checkmark.circle.fill")
-                                .font(.title3)
+                                .font(AlignaTypography.font(.title3))
                         }
                         Button(action: onCancel) {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.title3)
+                                .font(AlignaTypography.font(.title3))
                         }
                     }
                     .foregroundColor(themeManager.accent)
                 } else {
                     Button { isEditing.wrappedValue = true } label: {
                         Image(systemName: "pencil")
-                            .font(.body.weight(.semibold))
+                            .font(AlignaTypography.font(.body))
+                            .fontWeight(.semibold)
                             .foregroundColor(themeManager.accent)
                     }
                     .buttonStyle(.plain)
@@ -5400,7 +5881,6 @@ private extension AccountDetailView {
         }
         .padding(.vertical, 6)
     }
-
 
     func themeOption(_ pref: ThemePreference) -> some View {
         let selected = themePreferenceRaw == pref.rawValue
@@ -5416,15 +5896,18 @@ private extension AccountDetailView {
             }
         } label: {
             VStack(spacing: 10) {
-                Image(systemName: pref.icon).font(.title2)
-                Text(pref.title).font(.subheadline)
+                Image(systemName: pref.icon)
+                    .font(AlignaTypography.font(.title2))
+
+                Text(pref.title)
+                    .font(AlignaTypography.font(.subheadline))
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(selected ? themeManager.accent.opacity(0.18)
-                                   : Color.white.opacity(themeManager.isNight ? 0.06 : 0.08))
+                                  : Color.white.opacity(themeManager.isNight ? 0.06 : 0.08))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -5435,6 +5918,7 @@ private extension AccountDetailView {
         }
         .buttonStyle(.plain)
     }
+
     /// Map "Aries" -> "aries", "Taurus" -> "taurus", ... for SF Symbols.
     /// If not found, fall back to "questionmark.circle".
     func zodiacSFIcon(for signName: String) -> String {
@@ -5458,10 +5942,21 @@ private extension AccountDetailView {
     /// A compact pill with a kind icon (sun/moon/asc) + the zodiac glyph + text value.
     func zodiacPill(title: String, systemImage: String, signImage: String, value: String) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: systemImage).font(.caption2.weight(.semibold))
-            Image(systemName: signImage).font(.caption2.weight(.semibold))
-            Text(title).font(.caption2.weight(.semibold))
-            Text(value).font(.caption.weight(.semibold))
+            Image(systemName: systemImage)
+                .font(AlignaTypography.font(.caption2))
+                .fontWeight(.semibold)
+
+            Image(systemName: signImage)
+                .font(AlignaTypography.font(.caption2))
+                .fontWeight(.semibold)
+
+            Text(title)
+                .font(AlignaTypography.font(.caption2))
+                .fontWeight(.semibold)
+
+            Text(value)
+                .font(AlignaTypography.font(.caption1))
+                .fontWeight(.semibold)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
@@ -5476,16 +5971,26 @@ private extension AccountDetailView {
         .foregroundColor(themeManager.primaryText)
     }
 
-
     @ViewBuilder
-    func pickerSheet(title: String, picker: AnyView, onSave: @escaping () -> Void, onCancel: @escaping () -> Void) -> some View {
+    func pickerSheet(
+        title: String,
+        picker: AnyView,
+        onSave: @escaping () -> Void,
+        onCancel: @escaping () -> Void
+    ) -> some View {
         VStack(spacing: 16) {
-            Text(title).font(.headline).foregroundColor(themeManager.primaryText)
+            Text(title)
+                .font(AlignaTypography.font(.headline))
+                .foregroundColor(themeManager.primaryText)
+
             picker.tint(themeManager.accent)
+
             HStack {
                 Button("Cancel", action: onCancel)
+                    .font(AlignaTypography.font(.body))
                 Spacer()
                 Button("Save", action: onSave)
+                    .font(AlignaTypography.font(.body))
             }
             .foregroundColor(themeManager.accent)
             .padding(.horizontal)
@@ -5494,6 +5999,8 @@ private extension AccountDetailView {
         .presentationDetents([.height(320)])
         .presentationBackground(.ultraThinMaterial)
     }
+
+    // ✅ 下面这些不是 UI 字体相关，不需要改动
     final class OneShotLocationFetcher: NSObject, CLLocationManagerDelegate {
         private let manager = CLLocationManager()
         private var callback: ((Result<CLLocationCoordinate2D, Error>) -> Void)?
@@ -5595,7 +6102,7 @@ private extension AccountDetailView {
                         self.currentPlace = placeToShow
 
                         // 写入 Firestore（即使没变也写：更新坐标 & 时间戳）
-                        var payload: [String: Any] = [
+                        let payload: [String: Any] = [
                             FSKeys.currentPlace: placeToShow,
                             "currentLat": coord.latitude,
                             "currentLng": coord.longitude,
@@ -5614,8 +6121,7 @@ private extension AccountDetailView {
                                 self.refreshAlertTitle = "Location Updated"
                                 self.refreshAlertMessage = "Updated to：\(placeToShow)"
                             } else {
-                                self.refreshAlertTitle = "No Change"
-                                self.refreshAlertMessage = "No change in location（Still is：\(placeToShow)）。"
+                                self.refreshAlertTitle = "Location unchanged.（Still at：\(placeToShow)）"
                             }
                             self.showRefreshAlert = true
                         }
@@ -5642,8 +6148,214 @@ private extension AccountDetailView {
             }
         }
     }
-
 }
+
+// About page
+
+struct AboutAlignaView: View {
+
+    // MARK: - Colors (System Adaptive)
+    private var pageBG: Color { Color(.systemBackground) }
+    private var cardBG: Color { Color(.secondarySystemBackground) }
+    private var border: Color { Color.primary.opacity(0.10) }
+    private var titleColor: Color { Color.primary }
+    private var bodyColor: Color { Color.secondary }
+
+    var body: some View {
+        ZStack {
+            pageBG.ignoresSafeArea()
+
+            ScrollView(showsIndicators: true) {
+                VStack(spacing: 16) {
+
+                    // Top Header
+                    VStack(spacing: 10) {
+                        ZStack {
+                            Circle()
+                                .fill(cardBG)
+                                .frame(width: 64, height: 64)
+                                .overlay(
+                                    Circle()
+                                        .stroke(border, lineWidth: 1)
+                                )
+
+                            Image(systemName: "leaf")
+                                .font(.system(size: 26, weight: .semibold))
+                                .foregroundColor(titleColor)
+                        }
+                        .padding(.top, 6)
+
+                        Text("About Aligna")
+                            .font(AlignaTypography.font(.title2))
+                            .foregroundColor(titleColor)
+
+                        Rectangle()
+                            .fill(titleColor.opacity(0.18))
+                            .frame(width: 110, height: 1)
+                            .padding(.top, 2)
+                    }
+                    .padding(.top, 10)
+
+                    // Quote Card
+                    card {
+                        Text("“Before you wake up, Aligna has already sensed the rhythm of your day.”")
+                            .font(.custom("Merriweather-Italic", size: 18))
+                            .foregroundColor(titleColor.opacity(0.88))
+                            .multilineTextAlignment(.center)
+                            .padding(.vertical, 4)
+                    }
+
+                    // Your Energy Companion
+                    card {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Your Energy Companion")
+                                .font(AlignaTypography.font(.headline))
+                                .foregroundColor(titleColor)
+
+                            Text("""
+Aligna is an energy companion app that blends astrology with spatial sensing to help you tune your daily flow. By combining your natal chart with your phone's sensors (location, weather, light, and magnetic field), Aligna creates a personalized energy phrase each morning and suggests colors, sounds, and rhythms to match.
+
+With one gentle cue a day, Aligna helps you reconnect with your body, your space, and your inner balance—making life feel smoother, more attuned, and more aligned in the digital age.
+""")
+                            .font(AlignaTypography.font(.subheadline))
+                            .foregroundColor(bodyColor)
+                            .lineSpacing(3)
+                        }
+                    }
+
+                    // How Aligna Works
+                    card {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("How Aligna Works")
+                                .font(AlignaTypography.font(.headline))
+                                .foregroundColor(titleColor)
+
+                            featureRow(emoji: "🌟",
+                                       title: "Astrology Integration",
+                                       desc: "Your natal chart provides the cosmic foundation for personalized insights.")
+
+                            featureRow(emoji: "📱",
+                                       title: "Spatial Sensing",
+                                       desc: "Phone sensors detect location, weather, light, and magnetic field data.")
+
+                            featureRow(emoji: "🎨",
+                                       title: "Daily Recommendations",
+                                       desc: "Receive personalized suggestions for colors, sounds, and rhythms.")
+
+                            featureRow(emoji: "⚖️",
+                                       title: "Inner Balance",
+                                       desc: "One gentle daily cue to help you stay aligned with your natural rhythm.")
+                        }
+                    }
+
+                    // Data & Privacy
+                    card {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack(spacing: 10) {
+                                Text("🔒")
+                                    .font(.system(size: 20))
+                                Text("Data & Privacy")
+                                    .font(AlignaTypography.font(.headline))
+                                    .foregroundColor(titleColor)
+                            }
+
+                            Text("""
+Your privacy is paramount. All sensor data is processed locally on your device. We do not collect, store, or share your personal information or location data.
+""")
+                            .font(AlignaTypography.font(.subheadline))
+                            .foregroundColor(bodyColor)
+                            .lineSpacing(3)
+
+                            VStack(alignment: .leading, spacing: 10) {
+                                bullet("Location data is used only for local weather and cosmic calculations")
+                                bullet("Birth chart information remains private and secure")
+                                bullet("No personal data is transmitted to external servers")
+                                bullet("You have full control over your data and can delete it anytime")
+                            }
+                            .padding(.top, 2)
+                        }
+                    }
+
+                    // Footer (可删掉，如果你不想要底部文字)
+                    VStack(spacing: 6) {
+                        Text("Aligna Version 1.0")
+                            .font(AlignaTypography.font(.subheadline))
+                            .foregroundColor(bodyColor.opacity(0.85))
+
+                        Text("© 2024 Aligna. Made with cosmic intention")
+                            .font(AlignaTypography.font(.subheadline))
+                            .foregroundColor(bodyColor.opacity(0.75))
+                    }
+                    .padding(.top, 8)
+                    .padding(.bottom, 18)
+
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    // MARK: - Card Wrapper
+    @ViewBuilder
+    private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(cardBG)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(border, lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 6)
+    }
+
+    // MARK: - Feature Row
+    private func featureRow(emoji: String, title: String, desc: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(emoji)
+                .font(.system(size: 18))
+                .frame(width: 22, alignment: .leading)
+                .padding(.top, 2)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(AlignaTypography.font(.headline))
+                    .foregroundColor(titleColor)
+
+                Text(desc)
+                    .font(AlignaTypography.font(.subheadline))
+                    .foregroundColor(bodyColor)
+            }
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    // MARK: - Bullet
+    private func bullet(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text("•")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(bodyColor)
+                .padding(.top, 1)
+
+            Text(text)
+                .font(AlignaTypography.font(.subheadline))
+                .foregroundColor(bodyColor)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+
+
 
 // === One-shot 定位器 ===
 
@@ -6133,7 +6845,7 @@ private extension AccountDetailView {
             else { print("✅ Google session disconnected") }
         }
     }
-
+    
     // ===== Astrology glue (no extra conversion) =====
 
     // Merge local civil date & time (your existing helper already uses .current)
@@ -6223,6 +6935,8 @@ final class AppleReauthCoordinator: NSObject, ASAuthorizationControllerDelegate,
     }
 }
 
+import Foundation
+import CoreLocation
 
 
 
@@ -6272,36 +6986,70 @@ struct ZodiacInlineRow: View {
     let moonText: String
     let ascText: String
 
+    private var normalizedAscText: String {
+        let t = ascText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (t.isEmpty || t == "—") ? "Unknown" : t
+    }
+
+    private var separator: some View {
+        Text("•")
+            .foregroundColor(themeManager.descriptionText)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private func segment(systemIcon: String, text: String, italic: Bool = true) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: systemIcon)
+                .imageScale(.small)
+                .fixedSize(horizontal: true, vertical: false)
+
+            Group {
+                if italic {
+                    Text(text).italic()
+                } else {
+                    Text(text)
+                }
+            }
+            // ✅ 强制单行显示：不换行、必要时缩小、再不行就截断
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
+            .allowsTightening(true)
+            .truncationMode(.tail)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var rowContent: some View {
+        HStack(spacing: 10) {
+            segment(systemIcon: "sun.max.fill", text: sunText)
+            separator
+            segment(systemIcon: "moon.fill", text: moonText)
+            separator
+            segment(systemIcon: "arrow.up.right", text: normalizedAscText)
+        }
+    }
+
     var body: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: 6) {
-                Image(systemName: "sun.max.fill")
-                Text(sunText).italic()
-            }
+        // ✅ 尽量在同一行内“缩放/截断”；极端情况下允许横向滚动，仍保持单行
+        ViewThatFits(in: .horizontal) {
+            rowContent
+                .frame(maxWidth: .infinity, alignment: .center)
 
-            Text("•")
-                .foregroundColor(themeManager.descriptionText)
-
-            HStack(spacing: 6) {
-                Image(systemName: "moon.fill")
-                Text(moonText).italic()
-            }
-
-            Text("•")
-                .foregroundColor(themeManager.descriptionText)
-
-            HStack(spacing: 6) {
-                Image(systemName: "arrow.up.right")
-                Text(ascText.isEmpty || ascText == "—" ? "Unknown" : ascText)
-                    .italic()
+            ScrollView(.horizontal, showsIndicators: false) {
+                rowContent
+                    .padding(.horizontal, 2)
             }
         }
-        .font(.callout)
+        .font(.custom("PlayfairDisplay-Regular", size: UIFont.preferredFont(forTextStyle: .callout).pointSize, relativeTo: .callout))
         .foregroundColor(themeManager.primaryText)
-        .frame(maxWidth: .infinity, alignment: .center)
-        // no background / border — clean style like your old version
+        .accessibilityLabel(Text("Zodiac: Sun \(sunText), Moon \(moonText), Ascendant \(normalizedAscText)"))
     }
 }
+
 /// 安全加载本地 Asset 的图片：
 /// - 若找不到对应的图片名，不会崩溃，而是回退到系统占位图标。
 struct SafeImage: View {
@@ -6344,13 +7092,13 @@ struct CollapsibleSection<Content: View>: View {
     let content: Content
     let width: CGFloat
     @State private var isExpanded = false
-
+    
     init(title: String, width: CGFloat, @ViewBuilder content: () -> Content) {
         self.title = title
         self.content = content()
         self.width = width
     }
-
+    
     var body: some View {
         DisclosureGroup(isExpanded: $isExpanded) {
             content
@@ -6412,7 +7160,7 @@ func randomNonceString(length: Int = 32) -> String {
     Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
     var result = ""
     var remainingLength = length
-
+    
     while remainingLength > 0 {
         let randoms: [UInt8] = (0..<16).map { _ in
             var random: UInt8 = 0
@@ -6422,7 +7170,7 @@ func randomNonceString(length: Int = 32) -> String {
             }
             return random
         }
-
+        
         randoms.forEach { random in
             if remainingLength == 0 { return }
             if random < charset.count {
@@ -6431,7 +7179,7 @@ func randomNonceString(length: Int = 32) -> String {
             }
         }
     }
-
+    
     return result
 }
 
@@ -6532,15 +7280,4 @@ extension ThemeManager {
     var fixedNightTextPrimary: Color   { Color(hex: "#E6D7C3") } // 主要文字
     var fixedNightTextSecondary: Color { Color(hex: "#B8C5D6") } // 次要说明
     var fixedNightTextTertiary: Color  { Color(hex: "#A8B5C8") } // 更淡的正文
-}
-
-
-
-#Preview {
-    FirstPageView()
-        .environmentObject(StarAnimationManager())
-        .environmentObject(ThemeManager())
-        .environmentObject(OnboardingViewModel())
-        .environmentObject(SoundPlayer())
-
 }

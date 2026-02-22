@@ -196,6 +196,7 @@ struct CalendarView: View {
                 }
             }
 
+
             // Grid
             LazyVGrid(columns: columns, spacing: 2) {
                 ForEach(Array(makeCalendarGrid(for: displayMonth).enumerated()), id: \.offset) { _, d in

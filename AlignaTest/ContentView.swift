@@ -368,7 +368,7 @@ struct ContentView: View {
                         .onChange(of: selectedDate) {
                             if enableLoading { dailyVM.load(for: selectedDate) }
                             loadJournal(for: selectedDate)
-                            reasoningStore.load(for: selectedDate) 
+                            reasoningStore.load(for: selectedDate)
                         }
 
                         .padding(.horizontal, 16)
