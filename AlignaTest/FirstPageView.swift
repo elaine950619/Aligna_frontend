@@ -5142,6 +5142,7 @@ private enum FSKeys {
     static let userAlt       = "users"
     static let recPrimary    = "daily recommendation"
     static let recAlt        = "daily_recommendation"
+    static let chartData     = "chartData"
 
     static let uid           = "uid"
     static let email         = "email"
@@ -5263,6 +5264,10 @@ struct AccountDetailView: View {
     @State private var birthLng: Double = 0
     @State private var birthTimezoneOffsetMinutes: Int = TimeZone.current.secondsFromGMT() / 60
     @State private var birthRawTimeString: String? = nil
+    @State private var chartSunSign: String = ""
+    @State private var chartMoonSign: String = ""
+    @State private var chartAscSign: String = ""
+    @State private var chartSignature: String = ""
 
 
     // 编辑状态
@@ -6507,6 +6512,9 @@ private extension AccountDetailView {
         } else {
             self.birthRawTimeString = nil
         }
+
+        clearChartData()
+        syncChartDataIfNeeded()
     }
 
 
@@ -6543,7 +6551,7 @@ private extension AccountDetailView {
             self.isBusy = false
             if let err = err { self.errorMessage = err.localizedDescription; return }
             self.birthday = newDate   // 本地状态只改日期
-            completion()
+            self.syncChartDataIfNeeded(force: true, completion: completion)
         }
     }
 
@@ -6581,7 +6589,165 @@ private extension AccountDetailView {
             // 本地状态只改“时间”
             self.birthTime = BirthTimeUtils.makeLocalTimeDate(hour: h, minute: m)
             self.birthRawTimeString = timeRaw
-            completion()
+            self.syncChartDataIfNeeded(force: true, completion: completion)
+        }
+    }
+
+    private func applyChartData(from data: [String: Any]) {
+        guard let chartData = data["chartData"] as? [String: Any] else {
+            clearChartData()
+            return
+        }
+
+        chartSunSign = (chartData["sun"] as? String ?? chartData["sunSign"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        chartMoonSign = (chartData["moon"] as? String ?? chartData["moonSign"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        chartAscSign = (chartData["ascendant"] as? String ?? chartData["ascendantSign"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        chartSignature = (data["signature"] as? String ?? chartData["signature"] as? String ?? "")
+    }
+
+    private func clearChartData() {
+        chartSunSign = ""
+        chartMoonSign = ""
+        chartAscSign = ""
+        chartSignature = ""
+    }
+
+    private func syncChartDataIfNeeded(force: Bool = false, completion: (() -> Void)? = nil) {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            completion?()
+            return
+        }
+
+        let signature = chartComputationSignature
+
+        if force {
+            refreshChartDataFromAPI(uid: uid, signature: signature, completion: completion)
+        } else {
+            loadStoredChartData(uid: uid, expectedSignature: signature, completion: completion)
+        }
+    }
+
+    private func loadStoredChartData(uid: String, expectedSignature: String, completion: (() -> Void)? = nil) {
+        db.collection(FSKeys.chartData).document(uid).getDocument { snap, err in
+            if let err = err {
+                self.errorMessage = err.localizedDescription
+                self.refreshChartDataFromAPI(uid: uid, signature: expectedSignature, completion: completion)
+                return
+            }
+
+            let data = snap?.data() ?? [:]
+            let storedSignature = data["signature"] as? String ?? ""
+            let hasStoredChart = (data["chartData"] as? [String: Any]) != nil
+
+            if hasStoredChart && storedSignature == expectedSignature {
+                self.applyChartData(from: data)
+                completion?()
+                return
+            }
+
+            self.refreshChartDataFromAPI(uid: uid, signature: expectedSignature, completion: completion)
+        }
+    }
+
+    private func refreshChartDataFromAPI(uid: String, signature: String, completion: (() -> Void)? = nil) {
+        let birthDateString = Self.parseDateYYYYMMDD.string(from: birthday)
+        let birthTimeString = Self.birthTimeStorageFormatter.string(from: birthTime)
+
+        let payload: [String: Any] = [
+            "birth_date": birthDateString,
+            "birth_time": birthTimeString,
+            "latitude": birthLat,
+            "longitude": birthLng
+        ]
+
+        guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/chart/") else {
+            errorMessage = "Invalid chart API URL."
+            completion?()
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+        } catch {
+            errorMessage = error.localizedDescription
+            completion?()
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { data, _, err in
+            if let err = err {
+                DispatchQueue.main.async {
+                    self.errorMessage = err.localizedDescription
+                    completion?()
+                }
+                return
+            }
+
+            guard let data = data else {
+                DispatchQueue.main.async {
+                    self.errorMessage = "Chart API returned no data."
+                    completion?()
+                }
+                return
+            }
+
+            do {
+                guard let chartResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    DispatchQueue.main.async {
+                        self.errorMessage = "Invalid chart API response."
+                        completion?()
+                    }
+                    return
+                }
+
+                DispatchQueue.main.async {
+                    self.saveChartData(uid: uid, chartResponse: chartResponse, signature: signature, completion: completion)
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = error.localizedDescription
+                    completion?()
+                }
+            }
+        }.resume()
+    }
+
+    private func saveChartData(
+        uid: String,
+        chartResponse: [String: Any],
+        signature: String,
+        completion: (() -> Void)? = nil
+    ) {
+        let document: [String: Any] = [
+            "uid": uid,
+            "signature": signature,
+            "chartData": chartResponse,
+            "source": "api",
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+
+        db.collection(FSKeys.chartData).document(uid).setData(document, merge: true) { err in
+            if let err = err {
+                self.errorMessage = err.localizedDescription
+                completion?()
+                return
+            }
+
+            self.db.collection(FSKeys.chartData).document(uid).getDocument { snap, fetchErr in
+                if let fetchErr = fetchErr {
+                    self.errorMessage = fetchErr.localizedDescription
+                    self.applyChartData(from: document)
+                    completion?()
+                    return
+                }
+
+                self.applyChartData(from: snap?.data() ?? document)
+                completion?()
+            }
         }
     }
 
@@ -6877,15 +7043,33 @@ private extension AccountDetailView {
         AstroCalculator.displayBirthTime(birthInfo, format: "h:mm a").lowercased()
     }
 
-    // Sign texts
-    private var sunSignText: String {
+    private var chartComputationSignature: String {
+        let dateKey = Self.parseDateYYYYMMDD.string(from: birthday)
+        let (hour, minute) = BirthTimeUtils.hourMinute(from: birthTime)
+        let latKey = String(format: "%.6f", birthLat)
+        let lngKey = String(format: "%.6f", birthLng)
+        return "\(dateKey)|\(hour):\(minute)|\(latKey)|\(lngKey)|\(birthTimezoneOffsetMinutes)"
+    }
+
+    // Local fallback, used both for persistence and UI fallback while Firebase sync completes.
+    private var fallbackSunSignText: String {
         AstroCalculator.sunSign(date: birthDateUTC).rawValue
     }
-    private var moonSignText: String {
+    private var fallbackMoonSignText: String {
         AstroCalculator.moonSign(date: birthDateUTC).rawValue
     }
-    private var ascSignText: String {
+    private var fallbackAscSignText: String {
         AstroCalculator.ascendantSign(info: birthInfo).rawValue
+    }
+
+    private var sunSignText: String {
+        chartSunSign.isEmpty ? fallbackSunSignText : chartSunSign
+    }
+    private var moonSignText: String {
+        chartMoonSign.isEmpty ? fallbackMoonSignText : chartMoonSign
+    }
+    private var ascSignText: String {
+        chartAscSign.isEmpty ? fallbackAscSignText : chartAscSign
     }
 
 }
