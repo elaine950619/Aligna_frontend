@@ -1083,27 +1083,27 @@ struct PlaceDetailView: View {
                     )
                 }
 
-                HStack(spacing: 40) {
-                    ForEach(iconItems) { icon in
-                        VStack(spacing: 8) {
-                            Image(icon.imageName)
-                                .renderingMode(.template)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 50, height: 50)
-                                .foregroundColor(themeManager.placeIcon)
-
-                            Text(icon.title)
-                                .font(AlynnaType.tag16Light())
-                                .lineSpacing(AlynnaType.tag16LineSpacing)
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(themeManager.placeIconText)
-                                .fixedSize(horizontal: true, vertical: true)
-                                .lineLimit(2)
-                        }
-                        .padding(.horizontal, 24)
-                    }
-                }
+//                HStacchk(spacing: 40) {
+//                    ForEach(iconItems) { icon in
+//                        VStack(spacing: 8) {
+//                            Image(icon.imageName)
+//                                .renderingMode(.template)
+//                                .resizable()
+//                                .scaledToFit()
+//                                .frame(width: 50, height: 50)
+//                                .foregroundColor(themeManager.placeIcon)
+//
+//                            Text(icon.title)
+//                                .font(AlynnaType.tag16Light())
+//                                .lineSpacing(AlynnaType.tag16LineSpacing)
+//                                .multilineTextAlignment(.center)
+//                                .foregroundColor(themeManager.placeIconText)
+//                                .fixedSize(horizontal: true, vertical: true)
+//                                .lineLimit(2)
+//                        }
+//                        .padding(.horizontal, 24)
+//                    }
+//                }
             }
         }
     }
@@ -1349,151 +1349,151 @@ struct GemLinkSheet: View {
             )
             .ignoresSafeArea()
 
-            VStack(spacing: 16) {
-                Spacer().frame(height: 6)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 16) {
+                    Spacer().frame(height: 18)
 
-                GlassCard {
-                    VStack(spacing: 14) {
-                        // Icon + title
-                        HStack(spacing: 12) {
-                            ZStack {
-                                Circle()
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [
-                                                themeManager.foregroundColor.opacity(isDark ? 0.32 : 0.25),
-                                                .clear
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .frame(width: 40, height: 40)
-
-                                Image(systemName: "diamond.fill")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(themeManager.primaryText)
-                            }
-
-                            Text(title)
-                                .font(.custom("PlayfairDisplay-Regular", size: 22))
-                                .foregroundColor(themeManager.primaryText)
-                                .lineLimit(2)
-                                .minimumScaleFactor(0.85)
-                                .multilineTextAlignment(.leading)
-
-                            Spacer(minLength: 0)
-                        }
-
-                        Divider()
-                            .overlay(
-                                (isDark ? Color.white : Color.black)
-                                    .opacity(0.20)
-                            )
-
-                        // reasoning summary
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Reasoning")
-                                .font(.custom("PlayfairDisplay-SemiBold", size: 16))
-                                .foregroundColor(themeManager.primaryText)
-
-                            Text(reasoningText)
-                                .font(.custom("Merriweather-Regular", size: 14))
-                                .foregroundColor(themeManager.primaryText.opacity(0.85))
-                                .lineSpacing(4)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-
-
-                        // Primary button (Bracelet / Link)
-                        if let s = linkURLString, let url = URL(string: s) {
-                            Button {
-                                haptics()
-                                openURL(url)
-                                dismiss()
-                            } label: {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "link")
-                                    Text("Open Bracelet")
-                                }
-                            }
-                            .buttonStyle(GradientButtonStyle())
-                        }
-
-                        // Secondary button (Stone)
-                        if let s = stoneURLString, let url = URL(string: s) {
-                            Button {
-                                haptics()
-                                openURL(url)
-                                dismiss()
-                            } label: {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "sparkles")
-                                    Text("Open Stone")
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    GlassCard {
+                        VStack(spacing: 14) {
+                            // Icon + title
+                            HStack(spacing: 12) {
+                                ZStack {
+                                    Circle()
                                         .fill(
-                                            themeManager.foregroundColor
-                                                .opacity(isDark ? 0.16 : 0.08)
+                                            LinearGradient(
+                                                colors: [
+                                                    themeManager.foregroundColor.opacity(isDark ? 0.32 : 0.25),
+                                                    .clear
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
                                         )
-                                )
+                                        .frame(width: 40, height: 40)
+
+                                    Image(systemName: "diamond.fill")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(themeManager.primaryText)
+                                }
+
+                                Text(title)
+                                    .font(.custom("PlayfairDisplay-Regular", size: 22))
+                                    .foregroundColor(themeManager.primaryText)
+                                    .lineLimit(2)
+                                    .minimumScaleFactor(0.85)
+                                    .multilineTextAlignment(.leading)
+
+                                Spacer(minLength: 0)
+                            }
+
+                            Divider()
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .stroke(
-                                            (isDark ? Color.white : themeManager.foregroundColor)
-                                                .opacity(isDark ? 0.24 : 0.20),
-                                            lineWidth: 1
-                                        )
+                                    (isDark ? Color.white : Color.black)
+                                        .opacity(0.20)
                                 )
-                            }
-                            .foregroundColor(themeManager.primaryText)
-                        }
 
-                        // Utility row (copy links)
-                        HStack(spacing: 12) {
-                            if let s = linkURLString {
+                            // reasoning summary
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Reasoning")
+                                    .font(.custom("PlayfairDisplay-SemiBold", size: 16))
+                                    .foregroundColor(themeManager.primaryText)
+
+                                Text(reasoningText)
+                                    .font(.custom("Merriweather-Regular", size: 14))
+                                    .foregroundColor(themeManager.primaryText.opacity(0.85))
+                                    .lineSpacing(4)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+
+                            // Primary button (Bracelet / Link)
+                            if let s = linkURLString, let url = URL(string: s) {
                                 Button {
-                                    UIPasteboard.general.string = s
                                     haptics()
+                                    openURL(url)
+                                    dismiss()
                                 } label: {
-                                    Label("Copy bracelet URL", systemImage: "doc.on.doc")
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "link")
+                                        Text("Open Bracelet")
+                                    }
+                                }
+                                .buttonStyle(GradientButtonStyle())
+                            }
+
+                            // Secondary button (Stone)
+                            if let s = stoneURLString, let url = URL(string: s) {
+                                Button {
+                                    haptics()
+                                    openURL(url)
+                                    dismiss()
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "sparkles")
+                                        Text("Open Stone")
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                            .fill(
+                                                themeManager.foregroundColor
+                                                    .opacity(isDark ? 0.16 : 0.08)
+                                            )
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                            .stroke(
+                                                (isDark ? Color.white : themeManager.foregroundColor)
+                                                    .opacity(isDark ? 0.24 : 0.20),
+                                                lineWidth: 1
+                                            )
+                                    )
+                                }
+                                .foregroundColor(themeManager.primaryText)
+                            }
+
+                            // Utility row (copy links)
+                            HStack(spacing: 12) {
+                                if let s = linkURLString {
+                                    Button {
+                                        UIPasteboard.general.string = s
+                                        haptics()
+                                    } label: {
+                                        Label("Copy bracelet URL", systemImage: "doc.on.doc")
+                                    }
+                                }
+                                if let s = stoneURLString {
+                                    Button {
+                                        UIPasteboard.general.string = s
+                                        haptics()
+                                    } label: {
+                                        Label("Copy stone URL", systemImage: "doc.on.doc.fill")
+                                    }
                                 }
                             }
-                            if let s = stoneURLString {
-                                Button {
-                                    UIPasteboard.general.string = s
-                                    haptics()
-                                } label: {
-                                    Label("Copy stone URL", systemImage: "doc.on.doc.fill")
-                                }
-                            }
+                            .font(.footnote)
+                            .foregroundColor(isDark ? .white.opacity(0.6) : .secondary)
                         }
-                        .font(.footnote)
-                        .foregroundColor(isDark ? .white.opacity(0.6) : .secondary)
                     }
-                }
 
-                // Close in accent for light, softer in dark
-                Button(role: .cancel) { dismiss() } label: {
-                    Text("Close")
-                        .font(.system(size: 16, weight: .regular))
-                        .padding(.vertical, 6)
-                        .padding(.bottom, 8)
+                    // Close in accent for light, softer in dark
+                    Button(role: .cancel) { dismiss() } label: {
+                        Text("Close")
+                            .font(.system(size: 16, weight: .regular))
+                            .padding(.vertical, 6)
+                            .padding(.bottom, 8)
+                    }
+                    .foregroundColor(
+                        isDark
+                        ? themeManager.primaryText.opacity(0.85)
+                        : themeManager.accent
+                    )
                 }
-                .foregroundColor(
-                    isDark
-                    ? themeManager.primaryText.opacity(0.85)
-                    : themeManager.accent
-                )
+                .padding(.horizontal, 18)
+                .padding(.top, 8)
+                .padding(.bottom, 12)
             }
-            .padding(.horizontal, 18)
         }
-        .presentationDetents([.fraction(0.42), .medium])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
     }
 
     private func haptics() {
@@ -1559,6 +1559,9 @@ private struct GemstoneExtraContent: View {
                     stoneURLString: item.stone,
                     themeManager: themeManager
                 )
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(28)
             }
 
             if let anchor = item.anchor, !anchor.isEmpty {
@@ -1709,7 +1712,6 @@ struct ScentLinkSheet: View {
 
     var body: some View {
         ZStack {
-            // Background halo adapts to theme
             RadialGradient(
                 colors: [
                     isDark
@@ -1724,11 +1726,13 @@ struct ScentLinkSheet: View {
             .ignoresSafeArea()
 
             VStack(spacing: 16) {
-                // only system drag indicator
+
+                // SAME TOP SPACING AS OTHER SHEETS
                 Spacer().frame(height: 6)
 
                 GlassCard {
                     VStack(spacing: 14) {
+
                         // Title row
                         HStack(spacing: 12) {
                             ZStack {
@@ -1755,10 +1759,12 @@ struct ScentLinkSheet: View {
                                 .foregroundColor(themeManager.primaryText)
                                 .lineLimit(2)
                                 .minimumScaleFactor(0.85)
-                                .multilineTextAlignment(.leading)
 
-                            Spacer(minLength: 0)
+                            Spacer()
                         }
+
+                        Divider()
+                            .overlay((isDark ? Color.white : Color.black).opacity(0.20))
 
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Reasoning")
@@ -1772,13 +1778,6 @@ struct ScentLinkSheet: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
 
-                        Divider()
-                            .overlay(
-                                (isDark ? Color.white : Color.black)
-                                    .opacity(0.20)
-                            )
-
-                        // Primary button: Link
                         if let s = linkURLString, let url = URL(string: s) {
                             Button {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -1793,7 +1792,6 @@ struct ScentLinkSheet: View {
                             .buttonStyle(GradientButtonStyle())
                         }
 
-                        // Secondary button: Candle
                         if let s = candleURLString, let url = URL(string: s) {
                             Button {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -1807,14 +1805,11 @@ struct ScentLinkSheet: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .fill(
-                                            themeManager.foregroundColor
-                                                .opacity(isDark ? 0.16 : 0.08)
-                                        )
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(themeManager.foregroundColor.opacity(isDark ? 0.16 : 0.08))
                                 )
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    RoundedRectangle(cornerRadius: 16)
                                         .stroke(
                                             (isDark ? Color.white : themeManager.foregroundColor)
                                                 .opacity(isDark ? 0.24 : 0.20),
@@ -1824,38 +1819,15 @@ struct ScentLinkSheet: View {
                             }
                             .foregroundColor(themeManager.primaryText)
                         }
-
-                        // Utility row
-                        HStack(spacing: 12) {
-                            if let s = linkURLString {
-                                Button {
-                                    UIPasteboard.general.string = s
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                } label: {
-                                    Label("Copy link URL", systemImage: "doc.on.doc")
-                                }
-                            }
-                            if let s = candleURLString {
-                                Button {
-                                    UIPasteboard.general.string = s
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                } label: {
-                                    Label("Copy candle URL", systemImage: "doc.on.doc.fill")
-                                }
-                            }
-                        }
-                        .font(.footnote)
-                        .foregroundColor(isDark ? .white.opacity(0.6) : .secondary)
                     }
                 }
 
-                // Close: warm accent in light, softer primary text in dark
-                Button(role: .cancel) { dismiss() } label: {
-                    Text("Close")
-                        .font(.system(size: 16, weight: .regular))
-                        .padding(.vertical, 6)
-                        .padding(.bottom, 8)
+                Button("Close", role: .cancel) {
+                    dismiss()
                 }
+                .font(.system(size: 16))
+                .padding(.vertical, 6)
+                .padding(.bottom, 8)
                 .foregroundColor(
                     isDark
                     ? themeManager.primaryText.opacity(0.85)
@@ -1864,10 +1836,10 @@ struct ScentLinkSheet: View {
             }
             .padding(.horizontal, 18)
         }
+        // MATCH OTHER SHEETS
         .presentationDetents([.fraction(0.42), .medium])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
-        // no preferredColorScheme → follow app/system
     }
 }
 
