@@ -4331,7 +4331,31 @@ struct OnboardingFinalStep: View {
                 if let parsed = try JSONSerialization.jsonObject(with: cleanedData) as? [String: Any],
                    let recs = parsed["recommendations"] as? [String: String],
                    let mantraText = parsed["mantra"] as? String {
-                    
+                    func canonicalCategoryKey(_ raw: String) -> String? {
+                        switch raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+                        case "place": return "Place"
+                        case "gemstone": return "Gemstone"
+                        case "color": return "Color"
+                        case "scent": return "Scent"
+                        case "activity": return "Activity"
+                        case "sound": return "Sound"
+                        case "career": return "Career"
+                        case "relationship": return "Relationship"
+                        default: return nil
+                        }
+                    }
+
+                    func sanitizeDocName(_ raw: String) -> String {
+                        let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
+                        return String(raw.unicodeScalars.map { allowed.contains($0) ? Character($0) : "_" })
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
+
+                    let normalizedRecs: [String: String] = recs.reduce(into: [:]) { acc, pair in
+                        guard let canon = canonicalCategoryKey(pair.key) else { return }
+                        acc[canon] = sanitizeDocName(pair.value)
+                    }
+
                     
                     // Optional per-category reasoning from backend.
                     // Supports:
@@ -4375,14 +4399,14 @@ struct OnboardingFinalStep: View {
                     print("🧠 FastAPI(raw) reasoning count:", rawReasoning.count, "keys:", rawReasoning.keys.sorted())
                     
                     DispatchQueue.main.async {
-                        viewModel.recommendations = recs
+                        viewModel.recommendations = normalizedRecs
                         self.isLoading = false
 
                         guard let userId = Auth.auth().currentUser?.uid else { return }
                         let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
                         let createdAt = df.string(from: Date())
 
-                        var recommendationData: [String: Any] = recs
+                        var recommendationData: [String: Any] = normalizedRecs
                         recommendationData["uid"] = userId
                         recommendationData["createdAt"] = createdAt
                         recommendationData["mantra"] = mantraText

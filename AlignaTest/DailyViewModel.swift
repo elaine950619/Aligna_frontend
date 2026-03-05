@@ -28,6 +28,12 @@ final class DailyViewModel: ObservableObject {
     private static let fmt: DateFormatter = {
         let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; return f
     }()
+
+    private static func sanitizeDocumentName(_ raw: String) -> String {
+        let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
+        let cleaned = String(raw.unicodeScalars.map { allowed.contains($0) ? Character($0) : "_" })
+        return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
     
     func load(for date: Date) {
         DispatchQueue.main.async {
@@ -75,15 +81,17 @@ final class DailyViewModel: ObservableObject {
             if colName == "activitys" {
                 colName = "activities"
             }
-            
-            db.collection(colName).document(docName)
+
+            let normalizedDocName = Self.sanitizeDocumentName(docName)
+
+            db.collection(colName).document(normalizedDocName)
                 .getDocument { snapshot, err in
                     if let err = err {
                         print("⚠️", err); return
                     }
                     guard let snap = snapshot,
                           let data = snap.data() else {
-                        print("No data at \(colName)/\(docName)"); return
+                        print("No data at \(colName)/\(normalizedDocName) (raw: \(docName))"); return
                     }
                     
                     // build a *guaranteed* unique SwiftUI id
