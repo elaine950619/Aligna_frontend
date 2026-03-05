@@ -568,10 +568,8 @@ struct DayStarField: View {
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height, alignment: .center)
-            .onAppear {
-                if stars.isEmpty {
-                    generateStars(in: geo.size)
-                }
+            .task(id: geo.size) {
+                generateStars(in: geo.size)
             }
         }
         .ignoresSafeArea()
@@ -585,6 +583,7 @@ struct DayStarField: View {
         let h = size.height
 
         guard w > 0, h > 0 else { return }   // 👈 extra safety
+        var generated: [DayStar] = []
 
         // warm, sun-like palette
         let fills: [Color] = [
@@ -610,7 +609,7 @@ struct DayStarField: View {
             let spinDuration  = Double.random(in: 8...16)
             let pulseDuration = Double.random(in: 4...8)
 
-            stars.append(
+            generated.append(
                 DayStar(
                     position: CGPoint(x: w * nx, y: h * ny),
                     size: s,
@@ -628,6 +627,7 @@ struct DayStarField: View {
         for _ in 0..<starCount {
             makeRandomStar()
         }
+        stars = generated
     }
 }
 
@@ -690,10 +690,8 @@ struct AppBackgroundView: View {
                 // ===== 夜间星空 + 同心环 =====
                 if effectiveIsNight {
                     Color.clear
-                        .task {
-                            if starManager.stars.isEmpty {
-                                starManager.generateStars(in: geo.size)
-                            }
+                        .task(id: geo.size) {
+                            starManager.generateStars(in: geo.size)
                             visible = true
                         }
 

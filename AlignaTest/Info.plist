@@ -55,7 +55,7 @@
 		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>我们需要获取您的当前位置以生成个性化推荐。</string>
+	<string>We need to obtain your current location to generate personalized recommendations.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Gloock-Regular.ttf</string>

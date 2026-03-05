@@ -56,7 +56,6 @@ func getAddressFromCoordinate(
 
 func isCoordinateLikeString(_ s: String) -> Bool {
     let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
-    // 允许前后空格、正负号、小数；不做经纬度范围校验，仅用于“像不像坐标”的判定
     let pattern = #"^\s*-?\d{1,3}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?\s*$"#
     return trimmed.range(of: pattern, options: .regularExpression) != nil
 }
@@ -590,7 +589,7 @@ struct FirstPageView: View {
     @AppStorage("lastRecommendationPlace") var lastRecommendationPlace: String = ""   // ✅ NEW
     @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
     @AppStorage("lastCurrentPlaceUpdate") var lastCurrentPlaceUpdate: String = ""
-    @AppStorage("todayFetchLock") private var todayFetchLock: String = ""  // 当天的拉取互斥锁
+    @AppStorage("todayFetchLock") private var todayFetchLock: String = ""
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
     @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
     @State private var isFetchingToday: Bool = false
@@ -607,7 +606,7 @@ struct FirstPageView: View {
     @State private var authWaitTimedOut = false
 
     @AppStorage("watchdogDay") private var watchdogDay: String = ""
-    @AppStorage("todayAutoRefetchAttempts") private var todayAutoRefetchAttempts: Int = 0  // 当天已重试次数
+    @AppStorage("todayAutoRefetchAttempts") private var todayAutoRefetchAttempts: Int = 0
 
     // NEW: 多次重试的配置
     private let maxRefetchAttempts = 3
@@ -971,8 +970,8 @@ struct FirstPageView: View {
         if watchdogDay != today {
             watchdogDay = today
             todayAutoRefetchAttempts = 0
-            todayAutoRefetchDone = ""   // 你原有的“一次触发标记”也清掉
-            todayFetchLock = ""         // 清理潜在残留锁
+            todayAutoRefetchDone = ""
+            todayFetchLock = ""
         }
     }
 
@@ -2784,10 +2783,6 @@ struct RegisterPageView: View {
                                     // ② 自检：没过就给出友好提示并 return
                                     if !GoogleSignInDiagnostics.preflight(context: "RegisterPageView.GoogleButton") {
                                         alertMessage = """
-                                        Google Sign-In 配置未就绪：
-                                        • 请确认 Info.plist 的 URL Types 中已添加 REVERSED_CLIENT_ID
-                                        • 请确认 GoogleService-Info.plist 属于 App 主 target
-                                        • 请在可见页面触发登录
                                         """
                                         showAlert = true
                                         return
@@ -4332,6 +4327,31 @@ struct OnboardingFinalStep: View {
                    let recs = parsed["recommendations"] as? [String: String],
                    let mantraText = parsed["mantra"] as? String {
                     
+                    func canonicalCategoryKey(_ raw: String) -> String? {
+                        switch raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+                        case "place": return "Place"
+                        case "gemstone": return "Gemstone"
+                        case "color": return "Color"
+                        case "scent": return "Scent"
+                        case "activity": return "Activity"
+                        case "sound": return "Sound"
+                        case "career": return "Career"
+                        case "relationship": return "Relationship"
+                        default: return nil
+                        }
+                    }
+
+                    func sanitizeDocName(_ raw: String) -> String {
+                        let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
+                        return String(raw.unicodeScalars.map { allowed.contains($0) ? Character($0) : "_" })
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
+
+                    let normalizedRecs: [String: String] = recs.reduce(into: [:]) { acc, pair in
+                        guard let canon = canonicalCategoryKey(pair.key) else { return }
+                        acc[canon] = sanitizeDocName(pair.value)
+                    }
+                    
                     
                     // Optional per-category reasoning from backend.
                     // Supports:
@@ -4375,14 +4395,14 @@ struct OnboardingFinalStep: View {
                     print("🧠 FastAPI(raw) reasoning count:", rawReasoning.count, "keys:", rawReasoning.keys.sorted())
                     
                     DispatchQueue.main.async {
-                        viewModel.recommendations = recs
+                        viewModel.recommendations = normalizedRecs
                         self.isLoading = false
 
                         guard let userId = Auth.auth().currentUser?.uid else { return }
                         let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
                         let createdAt = df.string(from: Date())
 
-                        var recommendationData: [String: Any] = recs
+                        var recommendationData: [String: Any] = normalizedRecs
                         recommendationData["uid"] = userId
                         recommendationData["createdAt"] = createdAt
                         recommendationData["mantra"] = mantraText
