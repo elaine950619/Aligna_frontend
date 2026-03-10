@@ -29,7 +29,7 @@ final class ThemeManager: ObservableObject {
     // 大型水印文字：夜 #4A5A9E(40%)；日 secondary
     var watermark: Color {
         isNight ? Color(hex: "#4A5A9E").opacity(0.4)
-                : Color(hex: "8B4513").opacity(0.6)
+                : Color(hex: "#8B4513").opacity(0.6)
     }
     
     // 主标题（例如 “Green Sanctuary”）
