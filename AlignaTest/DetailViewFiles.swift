@@ -8,9 +8,32 @@
 import SwiftUI
 import UIKit
 import AVFoundation
-import FirebaseFirestore
+@preconcurrency import FirebaseFirestore
 import FirebaseStorage
 import FirebaseAuth
+
+private func extractReasoningMapping(from data: [String: Any]) -> [String: String] {
+    func coerceToStringDict(_ anyDict: [String: Any]) -> [String: String] {
+        anyDict.reduce(into: [String: String]()) { result, pair in
+            if let s = pair.value as? String { result[pair.key] = s }
+        }
+    }
+
+    if let directAny = data["mapping"] as? [String: Any] {
+        return coerceToStringDict(directAny)
+    }
+
+    if let reasoning = data["reasoning"] as? [String: Any],
+       let nestedAny = reasoning["mapping"] as? [String: Any] {
+        return coerceToStringDict(nestedAny)
+    }
+
+    if let legacyAny = data["reasoning"] as? [String: Any] {
+        return coerceToStringDict(legacyAny)
+    }
+
+    return [:]
+}
 
 @MainActor
 final class DailyReasoningStore: ObservableObject {
@@ -23,34 +46,6 @@ final class DailyReasoningStore: ObservableObject {
         let db = Firestore.firestore()
         let fixedDocRef = db.collection("daily_recommendation").document("\(uid)_\(ds)")
 
-        func extractMapping(from data: [String: Any]) -> [String: String] {
-            // Helper to coerce a [String: Any] dictionary into [String: String]
-            func coerceToStringDict(_ anyDict: [String: Any]) -> [String: String] {
-                anyDict.reduce(into: [String: String]()) { result, pair in
-                    if let s = pair.value as? String { result[pair.key] = s }
-                }
-            }
-
-            // Try multiple schema variants for reasoning mapping
-            // 1) New schema: top-level "mapping": { "Place": "...", ... }
-            if let directAny = data["mapping"] as? [String: Any] {
-                return coerceToStringDict(directAny)
-            }
-
-            // 2) Nested schema: "reasoning": { "mapping": { ... } }
-            if let reasoning = data["reasoning"] as? [String: Any],
-               let nestedAny = reasoning["mapping"] as? [String: Any] {
-                return coerceToStringDict(nestedAny)
-            }
-
-            // 3) Legacy schema: "reasoning": { "Place": "...", ... } as flat [String: Any]
-            if let legacyAny = data["reasoning"] as? [String: Any] {
-                return coerceToStringDict(legacyAny)
-            }
-
-            return [:]
-        }
-
         // 1) Prefer deterministic doc id (uid_yyyy-MM-dd)
         fixedDocRef.getDocument { snap, err in
             if let err = err {
@@ -60,7 +55,7 @@ final class DailyReasoningStore: ObservableObject {
 
             if let snap = snap, snap.exists, let data = snap.data() {
                 print("📄 daily_recommendation(fixed) keys:", Array(data.keys))
-                let mapping = extractMapping(from: data)
+                let mapping = extractReasoningMapping(from: data)
                 if !mapping.isEmpty {
                     DispatchQueue.main.async {
                         self.map = mapping
@@ -76,7 +71,7 @@ final class DailyReasoningStore: ObservableObject {
             }
 
             // 2) Fallback: query legacy/random doc ids by uid + createdAt
-            db.collection("daily_recommendation")
+            Firestore.firestore().collection("daily_recommendation")
                 .whereField("uid", isEqualTo: uid)
                 .whereField("createdAt", isEqualTo: ds)
                 .getDocuments { snap, err in
@@ -99,7 +94,7 @@ final class DailyReasoningStore: ObservableObject {
 
                     let data = best.data()
                     print("📄 daily_recommendation(fallback) keys:", Array(data.keys))
-                    let mapping = extractMapping(from: data)
+                    let mapping = extractReasoningMapping(from: data)
                     DispatchQueue.main.async {
                         self.map = mapping
                         print("✅ reasoning loaded keys:", mapping.keys.sorted())
@@ -303,8 +298,82 @@ struct ReasoningSheet: View {
     let title: String
     let reasoningText: String
     let themeManager: ThemeManager
+    let iconImageName: String?
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var isDark: Bool { colorScheme == .dark }
+
+    var body: some View {
+        DetailSheetShell(themeManager: themeManager) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        themeManager.foregroundColor.opacity(isDark ? 0.32 : 0.25),
+                                        .clear
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 42, height: 42)
+
+                        if let iconImageName {
+                            Image(iconImageName)
+                                .renderingMode(.template)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 24, height: 24)
+                                .foregroundColor(themeManager.primaryText)
+                        } else {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 22, weight: .bold))
+                                .foregroundColor(themeManager.primaryText)
+                        }
+                    }
+
+                    Text(title)
+                        .font(.custom("PlayfairDisplay-Regular", size: 22))
+                        .foregroundColor(themeManager.primaryText)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.85)
+
+                    Spacer(minLength: 0)
+                }
+
+                Divider()
+                    .overlay((isDark ? Color.white : Color.black).opacity(0.20))
+
+                Text("Reasoning")
+                    .font(.custom("PlayfairDisplay-SemiBold", size: 16))
+                    .foregroundColor(themeManager.primaryText)
+
+                Text(reasoningText)
+                    .font(.custom("Merriweather-Regular", size: 14))
+                    .foregroundColor(themeManager.primaryText.opacity(0.85))
+                    .lineSpacing(4)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } footer: {
+            DetailSheetCloseButton(themeManager: themeManager) { dismiss() }
+        }
+        .presentationDetents([.fraction(0.45), .medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
+        .presentationBackground(.clear)
+    }
+}
+
+private struct DetailSheetShell<Content: View, Footer: View>: View {
+    let themeManager: ThemeManager
+    @ViewBuilder let content: () -> Content
+    @ViewBuilder let footer: () -> Footer
+
     @Environment(\.colorScheme) private var colorScheme
 
     private var isDark: Bool { colorScheme == .dark }
@@ -322,68 +391,61 @@ struct ReasoningSheet: View {
             )
             .ignoresSafeArea()
 
-            VStack(spacing: 16) {
-                Spacer().frame(height: 6)
+            VStack(spacing: 0) {
+                Spacer(minLength: 8)
 
-                GlassCard {
-                    VStack(alignment: .leading, spacing: 14) {
-                        HStack(spacing: 12) {
-                            ZStack {
-                                Circle()
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [
-                                                themeManager.foregroundColor.opacity(isDark ? 0.32 : 0.25),
-                                                .clear
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .frame(width: 40, height: 40)
+                VStack(spacing: 0) {
+                    Capsule()
+                        .fill((isDark ? Color.white : Color.black).opacity(0.22))
+                        .frame(width: 36, height: 4)
+                        .padding(.top, 10)
+                        .padding(.bottom, 18)
 
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(themeManager.primaryText)
-                            }
-
-                            Text(title)
-                                .font(.custom("PlayfairDisplay-Regular", size: 22))
-                                .foregroundColor(themeManager.primaryText)
-                                .lineLimit(2)
-                                .minimumScaleFactor(0.85)
-
-                            Spacer(minLength: 0)
-                        }
-
-                        Divider()
-                            .overlay((isDark ? Color.white : Color.black).opacity(0.20))
-
-                        Text("Reasoning")
-                            .font(.custom("PlayfairDisplay-SemiBold", size: 16))
-                            .foregroundColor(themeManager.primaryText)
-
-                        Text(reasoningText)
-                            .font(.custom("Merriweather-Regular", size: 14))
-                            .foregroundColor(themeManager.primaryText.opacity(0.85))
-                            .lineSpacing(4)
-                            .fixedSize(horizontal: false, vertical: true)
+                    ScrollView(showsIndicators: false) {
+                        content()
+                            .padding(.horizontal, 18)
+                            .padding(.bottom, 14)
                     }
-                }
 
-                Button(role: .cancel) { dismiss() } label: {
-                    Text("Close")
-                        .font(.system(size: 16, weight: .regular))
-                        .padding(.vertical, 6)
-                        .padding(.bottom, 8)
+                    Divider()
+                        .overlay((isDark ? Color.white : Color.black).opacity(0.10))
+
+                    footer()
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 6)
+                        .padding(.bottom, 2)
                 }
-                .foregroundColor(isDark ? themeManager.primaryText.opacity(0.85) : themeManager.accent)
+                .background(
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .fill(isDark ? Color.white.opacity(0.015) : Color.white.opacity(0.06))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .stroke((isDark ? Color.white : Color.black).opacity(isDark ? 0.03 : 0.02), lineWidth: 0.5)
+                )
+                .padding(.horizontal, 18)
+                .padding(.bottom, 12)
             }
-            .padding(.horizontal, 18)
         }
-        .presentationDetents([.fraction(0.45), .medium, .large])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
+    }
+}
+
+private struct DetailSheetCloseButton: View {
+    let themeManager: ThemeManager
+    let action: () -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var isDark: Bool { colorScheme == .dark }
+
+    var body: some View {
+        Button(role: .cancel, action: action) {
+            Text("Close")
+                .font(.system(size: 16, weight: .regular))
+                .padding(.vertical, 6)
+                .padding(.bottom, 8)
+        }
+        .foregroundColor(isDark ? themeManager.primaryText.opacity(0.85) : themeManager.accent)
     }
 }
 
@@ -789,41 +851,24 @@ struct PlayerPopup: View {
     @State private var timer: Timer?
 
     var body: some View {
-        ZStack {
-            AppBackgroundView()
-                .environmentObject(starManager)
-
-            // Glassy background for the sheet content
-            RoundedRectangle(cornerRadius: 24)
-                .fill(.ultraThinMaterial)
-                .ignoresSafeArea()
-
+        DetailSheetShell(themeManager: themeManager) {
             VStack(spacing: 18) {
-                // Handle + Title
-                Capsule()
-                    .fill(Color.white.opacity(0.25))
-                    .frame(width: 36, height: 4)
-                    .padding(.top, 8)
-
                 Text("Now Playing")
                     .font(.custom("PlayfairDisplay-Regular", size: 18))
-                    .foregroundColor(themeManager.primaryText.opacity(0.8))
+                    .foregroundColor(themeManager.primaryText.opacity(0.82))
 
-                // Vinyl
                 VinylRecord(isRotating: isRotating, centerImageName: documentName)
                     .frame(height: 260)
 
-                // Title / subtitle
                 VStack(spacing: 4) {
                     Text(documentName.replacingOccurrences(of: "_", with: " ").capitalized)
                         .font(.custom("PlayfairDisplay-SemiBold", size: 20))
                         .foregroundColor(Color(hex:"#E6D7C3"))
                     Text("White Noise • Nature Sounds")
                         .font(.custom("PlayfairDisplay-Regular", size: 13))
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(themeManager.primaryText.opacity(0.72))
                 }
 
-                // Controls
                 HStack(spacing: 22) {
                     RoundGlyphButton(system: "shuffle") {}
                     RoundGlyphButton(system: "backward.end.fill") {}
@@ -833,7 +878,6 @@ struct PlayerPopup: View {
                 }
                 .padding(.top, 6)
 
-                // Progress + times
                 VStack(spacing: 10) {
                     ProgressBar(
                         progress: progress,
@@ -850,22 +894,16 @@ struct PlayerPopup: View {
                         Text(timeString(duration))
                     }
                     .font(.custom("PlayfairDisplay-Regular", size: 13))
-                    .foregroundColor(.white.opacity(0.75))
+                    .foregroundColor(themeManager.primaryText.opacity(0.72))
                     .frame(width: 320)
                 }
-
-                // Close
-                Button("Close") { dismiss() }
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(.white.opacity(0.9))
-                    .padding(.top, 6)
-
-                Spacer(minLength: 8)
             }
-            .padding(.horizontal, 16)
+        } footer: {
+            DetailSheetCloseButton(themeManager: themeManager) { dismiss() }
         }
         .onAppear { prepareAndStartIfNeeded() }
         .onDisappear { stopTimer() }
+        .presentationBackground(.clear)
     }
 
     // MARK: - Playback
@@ -904,13 +942,15 @@ struct PlayerPopup: View {
     private func startTimer() {
         stopTimer()
         timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in
-            guard let p = soundPlayer.player else { return }
-            currentTime = p.currentTime
-            duration = p.duration
-            progress = duration > 0 ? p.currentTime / duration : 0
-            if !p.isPlaying {
-                isPlaying = false
-                isRotating = false
+            Task { @MainActor in
+                guard let p = soundPlayer.player else { return }
+                currentTime = p.currentTime
+                duration = p.duration
+                progress = duration > 0 ? p.currentTime / duration : 0
+                if !p.isPlaying {
+                    isPlaying = false
+                    isRotating = false
+                }
             }
         }
     }
@@ -1006,8 +1046,10 @@ private struct SoundExtraContent: View {
                 ReasoningSheet(
                     title: title,
                     reasoningText: reasoningStore.text(for: "Sound"),
-                    themeManager: themeManager
+                    themeManager: themeManager,
+                    iconImageName: documentName
                 )
+                .presentationBackground(.clear)
             }
 
             // ✅ Play button tap = Player popup
@@ -1031,6 +1073,7 @@ private struct SoundExtraContent: View {
                     documentName: documentName,
                     dismiss: { showPlayer = false }
                 )
+                .presentationBackground(.clear)
                 .presentationDetents([.fraction(0.6), .large])
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(24)
@@ -1079,8 +1122,10 @@ struct PlaceDetailView: View {
                     ReasoningSheet(
                         title: item.title,
                         reasoningText: reasoningStore.text(for: "Place"),
-                        themeManager: themeManager
+                        themeManager: themeManager,
+                        iconImageName: documentName
                     )
+                    .presentationBackground(.clear)
                 }
 
 //                HStacchk(spacing: 40) {
@@ -1325,6 +1370,7 @@ struct GemLinkSheet: View {
     let reasoningText: String
     let linkURLString: String?
     let stoneURLString: String?
+    let iconImageName: String
     let themeManager: ThemeManager
 
     @Environment(\.openURL) private var openURL
@@ -1334,166 +1380,111 @@ struct GemLinkSheet: View {
     private var isDark: Bool { colorScheme == .dark }
 
     var body: some View {
-        ZStack {
-            // Background halo adapts to theme
-            RadialGradient(
-                colors: [
-                    isDark
-                    ? Color.black.opacity(0.65)
-                    : themeManager.foregroundColor.opacity(0.18),
-                    .clear
-                ],
-                center: .top,
-                startRadius: 10,
-                endRadius: 400
-            )
-            .ignoresSafeArea()
-
+        DetailSheetShell(themeManager: themeManager) {
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
-                    Spacer().frame(height: 18)
-
-                    GlassCard {
-                        VStack(spacing: 14) {
-                            // Icon + title
-                            HStack(spacing: 12) {
-                                ZStack {
-                                    Circle()
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [
-                                                    themeManager.foregroundColor.opacity(isDark ? 0.32 : 0.25),
-                                                    .clear
-                                                ],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            )
+                VStack(spacing: 14) {
+                        HStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                themeManager.foregroundColor.opacity(isDark ? 0.32 : 0.25),
+                                                .clear
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
                                         )
-                                        .frame(width: 40, height: 40)
-
-                                    Image(systemName: "diamond.fill")
-                                        .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(themeManager.primaryText)
-                                }
-
-                                Text(title)
-                                    .font(.custom("PlayfairDisplay-Regular", size: 22))
-                                    .foregroundColor(themeManager.primaryText)
-                                    .lineLimit(2)
-                                    .minimumScaleFactor(0.85)
-                                    .multilineTextAlignment(.leading)
-
-                                Spacer(minLength: 0)
-                            }
-
-                            Divider()
-                                .overlay(
-                                    (isDark ? Color.white : Color.black)
-                                        .opacity(0.20)
-                                )
-
-                            // reasoning summary
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Reasoning")
-                                    .font(.custom("PlayfairDisplay-SemiBold", size: 16))
-                                    .foregroundColor(themeManager.primaryText)
-
-                                Text(reasoningText)
-                                    .font(.custom("Merriweather-Regular", size: 14))
-                                    .foregroundColor(themeManager.primaryText.opacity(0.85))
-                                    .lineSpacing(4)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-
-                            // Primary button (Bracelet / Link)
-                            if let s = linkURLString, let url = URL(string: s) {
-                                Button {
-                                    haptics()
-                                    openURL(url)
-                                    dismiss()
-                                } label: {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "link")
-                                        Text("Open Bracelet")
-                                    }
-                                }
-                                .buttonStyle(GradientButtonStyle())
-                            }
-
-                            // Secondary button (Stone)
-                            if let s = stoneURLString, let url = URL(string: s) {
-                                Button {
-                                    haptics()
-                                    openURL(url)
-                                    dismiss()
-                                } label: {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "sparkles")
-                                        Text("Open Stone")
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 12)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                            .fill(
-                                                themeManager.foregroundColor
-                                                    .opacity(isDark ? 0.16 : 0.08)
-                                            )
                                     )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                            .stroke(
-                                                (isDark ? Color.white : themeManager.foregroundColor)
-                                                    .opacity(isDark ? 0.24 : 0.20),
-                                                lineWidth: 1
-                                            )
-                                    )
-                                }
+                                    .frame(width: 42, height: 42)
+
+                                Image(iconImageName)
+                                    .renderingMode(.template)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 24, height: 24)
+                                    .foregroundColor(themeManager.primaryText)
+                            }
+
+                            Text(title)
+                                .font(.custom("PlayfairDisplay-Regular", size: 22))
                                 .foregroundColor(themeManager.primaryText)
-                            }
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.85)
+                                .multilineTextAlignment(.leading)
 
-                            // Utility row (copy links)
-                            HStack(spacing: 12) {
-                                if let s = linkURLString {
-                                    Button {
-                                        UIPasteboard.general.string = s
-                                        haptics()
-                                    } label: {
-                                        Label("Copy bracelet URL", systemImage: "doc.on.doc")
-                                    }
-                                }
-                                if let s = stoneURLString {
-                                    Button {
-                                        UIPasteboard.general.string = s
-                                        haptics()
-                                    } label: {
-                                        Label("Copy stone URL", systemImage: "doc.on.doc.fill")
-                                    }
-                                }
-                            }
-                            .font(.footnote)
-                            .foregroundColor(isDark ? .white.opacity(0.6) : .secondary)
+                            Spacer(minLength: 0)
                         }
-                    }
 
-                    // Close in accent for light, softer in dark
-                    Button(role: .cancel) { dismiss() } label: {
-                        Text("Close")
-                            .font(.system(size: 16, weight: .regular))
-                            .padding(.vertical, 6)
-                            .padding(.bottom, 8)
-                    }
-                    .foregroundColor(
-                        isDark
-                        ? themeManager.primaryText.opacity(0.85)
-                        : themeManager.accent
-                    )
+                        Divider()
+                            .overlay(
+                                (isDark ? Color.white : Color.black)
+                                    .opacity(0.20)
+                            )
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Reasoning")
+                                .font(.custom("PlayfairDisplay-SemiBold", size: 16))
+                                .foregroundColor(themeManager.primaryText)
+
+                            Text(reasoningText)
+                                .font(.custom("Merriweather-Regular", size: 14))
+                                .foregroundColor(themeManager.primaryText.opacity(0.85))
+                                .lineSpacing(4)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        if let s = linkURLString, let url = URL(string: s) {
+                            Button {
+                                haptics()
+                                openURL(url)
+                                dismiss()
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "circle.hexagongrid")
+                                    Text("Shop Bracelet")
+                                }
+                            }
+                            .buttonStyle(GradientButtonStyle())
+                        }
+
+                        if let s = stoneURLString, let url = URL(string: s) {
+                            Button {
+                                haptics()
+                                openURL(url)
+                                dismiss()
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "sparkles")
+                                    Text("Shop Gemstone")
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(
+                                            themeManager.foregroundColor
+                                                .opacity(isDark ? 0.16 : 0.08)
+                                        )
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .stroke(
+                                            (isDark ? Color.white : themeManager.foregroundColor)
+                                                .opacity(isDark ? 0.24 : 0.20),
+                                            lineWidth: 1
+                                        )
+                                )
+                            }
+                            .foregroundColor(themeManager.primaryText)
+                        }
+
                 }
-                .padding(.horizontal, 18)
-                .padding(.top, 8)
-                .padding(.bottom, 12)
             }
+        } footer: {
+            DetailSheetCloseButton(themeManager: themeManager) { dismiss() }
         }
+        .presentationBackground(.clear)
     }
 
     private func haptics() {
@@ -1557,8 +1548,10 @@ private struct GemstoneExtraContent: View {
                     reasoningText: reasoningStore.text(for: "Gemstone"),
                     linkURLString: item.link,
                     stoneURLString: item.stone,
+                    iconImageName: documentName,
                     themeManager: themeManager
                 )
+                .presentationBackground(.clear)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(28)
@@ -1689,8 +1682,10 @@ private struct ColorExtraContent: View {
             ReasoningSheet(
                 title: item.title,
                 reasoningText: reasoningStore.text(for: "Color"),
-                themeManager: themeManager
+                themeManager: themeManager,
+                iconImageName: nil
             )
+            .presentationBackground(.clear)
         }
     }
 }
@@ -1702,6 +1697,7 @@ struct ScentLinkSheet: View {
     let reasoningText: String
     let linkURLString: String?
     let candleURLString: String?
+    let iconImageName: String
     let themeManager: ThemeManager
 
     @Environment(\.openURL) private var openURL
@@ -1711,135 +1707,105 @@ struct ScentLinkSheet: View {
     private var isDark: Bool { colorScheme == .dark }
 
     var body: some View {
-        ZStack {
-            RadialGradient(
-                colors: [
-                    isDark
-                    ? Color.black.opacity(0.65)
-                    : themeManager.foregroundColor.opacity(0.18),
-                    .clear
-                ],
-                center: .top,
-                startRadius: 10,
-                endRadius: 400
-            )
-            .ignoresSafeArea()
-
-            VStack(spacing: 16) {
-
-                // SAME TOP SPACING AS OTHER SHEETS
-                Spacer().frame(height: 6)
-
-                GlassCard {
-                    VStack(spacing: 14) {
-
-                        // Title row
-                        HStack(spacing: 12) {
-                            ZStack {
-                                Circle()
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [
-                                                themeManager.foregroundColor.opacity(isDark ? 0.32 : 0.25),
-                                                .clear
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
+        DetailSheetShell(themeManager: themeManager) {
+            VStack(spacing: 14) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            themeManager.foregroundColor.opacity(isDark ? 0.32 : 0.25),
+                                            .clear
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
                                     )
-                                    .frame(width: 40, height: 40)
-
-                                Image(systemName: "leaf.fill")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(themeManager.primaryText)
-                            }
-
-                            Text(title)
-                                .font(.custom("PlayfairDisplay-Regular", size: 22))
-                                .foregroundColor(themeManager.primaryText)
-                                .lineLimit(2)
-                                .minimumScaleFactor(0.85)
-
-                            Spacer()
-                        }
-
-                        Divider()
-                            .overlay((isDark ? Color.white : Color.black).opacity(0.20))
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Reasoning")
-                                .font(.custom("PlayfairDisplay-SemiBold", size: 16))
-                                .foregroundColor(themeManager.primaryText)
-
-                            Text(reasoningText)
-                                .font(.custom("Merriweather-Regular", size: 14))
-                                .foregroundColor(themeManager.primaryText.opacity(0.85))
-                                .lineSpacing(4)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-
-                        if let s = linkURLString, let url = URL(string: s) {
-                            Button {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                openURL(url)
-                                dismiss()
-                            } label: {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "link")
-                                    Text("Open Link")
-                                }
-                            }
-                            .buttonStyle(GradientButtonStyle())
-                        }
-
-                        if let s = candleURLString, let url = URL(string: s) {
-                            Button {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                openURL(url)
-                                dismiss()
-                            } label: {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "flame.fill")
-                                    Text("Open Candle")
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(themeManager.foregroundColor.opacity(isDark ? 0.16 : 0.08))
                                 )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(
-                                            (isDark ? Color.white : themeManager.foregroundColor)
-                                                .opacity(isDark ? 0.24 : 0.20),
-                                            lineWidth: 1
-                                        )
-                                )
-                            }
+                                .frame(width: 42, height: 42)
+
+                            Image(iconImageName)
+                                .renderingMode(.template)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 24, height: 24)
+                                .foregroundColor(themeManager.primaryText)
+                        }
+
+                        Text(title)
+                            .font(.custom("PlayfairDisplay-Regular", size: 22))
                             .foregroundColor(themeManager.primaryText)
-                        }
-                    }
-                }
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.85)
 
-                Button("Close", role: .cancel) {
-                    dismiss()
-                }
-                .font(.system(size: 16))
-                .padding(.vertical, 6)
-                .padding(.bottom, 8)
-                .foregroundColor(
-                    isDark
-                    ? themeManager.primaryText.opacity(0.85)
-                    : themeManager.accent
-                )
+                        Spacer()
+                    }
+
+                    Divider()
+                        .overlay((isDark ? Color.white : Color.black).opacity(0.20))
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Reasoning")
+                            .font(.custom("PlayfairDisplay-SemiBold", size: 16))
+                            .foregroundColor(themeManager.primaryText)
+
+                        Text(reasoningText)
+                            .font(.custom("Merriweather-Regular", size: 14))
+                            .foregroundColor(themeManager.primaryText.opacity(0.85))
+                            .lineSpacing(4)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    if let s = linkURLString, let url = URL(string: s) {
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            openURL(url)
+                            dismiss()
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "drop.fill")
+                                Text("Shop Essential Oil")
+                            }
+                        }
+                        .buttonStyle(GradientButtonStyle())
+                    }
+
+                    if let s = candleURLString, let url = URL(string: s) {
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            openURL(url)
+                            dismiss()
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "flame.fill")
+                                Text("Shop Candle")
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(themeManager.foregroundColor.opacity(isDark ? 0.16 : 0.08))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(
+                                        (isDark ? Color.white : themeManager.foregroundColor)
+                                            .opacity(isDark ? 0.24 : 0.20),
+                                        lineWidth: 1
+                                    )
+                            )
+                        }
+                        .foregroundColor(themeManager.primaryText)
+                    }
             }
-            .padding(.horizontal, 18)
+        } footer: {
+            DetailSheetCloseButton(themeManager: themeManager) { dismiss() }
         }
         // MATCH OTHER SHEETS
         .presentationDetents([.fraction(0.42), .medium])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
+        .presentationBackground(.clear)
     }
 }
 
@@ -1904,8 +1870,10 @@ private struct ScentExtraContent: View {
                     reasoningText: reasoningStore.text(for: "Scent"),
                     linkURLString: item.link,
                     candleURLString: item.candle,
+                    iconImageName: documentName,
                     themeManager: themeManager
                 )
+                .presentationBackground(.clear)
                 .presentationDragIndicator(.visible)
                 .presentationDetents([.medium, .large])
                 .presentationCornerRadius(28)
@@ -1976,8 +1944,10 @@ struct ActivityDetailView: View {
                 ReasoningSheet(
                     title: item.title,
                     reasoningText: reasoningStore.text(for: "Activity"),
-                    themeManager: themeManager
+                    themeManager: themeManager,
+                    iconImageName: documentName
                 )
+                .presentationBackground(.clear)
             }
         }
     }
@@ -2005,8 +1975,10 @@ struct CareerDetailView: View {
                 ReasoningSheet(
                     title: item.title,
                     reasoningText: reasoningStore.text(for: "Career"),
-                    themeManager: themeManager
+                    themeManager: themeManager,
+                    iconImageName: documentName
                 )
+                .presentationBackground(.clear)
             }
         }
     }
@@ -2036,8 +2008,10 @@ struct RelationshipDetailView: View {
                 ReasoningSheet(
                     title: item.title,
                     reasoningText: reasoningStore.text(for: "Relationship"),
-                    themeManager: themeManager
+                    themeManager: themeManager,
+                    iconImageName: documentName
                 )
+                .presentationBackground(.clear)
             }
         }
     }
@@ -2080,6 +2054,19 @@ private struct DetailPreviewContainer<Content: View>: View {
     }
 }
 
+private let previewScentItem = RecommendationItem(
+    name: "juniper_berry",
+    title: "Juniper Berry",
+    description: "A scent that clears the air and steadies the breath.",
+    explanation: "Bright, herbal, and quietly grounding.",
+    about: nil,
+    notice: nil,
+    anchor: nil,
+    link: "https://example.com/juniper-berry",
+    stone: nil,
+    candle: "https://example.com/juniper-candle"
+)
+
 #Preview("Sound Detail Day") {
     DetailPreviewContainer(isNight: false) {
         SoundDetailView(documentName: "brown_noise")
@@ -2107,6 +2094,22 @@ private struct DetailPreviewContainer<Content: View>: View {
 #Preview("Relationship Detail Day") {
     DetailPreviewContainer(isNight: false) {
         RelationshipDetailView(documentName: "breathe_sync")
+    }
+}
+
+#Preview("Scent Detail Day") {
+    DetailPreviewContainer(isNight: false) {
+        DetailScaffold(section: "Scent", item: previewScentItem) {
+            ScentExtraContent(documentName: "juniper_berry", item: previewScentItem)
+        }
+    }
+}
+
+#Preview("Scent Detail Night") {
+    DetailPreviewContainer(isNight: true) {
+        DetailScaffold(section: "Scent", item: previewScentItem) {
+            ScentExtraContent(documentName: "juniper_berry", item: previewScentItem)
+        }
     }
 }
 #endif
