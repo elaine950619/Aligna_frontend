@@ -315,7 +315,7 @@ struct MainView: View {
                             Text(viewModel.dailyMantra)
                                 .font(
                                     isMantraExpanded
-                                    ? .custom("Merriweather-Italic", size: 28)
+                                    ? .custom("Merriweather-Black", size: 28)
                                     : AlignaType.homeSubtitle()
                                 )
                                 .lineSpacing(isMantraExpanded ? 12 : AlignaType.descLineSpacing)
