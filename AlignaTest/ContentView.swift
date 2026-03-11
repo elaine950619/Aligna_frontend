@@ -479,41 +479,27 @@ struct ContentView: View {
 
 #if DEBUG
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        Group {
-            ContentView(dailyVM: filledDailyVM, enableLoading: false)
-                .environmentObject(StarAnimationManager())
-                .environmentObject(previewTheme)
-                .environmentObject(previewOnboarding)
-                .preferredColorScheme(.dark)
-                .previewDisplayName("Calendar • Dark Filled")
+private struct ContentViewPreviewContainer: View {
+    let isNight: Bool
+    let dailyVM: DailyViewModel
+    let enableLoading: Bool
 
-            ContentView(dailyVM: filledDailyVM, enableLoading: false)
-                .environmentObject(StarAnimationManager())
-                .environmentObject(previewThemeLight)
-                .environmentObject(previewOnboarding)
-                .preferredColorScheme(.light)
-                .previewDisplayName("Calendar • Light Filled")
+    @StateObject private var starManager = StarAnimationManager()
+    @StateObject private var themeManager: ThemeManager
+    @StateObject private var onboardingViewModel: OnboardingViewModel
+    @StateObject private var reasoningStore = DailyReasoningStore()
 
-            // Dark scheme empty (placeholders only)
-            ContentView()
-                .environmentObject(StarAnimationManager())
-                .environmentObject(previewTheme)
-                .environmentObject(previewOnboarding)
-                .preferredColorScheme(.dark)
-                .previewDisplayName("Calendar • Dark Empty")
-        }
-    }
+    init(isNight: Bool, dailyVM: DailyViewModel, enableLoading: Bool) {
+        self.isNight = isNight
+        self.dailyVM = dailyVM
+        self.enableLoading = enableLoading
 
-    // MARK: - Preview Seeds
+        let themeManager = ThemeManager()
+        themeManager.selected = isNight ? .night : .day
+        _themeManager = StateObject(wrappedValue: themeManager)
 
-    private static var previewTheme: ThemeManager { ThemeManager() }
-    private static var previewThemeLight: ThemeManager { ThemeManager() }
-
-    private static var previewOnboarding: OnboardingViewModel {
-        let vm = OnboardingViewModel()
-        vm.recommendations = [
+        let onboardingViewModel = OnboardingViewModel()
+        onboardingViewModel.recommendations = [
             "Place": "ic_place",
             "Color": "ic_color",
             "Gemstone": "ic_gem",
@@ -523,10 +509,45 @@ struct ContentView_Previews: PreviewProvider {
             "Career": "ic_career",
             "Relationship": "ic_relationship"
         ]
-        return vm
+        _onboardingViewModel = StateObject(wrappedValue: onboardingViewModel)
     }
 
-    private static var filledDailyVM: DailyViewModel {
+    var body: some View {
+        ContentView(dailyVM: dailyVM, enableLoading: enableLoading)
+            .environmentObject(starManager)
+            .environmentObject(themeManager)
+            .environmentObject(onboardingViewModel)
+            .environmentObject(reasoningStore)
+            .preferredColorScheme(themeManager.preferredColorScheme)
+    }
+}
+
+#Preview("Calendar • Dark Filled") {
+    ContentViewPreviewContainer(
+        isNight: true,
+        dailyVM: .filledPreview,
+        enableLoading: false
+    )
+}
+
+#Preview("Calendar • Light Filled") {
+    ContentViewPreviewContainer(
+        isNight: false,
+        dailyVM: .filledPreview,
+        enableLoading: false
+    )
+}
+
+#Preview("Calendar • Dark Empty") {
+    ContentViewPreviewContainer(
+        isNight: true,
+        dailyVM: DailyViewModel(),
+        enableLoading: false
+    )
+}
+
+private extension DailyViewModel {
+    static var filledPreview: DailyViewModel {
         let vm = DailyViewModel()
         vm.mantra = "Breathe. Align. Begin again."
         vm.items = [
