@@ -1,4 +1,88 @@
-import SwiftUI
+#if DEBUG
+private struct ProfilePreviewContainer<Content: View>: View {
+    @StateObject private var starManager = StarAnimationManager()
+    @StateObject private var themeManager: ThemeManager
+    @StateObject private var viewModel = OnboardingViewModel()
+
+    private let content: Content
+    private let wrapsInNavigationStack: Bool
+
+    init(
+        theme: ThemePreference = .light,
+        wrapsInNavigationStack: Bool = true,
+        @ViewBuilder content: () -> Content
+    ) {
+        let themeManager = ThemeManager()
+        switch theme {
+        case .light:
+            themeManager.selected = .day
+        case .dark:
+            themeManager.selected = .night
+        case .auto:
+            themeManager.selected = .system
+        }
+        _themeManager = StateObject(wrappedValue: themeManager)
+        self.wrapsInNavigationStack = wrapsInNavigationStack
+        self.content = content()
+    }
+
+    var body: some View {
+        Group {
+            if wrapsInNavigationStack {
+                NavigationStack {
+                    previewContent
+                }
+            } else {
+                previewContent
+            }
+        }
+        .preferredColorScheme(themeManager.preferredColorScheme)
+    }
+
+    private var previewContent: some View {
+        ZStack {
+            previewBaseColor
+                .ignoresSafeArea()
+
+            content
+                .ignoresSafeArea()
+        }
+        .environmentObject(starManager)
+        .environmentObject(themeManager)
+        .environmentObject(viewModel)
+    }
+
+    private var previewBaseColor: Color {
+        themeManager.isNight ? Color(hex: "#1a1a2e") : Color(hex: "#E6D9BD")
+    }
+}
+
+#Preview("Profile Login") {
+    ProfilePreviewContainer(theme: .dark, wrapsInNavigationStack: false) {
+        AccountPageView()
+    }
+}
+
+#Preview("Profile Detail Day") {
+    ProfilePreviewContainer(theme: .light, wrapsInNavigationStack: false) {
+        AccountDetailView(viewModel: OnboardingViewModel())
+    }
+}
+
+#Preview("Profile Detail Night") {
+    ProfilePreviewContainer(theme: .dark, wrapsInNavigationStack: false) {
+        AccountDetailView(viewModel: OnboardingViewModel())
+    }
+}
+
+#Preview("About Aligna") {
+    NavigationStack {
+        AboutAlignaView()
+            .navigationTitle("About Aligna")
+            .navigationBarTitleDisplayMode(.inline)
+    }
+}
+#endif
 import Foundation
 import MapKit
 import CoreLocation

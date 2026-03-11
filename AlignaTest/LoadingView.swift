@@ -505,3 +505,59 @@ struct WelcomeSplashView: View {
         }
     }
 }
+
+#if DEBUG
+private struct LoadingViewPreviewContainer: View {
+    @StateObject private var starManager = StarAnimationManager()
+    @StateObject private var themeManager: ThemeManager
+    let isNight: Bool
+
+    init(isNight: Bool = false) {
+        self.isNight = isNight
+        let themeManager = ThemeManager()
+        themeManager.selected = isNight ? .night : .day
+        _themeManager = StateObject(wrappedValue: themeManager)
+    }
+
+    var body: some View {
+        LoadingView(fixedMessageIndex: 0)
+            .environmentObject(starManager)
+            .environmentObject(themeManager)
+            .preferredColorScheme(themeManager.preferredColorScheme)
+    }
+}
+
+#Preview("Loading Day") {
+    LoadingViewPreviewContainer()
+}
+
+#Preview("Loading Night") {
+    LoadingViewPreviewContainer(isNight: true)
+}
+
+private struct InfoSplashPreviewContainer: View {
+    @StateObject private var starManager = StarAnimationManager()
+    @StateObject private var themeManager: ThemeManager
+
+    init(isNight: Bool = false) {
+        let themeManager = ThemeManager()
+        themeManager.selected = isNight ? .night : .day
+        _themeManager = StateObject(wrappedValue: themeManager)
+    }
+
+    var body: some View {
+        WelcomeSplashView(
+            location: "Cupertino",
+            zodiac: "♍︎ Virgo",
+            moon: "🌔 Waxing Gibbous"
+        )
+        .environmentObject(starManager)
+        .environmentObject(themeManager)
+        .preferredColorScheme(themeManager.preferredColorScheme)
+    }
+}
+
+#Preview("Info Splash") {
+    InfoSplashPreviewContainer()
+}
+#endif
