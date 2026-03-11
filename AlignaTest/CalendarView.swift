@@ -231,3 +231,52 @@ struct CalendarView: View {
         return syms
     }
 }
+
+// Bo: Preview
+private struct CalendarViewPreviewContainer: View {
+    @State private var selectedDate = Date()
+    @StateObject private var themeManager: ThemeManager
+
+    init() {
+        let themeManager = ThemeManager()
+        themeManager.selected = .day
+        _themeManager = StateObject(wrappedValue: themeManager)
+    }
+
+    var body: some View {
+        ZStack {
+            AppBackgroundView()
+                .ignoresSafeArea()
+
+            CalendarView(
+                selectedDate: $selectedDate,
+                accentColor: themeManager.accent
+            )
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(themeManager.panelFill)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [themeManager.panelStrokeHi, themeManager.panelStrokeLo],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1.5
+                            )
+                    )
+            )
+            .shadow(color: .black.opacity(themeManager.isNight ? 0.12 : 0.10), radius: 10, y: 6)
+            .padding(.horizontal, 20)
+        }
+        .environmentObject(themeManager)
+        .preferredColorScheme(themeManager.preferredColorScheme)
+    }
+}
+
+#Preview("Calendar") {
+    CalendarViewPreviewContainer()
+}
+

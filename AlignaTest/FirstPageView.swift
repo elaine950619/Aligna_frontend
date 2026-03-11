@@ -2259,10 +2259,19 @@ extension FirstPageView {
 #endif
 
 #if DEBUG
-struct FirstPageView_Previews: PreviewProvider {
-    static var previews: some View {
-        let vm = OnboardingViewModel()
-        vm.recommendations = [
+private struct FirstPagePreviewContainer: View {
+    @StateObject private var starManager = StarAnimationManager()
+    @StateObject private var themeManager: ThemeManager
+    @StateObject private var viewModel: OnboardingViewModel
+    @StateObject private var reasoningStore = DailyReasoningStore()
+
+    init() {
+        let themeManager = ThemeManager()
+        themeManager.selected = .day
+        _themeManager = StateObject(wrappedValue: themeManager)
+
+        let viewModel = OnboardingViewModel()
+        viewModel.recommendations = [
             "Place": "echo_niche",
             "Gemstone": "amethyst",
             "Color": "amber",
@@ -2272,14 +2281,22 @@ struct FirstPageView_Previews: PreviewProvider {
             "Career": "clear_channel",
             "Relationship": "breathe_sync"
         ]
-        vm.dailyMantra = "Find your flow."
-
-        return FirstPageView(previewBoot: .main)
-            .environmentObject(StarAnimationManager())
-            .environmentObject(ThemeManager())
-            .environmentObject(vm)
-            .previewDisplayName("FirstPage main grid")
+        viewModel.dailyMantra = "Find your flow."
+        _viewModel = StateObject(wrappedValue: viewModel)
     }
+
+    var body: some View {
+        FirstPageView(previewBoot: .main)
+            .environmentObject(starManager)
+            .environmentObject(themeManager)
+            .environmentObject(viewModel)
+            .environmentObject(reasoningStore)
+            .preferredColorScheme(themeManager.preferredColorScheme)
+    }
+}
+
+#Preview("FirstPage main grid") {
+    FirstPagePreviewContainer()
 }
 #endif
 

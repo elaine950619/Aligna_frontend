@@ -12,3 +12,7 @@ struct AboutView: View {
         .navigationTitle("About")
     }
 }
+
+#Preview {
+    ContentView()
+}

@@ -56,7 +56,7 @@ struct DayBackgroundLayer: View {
                 startPoint: .top,
                 endPoint: .bottom
             )
-            .ignoresSafeArea()
+                .ignoresSafeArea()
 
             // === Soft global radial glow ===
             RadialGradient(
@@ -716,4 +716,39 @@ struct AppBackgroundView: View {
             .onChange(of: scenePhase) { _, new in if new == .active { themeManager.appBecameActive() } }
         }
     }
+}
+
+private struct AppBackgroundPreviewContainer: View {
+    let mode: AppBackgroundView.Mode
+
+    @StateObject private var starManager = StarAnimationManager()
+    @StateObject private var themeManager: ThemeManager
+
+    init(mode: AppBackgroundView.Mode) {
+        self.mode = mode
+
+        let themeManager = ThemeManager()
+        switch mode {
+        case .night:
+            themeManager.selected = .night
+        case .day, .auto:
+            themeManager.selected = .day
+        }
+        _themeManager = StateObject(wrappedValue: themeManager)
+    }
+
+    var body: some View {
+        AppBackgroundView(mode: mode)
+            .environmentObject(starManager)
+            .environmentObject(themeManager)
+            .preferredColorScheme(themeManager.preferredColorScheme)
+    }
+}
+
+#Preview("Background Day") {
+    AppBackgroundPreviewContainer(mode: .day)
+}
+
+#Preview("Background Night") {
+    AppBackgroundPreviewContainer(mode: .night)
 }

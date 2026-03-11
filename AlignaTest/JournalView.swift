@@ -218,6 +218,48 @@ struct JournalView: View {
     }
 }
 
+#if DEBUG
+private extension JournalView {
+    init(previewDate: Date, previewText: String) {
+        self.init(date: previewDate)
+        _text = State(initialValue: previewText)
+    }
+}
+
+private struct JournalViewPreviewContainer: View {
+    let isNight: Bool
+
+    @StateObject private var themeManager: ThemeManager
+
+    init(isNight: Bool) {
+        self.isNight = isNight
+
+        let themeManager = ThemeManager()
+        themeManager.selected = isNight ? .night : .day
+        _themeManager = StateObject(wrappedValue: themeManager)
+    }
+
+    var body: some View {
+        NavigationStack {
+            JournalView(
+                previewDate: .now,
+                previewText: "Today felt quieter than expected. I want to remember the small progress, not just the unfinished parts."
+            )
+            .environmentObject(themeManager)
+        }
+        .preferredColorScheme(themeManager.preferredColorScheme)
+    }
+}
+
+#Preview("Journal Day") {
+    JournalViewPreviewContainer(isNight: false)
+}
+
+#Preview("Journal Night") {
+    JournalViewPreviewContainer(isNight: true)
+}
+#endif
+
 // MARK: - Button Style (ghost, disabled like the video)
 private struct PrimaryGhostButtonStyle: ButtonStyle {
     var disabled: Bool
