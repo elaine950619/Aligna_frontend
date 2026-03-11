@@ -696,11 +696,13 @@ struct AppBackgroundView: View {
                         }
 
                     ForEach(0..<starManager.stars.count, id: \.self) { index in
+                        let star = starManager.stars[index]
+                        let baseOpacity = 0.34 + min(max((star.size - 1.8) / 2.8, 0), 1) * 0.18
+
                         Circle()
-                            .fill(Color.white.opacity(visible ? 1 : 0.2))
-                            .frame(width: starManager.stars[index].size,
-                                   height: starManager.stars[index].size)
-                            .position(starManager.stars[index].position)
+                            .fill(Color.white.opacity(visible ? baseOpacity : baseOpacity * 0.45))
+                            .frame(width: star.size, height: star.size)
+                            .position(star.position)
                             .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: visible)
                     }
 

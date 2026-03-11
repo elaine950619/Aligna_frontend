@@ -74,8 +74,8 @@ final class StarAnimationManager: ObservableObject {
     }
 
     private func makeStars(in size: CGSize) -> [(position: CGPoint, size: CGFloat)] {
-        let count = 15
-        let padding: CGFloat = 16
+        let count = 18
+        let padding: CGFloat = 18
         let bounds = CGRect(
             x: padding,
             y: padding,
@@ -83,21 +83,39 @@ final class StarAnimationManager: ObservableObject {
             height: max(1, size.height - padding * 2)
         )
 
-        let area = bounds.width * bounds.height
-        let autoMin = sqrt(area / CGFloat(count)) * 0.55
-        let minDistance = max(18, autoMin)
+        let columns = 3
+        let rows = 6
+        let cellWidth = bounds.width / CGFloat(columns)
+        let cellHeight = bounds.height / CGFloat(rows)
+        let horizontalInset = cellWidth * 0.2
+        let verticalInset = cellHeight * 0.22
 
-        var points = poissonDiscSamples(in: bounds, minDistance: minDistance, desiredCount: count)
-        if points.count < count {
-            points = poissonDiscSamples(in: bounds, minDistance: minDistance * 0.85, desiredCount: count)
+        var generated: [(position: CGPoint, size: CGFloat)] = []
+
+        for row in 0..<rows {
+            for column in 0..<columns {
+                guard generated.count < count else { break }
+
+                let cellMinX = bounds.minX + CGFloat(column) * cellWidth
+                let cellMinY = bounds.minY + CGFloat(row) * cellHeight
+                let cellMaxX = cellMinX + cellWidth
+                let cellMaxY = cellMinY + cellHeight
+
+                let point = CGPoint(
+                    x: CGFloat.random(in: (cellMinX + horizontalInset)...(cellMaxX - horizontalInset)),
+                    y: CGFloat.random(in: (cellMinY + verticalInset)...(cellMaxY - verticalInset))
+                )
+
+                generated.append(
+                    (
+                        position: point,
+                        size: CGFloat.random(in: 1.8...4.6)
+                    )
+                )
+            }
         }
 
-        return Array(points.prefix(count)).map { point in
-            (
-                position: point,
-                size: CGFloat.random(in: 2...6)
-            )
-        }
+        return generated.shuffled()
     }
 
     func regenerateStars(in size: CGSize) {
@@ -106,85 +124,4 @@ final class StarAnimationManager: ObservableObject {
         generateStars(in: size)
     }
 
-    private func poissonDiscSamples(in rect: CGRect, minDistance r: CGFloat, desiredCount: Int) -> [CGPoint] {
-        let cellSize = r / sqrt(2)
-        let gridWidth = Int(ceil(rect.width / cellSize))
-        let gridHeight = Int(ceil(rect.height / cellSize))
-
-        func gridIndex(for p: CGPoint) -> (x: Int, y: Int) {
-            let gx = Int((p.x - rect.minX) / cellSize)
-            let gy = Int((p.y - rect.minY) / cellSize)
-            return (gx, gy)
-        }
-
-        var grid = Array(repeating: Array(repeating: CGPoint?.none, count: gridHeight), count: gridWidth)
-        var samples: [CGPoint] = []
-        var active: [CGPoint] = []
-
-        func insert(_ p: CGPoint) {
-            samples.append(p)
-            active.append(p)
-            let idx = gridIndex(for: p)
-            if idx.x >= 0, idx.x < gridWidth, idx.y >= 0, idx.y < gridHeight {
-                grid[idx.x][idx.y] = p
-            }
-        }
-
-        func isFarEnough(_ p: CGPoint) -> Bool {
-            let idx = gridIndex(for: p)
-            let startX = max(idx.x - 2, 0)
-            let endX = min(idx.x + 2, gridWidth - 1)
-            let startY = max(idx.y - 2, 0)
-            let endY = min(idx.y + 2, gridHeight - 1)
-
-            for x in startX...endX {
-                for y in startY...endY {
-                    if let q = grid[x][y] {
-                        let dx = p.x - q.x
-                        let dy = p.y - q.y
-                        if (dx * dx + dy * dy) < (r * r) { return false }
-                    }
-                }
-            }
-            return true
-        }
-
-        func randomPointInRect() -> CGPoint {
-            CGPoint(
-                x: CGFloat.random(in: rect.minX...rect.maxX),
-                y: CGFloat.random(in: rect.minY...rect.maxY)
-            )
-        }
-
-        insert(randomPointInRect())
-
-        let k = 30
-        while !active.isEmpty && samples.count < desiredCount {
-            let i = Int.random(in: 0..<active.count)
-            let center = active[i]
-            var found = false
-
-            for _ in 0..<k {
-                let angle = CGFloat.random(in: 0...(2 * .pi))
-                let radius = CGFloat.random(in: r...(2 * r))
-                let p = CGPoint(
-                    x: center.x + cos(angle) * radius,
-                    y: center.y + sin(angle) * radius
-                )
-
-                guard rect.contains(p) else { continue }
-                guard isFarEnough(p) else { continue }
-
-                insert(p)
-                found = true
-                break
-            }
-
-            if !found {
-                active.remove(at: i)
-            }
-        }
-
-        return samples
-    }
 }
