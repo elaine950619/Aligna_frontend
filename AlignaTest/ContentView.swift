@@ -163,55 +163,48 @@ struct SuggestionRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Top row: icon • title • category chip (right)
-            HStack(spacing: 12) {
-                // Icon (fixed size, template tint)
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.08))
+        HStack(alignment: .center, spacing: 14) {
+            // Give the icon its own vertical lane so it visually spans title + subtitle.
+            Group {
+                if !iconName.isEmpty, UIImage(named: iconName) != nil {
+                    Image(iconName)
+                        .resizable()
+                        .renderingMode(.template)
+                        .foregroundColor(themeManager.accent)
+                        .aspectRatio(contentMode: .fit)
                         .frame(width: 28, height: 28)
+                } else {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundColor(themeManager.accent)
+                }
+            }
+            .frame(width: 32, height: 46, alignment: .center)
 
-                    if !iconName.isEmpty, UIImage(named: iconName) != nil {
-                        Image(iconName)
-                            .resizable()
-                            .renderingMode(.template)
-                            .foregroundColor(themeManager.accent)
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 16, height: 16)
-                    } else {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(themeManager.accent)
-                    }
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text(item.title)
+                        .font(TimelineType.cardTitle18MerriweatherBlack())
+                        .lineSpacing(TimelineType.cardTitle18LineSpacing)
+                        .foregroundColor(themeManager.primaryText)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 12)
+
+                    Text(item.category)
+                        .font(TimelineType.tag14MerriweatherLight())
+                        .lineSpacing(TimelineType.tag14LineSpacing)
+                        .tracking(0.7)
+                        .foregroundColor(themeManager.descriptionText.opacity(0.9))
                 }
 
-                // Title
-                Text(item.title)
-                    .font(TimelineType.cardTitle18MerriweatherBlack())
-                    .lineSpacing(TimelineType.cardTitle18LineSpacing)
-                    .foregroundColor(themeManager.primaryText)   // <-- avoid .primary so it matches theme
-                    .lineLimit(1)
-
-                Spacer(minLength: 12)
-
-                // Category pill (uppercase), right‑aligned
-                Text(item.category)
-                    .font(TimelineType.tag14MerriweatherLight())
-                    .lineSpacing(TimelineType.tag14LineSpacing)
-                    .tracking(0.7)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .foregroundColor(themeManager.accent)
-            }
-
-            // Description (muted, single line like your React list)
-            if !item.description.isEmpty {
-                Text(item.description)
-                    .font(TimelineType.cardBody14MerriweatherRegular())
-                    .lineSpacing(TimelineType.cardBody14LineSpacing)
-                    .foregroundColor(themeManager.descriptionText)
-                    .lineLimit(1)
+                if !item.description.isEmpty {
+                    Text(item.description)
+                        .font(TimelineType.cardBody14MerriweatherRegular())
+                        .lineSpacing(TimelineType.cardBody14LineSpacing)
+                        .foregroundColor(themeManager.descriptionText)
+                        .lineLimit(1)
+                }
             }
         }
         // Card container to match the React “soft panel”
@@ -520,18 +513,7 @@ private struct ContentViewPreviewContainer: View {
         themeManager.selected = isNight ? .night : .day
         _themeManager = StateObject(wrappedValue: themeManager)
 
-        let onboardingViewModel = OnboardingViewModel()
-        onboardingViewModel.recommendations = [
-            "Place": "ic_place",
-            "Color": "ic_color",
-            "Gemstone": "ic_gem",
-            "Scent": "ic_scent",
-            "Activity": "ic_activity",
-            "Sound": "ic_sound",
-            "Career": "ic_career",
-            "Relationship": "ic_relationship"
-        ]
-        _onboardingViewModel = StateObject(wrappedValue: onboardingViewModel)
+        _onboardingViewModel = StateObject(wrappedValue: OnboardingViewModel())
     }
 
     var body: some View {
@@ -571,7 +553,7 @@ private struct ContentViewPreviewContainer: View {
 private extension DailyViewModel {
     static var filledPreview: DailyViewModel {
         let vm = DailyViewModel()
-        vm.mantra = "With the bright afternoon sun and the air felling a bit heavy, today is about finding your center amidst a lot of outward movement. You might feel a push to act, but giving yourself room to breath and organize will keep your momentum steady and your focus sharp. "
+        vm.mantra = "With the bright afternoon sun and the air felling a bit heavy, today is about finding your center amidst a lot of outward movement."
         vm.items = [
             .preview("Place",        "Open Flow",      "Take a walk by the river"),
             .preview("Color",        "Rose",           "Use rosy tones today"),
