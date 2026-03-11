@@ -16,6 +16,7 @@ struct JournalView: View {
     private let allowStandaloneIfNoRec = true
     
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     
     // MARK: Dates
@@ -27,7 +28,10 @@ struct JournalView: View {
     
     var body: some View {
         ZStack {
-            BackgroundSky().environmentObject(themeManager)
+            AppBackgroundView()
+                .environmentObject(starManager)
+                .environmentObject(themeManager)
+                .ignoresSafeArea()
             
             // Page content
             VStack(spacing: 24) {
@@ -229,6 +233,7 @@ private extension JournalView {
 private struct JournalViewPreviewContainer: View {
     let isNight: Bool
 
+    @StateObject private var starManager = StarAnimationManager()
     @StateObject private var themeManager: ThemeManager
 
     init(isNight: Bool) {
@@ -245,6 +250,7 @@ private struct JournalViewPreviewContainer: View {
                 previewDate: .now,
                 previewText: "Today felt quieter than expected. I want to remember the small progress, not just the unfinished parts."
             )
+            .environmentObject(starManager)
             .environmentObject(themeManager)
         }
         .preferredColorScheme(themeManager.preferredColorScheme)
@@ -267,6 +273,7 @@ private struct PrimaryGhostButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         let baseFill = themeManager.panelFill
+        let accentWash = themeManager.accent.opacity(themeManager.isNight ? 0.22 : 0.18)
         return configuration.label
             .foregroundStyle(disabled
                              ? themeManager.descriptionText.opacity(0.65)
@@ -275,14 +282,23 @@ private struct PrimaryGhostButtonStyle: ButtonStyle {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(
                         LinearGradient(colors: [
-                            baseFill.opacity(disabled ? 0.55 : (configuration.isPressed ? 0.52 : 0.42)),
-                            baseFill.opacity(disabled ? 0.45 : (configuration.isPressed ? 0.46 : 0.36))
+                            disabled
+                                ? baseFill.opacity(0.7)
+                                : accentWash.opacity(configuration.isPressed ? 0.92 : 1.0),
+                            disabled
+                                ? baseFill.opacity(0.58)
+                                : baseFill.opacity(configuration.isPressed ? 0.82 : 0.68)
                         ], startPoint: .top, endPoint: .bottom)
                     )
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(themeManager.panelStrokeHi.opacity(0.9), lineWidth: 1)
+                    .stroke(
+                        disabled
+                            ? themeManager.panelStrokeHi.opacity(0.7)
+                            : themeManager.accent.opacity(themeManager.isNight ? 0.45 : 0.35),
+                        lineWidth: 1
+                    )
             )
             .shadow(color: .black.opacity(themeManager.isNight ? 0.35 : 0.12), radius: 12, x: 0, y: 8)
             .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
