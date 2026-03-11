@@ -800,7 +800,11 @@ struct FirstPageView: View {
                                 )
                                 .lineSpacing(isMantraExpanded ? 12 : AlignaType.descLineSpacing)
                                 .multilineTextAlignment(.center)
-                                .foregroundColor(themeManager.foregroundColor.opacity(0.7))
+                                .foregroundColor(
+                                    isMantraExpanded
+                                    ? themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
+                                    : themeManager.foregroundColor.opacity(0.7)
+                                )
                                 .padding(.horizontal, isMantraExpanded ? geometry.size.width * 0.14 : geometry.size.width * 0.1)
                                 .padding(.top, isMantraExpanded ? geometry.size.height * 0.16 : 0)
                                 .lineLimit(isMantraExpanded ? nil : 2)     // ✅ 折叠：最多 1 行
