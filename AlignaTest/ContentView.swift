@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Foundation
 import FirebaseAuth
 import FirebaseFirestore
 
@@ -324,6 +325,28 @@ struct ContentView: View {
     @Environment(\.dismiss) private var dismiss
 //    @State private var headerHeight: CGFloat = 0
     
+    private var mantraText: String {
+        dailyVM.mantra.isEmpty
+            ? "Your daily mantra will appear here."
+            : dailyVM.mantra
+    }
+
+    private var displayMantraText: String {
+        "\u{00A0}\u{00A0}\u{00A0}\u{00A0}\u{00A0}\u{00A0}" + mantraText
+    }
+
+    private var indentedMantra: AttributedString {
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = .justified
+
+        let attributed = NSAttributedString(
+            string: displayMantraText,
+            attributes: [.paragraphStyle: paragraphStyle]
+        )
+
+        return AttributedString(attributed)
+    }
+    
     
     var body: some View {
         NavigationStack {
@@ -374,11 +397,10 @@ struct ContentView: View {
                         .padding(.horizontal, 16)
                         
                         Group {
-                            Text(dailyVM.mantra.isEmpty
-                                 ? "Your daily mantra will appear here."
-                                 : dailyVM.mantra)
+                            Text(indentedMantra)
                                 .italic()
-                                .multilineTextAlignment(.center)
+                                .multilineTextAlignment(.leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal)
                                 // use existing theme colors (no new palette)
                                 .foregroundColor(
@@ -549,7 +571,7 @@ private struct ContentViewPreviewContainer: View {
 private extension DailyViewModel {
     static var filledPreview: DailyViewModel {
         let vm = DailyViewModel()
-        vm.mantra = "Breathe. Align. Begin again."
+        vm.mantra = "With the bright afternoon sun and the air felling a bit heavy, today is about finding your center amidst a lot of outward movement. You might feel a push to act, but giving yourself room to breath and organize will keep your momentum steady and your focus sharp. "
         vm.items = [
             .preview("Place",        "Open Flow",      "Take a walk by the river"),
             .preview("Color",        "Rose",           "Use rosy tones today"),
