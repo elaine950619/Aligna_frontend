@@ -2,6 +2,14 @@ import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth
 
+private struct EmotionOption: Identifiable, Hashable {
+    let emoji: String
+    let title: String
+
+    var id: String { "\(emoji)-\(title)" }
+    var displayText: String { "\(emoji) \(title)" }
+}
+
 struct JournalView: View {
     let date: Date
     
@@ -11,6 +19,7 @@ struct JournalView: View {
     @State private var isSaving: Bool = false
     @State private var saveSucceeded: Bool = false
     @State private var showResetConfirm = false
+    @State private var selectedEmotion: EmotionOption? = nil
     private enum StorageMode { case recommendation(String), standaloneUser }
     @State private var storageMode: StorageMode? = nil
     private let allowStandaloneIfNoRec = true
@@ -25,6 +34,22 @@ struct JournalView: View {
         df.dateFormat = "yyyy-MM-dd"
         return df.string(from: date)
     }
+
+    private let emotionColumns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
+    private let emotionOptions: [EmotionOption] = [
+        EmotionOption(emoji: "😊", title: "Happy"),
+        EmotionOption(emoji: "😌", title: "Calm"),
+        EmotionOption(emoji: "🥰", title: "Loved"),
+        EmotionOption(emoji: "🤍", title: "Tender"),
+        EmotionOption(emoji: "😔", title: "Sad"),
+        EmotionOption(emoji: "😣", title: "Stressed"),
+        EmotionOption(emoji: "😤", title: "Frustrated"),
+        EmotionOption(emoji: "😰", title: "Anxious"),
+        EmotionOption(emoji: "🤩", title: "Inspired"),
+        EmotionOption(emoji: "🙏", title: "Grateful"),
+        EmotionOption(emoji: "😴", title: "Tired"),
+        EmotionOption(emoji: "🌱", title: "Hopeful")
+    ]
     
     var body: some View {
         ZStack {
@@ -52,44 +77,103 @@ struct JournalView: View {
                 
                 // Text area (single rounded glass card)
                 GlassCard {
-                    ZStack(alignment: .topLeading) {
-                        if text.isEmpty {
-                            Text("Tap to write…")
-                                .foregroundStyle(themeManager.descriptionText.opacity(0.85))
-                                .padding(.top, 14)
-                                .padding(.horizontal, 16)
-                                .allowsHitTesting(false)
+                    VStack(alignment: .leading, spacing: 14) {
+                        LazyVGrid(columns: emotionColumns, spacing: 10) {
+                            ForEach(emotionOptions) { emotion in
+                                Button {
+                                    selectEmotion(emotion)
+                                } label: {
+                                    VStack(spacing: 4) {
+                                        Text(emotion.emoji)
+                                            .font(.system(size: 18))
+                                        Text(emotion.title)
+                                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                                            .lineLimit(1)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 8)
+                                }
+                                .buttonStyle(.plain)
+                                .foregroundStyle(
+                                    selectedEmotion == emotion
+                                        ? themeManager.primaryText
+                                        : themeManager.descriptionText
+                                )
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(
+                                            selectedEmotion == emotion
+                                                ? themeManager.accent.opacity(themeManager.isNight ? 0.22 : 0.16)
+                                                : themeManager.panelFill.opacity(0.75)
+                                        )
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(
+                                            selectedEmotion == emotion
+                                                ? themeManager.accent.opacity(0.55)
+                                                : themeManager.panelStrokeHi.opacity(0.5),
+                                            lineWidth: 1
+                                        )
+                                )
+                            }
                         }
-                        TextEditor(text: $text)
-                            .scrollContentBackground(.hidden)
-                            .frame(minHeight: 60)
-                            .padding(8)
-                            .foregroundColor(themeManager.bodyText)
-                            .tint(themeManager.accent)
-                            .font(.system(.body, design: .rounded))
+
+                        ZStack(alignment: .topLeading) {
+                            if text.isEmpty {
+                                Text("Tap to write…")
+                                    .foregroundStyle(themeManager.descriptionText.opacity(0.85))
+                                    .padding(.top, 14)
+                                    .padding(.horizontal, 16)
+                                    .allowsHitTesting(false)
+                            }
+                            TextEditor(text: $text)
+                                .scrollContentBackground(.hidden)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                                .padding(8)
+                                .foregroundColor(themeManager.bodyText)
+                                .tint(themeManager.accent)
+                                .font(.system(.body, design: .rounded))
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .environmentObject(themeManager)
                 .padding(.horizontal, 24)
                 
-                // Primary action (disabled until text exists)
-                Button {
-                    Task { await saveEntryAndClose() }
-                } label: {
-                    Text("Complete Check-in")
-                        .fontWeight(.semibold)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
+                HStack(spacing: 12) {
+                    Button {
+                        showResetConfirm = true
+                    } label: {
+                        Text("Reset")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                    }
+                    .disabled(text.trimmed().isEmpty || isSaving)
+                    .buttonStyle(SecondaryGhostButtonStyle(
+                        disabled: text.trimmed().isEmpty || isSaving
+                    ))
+                    .environmentObject(themeManager)
+
+                    Button {
+                        Task { await saveEntryAndClose() }
+                    } label: {
+                        Text("Submit")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                    }
+                    .disabled(text.trimmed().isEmpty || isSaving)
+                    .buttonStyle(PrimaryGhostButtonStyle(
+                        disabled: text.trimmed().isEmpty || isSaving
+                    ))
+                    .environmentObject(themeManager)
                 }
-                .disabled(text.trimmed().isEmpty || isSaving)
-                .buttonStyle(PrimaryGhostButtonStyle(
-                    disabled: text.trimmed().isEmpty || isSaving
-                ))
-                .environmentObject(themeManager)
                 .padding(.horizontal, 24)
-                
-                Spacer(minLength: 12)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .padding(.top, 24) // move content down from the curved top like the mock
             
             // ---- Custom top overlay controls (Back + Reset) ----
@@ -103,14 +187,6 @@ struct JournalView: View {
 //                    horizontalPadding: 24
                 )
             }
-            .overlay(alignment: .topTrailing) {
-                Button("Reset") { showResetConfirm = true }
-                    .font(.callout)
-                    .foregroundStyle(themeManager.descriptionText)
-                    .padding(.top, 44)
-                    .padding(.trailing, 24)
-                    .background(Color.clear)
-            }
         }
         .preferredColorScheme(themeManager.preferredColorScheme)
         .navigationBarTitleDisplayMode(.inline)
@@ -123,6 +199,19 @@ struct JournalView: View {
             Text("This will clear the current text. It won’t delete anything saved previously.")
         }
         .onAppear { loadEntry() }
+    }
+
+    private func selectEmotion(_ emotion: EmotionOption) {
+        selectedEmotion = emotion
+
+        let trimmed = text.trimmed()
+        if trimmed.isEmpty {
+            text = "\(emotion.displayText) "
+            return
+        }
+
+        if trimmed.hasPrefix(emotion.displayText) { return }
+        text = "\(emotion.displayText)\n\(trimmed)"
     }
     
     // MARK: Firestore (unchanged)
@@ -190,7 +279,9 @@ struct JournalView: View {
                         "text": text,
                         "updatedAt": Timestamp()
                     ]) { _ in
-                        goHome()  // ✅ Jump straight back
+                        Task { @MainActor in
+                            goHome()  // ✅ Jump straight back
+                        }
                         c.resume()
                     }
                 }
@@ -200,7 +291,9 @@ struct JournalView: View {
                         "text": text,
                         "createdAt": Timestamp()
                     ]) { _ in
-                        goHome()
+                        Task { @MainActor in
+                            goHome()
+                        }
                         c.resume()
                     }
                 }
@@ -214,7 +307,9 @@ struct JournalView: View {
                     "text": text,
                     "updatedAt": Timestamp()
                 ], merge: true) { _ in
-                    goHome()
+                    Task { @MainActor in
+                        goHome()
+                    }
                     c.resume()
                 }
             }
@@ -301,6 +396,32 @@ private struct PrimaryGhostButtonStyle: ButtonStyle {
                     )
             )
             .shadow(color: .black.opacity(themeManager.isNight ? 0.35 : 0.12), radius: 12, x: 0, y: 8)
+            .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+private struct SecondaryGhostButtonStyle: ButtonStyle {
+    var disabled: Bool
+    @EnvironmentObject var themeManager: ThemeManager
+
+    func makeBody(configuration: Configuration) -> some View {
+        let fillOpacity = disabled ? 0.42 : (configuration.isPressed ? 0.36 : 0.28)
+
+        return configuration.label
+            .foregroundStyle(
+                disabled
+                    ? themeManager.descriptionText.opacity(0.6)
+                    : themeManager.descriptionText
+            )
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(themeManager.panelFill.opacity(fillOpacity))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(themeManager.panelStrokeHi.opacity(disabled ? 0.45 : 0.75), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(themeManager.isNight ? 0.22 : 0.08), radius: 10, x: 0, y: 6)
             .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
     }
 }

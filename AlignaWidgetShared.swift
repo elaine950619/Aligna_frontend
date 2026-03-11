@@ -1,5 +1,8 @@
 import Foundation
 import WidgetKit
+#if DEBUG
+import SwiftUI
+#endif
 
 // 1) 你的 App Group ID（务必改成自己的）
 public enum AlignaAppGroup {
@@ -77,3 +80,50 @@ public func moonPhaseLabel(for date: Date = Date()) -> String {
     default:                 return "🌑 New Moon"
     }
 }
+#if DEBUG
+private struct AlignaWidgetSharedPreviewCard: View {
+    let snapshot = AlignaWidgetSnapshot(
+        mantra: "Breathe. Align. Begin again.",
+        colorTitle: "Amber",
+        placeTitle: "Botanical Garden",
+        gemstoneTitle: "Amethyst",
+        scentTitle: "Bergamot"
+    )
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Widget Snapshot")
+                .font(.headline)
+
+            Text(snapshot.mantra)
+                .font(.title3)
+                .italic()
+
+            Text(moonPhaseLabel(for: snapshot.savedAt))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Color: \(snapshot.colorTitle)")
+                Text("Place: \(snapshot.placeTitle)")
+                Text("Gemstone: \(snapshot.gemstoneTitle)")
+                Text("Scent: \(snapshot.scentTitle)")
+            }
+            .font(.body)
+
+            Text("App Group: \(AlignaAppGroup.id)")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .padding()
+    }
+}
+
+#Preview("Widget Shared") {
+    AlignaWidgetSharedPreviewCard()
+}
+#endif
+
