@@ -592,7 +592,7 @@ struct FirstPageView: View {
     @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
     @State private var isFetchingToday: Bool = false
     
-    @State private var isMantraExpanded: Bool = false
+    @State private var isMantraExpanded: Bool = true
     
     @State private var showReasoningBubble: Bool = false
 
@@ -768,6 +768,10 @@ struct FirstPageView: View {
                         }
                         .buttonStyle(.plain)
                         .onPreferenceChange(AlynnaFrameKey.self) { alynnaFrame = $0 }
+                        .opacity(isMantraExpanded ? 0 : 1)
+                        .scaleEffect(isMantraExpanded ? 0.92 : 1)
+                        .frame(height: isMantraExpanded ? 0 : nil)
+                        .allowsHitTesting(!isMantraExpanded)
 
 
 
@@ -778,46 +782,55 @@ struct FirstPageView: View {
                             }
                         } label: {
                             Text(viewModel.dailyMantra)
-                                .font(AlignaType.homeSubtitle())
-                                .lineSpacing(AlignaType.descLineSpacing) // 26-18=8
+                                .font(
+                                    isMantraExpanded
+                                    ? .custom("Merriweather-Italic", size: 28)
+                                    : AlignaType.homeSubtitle()
+                                )
+                                .lineSpacing(isMantraExpanded ? 12 : AlignaType.descLineSpacing)
                                 .multilineTextAlignment(.center)
                                 .foregroundColor(themeManager.foregroundColor.opacity(0.7))
-                                .padding(.horizontal, geometry.size.width * 0.1)
+                                .padding(.horizontal, isMantraExpanded ? geometry.size.width * 0.14 : geometry.size.width * 0.1)
+                                .padding(.top, isMantraExpanded ? geometry.size.height * 0.16 : 0)
                                 .lineLimit(isMantraExpanded ? nil : 2)     // ✅ 折叠：最多 1 行
                                 .truncationMode(.tail)                    // ✅ 超出：显示 "..."
                                 .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity)
+                                .frame(maxHeight: isMantraExpanded ? .infinity : nil, alignment: isMantraExpanded ? .top : .center)
                         }
                         .buttonStyle(.plain)
                         .contentShape(Rectangle())
                         // ✅ 当 mantra 更新（新的一天/重新拉取）时，自动收起回 “...”
                         .onChange(of: viewModel.dailyMantra) {
-                            isMantraExpanded = false
+                            isMantraExpanded = true
                         }
 
-                        Spacer()
+                        if !isMantraExpanded {
+                            Spacer()
 
-                        VStack(spacing: minLength * 0.05) {
-                            let columns = [
-                                GridItem(.flexible(), alignment: .center),
-                                GridItem(.flexible(), alignment: .center)
-                            ]
+                            VStack(spacing: minLength * 0.05) {
+                                let columns = [
+                                    GridItem(.flexible(), alignment: .center),
+                                    GridItem(.flexible(), alignment: .center)
+                                ]
 
-                            LazyVGrid(columns: columns,
-                                      spacing: geometry.size.height * 0.023) {
-                                navItemView(title: "Place", geometry: geometry)
-                                navItemView(title: "Gemstone", geometry: geometry)
-                                navItemView(title: "Color", geometry: geometry)
-                                navItemView(title: "Scent", geometry: geometry)
-                                navItemView(title: "Activity", geometry: geometry)
-                                navItemView(title: "Sound", geometry: geometry)
-                                navItemView(title: "Career", geometry: geometry)
-                                navItemView(title: "Relationship", geometry: geometry)
+                                LazyVGrid(columns: columns,
+                                          spacing: geometry.size.height * 0.023) {
+                                    navItemView(title: "Place", geometry: geometry)
+                                    navItemView(title: "Gemstone", geometry: geometry)
+                                    navItemView(title: "Color", geometry: geometry)
+                                    navItemView(title: "Scent", geometry: geometry)
+                                    navItemView(title: "Activity", geometry: geometry)
+                                    navItemView(title: "Sound", geometry: geometry)
+                                    navItemView(title: "Career", geometry: geometry)
+                                    navItemView(title: "Relationship", geometry: geometry)
+                                }
+                                .padding(.horizontal, geometry.size.width * 0.05)
                             }
-                            .padding(.horizontal, geometry.size.width * 0.05)
-                        }
 
-                        // ✅ 给底部说明文字留出空间
-                        Spacer().frame(height: geometry.size.height * 0.11)
+                            // ✅ 给底部说明文字留出空间
+                            Spacer().frame(height: geometry.size.height * 0.11)
+                        }
                     }
                     .padding(.top, 16)
                     .frame(width: geometry.size.width,
@@ -2243,7 +2256,7 @@ enum DesignRecs {
         "Sound": "Brown Noise", "Career": "Clear Channel",
         "Relationship": "Breathe in Sync"
     ]
-    static let mantra = "Find your flow."
+    static let mantra = "Today is not about perfection. It is about noticing small moments, honoring how I feel, and allowing myself to move forward with patience and care."
 }
 
 
@@ -2279,7 +2292,7 @@ private struct FirstPagePreviewContainer: View {
             "Career": "clear_channel",
             "Relationship": "breathe_sync"
         ]
-        viewModel.dailyMantra = "Find your flow."
+        viewModel.dailyMantra = "Today is not about perfection. It is about noticing small moments, honoring how I feel, and allowing myself to move forward with patience and care."
         _viewModel = StateObject(wrappedValue: viewModel)
     }
 
@@ -2682,7 +2695,7 @@ struct OnboardingOpeningPage: View {
                             .font(Font.custom("CormorantGaramond-Bold", size: minLength * 0.12))
                             .foregroundColor(themeManager.fixedNightTextPrimary)
                         
-                        Text("FIND YOUR FLOW")
+                        Text("Today is not about perfection. It is about noticing small moments, honoring how I feel, and allowing myself to move forward with patience and care.")
                             .font(AlignaTypography.font(.subheadline))
                             .foregroundColor(themeManager.fixedNightTextSecondary)
                         
