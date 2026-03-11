@@ -118,7 +118,7 @@ public struct AstroCalculator {
 
         let numerator = -cos(lstR)
         let denominator = sin(epsR) * tan(latR) + cos(epsR) * sin(lstR)
-        var asc = atan2(numerator, denominator)
+        let asc = atan2(numerator, denominator)
         var ascDeg = normalize(rad2deg(asc))
         if ascDeg < 0 { ascDeg += 360.0 }
         return ascDeg

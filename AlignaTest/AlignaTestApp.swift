@@ -51,6 +51,7 @@ struct RootRouter: View {
     // 路由状态
     @State private var isReady = false
     @State private var isAuthenticated = (Auth.auth().currentUser != nil)
+    @State private var authStateListenerHandle: AuthStateDidChangeListenerHandle?
     private let isPreviewMode: Bool
 
     init() {
@@ -109,7 +110,7 @@ struct RootRouter: View {
         .onAppear {
             guard !isPreviewMode else { return }
             // 监听登录态变化（冷启动、第三方登录回调后都会触发）
-            Auth.auth().addStateDidChangeListener { _, user in
+            authStateListenerHandle = Auth.auth().addStateDidChangeListener { _, user in
                 self.isAuthenticated = (user != nil)
                 self.isReady = true
                 print("Auth state -> isAuthenticated=\(self.isAuthenticated)")
@@ -123,6 +124,12 @@ struct RootRouter: View {
                     UserDefaults.standard.set("",    forKey: "lastCurrentPlaceUpdate")
                     UserDefaults.standard.set("",    forKey: "todayFetchLock")
                 }
+            }
+        }
+        .onDisappear {
+            if let authStateListenerHandle {
+                Auth.auth().removeStateDidChangeListener(authStateListenerHandle)
+                self.authStateListenerHandle = nil
             }
         }
 
