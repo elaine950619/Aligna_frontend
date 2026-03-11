@@ -741,6 +741,7 @@ private struct AppBackgroundPreviewContainer: View {
         AppBackgroundView(mode: mode)
             .environmentObject(starManager)
             .environmentObject(themeManager)
+            .ignoresSafeArea()
             .preferredColorScheme(themeManager.preferredColorScheme)
     }
 }
