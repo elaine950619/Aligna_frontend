@@ -261,9 +261,30 @@ struct ContentView: View {
     @StateObject private var dailyVM: DailyViewModel
     @State private var journalText: String = ""
     @State private var isLoadingJournal: Bool = false
+    @State private var secondaryLoadTask: Task<Void, Never>? = nil
 
     
     private let enableLoading: Bool
+
+    private func loadTimelineContent(for date: Date) {
+        if enableLoading {
+            dailyVM.load(for: date)
+        }
+
+        secondaryLoadTask?.cancel()
+        isLoadingJournal = true
+        journalText = ""
+
+        secondaryLoadTask = Task {
+            try? await Task.sleep(nanoseconds: 120_000_000)
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                loadJournal(for: date)
+                reasoningStore.load(for: date)
+            }
+        }
+    }
     
     private func loadJournal(for date: Date) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
@@ -377,14 +398,10 @@ struct ContentView: View {
                         .shadow(color: .black.opacity(themeManager.isNight ? 0.12 : 0.10), radius: 10, y: 6)
                         .cornerRadius(20)
                         .onAppear {
-                            if enableLoading { dailyVM.load(for: selectedDate) }
-                            loadJournal(for: selectedDate)
-                            reasoningStore.load(for: selectedDate)
+                            loadTimelineContent(for: selectedDate)
                         }
                         .onChange(of: selectedDate) {
-                            if enableLoading { dailyVM.load(for: selectedDate) }
-                            loadJournal(for: selectedDate)
-                            reasoningStore.load(for: selectedDate)
+                            loadTimelineContent(for: selectedDate)
                         }
 
                         .padding(.horizontal, 16)

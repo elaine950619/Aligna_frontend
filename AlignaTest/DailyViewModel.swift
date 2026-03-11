@@ -75,23 +75,56 @@ final class DailyViewModel: ObservableObject {
     }
     
     private func fetchDetails(pairs: [(String,String)]) {
-        items.removeAll()
-        for (category, docName) in pairs where !docName.isEmpty {
-            var colName = category.lowercased() + "s"   // “places”, “colors”, …
-            if colName == "activitys" {
-                colName = "activities"
+        let validPairs = pairs.filter { !$0.1.isEmpty }
+
+        DispatchQueue.main.async {
+            self.items.removeAll()
+        }
+
+        guard !validPairs.isEmpty else { return }
+
+        let orderedCategories = validPairs.map(\.0)
+        let lock = NSLock()
+        var pendingCount = validPairs.count
+        var resultsByCategory: [String: SuggestionItem] = [:]
+
+        func completeRequest() {
+            let orderedItems: [SuggestionItem]?
+
+            lock.lock()
+            pendingCount -= 1
+            if pendingCount == 0 {
+                orderedItems = orderedCategories.compactMap { resultsByCategory[$0] }
+            } else {
+                orderedItems = nil
             }
+            lock.unlock()
+
+            guard let orderedItems else { return }
+            DispatchQueue.main.async {
+                self.items = orderedItems
+            }
+        }
+
+        for (category, docName) in validPairs {
+            let collectionName = category == "Activity"
+                ? "activities"
+                : category.lowercased() + "s"
 
             let normalizedDocName = Self.sanitizeDocumentName(docName)
 
-            db.collection(colName).document(normalizedDocName)
+            db.collection(collectionName).document(normalizedDocName)
                 .getDocument { snapshot, err in
                     if let err = err {
-                        print("⚠️", err); return
+                        print("⚠️", err)
+                        completeRequest()
+                        return
                     }
                     guard let snap = snapshot,
                           let data = snap.data() else {
-                        print("No data at \(colName)/\(normalizedDocName) (raw: \(docName))"); return
+                        print("No data at \(collectionName)/\(normalizedDocName) (raw: \(docName))")
+                        completeRequest()
+                        return
                     }
                     
                     // build a *guaranteed* unique SwiftUI id
@@ -105,9 +138,11 @@ final class DailyViewModel: ObservableObject {
                         title: title,
                         description: desc
                     )
-                    DispatchQueue.main.async {
-                        self.items.append(item)
-                    }
+
+                    lock.lock()
+                    resultsByCategory[category] = item
+                    lock.unlock()
+                    completeRequest()
                 }
         }
     }
