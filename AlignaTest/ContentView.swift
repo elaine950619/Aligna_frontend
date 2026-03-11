@@ -69,7 +69,7 @@ private struct TimelineHeader: View {
         GeometryReader { geo in
             // use safe-area top for exact placement under the notch
             let top = geo.safeAreaInsets.top
-            var extraTop: CGFloat = 10
+//            var extraTop: CGFloat = 10
 
             ZStack {
                 

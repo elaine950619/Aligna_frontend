@@ -2042,3 +2042,71 @@ struct RelationshipDetailView: View {
         }
     }
 }
+#if DEBUG
+private struct DetailPreviewContainer<Content: View>: View {
+    let isNight: Bool
+    let content: Content
+
+    @StateObject private var starManager = StarAnimationManager()
+    @StateObject private var soundPlayer = SoundPlayer()
+    @StateObject private var reasoningStore = DailyReasoningStore()
+    @StateObject private var themeManager: ThemeManager
+
+    init(isNight: Bool, @ViewBuilder content: () -> Content) {
+        self.isNight = isNight
+        self.content = content()
+
+        let themeManager = ThemeManager()
+        themeManager.selected = isNight ? .night : .day
+        _themeManager = StateObject(wrappedValue: themeManager)
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AppBackgroundView()
+                    .environmentObject(starManager)
+                    .environmentObject(themeManager)
+                    .ignoresSafeArea()
+
+                content
+                    .environmentObject(starManager)
+                    .environmentObject(soundPlayer)
+                    .environmentObject(reasoningStore)
+                    .environmentObject(themeManager)
+            }
+        }
+        .preferredColorScheme(themeManager.preferredColorScheme)
+    }
+}
+
+#Preview("Sound Detail Day") {
+    DetailPreviewContainer(isNight: false) {
+        SoundDetailView(documentName: "brown_noise")
+    }
+}
+
+#Preview("Sound Detail Night") {
+    DetailPreviewContainer(isNight: true) {
+        SoundDetailView(documentName: "brown_noise")
+    }
+}
+
+#Preview("Place Detail Day") {
+    DetailPreviewContainer(isNight: false) {
+        PlaceDetailView(documentName: "botanical_garden")
+    }
+}
+
+#Preview("Gem Detail Night") {
+    DetailPreviewContainer(isNight: true) {
+        GemstoneDetailView(documentName: "amethyst")
+    }
+}
+
+#Preview("Relationship Detail Day") {
+    DetailPreviewContainer(isNight: false) {
+        RelationshipDetailView(documentName: "breathe_sync")
+    }
+}
+#endif

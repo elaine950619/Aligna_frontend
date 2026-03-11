@@ -35,6 +35,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 // MARK: - 根路由：仅以 Firebase 登录态 决定首屏
 struct RootRouter: View {
+    enum PreviewRoute {
+        case loading
+        case signedOut
+        case signedIn
+    }
+
     // 全局环境对象（在此统一注入，避免页面间丢失）
     @StateObject private var starManager = StarAnimationManager()
     @StateObject private var themeManager = ThemeManager()
@@ -45,6 +51,28 @@ struct RootRouter: View {
     // 路由状态
     @State private var isReady = false
     @State private var isAuthenticated = (Auth.auth().currentUser != nil)
+    private let isPreviewMode: Bool
+
+    init() {
+        self.isPreviewMode = false
+    }
+
+#if DEBUG
+    init(previewRoute: PreviewRoute) {
+        self.isPreviewMode = true
+        switch previewRoute {
+        case .loading:
+            _isReady = State(initialValue: false)
+            _isAuthenticated = State(initialValue: false)
+        case .signedOut:
+            _isReady = State(initialValue: true)
+            _isAuthenticated = State(initialValue: false)
+        case .signedIn:
+            _isReady = State(initialValue: true)
+            _isAuthenticated = State(initialValue: true)
+        }
+    }
+#endif
 
     var body: some View {
         Group {
@@ -79,6 +107,7 @@ struct RootRouter: View {
             }
         }
         .onAppear {
+            guard !isPreviewMode else { return }
             // 监听登录态变化（冷启动、第三方登录回调后都会触发）
             Auth.auth().addStateDidChangeListener { _, user in
                 self.isAuthenticated = (user != nil)
@@ -99,6 +128,20 @@ struct RootRouter: View {
 
     }
 }
+
+#if DEBUG
+#Preview("RootRouter Loading") {
+    RootRouter(previewRoute: .loading)
+}
+
+#Preview("RootRouter Signed Out") {
+    RootRouter(previewRoute: .signedOut)
+}
+
+#Preview("RootRouter Signed In") {
+    RootRouter(previewRoute: .signedIn)
+}
+#endif
 
 // MARK: - App 入口
 @main
