@@ -230,6 +230,7 @@ import SwiftUI
 
 struct LoadingView: View {
     var onStartLoading: (() -> Void)? = nil
+    private let fixedMessageIndex: Int?
     
     @State private var loadingMessages = [
         "Aligning with the cosmos",
@@ -252,38 +253,38 @@ struct LoadingView: View {
     @State private var zodiacSign: String = ""
     @State private var moonPhase: String = ""
 
+    init(onStartLoading: (() -> Void)? = nil, fixedMessageIndex: Int? = nil) {
+        self.onStartLoading = onStartLoading
+        self.fixedMessageIndex = fixedMessageIndex
+    }
+
+    private var currentLoadingMessage: String {
+        guard let fixedMessageIndex else { return loadingMessages[msgIndex] }
+        let clampedIndex = min(max(fixedMessageIndex, 0), loadingMessages.count - 1)
+        return loadingMessages[clampedIndex]
+    }
+
+    @ViewBuilder
+    private var brandTitle: some View {
+        let title = Text("Alynna")
+            .font(AlignaType.brandTitle())
+            .lineSpacing(40 - 34)
+            .foregroundColor(themeManager.primaryText)
+
+        if themeManager.isNight {
+            title.shimmer()
+        } else {
+            title
+        }
+    }
+
     var body: some View {
         GeometryReader { geo in
             ZStack {
                 AppBackgroundView()
                     .environmentObject(starManager)
-
-                // === Nebula effects ===
-                Circle()
-                    .fill(Color(.sRGB, red: 59/255, green: 130/255, blue: 246/255, opacity: 0.10))
-                    .frame(width: 384, height: 384)
-                    .scaleEffect(1.5)
-                    .blur(radius: 48)
-                    .offset(x: geo.size.width * -0.17, y: geo.size.height * -0.25)
-
-                Circle()
-                    .fill(Color(.sRGB, red: 168/255, green: 85/255, blue: 247/255, opacity: 0.10))
-                    .frame(width: 320, height: 320)
-                    .scaleEffect(1.2)
-                    .blur(radius: 48)
-                    .offset(x: geo.size.width * 0.25, y: geo.size.height * 0.18)
-
-                // === Central radial glow ===
-                RadialGradient(
-                    gradient: Gradient(colors: [
-                        themeManager.primaryText.opacity(themeManager.isNight ? 0.05 : 0.08),
-                        .clear
-                    ]),
-                    center: .center,
-                    startRadius: 0,
-                    endRadius: min(geo.size.width, geo.size.height) * 0.5
-                )
-                .allowsHitTesting(false)
+                    .environmentObject(themeManager)
+                    .ignoresSafeArea()
 
                 // === Main content ===
                 VStack(spacing: 32) {
@@ -299,7 +300,6 @@ struct LoadingView: View {
                             .scaledToFit()
                             .frame(width: disk, height: disk)
                             .foregroundColor(iconColor)
-                            .shadow(color: iconColor.opacity(0.35), radius: 24, x: 0, y: 8)
                             .scaleEffect(pulse ? 1.04 : 1.0)
                             .animation(
                                 .easeInOut(duration: 1.8)
@@ -314,11 +314,7 @@ struct LoadingView: View {
 
                     // Brand title + thin underline + shimmer
                     VStack(spacing: 8) {
-                        Text("Alynna")
-                            .font(AlignaType.brandTitle())
-                            .lineSpacing(40 - 34)
-                            .foregroundColor(themeManager.primaryText)   // ✅ 关键：跟随主题
-                            .shimmer()
+                        brandTitle
 
                         Rectangle()
                             .fill(
@@ -362,7 +358,7 @@ struct LoadingView: View {
 
                     // Loading text + bouncing dots
                     VStack(spacing: 12) {
-                        Text(loadingMessages[msgIndex])
+                        Text(currentLoadingMessage)
                             .font(AlignaType.loadingSubtitle())
                             .lineSpacing(AlignaType.body16LineSpacing)
                             .foregroundColor(themeManager.descriptionText.opacity(0.90)) // ✅
@@ -389,9 +385,11 @@ struct LoadingView: View {
                 .padding(16)
             }
             .onAppear {
-                Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { _ in
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        msgIndex = (msgIndex + 1) % loadingMessages.count
+                if fixedMessageIndex == nil {
+                    Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { _ in
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            msgIndex = (msgIndex + 1) % loadingMessages.count
+                        }
                     }
                 }
                 withAnimation { dotPhase = 1 }
@@ -2297,6 +2295,34 @@ private struct FirstPagePreviewContainer: View {
 
 #Preview("FirstPage main grid") {
     FirstPagePreviewContainer()
+}
+
+private struct LoadingViewPreviewContainer: View {
+    @StateObject private var starManager = StarAnimationManager()
+    @StateObject private var themeManager: ThemeManager
+    let isNight: Bool
+
+    init(isNight: Bool = false) {
+        self.isNight = isNight
+        let themeManager = ThemeManager()
+        themeManager.selected = isNight ? .night : .day
+        _themeManager = StateObject(wrappedValue: themeManager)
+    }
+
+    var body: some View {
+        LoadingView(fixedMessageIndex: 0)
+            .environmentObject(starManager)
+            .environmentObject(themeManager)
+            .preferredColorScheme(themeManager.preferredColorScheme)
+    }
+}
+
+#Preview("Loading Day") {
+    LoadingViewPreviewContainer()
+}
+
+#Preview("Loading Night") {
+    LoadingViewPreviewContainer(isNight: true)
 }
 
 private struct ProfilePreviewContainer<Content: View>: View {
