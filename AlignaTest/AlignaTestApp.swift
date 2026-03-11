@@ -1,5 +1,5 @@
 //  AlignaTestApp.swift  — 入口（替换整文件）
-//  逻辑：未登录 => OnboardingOpeningPage；已登录 => FirstPageView
+//  逻辑：未登录 => OnboardingView；已登录 => MainView
 
 import SwiftUI
 import FirebaseCore
@@ -88,7 +88,7 @@ struct RootRouter: View {
             } else if !isAuthenticated {
                 // 未登录 → 开场页
                 NavigationStack {
-                    OnboardingOpeningPage()
+                    OnboardingView()
                 }
                 .environmentObject(starManager)
                 .environmentObject(themeManager)
@@ -98,7 +98,7 @@ struct RootRouter: View {
                 .preferredColorScheme(themeManager.isNight ? .dark : .light)
             } else {
                 // 已登录 → 首页
-                FirstPageView()
+                MainView()
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
                     .environmentObject(onboardingViewModel)

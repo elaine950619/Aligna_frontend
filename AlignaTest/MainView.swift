@@ -107,7 +107,7 @@ struct SafeImage: View {
     }
 }
 
-struct FirstPageView: View {
+struct MainView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var viewModel: OnboardingViewModel
@@ -244,7 +244,7 @@ struct FirstPageView: View {
 
                                 if isLoggedIn {
                                     NavigationLink(
-                                        destination: AccountDetailView(viewModel: OnboardingViewModel())
+                                        destination: ProfileDetailView(viewModel: OnboardingViewModel())
                                             .environmentObject(starManager)
                                             .environmentObject(themeManager)
                                     ) {
@@ -257,7 +257,7 @@ struct FirstPageView: View {
                                     }
                                 } else {
                                     NavigationLink(
-                                        destination: AccountDetailView(viewModel: OnboardingViewModel())
+                                        destination: ProfileDetailView(viewModel: OnboardingViewModel())
                                     ) {
                                         Image("account")
                                             .resizable()
@@ -521,7 +521,7 @@ struct FirstPageView: View {
         }
     }
 
-    // ====== FirstPageView 内新增 ======
+    // ====== MainView 内新增 ======
     private func hydrateBirthFromProfileIfNeeded(_ done: @escaping () -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else { done(); return }
         let db = Firestore.firestore()
@@ -768,7 +768,7 @@ struct FirstPageView: View {
                             .navigationBarBackButtonHidden(true)
                     } else {
                         // 冷启动未登录：先到 OpeningPage（包含 Sign Up / Log In）
-                        OnboardingOpeningPage()
+                        OnboardingView()
                             .environmentObject(starManager)
                             .environmentObject(themeManager)
                             .navigationBarBackButtonHidden(true)
@@ -1796,7 +1796,7 @@ enum DesignRecs {
 
 
 #if DEBUG
-extension FirstPageView {
+extension MainView {
     init(previewBoot: BootPhase) {
         self.init()
         _bootPhase = State(initialValue: previewBoot) // jump straight to .main
@@ -1832,7 +1832,7 @@ private struct FirstPagePreviewContainer: View {
     }
 
     var body: some View {
-        FirstPageView(previewBoot: .main)
+        MainView(previewBoot: .main)
             .environmentObject(starManager)
             .environmentObject(themeManager)
             .environmentObject(viewModel)
@@ -1841,7 +1841,7 @@ private struct FirstPagePreviewContainer: View {
     }
 }
 
-#Preview("FirstPage main grid") {
+#Preview("Main View") {
     FirstPagePreviewContainer()
 }
 #endif
@@ -1978,4 +1978,3 @@ struct CustomBackButton: View {
 import FirebaseFirestore
 import FirebaseAuth
 import MapKit
-

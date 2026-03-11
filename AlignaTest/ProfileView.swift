@@ -59,19 +59,19 @@ private struct ProfilePreviewContainer<Content: View>: View {
 
 #Preview("Profile Login") {
     ProfilePreviewContainer(theme: .dark, wrapsInNavigationStack: false) {
-        AccountPageView()
+        ProfileView()
     }
 }
 
 #Preview("Profile Detail Day") {
     ProfilePreviewContainer(theme: .light, wrapsInNavigationStack: false) {
-        AccountDetailView(viewModel: OnboardingViewModel())
+        ProfileDetailView(viewModel: OnboardingViewModel())
     }
 }
 
 #Preview("Profile Detail Night") {
     ProfilePreviewContainer(theme: .dark, wrapsInNavigationStack: false) {
-        AccountDetailView(viewModel: OnboardingViewModel())
+        ProfileDetailView(viewModel: OnboardingViewModel())
     }
 }
 
@@ -268,7 +268,7 @@ extension ThemeManager {
     var fixedNightTextTertiary: Color  { Color(hex: "#A8B5C8") }
 }
 
-struct AccountPageView: View {
+struct ProfileView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
@@ -562,7 +562,7 @@ struct AccountPageView: View {
                                 .font(AlignaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             NavigationLink(
-                                destination: RegisterPageView()
+                                destination: RegisterView()
                                     .environmentObject(starManager)
                                     .environmentObject(themeManager)
                                     .environmentObject(viewModel)
@@ -582,7 +582,7 @@ struct AccountPageView: View {
                 }
             }
             .navigationDestination(isPresented: $navigateToHome) {
-                FirstPageView()
+                MainView()
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
                     .environmentObject(viewModel)
@@ -1060,7 +1060,7 @@ extension View {
 }
 
 
-struct AccountDetailView: View {
+struct ProfileDetailView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
@@ -1292,7 +1292,7 @@ struct AccountDetailView: View {
 }
 
 // MARK: - UI Sections
-private extension AccountDetailView {
+private extension ProfileDetailView {
     var headerCard: some View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
@@ -1576,7 +1576,7 @@ private extension AccountDetailView {
 }
 
 // MARK: - Reusable UI
-private extension AccountDetailView {
+private extension ProfileDetailView {
 
     func rowCard(icon: String, title: String, subtitle: String) -> some View {
         HStack(spacing: 12) {
@@ -2207,7 +2207,7 @@ Your privacy is paramount. All sensor data is processed locally on your device. 
 
 
 // MARK: - Data & Actions
-private extension AccountDetailView {
+private extension ProfileDetailView {
     func applyPreviewDataIfNeeded() {
         guard nickname.isEmpty, email.isEmpty else { return }
 
@@ -2936,7 +2936,7 @@ private extension AccountDetailView {
 }
 
 // MARK: - 固定英文展示 & 解析（工具函数，供其它处复用）
-private extension AccountDetailView {
+private extension ProfileDetailView {
     func dateString(_ d: Date) -> String {
         Self.birthdayDisplayFormatter.string(from: d)
     }

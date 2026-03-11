@@ -123,7 +123,7 @@ struct StaggeredLetters: View {
 
 
 
-struct OnboardingOpeningPage: View {
+struct OnboardingView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     
@@ -156,7 +156,7 @@ struct OnboardingOpeningPage: View {
                         Spacer()
                         
                         // Sign Up（按钮本身用白底黑字，保持原样）
-                        NavigationLink(destination: RegisterPageView()
+                        NavigationLink(destination: RegisterView()
                             .environmentObject(starManager)
                             .environmentObject(themeManager)) {
                                 Text("Sign Up")
@@ -171,7 +171,7 @@ struct OnboardingOpeningPage: View {
                             }
 
                         // Log In（按钮文案保留白色）
-                        NavigationLink(destination: AccountPageView()
+                        NavigationLink(destination: ProfileView()
                             .environmentObject(starManager)
                             .environmentObject(themeManager)
                             .environmentObject(OnboardingViewModel())) {
@@ -214,7 +214,7 @@ import FirebaseCore
 import GoogleSignIn
 import FirebaseFirestore
 
-struct RegisterPageView: View {
+struct RegisterView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
@@ -370,7 +370,7 @@ struct RegisterPageView: View {
                                     shouldOnboardAfterSignIn = true
 
                                     // ② 自检：没过就给出友好提示并 return
-                                    if !GoogleSignInDiagnostics.preflight(context: "RegisterPageView.GoogleButton") {
+                                    if !GoogleSignInDiagnostics.preflight(context: "RegisterView.GoogleButton") {
                                         alertMessage = """
                                         """
                                         showAlert = true
@@ -495,7 +495,7 @@ struct RegisterPageView: View {
                         .environmentObject(themeManager)
                 }
                 .navigationDestination(isPresented: $navigateToLogin) {
-                    AccountPageView()
+                    ProfileView()
                         .environmentObject(starManager)
                         .environmentObject(themeManager)
                         .environmentObject(viewModel)
@@ -506,7 +506,7 @@ struct RegisterPageView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
                         registerFocus = .email
                     }
-                    _ = GoogleSignInDiagnostics.run(context: "RegisterPageView.onAppear")
+                    _ = GoogleSignInDiagnostics.run(context: "RegisterView.onAppear")
                 }
                 .onDisappear { showIntro = false }
                 .navigationBarBackButtonHidden(true)
@@ -1761,7 +1761,7 @@ struct OnboardingFinalStep: View {
             }
             // 完成后跳首页
             .navigationDestination(isPresented: $navigateToHome) {
-                FirstPageView()
+                MainView()
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
                     .environmentObject(viewModel)
@@ -2057,3 +2057,80 @@ import GoogleSignIn
 import FirebaseCore
 import UIKit
 
+#if DEBUG
+private struct OnboardingPreviewContainer<Content: View>: View {
+    @StateObject private var starManager = StarAnimationManager()
+    @StateObject private var themeManager: ThemeManager
+    @StateObject private var viewModel: OnboardingViewModel
+
+    private let wrapsInNavigationStack: Bool
+    private let contentBuilder: (OnboardingViewModel) -> Content
+
+    init(
+        isNight: Bool = true,
+        wrapsInNavigationStack: Bool = true,
+        configure: ((OnboardingViewModel) -> Void)? = nil,
+        @ViewBuilder content: @escaping (OnboardingViewModel) -> Content
+    ) {
+        let themeManager = ThemeManager()
+        themeManager.selected = isNight ? .night : .day
+        _themeManager = StateObject(wrappedValue: themeManager)
+
+        let viewModel = OnboardingViewModel()
+        viewModel.nickname = "Luna"
+        viewModel.birthPlace = "Hangzhou"
+        viewModel.currentPlace = "San Francisco"
+        viewModel.birth_date = Calendar.current.date(from: DateComponents(year: 1996, month: 3, day: 14)) ?? Date()
+        viewModel.birth_time = BirthTimeUtils.makeLocalTimeDate(hour: 7, minute: 42)
+        configure?(viewModel)
+        _viewModel = StateObject(wrappedValue: viewModel)
+
+        self.wrapsInNavigationStack = wrapsInNavigationStack
+        self.contentBuilder = content
+    }
+
+    var body: some View {
+        Group {
+            if wrapsInNavigationStack {
+                NavigationStack {
+                    contentBuilder(viewModel)
+                }
+            } else {
+                contentBuilder(viewModel)
+            }
+        }
+        .environmentObject(starManager)
+        .environmentObject(themeManager)
+        .environmentObject(viewModel)
+        .preferredColorScheme(themeManager.preferredColorScheme)
+    }
+}
+
+#Preview("Onboarding Intro") {
+    OnboardingPreviewContainer { _ in
+        OnboardingView()
+    }
+}
+
+#Preview("Register") {
+    OnboardingPreviewContainer { _ in
+        RegisterView()
+    }
+}
+
+#Preview("Onboarding Step 1") {
+    OnboardingPreviewContainer { viewModel in
+        OnboardingStep1(viewModel: viewModel)
+    }
+}
+
+#Preview("Onboarding Final") {
+    OnboardingPreviewContainer(configure: { viewModel in
+        viewModel.nickname = "Luna"
+        viewModel.birthPlace = "Hangzhou"
+        viewModel.currentPlace = "San Francisco"
+    }) { viewModel in
+        OnboardingFinalStep(viewModel: viewModel)
+    }
+}
+#endif
