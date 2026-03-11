@@ -231,6 +231,7 @@ import SwiftUI
 struct LoadingView: View {
     var onStartLoading: (() -> Void)? = nil
     private let fixedMessageIndex: Int?
+    private let brandDisk: CGFloat = 96
     
     @State private var loadingMessages = [
         "Aligning with the cosmos",
@@ -288,8 +289,6 @@ struct LoadingView: View {
 
                 // === Main content ===
                 VStack(spacing: 32) {
-                    let disk: CGFloat = 96
-
                     // Logo（透明背景 + 颜色跟随 ThemeManager）
                     ZStack {
                         let iconColor: Color = themeManager.primaryText
@@ -298,7 +297,7 @@ struct LoadingView: View {
                             .resizable()
                             .renderingMode(.template)
                             .scaledToFit()
-                            .frame(width: disk, height: disk)
+                            .frame(width: brandDisk, height: brandDisk)
                             .foregroundColor(iconColor)
                             .scaleEffect(pulse ? 1.04 : 1.0)
                             .animation(
@@ -313,7 +312,7 @@ struct LoadingView: View {
                     }
 
                     // Brand title + thin underline + shimmer
-                    VStack(spacing: 8) {
+                    VStack(spacing: 6) {
                         brandTitle
 
                         Rectangle()
@@ -328,7 +327,7 @@ struct LoadingView: View {
                                     endPoint: .trailing
                                 )
                             )
-                            .frame(width: 128, height: 1)
+                            .frame(width: 120, height: 1)
                     }
 
                     // Spinner (two rings)
@@ -471,14 +470,8 @@ struct WelcomeSplashView: View {
         ZStack {
             AppBackgroundView()
                 .environmentObject(starManager)
-            
-            RadialGradient(
-                colors: [Color.white.opacity(0.06), .clear],
-                center: .center,
-                startRadius: 0,
-                endRadius: 260
-            )
-            .allowsHitTesting(false)
+                .environmentObject(themeManager)
+                .ignoresSafeArea()
 
             VStack(spacing: 22) {
                 // Logo（透明背景 + 颜色跟随 ThemeManager）
@@ -491,7 +484,6 @@ struct WelcomeSplashView: View {
                     .scaledToFit()
                     .frame(width: disk, height: disk)
                     .foregroundColor(iconColor)
-                    .shadow(color: iconColor.opacity(0.35), radius: 22, x: 0, y: 8)
                 
                 // Brand + hairline underline
                 VStack(spacing: 6) {
@@ -511,8 +503,8 @@ struct WelcomeSplashView: View {
                         .frame(width: 120, height: 1)
                 }
 
-                // Info rows（统一字号 16、行间距约 22，首字母对齐）
-                VStack(alignment: .leading, spacing: 10) {
+                // Info rows: grouped as a light info card for clearer structure.
+                VStack(alignment: .leading, spacing: 12) {
                     infoLine(icon: "📍",
                              text: location,
                              textOpacity: 0.9)
@@ -521,18 +513,37 @@ struct WelcomeSplashView: View {
                              text: zodiacText,
                              textOpacity: 0.85)
 
-                    // 这里改成 cleanMoonText，这样只有左边一个固定的 🌙 emoji
                     infoLine(icon: "🌙",
                              text: cleanMoonText,
                              textOpacity: 0.75)
                 }
-                .padding(.top, 6)
-                .padding(.horizontal, 30)
-                .frame(maxWidth: 260, alignment: .leading)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 14)
+                .frame(width: 220, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(themeManager.isNight ? Color.white.opacity(0.06) : Color.white.opacity(0.22))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(
+                            themeManager.isNight
+                                ? Color.white.opacity(0.12)
+                                : Color(hex: "#D4A574").opacity(0.18),
+                            lineWidth: 1
+                        )
+                )
+                .shadow(
+                    color: .black.opacity(themeManager.isNight ? 0.10 : 0.05),
+                    radius: 10,
+                    x: 0,
+                    y: 6
+                )
+                .padding(.top, 8)
             }
             .multilineTextAlignment(.leading)
             .opacity(appear ? 1 : 0)
-            .offset(y: appear ? 0 : 12)
+            .offset(y: appear ? -28 : -16)
             .animation(.easeOut(duration: 0.45), value: appear)
         }
         .onAppear { appear = true }
@@ -592,7 +603,7 @@ struct FirstPageView: View {
     @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
     @State private var isFetchingToday: Bool = false
     
-    @State private var isMantraExpanded: Bool = true
+    @State private var isMantraExpanded: Bool = false
     
     @State private var showReasoningBubble: Bool = false
 
@@ -802,7 +813,7 @@ struct FirstPageView: View {
                         .contentShape(Rectangle())
                         // ✅ 当 mantra 更新（新的一天/重新拉取）时，自动收起回 “...”
                         .onChange(of: viewModel.dailyMantra) {
-                            isMantraExpanded = true
+                            isMantraExpanded = false
                         }
 
                         if !isMantraExpanded {
@@ -2336,6 +2347,32 @@ private struct LoadingViewPreviewContainer: View {
 
 #Preview("Loading Night") {
     LoadingViewPreviewContainer(isNight: true)
+}
+
+private struct InfoSplashPreviewContainer: View {
+    @StateObject private var starManager = StarAnimationManager()
+    @StateObject private var themeManager: ThemeManager
+
+    init(isNight: Bool = false) {
+        let themeManager = ThemeManager()
+        themeManager.selected = isNight ? .night : .day
+        _themeManager = StateObject(wrappedValue: themeManager)
+    }
+
+    var body: some View {
+        WelcomeSplashView(
+            location: "Cupertino",
+            zodiac: "♍︎ Virgo",
+            moon: "🌔 Waxing Gibbous"
+        )
+        .environmentObject(starManager)
+        .environmentObject(themeManager)
+        .preferredColorScheme(themeManager.preferredColorScheme)
+    }
+}
+
+#Preview("Info Splash") {
+    InfoSplashPreviewContainer()
 }
 
 private struct ProfilePreviewContainer<Content: View>: View {
