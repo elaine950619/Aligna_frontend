@@ -67,7 +67,7 @@ struct JournalView: View {
                         .foregroundStyle(themeManager.primaryText)
                         .shadow(color: .black.opacity(0.25), radius: 6, x: 0, y: 2)
                     
-                    Text("Any thoughts you'd like to note for\nyourself today?")
+                    Text("Pause for a moment.\nHow does today feel for you?")
                         .multilineTextAlignment(.center)
                         .font(.system(size: 20, weight: .medium, design: .serif))
                         .foregroundStyle(themeManager.descriptionText)

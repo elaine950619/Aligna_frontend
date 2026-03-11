@@ -2298,6 +2298,90 @@ private struct FirstPagePreviewContainer: View {
 #Preview("FirstPage main grid") {
     FirstPagePreviewContainer()
 }
+
+private struct ProfilePreviewContainer<Content: View>: View {
+    @StateObject private var starManager = StarAnimationManager()
+    @StateObject private var themeManager: ThemeManager
+    @StateObject private var viewModel = OnboardingViewModel()
+
+    private let content: Content
+    private let wrapsInNavigationStack: Bool
+
+    init(
+        theme: ThemePreference = .light,
+        wrapsInNavigationStack: Bool = true,
+        @ViewBuilder content: () -> Content
+    ) {
+        let themeManager = ThemeManager()
+        switch theme {
+        case .light:
+            themeManager.selected = .day
+        case .dark:
+            themeManager.selected = .night
+        case .auto:
+            themeManager.selected = .system
+        }
+        _themeManager = StateObject(wrappedValue: themeManager)
+        self.wrapsInNavigationStack = wrapsInNavigationStack
+        self.content = content()
+    }
+
+    var body: some View {
+        Group {
+            if wrapsInNavigationStack {
+                NavigationStack {
+                    previewContent
+                }
+            } else {
+                previewContent
+            }
+        }
+        .preferredColorScheme(themeManager.preferredColorScheme)
+    }
+
+    private var previewContent: some View {
+        ZStack {
+            previewBaseColor
+                .ignoresSafeArea()
+
+            content
+                .ignoresSafeArea()
+        }
+        .environmentObject(starManager)
+        .environmentObject(themeManager)
+        .environmentObject(viewModel)
+    }
+
+    private var previewBaseColor: Color {
+        themeManager.isNight ? Color(hex: "#1a1a2e") : Color(hex: "#E6D9BD")
+    }
+}
+
+#Preview("Profile Login") {
+    ProfilePreviewContainer(theme: .dark, wrapsInNavigationStack: false) {
+        AccountPageView()
+    }
+}
+
+#Preview("Profile Detail Day") {
+    ProfilePreviewContainer(theme: .light, wrapsInNavigationStack: false) {
+        AccountDetailView(viewModel: OnboardingViewModel())
+    }
+}
+
+#Preview("Profile Detail Night") {
+    ProfilePreviewContainer(theme: .dark, wrapsInNavigationStack: false) {
+        AccountDetailView(viewModel: OnboardingViewModel())
+    }
+}
+
+#Preview("About Aligna") {
+    NavigationStack {
+        AboutAlignaView()
+            .navigationTitle("About Aligna")
+            .navigationBarTitleDisplayMode(.inline)
+    }
+}
 #endif
 
 #if DEBUG
@@ -3133,6 +3217,7 @@ struct OnboardingStep1: View {
                 AppBackgroundView(mode: .night)
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
+                    .ignoresSafeArea()
 
                 ScrollView {
                     VStack(spacing: minLength * 0.045) {
@@ -4820,6 +4905,8 @@ struct AccountPageView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 }
 // MARK: - 登录工具函数（可直接替换）
@@ -5330,6 +5417,10 @@ struct AccountDetailView: View {
     @State private var refreshAlertTitle = ""
     @State private var refreshAlertMessage = ""
 
+    private var isPreviewMode: Bool {
+        ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+    }
+
 
     // === 固定英文格式的 Formatter（static，避免 mutating getter 报错）===
     private static let enUSPOSIX = Locale(identifier: "en_US_POSIX")
@@ -5420,20 +5511,32 @@ struct AccountDetailView: View {
                             .padding(18)
                             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
                     }
-                }
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button { dismiss() } label: {
-                            Image(systemName: "chevron.left")
-                                .font(.title3.weight(.semibold))
-                                .foregroundColor(themeManager.primaryText)
+
+                    VStack {
+                        HStack {
+                            Button { dismiss() } label: {
+                                Image(systemName: "chevron.left")
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundColor(themeManager.primaryText)
+                                    .padding(12)
+                                    .background(.ultraThinMaterial, in: Circle())
+                            }
+                            Spacer()
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 12)
+
+                        Spacer()
                     }
                 }
                 .onAppear {
                     makeNavBarTransparent()
                     themeManager.setSystemColorScheme(colorScheme)
-                    initialLoad()
+                    if isPreviewMode {
+                        applyPreviewDataIfNeeded()
+                    } else {
+                        initialLoad()
+                    }
                 }
                 .onDisappear { restoreNavBarDefault() }
                 .onChange(of: colorScheme) { newScheme in
@@ -5460,6 +5563,7 @@ struct AccountDetailView: View {
         }
 
         .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
         .preferredColorScheme(themeManager.preferredColorScheme)
     }
@@ -5658,8 +5762,8 @@ private extension AccountDetailView {
         } label: {
             rowCard(
                 icon: "info.circle",
-                title: "About Aligna",
-                subtitle: "More about the app and privacy"
+                title: "About",
+                subtitle: "More about the app & privacy"
             )
         }
     }
@@ -5682,7 +5786,7 @@ private extension AccountDetailView {
                     .foregroundColor(Color.red.opacity(themeManager.isNight ? 0.92 : 0.78))
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Delete Account")
+                    Text("Danger Zone")
                         .font(AlignaTypography.font(.headline))
                         .foregroundColor(Color.red.opacity(themeManager.isNight ? 0.92 : 0.78))
 
@@ -6405,6 +6509,27 @@ Your privacy is paramount. All sensor data is processed locally on your device. 
 
 // MARK: - Data & Actions
 private extension AccountDetailView {
+    func applyPreviewDataIfNeeded() {
+        guard nickname.isEmpty, email.isEmpty else { return }
+
+        email = "hello@aligna.app"
+        nickname = "Luna"
+        birthday = Calendar.current.date(from: DateComponents(year: 1996, month: 3, day: 14)) ?? Date()
+        birthTime = BirthTimeUtils.makeLocalTimeDate(hour: 7, minute: 42)
+        birthPlace = "Hangzhou, China"
+        currentPlace = "San Francisco, CA"
+        chartSunSign = "Pisces"
+        chartMoonSign = "Libra"
+        chartAscSign = "Gemini"
+        chartSignature = "Pisces-Libra-Gemini"
+        birthRawTimeString = "7:42 AM"
+        birthTimezoneOffsetMinutes = 480
+        userDocID = "preview-user"
+        userCollectionUsed = FSKeys.userPrimary
+        isBusy = false
+        errorMessage = nil
+    }
+
     func initialLoad() {
         switch ThemePreference(rawValue: themePreferenceRaw) ?? .auto {
         case .light: themeManager.selected = .day
