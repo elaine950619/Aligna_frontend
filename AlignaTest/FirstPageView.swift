@@ -119,7 +119,7 @@ func currentMoonPhaseLabel(for date: Date = Date()) -> String {
 // MARK: - Helpers
 extension Color {
     init(hex: String, opacity: Double = 1.0) {
-        var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "#", with: "")
+        let hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "#", with: "")
         var int: UInt64 = 0
         Scanner(string: hexSanitized).scanHexInt64(&int)
         let r, g, b: UInt64
@@ -792,7 +792,7 @@ struct FirstPageView: View {
                         .buttonStyle(.plain)
                         .contentShape(Rectangle())
                         // ✅ 当 mantra 更新（新的一天/重新拉取）时，自动收起回 “...”
-                        .onChange(of: viewModel.dailyMantra) { _ in
+                        .onChange(of: viewModel.dailyMantra) {
                             isMantraExpanded = false
                         }
 
@@ -3018,7 +3018,7 @@ struct RegisterPageView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
                         registerFocus = .email
                     }
-                    GoogleSignInDiagnostics.run(context: "RegisterPageView.onAppear")
+                    _ = GoogleSignInDiagnostics.run(context: "RegisterPageView.onAppear")
                 }
                 .onDisappear { showIntro = false }
                 .navigationBarBackButtonHidden(true)
@@ -5539,8 +5539,8 @@ struct AccountDetailView: View {
                     }
                 }
                 .onDisappear { restoreNavBarDefault() }
-                .onChange(of: colorScheme) { newScheme in
-                    themeManager.setSystemColorScheme(newScheme)
+                .onChange(of: colorScheme) {
+                    themeManager.setSystemColorScheme(colorScheme)
                 }
             }
         }
@@ -6159,7 +6159,7 @@ private extension AccountDetailView {
 
         func requestOnce(_ cb: @escaping (Result<CLLocationCoordinate2D, Error>) -> Void) {
             self.callback = cb
-            switch CLLocationManager.authorizationStatus() {
+            switch manager.authorizationStatus {
             case .notDetermined:
                 manager.requestWhenInUseAuthorization()
             case .denied, .restricted:
