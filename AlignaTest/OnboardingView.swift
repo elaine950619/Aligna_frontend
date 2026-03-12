@@ -12,6 +12,7 @@ class OnboardingViewModel: ObservableObject {
     @Published var birth_date: Date = Date()
     @Published var birth_time: Date = Date()
     @Published var birthPlace: String = ""
+    @Published var birthTimezoneOffsetMinutes: Int = TimeZone.current.secondsFromGMT() / 60
     @Published var currentPlace: String = ""
     @Published var birthCoordinate: CLLocationCoordinate2D?
     @Published var currentCoordinate: CLLocationCoordinate2D?

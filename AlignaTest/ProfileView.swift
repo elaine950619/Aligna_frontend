@@ -2988,7 +2988,7 @@ import CoreLocation
 import Foundation
 import CoreLocation
 
-// 把出生“日期”和“时间”合并成一个 Date（按用户当前时区；若有需要可换成出生地时区）
+// 把出生“日期”和“时间”合并成一个本地民用时间 Date，再按出生地时区推导 UTC。
 extension OnboardingViewModel {
     var birthDateTime: Date {
         let cal = Calendar(identifier: .gregorian)
@@ -3001,22 +3001,25 @@ extension OnboardingViewModel {
                                              hour: dc.hour, minute: dc.minute, second: dc.second)) ?? birth_date
     }
 
+    var birthDateUTC: Date {
+        birthDateTime.addingTimeInterval(-Double(birthTimezoneOffsetMinutes * 60))
+    }
+
     var sunSignText: String {
-        AstroCalculator.sunSign(date: birthDateTime).rawValue
+        AstroCalculator.sunSign(date: birthDateUTC).rawValue
     }
 
     var moonSignText: String {
-        AstroCalculator.moonSign(date: birthDateTime).rawValue
+        AstroCalculator.moonSign(date: birthDateUTC).rawValue
     }
 
     var ascendantText: String {
         guard let coord = birthCoordinate else { return "—" } // no coords → show dash
-        let tzMinutes = TimeZone.current.secondsFromGMT(for: birthDateTime) / 60
         let info = BirthInfo(
             date: birthDateTime,
             latitude: coord.latitude,
             longitude: coord.longitude,
-            timezoneOffsetMinutes: tzMinutes
+            timezoneOffsetMinutes: birthTimezoneOffsetMinutes
         )
         return AstroCalculator.ascendantSign(info: info).rawValue
     }

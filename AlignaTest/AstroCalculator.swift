@@ -2,7 +2,7 @@ import Foundation
 import CoreLocation
 
 public struct BirthInfo {
-    public let date: Date                 // stored moment (typically UTC)
+    public let date: Date                 // local civil birth time at birthplace (not UTC)
     public let latitude: Double
     public let longitude: Double
     public let timezoneOffsetMinutes: Int // minutes offset from GMT at birth (e.g., +480 for GMT+8)
@@ -27,7 +27,8 @@ public enum ZodiacSign: String, CaseIterable {
 
 public struct AstroCalculator {
 
-    // MARK: - 1) Birth time display (NO conversion)
+    // MARK: - 1) Birth time display
+    // `BirthInfo.date` is expected to already represent the civil time at the birthplace.
     public static func displayBirthTime(_ info: BirthInfo, format: String = "yyyy-MM-dd HH:mm") -> String {
         if let raw = info.originalUserInput, !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return raw
@@ -99,6 +100,7 @@ public struct AstroCalculator {
     }
 
     // MARK: - 5) Ascendant ecliptic longitude (approx)
+    // Convert the birthplace civil time into an absolute UTC instant for sidereal-time math.
     private static func ascendantLongitudeDegrees(_ info: BirthInfo) -> Double {
         let utcDate = info.date.addingTimeInterval(-Double(info.timezoneOffsetMinutes * 60))
         let jd = julianDay(utcDate)
@@ -131,14 +133,17 @@ public struct AstroCalculator {
     }
 
     // MARK: - Public APIs
+    // `date` here should be the absolute birth instant in UTC.
     public static func sunSign(date: Date) -> ZodiacSign {
         sign(fromEclipticLongitude: sunLongitudeDegrees(date))
     }
 
+    // `date` here should be the absolute birth instant in UTC.
     public static func moonSign(date: Date) -> ZodiacSign {
         sign(fromEclipticLongitude: moonLongitudeDegrees(date))
     }
 
+    // `BirthInfo.date` here should be the birthplace civil birth time, not UTC.
     public static func ascendantSign(info: BirthInfo) -> ZodiacSign {
         sign(fromEclipticLongitude: ascendantLongitudeDegrees(info))
     }
