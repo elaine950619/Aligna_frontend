@@ -74,6 +74,14 @@
 		B9B23F462F21A19200E620E2 /* Merriweather-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F442F21A19200E620E2 /* Merriweather-Light.ttf */; };
 		B9B23F472F21A19200E620E2 /* Merriweather-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F442F21A19200E620E2 /* Merriweather-Light.ttf */; };
 		B9B23F482F21A19200E620E2 /* Merriweather-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F442F21A19200E620E2 /* Merriweather-Light.ttf */; };
+		F2B9748E2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748C2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf */; };
+		F2B9748F2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748D2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf */; };
+		F2B974902F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748C2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf */; };
+		F2B974912F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748D2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf */; };
+		F2B974922F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748C2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf */; };
+		F2B974932F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748D2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf */; };
+		F2B974942F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748C2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf */; };
+		F2B974952F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748D2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -136,6 +144,8 @@
 		B9B23F2B2F219EB800E620E2 /* Merriweather-Black.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Merriweather-Black.ttf"; sourceTree = "<group>"; };
 		B9B23F352F219F1900E620E2 /* Merriweather-LightItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Merriweather-LightItalic.ttf"; sourceTree = "<group>"; };
 		B9B23F442F21A19200E620E2 /* Merriweather-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Merriweather-Light.ttf"; sourceTree = "<group>"; };
+		F2B9748C2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf"; sourceTree = "<group>"; };
+		F2B9748D2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Merriweather-VariableFont_opsz,wdth,wght.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -271,6 +281,8 @@
 				54C65B8B2E6E125600A41F9A /* AlignaWidgetExtensionRelease.entitlements */,
 				54DE58DE2DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf */,
 				B9B23EF42F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf */,
+				F2B9748C2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf */,
+				F2B9748D2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf */,
 				B9B23EF92F2199B300E620E2 /* CormorantGaramond-Bold.ttf */,
 				B9B23F032F2199CC00E620E2 /* Gloock-Regular.ttf */,
 				B9B23F2B2F219EB800E620E2 /* Merriweather-Black.ttf */,
@@ -465,6 +477,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				B974A40A2F351C0000AE4F1C /* Merriweather-Bold.ttf in Resources */,
+				F2B9748E2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf in Resources */,
+				F2B9748F2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */,
 				B974A4042F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf in Resources */,
 				B9B23F052F2199CC00E620E2 /* Gloock-Regular.ttf in Resources */,
 				54C65B912E6E12AD00A41F9A /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
@@ -487,6 +501,8 @@
 				54DE58DC2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf in Resources */,
 				B9B23F2E2F219EB800E620E2 /* Merriweather-Black.ttf in Resources */,
 				B9B23F242F219E8A00E620E2 /* Merriweather-Italic.ttf in Resources */,
+				F2B974902F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf in Resources */,
+				F2B974912F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */,
 				B9B23EFA2F2199B300E620E2 /* CormorantGaramond-Bold.ttf in Resources */,
 				B974A40C2F351C0000AE4F1C /* Merriweather-Bold.ttf in Resources */,
 				B9B23EF52F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf in Resources */,
@@ -508,6 +524,8 @@
 				54DE58E42DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
 				54DE58E52DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
 				B9B23F392F219F1900E620E2 /* Merriweather-LightItalic.ttf in Resources */,
+				F2B974922F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf in Resources */,
+				F2B974932F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */,
 				54DE58DD2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf in Resources */,
 				B9B23F292F219E9A00E620E2 /* Merriweather-Regular.ttf in Resources */,
 				B9B23F462F21A19200E620E2 /* Merriweather-Light.ttf in Resources */,
@@ -528,6 +546,8 @@
 				54DE58E22DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
 				54DE58E32DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
 				B9B23F362F219F1900E620E2 /* Merriweather-LightItalic.ttf in Resources */,
+				F2B974942F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf in Resources */,
+				F2B974952F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */,
 				54DE58DB2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf in Resources */,
 				B9B23F2A2F219E9A00E620E2 /* Merriweather-Regular.ttf in Resources */,
 				B9B23F452F21A19200E620E2 /* Merriweather-Light.ttf in Resources */,
@@ -782,7 +802,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8TU5H5G565;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AlignaTest/Info.plist;
@@ -816,7 +836,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8TU5H5G565;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AlignaTest/Info.plist;

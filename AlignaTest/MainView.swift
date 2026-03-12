@@ -58,6 +58,7 @@ func isCoordinateLikeString(_ s: String) -> Bool {
 enum AlignaType {
     static func logo() -> Font { .custom("CormorantGaramond-Bold", size: 50) }
     static func brandTitle() -> Font { .custom("Gloock-Regular", size: 34) }
+    static func expandedMantraBoldItalic() -> Font { .custom("Merriweather-BoldItalic", size: 28) }
 
     static func homeSubtitle() -> Font { .custom("Merriweather-Italic", size: 18) }
 
@@ -315,7 +316,7 @@ struct MainView: View {
                             Text(viewModel.dailyMantra)
                                 .font(
                                     isMantraExpanded
-                                    ? .custom("Merriweather-Black", size: 28)
+                                    ? AlignaType.expandedMantraBoldItalic()
                                     : AlignaType.homeSubtitle()
                                 )
                                 .lineSpacing(isMantraExpanded ? 12 : AlignaType.descLineSpacing)

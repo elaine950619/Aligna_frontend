@@ -492,7 +492,6 @@ struct WelcomeSplashView: View {
     // MARK: - 统一的 Info Row（16pt 字号 + 行高约 22pt + 首字母对齐）
     private func infoLine(icon: String, text: String, textOpacity: Double) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            // 固定宽度的 emoji 区域，保证后面文字首字母对齐
             Text(icon)
                 .font(.system(size: 18))
                 .frame(width: 24, alignment: .leading)
@@ -501,7 +500,6 @@ struct WelcomeSplashView: View {
                 .foregroundColor(themeManager.primaryText.opacity(textOpacity))
                 .font(.custom("Merriweather-Regular", size: 16))
                 .lineSpacing(AlignaType.body16LineSpacing)
-
         }
     }
 }
