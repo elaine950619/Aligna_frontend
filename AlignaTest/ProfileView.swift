@@ -678,6 +678,25 @@ func routeAuthenticatedUser(
     }
 }
 
+private func routeAuthenticatedUser(
+    uid: String,
+    onSuccessToLogin: @escaping () -> Void,
+    onSuccessToOnboarding: @escaping () -> Void
+) {
+    determineRegistrationPathForUID(uid) { path in
+        DispatchQueue.main.async {
+            switch path {
+            case .existingAccount:
+                updateLocalFlagsForReturningUser()
+                onSuccessToLogin()
+            case .needsOnboarding:
+                updateLocalFlagsForNeedsOnboarding()
+                onSuccessToOnboarding()
+            }
+        }
+    }
+}
+
 func signOutCurrentSession() throws {
     try Auth.auth().signOut()
     clearLocalAuthFlags()
@@ -722,16 +741,18 @@ func handleGoogleLogin(
                 onError("Login failed: \(error.localizedDescription)")
                 return
             }
-            guard Auth.auth().currentUser?.uid != nil else {
-                onError("Retrieve UID unsuccessful")
+            guard let uid = authResult?.user.uid else {
+                onError("We couldn’t complete Google sign-in. Please try again.")
                 return
             }
 
-            routeAuthenticatedUser(
-                onSuccessToLogin: onSuccessToLogin,
-                onSuccessToOnboarding: onSuccessToOnboarding,
-                onError: onError
-            )
+            if authResult?.additionalUserInfo?.isNewUser == true {
+                try? signOutCurrentSession()
+                onError("This Google account isn’t registered with Alynna yet. Please create an account first.")
+                return
+            }
+
+            routeAuthenticatedUser(uid: uid, onSuccessToLogin: onSuccessToLogin, onSuccessToOnboarding: onSuccessToOnboarding)
         }
     }
 }
@@ -765,16 +786,18 @@ func handleAppleLogin(
                 onError("Apple sign in failed: \(error.localizedDescription)")
                 return
             }
-            guard Auth.auth().currentUser?.uid != nil else {
-                onError("Obtain current user UID failed.")
+            guard let uid = authResult?.user.uid else {
+                onError("We couldn’t complete Apple sign-in. Please try again.")
                 return
             }
 
-            routeAuthenticatedUser(
-                onSuccessToLogin: onSuccessToLogin,
-                onSuccessToOnboarding: onSuccessToOnboarding,
-                onError: onError
-            )
+            if authResult?.additionalUserInfo?.isNewUser == true {
+                try? signOutCurrentSession()
+                onError("This Apple account isn’t registered with Alynna yet. Please create an account first.")
+                return
+            }
+
+            routeAuthenticatedUser(uid: uid, onSuccessToLogin: onSuccessToLogin, onSuccessToOnboarding: onSuccessToOnboarding)
         }
 
     case .failure(let error):
@@ -933,6 +956,13 @@ func determineRegistrationPathForCurrentUser(
     guard let uid = Auth.auth().currentUser?.uid else {
         completion(.needsOnboarding); return
     }
+    determineRegistrationPathForUID(uid, completion: completion)
+}
+
+func determineRegistrationPathForUID(
+    _ uid: String,
+    completion: @escaping (RegistrationPath) -> Void
+) {
     fetchUserDocByUID(uid) { data in
         guard let data = data else {
             // 没有任何用户文档 → 新用户
@@ -1282,7 +1312,7 @@ struct ProfileView: View {
             Button("Delete", role: .destructive) { deleteAccount() }
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("This will remove your profile and all daily recommendations associated with \(email).")
+            Text("This will permanently remove your profile and all related data. If you signed up with Google or Apple, you may be asked to confirm sign-in one more time before deletion completes.")
         }
         .alert("Error",
                isPresented: Binding(get: { errorMessage != nil }, set: { _ in errorMessage = nil })) {
@@ -2682,6 +2712,9 @@ private extension ProfileView {
         ensureRecentLoginForDeletion { recentLoginErr in
             if let recentLoginErr = recentLoginErr as NSError? {
                 self.isBusy = false
+                if self.isUserCancelledSignIn(recentLoginErr) {
+                    return
+                }
                 if recentLoginErr.code == AuthErrorCode.requiresRecentLogin.rawValue {
                     self.errorMessage = "For security reasons, please sign in again, then retry deletion."
                 } else {
@@ -2940,6 +2973,7 @@ private extension ProfileView {
     func clearLocalStateAfterAccountDeletion() {
         // 1) 清空本地标记（避免冷启动误判）
         clearLocalAuthFlags()
+        UserDefaults.standard.set(true, forKey: "didDeleteAccount")
 
         // 2) Firebase sign out（双保险：就算 user.delete 成功，也显式登出一次）
         try? Auth.auth().signOut()
@@ -2951,6 +2985,11 @@ private extension ProfileView {
         }
 
         NotificationCenter.default.post(name: .didDeleteAccount, object: nil)
+    }
+
+    private func isUserCancelledSignIn(_ error: NSError) -> Bool {
+        let text = error.localizedDescription.lowercased()
+        return text.contains("cancel") || text.contains("canceled") || text.contains("cancelled")
     }
     
     // ===== Astrology glue (no extra conversion) =====

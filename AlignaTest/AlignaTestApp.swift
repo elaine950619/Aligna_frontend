@@ -111,6 +111,21 @@ struct RootRouter: View {
             guard !isPreviewMode else { return }
             // 监听登录态变化（冷启动、第三方登录回调后都会触发）
             authStateListenerHandle = Auth.auth().addStateDidChangeListener { _, user in
+                if UserDefaults.standard.bool(forKey: "didDeleteAccount") {
+                    try? Auth.auth().signOut()
+                    GIDSignIn.sharedInstance.signOut()
+                    self.isAuthenticated = false
+                    self.isReady = true
+                    UserDefaults.standard.set(false, forKey: "didDeleteAccount")
+                    UserDefaults.standard.set(false, forKey: "shouldOnboardAfterSignIn")
+                    UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+                    UserDefaults.standard.set(false, forKey: "isLoggedIn")
+                    UserDefaults.standard.set("", forKey: "lastRecommendationDate")
+                    UserDefaults.standard.set("", forKey: "lastCurrentPlaceUpdate")
+                    UserDefaults.standard.set("", forKey: "todayFetchLock")
+                    return
+                }
+
                 self.isAuthenticated = (user != nil)
                 self.isReady = true
                 print("Auth state -> isAuthenticated=\(self.isAuthenticated)")

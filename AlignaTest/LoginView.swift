@@ -212,7 +212,7 @@ struct LoginView: View {
                         // 分隔线
                         HStack {
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
-                            Text("Or continue with")
+                            Text("Or with")
                                 .font(AlignaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
@@ -245,7 +245,7 @@ struct LoginView: View {
                                     Image("googleIcon")
                                         .resizable()
                                         .frame(width: 20, height: 20)
-                                    Text("Continue with Google")
+                                    Text("Sign in with Google")
                                         .font(.system(size: 14))
                                 }
                                 .foregroundColor(themeManager.fixedNightTextPrimary)
@@ -309,7 +309,7 @@ struct LoginView: View {
                                     .environmentObject(themeManager)
                                     .environmentObject(viewModel)
                             ) {
-                                Text("Create Account")
+                                Text("Create An Account")
                                     .font(AlignaTypography.font(.footnote))
                                     .foregroundColor(themeManager.fixedNightTextPrimary)
                                     .underline()
@@ -358,3 +358,4 @@ struct LoginView: View {
             .environmentObject(OnboardingViewModel())
     }
 }
+
