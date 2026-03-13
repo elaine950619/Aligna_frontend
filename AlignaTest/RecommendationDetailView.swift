@@ -58,3 +58,10 @@ struct RecommendationDetailView: View {
         }
     }
 }
+#Preview {
+    RecommendationDetailView(
+        category: "ExampleCategory",
+        documentName: "ExampleDocument"
+    )
+}
+
