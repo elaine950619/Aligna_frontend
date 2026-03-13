@@ -308,66 +308,30 @@ struct FirestoreDetailView<Extra: View>: View {
 }
 
 struct ReasoningSheet: View {
-    let title: String
+    let sectionTitle: String
     let reasoningText: String
     let themeManager: ThemeManager
-    let iconImageName: String?
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
 
     private var isDark: Bool { colorScheme == .dark }
+    private var modalTitle: String { "Why This for You Today?" }
 
     var body: some View {
         DetailSheetShell(themeManager: themeManager) {
             VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        themeManager.foregroundColor.opacity(isDark ? 0.32 : 0.25),
-                                        .clear
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 42, height: 42)
-
-                        if let iconImageName {
-                            Image(iconImageName)
-                                .renderingMode(.template)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 24, height: 24)
-                                .foregroundColor(themeManager.primaryText)
-                        } else {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundColor(themeManager.primaryText)
-                        }
-                    }
-
-                    Text(title)
-                        .font(.custom("Merriweather-Bold", size: 22))
-                        .foregroundColor(themeManager.primaryText)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.85)
-
-                    Spacer(minLength: 0)
-                }
+                Text(modalTitle)
+                    .font(.custom("Merriweather-Bold", size: 19))
+                    .foregroundColor(themeManager.primaryText)
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.85)
 
                 Divider()
                     .overlay((isDark ? Color.white : Color.black).opacity(0.20))
 
-                Text("Reasoning")
-                    .font(.custom("Merriweather-Bold", size: 16))
-                    .foregroundColor(themeManager.primaryText)
-
                 Text(reasoningText)
-                    .font(.custom("Merriweather-Regular", size: 14))
+                    .font(.custom("Merriweather-Regular", size: 15))
                     .foregroundColor(themeManager.primaryText.opacity(0.85))
                     .lineSpacing(4)
                     .fixedSize(horizontal: false, vertical: true)
@@ -408,15 +372,10 @@ private struct DetailSheetShell<Content: View, Footer: View>: View {
                 Spacer(minLength: 8)
 
                 VStack(spacing: 0) {
-                    Capsule()
-                        .fill((isDark ? Color.white : Color.black).opacity(0.22))
-                        .frame(width: 36, height: 4)
-                        .padding(.top, 10)
-                        .padding(.bottom, 18)
-
                     ScrollView(showsIndicators: false) {
                         content()
                             .padding(.horizontal, 18)
+                            .padding(.top, 18)
                             .padding(.bottom, 14)
                     }
 
@@ -428,14 +387,6 @@ private struct DetailSheetShell<Content: View, Footer: View>: View {
                         .padding(.top, 6)
                         .padding(.bottom, 2)
                 }
-                .background(
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .fill(isDark ? Color.white.opacity(0.015) : Color.white.opacity(0.06))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .stroke((isDark ? Color.white : Color.black).opacity(isDark ? 0.03 : 0.02), lineWidth: 0.5)
-                )
                 .padding(.horizontal, 18)
                 .padding(.bottom, 12)
             }
@@ -503,23 +454,23 @@ struct ClickableHeroImage: View {
 func defaultReasoning(for section: String) -> String {
     switch section {
     case "Place":
-        return "Placeholder reasoning: This place was chosen to help you feel grounded and calm today. Tap again later once the model reasoning is connected."
+        return "This place was chosen to help you feel grounded and calm today. Tap again later once the model reasoning is connected."
     case "Color":
-        return "Placeholder reasoning: This color supports balance and clarity based on your current day’s tone."
+        return "This color supports balance and clarity based on your current day's tone."
     case "Gemstone":
-        return "Placeholder reasoning: This gemstone was selected to encourage intuition and emotional steadiness."
+        return "This gemstone was selected to encourage intuition and emotional steadiness."
     case "Scent":
-        return "Placeholder reasoning: This scent aims to relax your nervous system and reduce overstimulation."
+        return "This scent aims to relax your nervous system and reduce overstimulation."
     case "Sound":
-        return "Placeholder reasoning: This sound is meant to create a steady background for focus or rest."
+        return "This sound is meant to create a steady background for focus or rest."
     case "Activity":
-        return "Placeholder reasoning: This activity supports gentle reflection and mental reset."
+        return "This activity supports gentle reflection and mental reset."
     case "Relationship":
-        return "Placeholder reasoning: This relationship cue encourages softer communication and connection."
+        return "This relationship cue encourages softer communication and connection."
     case "Career":
-        return "Placeholder reasoning: This career cue emphasizes thoughtful decisions over impulsive action."
+        return "This career cue emphasizes thoughtful decisions over impulsive action."
     default:
-        return "Placeholder reasoning: Your recommendation reasoning will appear here once the model output is connected."
+        return "Your recommendation reasoning will appear here once the model output is connected."
     }
 }
 
@@ -1057,10 +1008,9 @@ private struct SoundExtraContent: View {
             }
             .sheet(isPresented: $showReasoning) {
                 ReasoningSheet(
-                    title: title,
+                    sectionTitle: "Sound",
                     reasoningText: reasoningStore.text(for: "Sound"),
-                    themeManager: themeManager,
-                    iconImageName: documentName
+                    themeManager: themeManager
                 )
                 .presentationBackground(.clear)
             }
@@ -1133,10 +1083,9 @@ struct PlaceDetailView: View {
                 }
                 .sheet(isPresented: $showReasoning) {
                     ReasoningSheet(
-                        title: item.title,
+                        sectionTitle: "Place",
                         reasoningText: reasoningStore.text(for: "Place"),
-                        themeManager: themeManager,
-                        iconImageName: documentName
+                        themeManager: themeManager
                     )
                     .presentationBackground(.clear)
                 }
@@ -1379,11 +1328,10 @@ struct ClickHint: View {
 // MARK: - Gemstone sheet (light theme, same as Scent)
 
 struct GemLinkSheet: View {
-    let title: String
+    let sectionTitle: String
     let reasoningText: String
     let linkURLString: String?
     let stoneURLString: String?
-    let iconImageName: String
     let themeManager: ThemeManager
 
     @Environment(\.openURL) private var openURL
@@ -1391,43 +1339,18 @@ struct GemLinkSheet: View {
     @Environment(\.colorScheme) private var colorScheme
 
     private var isDark: Bool { colorScheme == .dark }
+    private var modalTitle: String { "Why This for You Today?" }
 
     var body: some View {
         DetailSheetShell(themeManager: themeManager) {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 14) {
-                        HStack(spacing: 12) {
-                            ZStack {
-                                Circle()
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [
-                                                themeManager.foregroundColor.opacity(isDark ? 0.32 : 0.25),
-                                                .clear
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .frame(width: 42, height: 42)
-
-                                Image(iconImageName)
-                                    .renderingMode(.template)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 24, height: 24)
-                                    .foregroundColor(themeManager.primaryText)
-                            }
-
-                            Text(title)
-                                .font(.custom("Merriweather-Bold", size: 22))
-                                .foregroundColor(themeManager.primaryText)
-                                .lineLimit(2)
-                                .minimumScaleFactor(0.85)
-                                .multilineTextAlignment(.leading)
-
-                            Spacer(minLength: 0)
-                        }
+                        Text(modalTitle)
+                            .font(.custom("Merriweather-Bold", size: 19))
+                            .foregroundColor(themeManager.primaryText)
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.85)
+                            .multilineTextAlignment(.leading)
 
                         Divider()
                             .overlay(
@@ -1435,17 +1358,11 @@ struct GemLinkSheet: View {
                                     .opacity(0.20)
                             )
 
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Reasoning")
-                                .font(.custom("Merriweather-Bold", size: 16))
-                                .foregroundColor(themeManager.primaryText)
-
-                            Text(reasoningText)
-                                .font(.custom("Merriweather-Regular", size: 14))
-                                .foregroundColor(themeManager.primaryText.opacity(0.85))
-                                .lineSpacing(4)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
+                        Text(reasoningText)
+                            .font(.custom("Merriweather-Regular", size: 15))
+                            .foregroundColor(themeManager.primaryText.opacity(0.85))
+                            .lineSpacing(4)
+                            .fixedSize(horizontal: false, vertical: true)
 
                         if let s = linkURLString, let url = URL(string: s) {
                             Button {
@@ -1557,11 +1474,10 @@ private struct GemstoneExtraContent: View {
             }
             .sheet(isPresented: $showLinkSheet) {
                 GemLinkSheet(
-                    title: item.title,
+                    sectionTitle: "Gemstone",
                     reasoningText: reasoningStore.text(for: "Gemstone"),
                     linkURLString: item.link,
                     stoneURLString: item.stone,
-                    iconImageName: documentName,
                     themeManager: themeManager
                 )
                 .presentationBackground(.clear)
@@ -1693,10 +1609,9 @@ private struct ColorExtraContent: View {
         }
         .sheet(isPresented: $showReasoning) {
             ReasoningSheet(
-                title: item.title,
+                sectionTitle: "Color",
                 reasoningText: reasoningStore.text(for: "Color"),
-                themeManager: themeManager,
-                iconImageName: nil
+                themeManager: themeManager
             )
             .presentationBackground(.clear)
         }
@@ -1706,11 +1621,10 @@ private struct ColorExtraContent: View {
 
 
 struct ScentLinkSheet: View {
-    let title: String
+    let sectionTitle: String
     let reasoningText: String
     let linkURLString: String?
     let candleURLString: String?
-    let iconImageName: String
     let themeManager: ThemeManager
 
     @Environment(\.openURL) private var openURL
@@ -1718,56 +1632,25 @@ struct ScentLinkSheet: View {
     @Environment(\.colorScheme) private var colorScheme
 
     private var isDark: Bool { colorScheme == .dark }
+    private var modalTitle: String { "Why This for You Today?" }
 
     var body: some View {
         DetailSheetShell(themeManager: themeManager) {
             VStack(spacing: 14) {
-                    HStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [
-                                            themeManager.foregroundColor.opacity(isDark ? 0.32 : 0.25),
-                                            .clear
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(width: 42, height: 42)
-
-                            Image(iconImageName)
-                                .renderingMode(.template)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 24, height: 24)
-                                .foregroundColor(themeManager.primaryText)
-                        }
-
-                        Text(title)
-                            .font(.custom("Merriweather-Bold", size: 22))
-                            .foregroundColor(themeManager.primaryText)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.85)
-
-                        Spacer()
-                    }
+                    Text(modalTitle)
+                        .font(.custom("Merriweather-Bold", size: 19))
+                        .foregroundColor(themeManager.primaryText)
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.85)
 
                     Divider()
                         .overlay((isDark ? Color.white : Color.black).opacity(0.20))
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Reasoning")
-                            .font(.custom("Merriweather-Bold", size: 16))
-                            .foregroundColor(themeManager.primaryText)
-
-                        Text(reasoningText)
-                            .font(.custom("Merriweather-Regular", size: 14))
-                            .foregroundColor(themeManager.primaryText.opacity(0.85))
-                            .lineSpacing(4)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    Text(reasoningText)
+                        .font(.custom("Merriweather-Regular", size: 15))
+                        .foregroundColor(themeManager.primaryText.opacity(0.85))
+                        .lineSpacing(4)
+                        .fixedSize(horizontal: false, vertical: true)
 
                     if let s = linkURLString, let url = URL(string: s) {
                         Button {
@@ -1879,11 +1762,10 @@ private struct ScentExtraContent: View {
             }
             .sheet(isPresented: $showLinkSheet) {
                 ScentLinkSheet(
-                    title: item.title,
+                    sectionTitle: "Scent",
                     reasoningText: reasoningStore.text(for: "Scent"),
                     linkURLString: item.link,
                     candleURLString: item.candle,
-                    iconImageName: documentName,
                     themeManager: themeManager
                 )
                 .presentationBackground(.clear)
@@ -1911,7 +1793,7 @@ private struct ScentExtraContent: View {
             if let notice = item.notice, !notice.isEmpty {
                 VStack(spacing: 8) {
                     Text("Usage Note")
-                        .font(.custom("Merriweather-Regular", size: 14))
+                        .font(.custom("Merriweather-Regular", size: 15))
                         .foregroundColor(themeManager.accent)
                         .bold()
 
@@ -1955,10 +1837,9 @@ struct ActivityDetailView: View {
             ) { showReasoning = true }
             .sheet(isPresented: $showReasoning) {
                 ReasoningSheet(
-                    title: item.title,
+                    sectionTitle: "Activity",
                     reasoningText: reasoningStore.text(for: "Activity"),
-                    themeManager: themeManager,
-                    iconImageName: documentName
+                    themeManager: themeManager
                 )
                 .presentationBackground(.clear)
             }
@@ -1986,10 +1867,9 @@ struct CareerDetailView: View {
             ) { showReasoning = true }
             .sheet(isPresented: $showReasoning) {
                 ReasoningSheet(
-                    title: item.title,
+                    sectionTitle: "Career",
                     reasoningText: reasoningStore.text(for: "Career"),
-                    themeManager: themeManager,
-                    iconImageName: documentName
+                    themeManager: themeManager
                 )
                 .presentationBackground(.clear)
             }
@@ -2019,10 +1899,9 @@ struct RelationshipDetailView: View {
             ) { showReasoning = true }
             .sheet(isPresented: $showReasoning) {
                 ReasoningSheet(
-                    title: item.title,
+                    sectionTitle: "Relationship",
                     reasoningText: reasoningStore.text(for: "Relationship"),
-                    themeManager: themeManager,
-                    iconImageName: documentName
+                    themeManager: themeManager
                 )
                 .presentationBackground(.clear)
             }
