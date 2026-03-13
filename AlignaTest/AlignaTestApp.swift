@@ -88,7 +88,7 @@ struct RootRouter: View {
             } else if !isAuthenticated {
                 // 未登录 → 开场页
                 NavigationStack {
-                    OnboardingView()
+                    FrontPageView()
                 }
                 .environmentObject(starManager)
                 .environmentObject(themeManager)

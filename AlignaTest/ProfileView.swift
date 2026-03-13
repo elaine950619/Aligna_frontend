@@ -284,7 +284,7 @@ struct ProfileLoginView: View {
             let minLength = min(geometry.size.width, geometry.size.height)
 
             ZStack {
-                AppBackgroundView(mode: .night)
+                AppBackgroundView(mode: .night, nightMotion: .animated)
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
 
@@ -320,7 +320,7 @@ struct ProfileLoginView: View {
                             Text("Welcome Back")
                                 .font(AlignaTypography.font(.title3))
                                 .foregroundColor(themeManager.fixedNightTextPrimary)
-                            Text("Sign in to continue your journey")
+                            Text("Return to your journal, your rituals, and today's guidance.")
                                 .font(AlignaTypography.font(.subheadline))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                         }
@@ -455,7 +455,7 @@ struct ProfileLoginView: View {
                                 )
                             }
                         }) {
-                            Text(authBusy ? "Logging in…" : "Log In")
+                            Text(authBusy ? "Signing in..." : "Log In")
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(themeManager.fixedNightTextPrimary)
@@ -468,7 +468,7 @@ struct ProfileLoginView: View {
                         // 分隔线
                         HStack {
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
-                            Text("or login with")
+                            Text("Or continue with")
                                 .font(AlignaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
@@ -560,12 +560,12 @@ struct ProfileLoginView: View {
                                 .font(AlignaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             NavigationLink(
-                                destination: RegisterView()
+                                destination: SignUpView()
                                     .environmentObject(starManager)
                                     .environmentObject(themeManager)
                                     .environmentObject(viewModel)
                             ) {
-                                Text("Sign Up")
+                            Text("Create Account")
                                     .font(AlignaTypography.font(.footnote))
                                     .foregroundColor(themeManager.fixedNightTextPrimary)
                                     .underline()
@@ -1215,7 +1215,7 @@ struct ProfileView: View {
         NavigationStack {
             GeometryReader { _ in
                 ZStack {
-                    AppBackgroundView()
+                    AppBackgroundView(nightMotion: .animated)
                         .environmentObject(starManager)
                         .environmentObject(themeManager)
                         .ignoresSafeArea()

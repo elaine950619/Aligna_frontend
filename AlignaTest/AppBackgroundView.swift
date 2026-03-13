@@ -2,6 +2,8 @@ import SwiftUI
 
 // MARK: - 装饰同心环
 struct DecorativeRings: View {
+    let isAnimated: Bool
+
     @State private var outerAngle: Double = 0
     @State private var middleAngle: Double = 0
     @State private var innerAngle: Double = 0
@@ -10,21 +12,33 @@ struct DecorativeRings: View {
         ZStack {
             Circle().stroke(Color(hex: "#D4A574").opacity(0.15), lineWidth: 1)
                 .frame(width: 300, height: 300)
-                .rotationEffect(.degrees(outerAngle))
-                .animation(.linear(duration: 60).repeatForever(autoreverses: false), value: outerAngle)
-                .onAppear { outerAngle = 360 }
+                .rotationEffect(.degrees(isAnimated ? outerAngle : 0))
+                .animation(
+                    isAnimated ? .linear(duration: 60).repeatForever(autoreverses: false) : nil,
+                    value: outerAngle
+                )
 
             Circle().stroke(Color(hex: "#D4A574").opacity(0.10), lineWidth: 1)
                 .frame(width: 260, height: 260)
-                .rotationEffect(.degrees(middleAngle))
-                .animation(.linear(duration: 45).repeatForever(autoreverses: false), value: middleAngle)
-                .onAppear { middleAngle = -360 }
+                .rotationEffect(.degrees(isAnimated ? middleAngle : 0))
+                .animation(
+                    isAnimated ? .linear(duration: 45).repeatForever(autoreverses: false) : nil,
+                    value: middleAngle
+                )
 
             Circle().stroke(Color(hex: "#D4A574").opacity(0.08), lineWidth: 1)
                 .frame(width: 220, height: 220)
-                .rotationEffect(.degrees(innerAngle))
-                .animation(.linear(duration: 30).repeatForever(autoreverses: false), value: innerAngle)
-                .onAppear { innerAngle = 360 }
+                .rotationEffect(.degrees(isAnimated ? innerAngle : 0))
+                .animation(
+                    isAnimated ? .linear(duration: 30).repeatForever(autoreverses: false) : nil,
+                    value: innerAngle
+                )
+        }
+        .onAppear {
+            guard isAnimated else { return }
+            outerAngle = 360
+            middleAngle = -360
+            innerAngle = 360
         }
     }
 }
@@ -33,6 +47,7 @@ private struct NightStarView: View {
     let position: CGPoint
     let size: CGFloat
     let index: Int
+    let isAnimated: Bool
 
     @State private var twinkling = false
 
@@ -66,17 +81,20 @@ private struct NightStarView: View {
 
     var body: some View {
         Circle()
-            .fill(Color.white.opacity(twinkling ? maxOpacity : minOpacity))
+            .fill(Color.white.opacity(isAnimated ? (twinkling ? maxOpacity : minOpacity) : baseOpacity))
             .frame(width: size, height: size)
-            .scaleEffect(twinkling ? maxScale : minScale)
+            .scaleEffect(isAnimated ? (twinkling ? maxScale : minScale) : 1)
             .position(position)
             .animation(
-                .easeInOut(duration: duration)
-                    .repeatForever(autoreverses: true)
-                    .delay(delay),
+                isAnimated
+                    ? .easeInOut(duration: duration)
+                        .repeatForever(autoreverses: true)
+                        .delay(delay)
+                    : nil,
                 value: twinkling
             )
             .onAppear {
+                guard isAnimated else { return }
                 twinkling = true
             }
     }
@@ -694,7 +712,9 @@ struct DayStarField: View {
 struct AppBackgroundView: View {
     /// 背景模式（默认自动：跟随 ThemeManager；也可强制日/夜）
     enum Mode { case auto, day, night }
+    enum NightMotion { case staticBackground, animated }
     var mode: Mode = .auto
+    var nightMotion: NightMotion = .staticBackground
 
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
@@ -751,11 +771,12 @@ struct AppBackgroundView: View {
                         NightStarView(
                             position: star.position,
                             size: star.size,
-                            index: index
+                            index: index,
+                            isAnimated: nightMotion == .animated
                         )
                     }
 
-                    DecorativeRings()
+                    DecorativeRings(isAnimated: nightMotion == .animated)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                         .offset(y: -geo.size.height * 0.06)
                         .allowsHitTesting(false)

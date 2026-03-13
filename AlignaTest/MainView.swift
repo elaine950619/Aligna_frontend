@@ -769,7 +769,7 @@ struct MainView: View {
                             .navigationBarBackButtonHidden(true)
                     } else {
                         // 冷启动未登录：先到 OpeningPage（包含 Sign Up / Log In）
-                        OnboardingView()
+                        FrontPageView()
                             .environmentObject(starManager)
                             .environmentObject(themeManager)
                             .navigationBarBackButtonHidden(true)

@@ -28,18 +28,15 @@ struct FrontPageView: View {
                                 letterSpacing: minLength * 0.005
                             )
 
-                            Text("A gentle reading of your day.")
-                                .font(.custom("Merriweather-Bold", size: 27))
-                                .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.92))
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, w * 0.10)
-                                .staggered(1, show: $showIntro)
 
-                            Text("Alynna brings together reflection, ritual, and mood so each day can feel a little clearer, softer, and more your own.")
+
+                            Text("It brings together reflection, ritual, and mood so each day can feel a little clearer, softer,and more your own.")
                                 .font(AlignaTypography.font(.subheadline))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                                 .multilineTextAlignment(.center)
                                 .lineSpacing(4)
+                                .lineLimit(nil)
+                                .fixedSize(horizontal: false, vertical: true)
                                 .padding(.horizontal, w * 0.12)
                                 .staggered(2, show: $showIntro)
                         }
@@ -114,7 +111,10 @@ struct FrontPageView: View {
 }
 
 #Preview("Front Page") {
-    OnboardingPreviewContainer { _ in
+    NavigationStack {
         FrontPageView()
+            .environmentObject(StarAnimationManager())
+            .environmentObject(ThemeManager())
+            .environmentObject(OnboardingViewModel())
     }
 }

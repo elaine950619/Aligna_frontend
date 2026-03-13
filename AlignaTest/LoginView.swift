@@ -65,7 +65,7 @@ struct LoginView: View {
                             Text("Welcome Back")
                                 .font(AlignaTypography.font(.title3))
                                 .foregroundColor(themeManager.fixedNightTextPrimary)
-                            Text("Sign in to continue your journey")
+                            Text("Return to your journal, your rituals, and today's guidance.")
                                 .font(AlignaTypography.font(.subheadline))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                         }
@@ -199,7 +199,7 @@ struct LoginView: View {
                                 )
                             }
                         }) {
-                            Text(authBusy ? "Logging in…" : "Log In")
+                            Text(authBusy ? "Signing in..." : "Log In")
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(themeManager.fixedNightTextPrimary)
@@ -212,7 +212,7 @@ struct LoginView: View {
                         // 分隔线
                         HStack {
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
-                            Text("or login with")
+                            Text("Or continue with")
                                 .font(AlignaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
@@ -304,12 +304,12 @@ struct LoginView: View {
                                 .font(AlignaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             NavigationLink(
-                                destination: RegisterView()
+                                destination: SignUpView()
                                     .environmentObject(starManager)
                                     .environmentObject(themeManager)
                                     .environmentObject(viewModel)
                             ) {
-                                Text("Sign Up")
+                                Text("Create Account")
                                     .font(AlignaTypography.font(.footnote))
                                     .foregroundColor(themeManager.fixedNightTextPrimary)
                                     .underline()
