@@ -56,9 +56,9 @@ func isCoordinateLikeString(_ s: String) -> Bool {
 }
 
 enum AlignaType {
-    static func logo() -> Font { .custom("CormorantGaramond-Bold", size: 50) }
-    static func brandTitle() -> Font { .custom("Gloock-Regular", size: 34) }
-    static func expandedMantraBoldItalic() -> Font { .custom("Merriweather-BoldItalic", size: 28) }
+    static func logo() -> Font { .custom("Merriweather-Black", size: 50) }
+    static func brandTitle() -> Font { .custom("Merriweather-Black", size: 34) }
+    static func expandedMantraBoldItalic() -> Font { .custom("Merriweather-Bold", size: 28) }
 
     static func homeSubtitle() -> Font { .custom("Merriweather-Italic", size: 18) }
 
@@ -66,7 +66,7 @@ enum AlignaType {
     static func gridItemName() -> Font { .custom("Merriweather-Light", size: 16) }
 
     static func loadingSubtitle() -> Font { .custom("Merriweather-Italic", size: 16) }
-    static func helperSmall() -> Font { .custom("Merriweather24pt-Light", size: 14) }
+    static func helperSmall() -> Font { .custom("Merriweather-Light", size: 14) }
 
     static let logoLineSpacing: CGFloat = 44 - 38
     static let descLineSpacing: CGFloat = 26 - 18
@@ -1409,11 +1409,11 @@ struct MainView: View {
                             .foregroundColor(themeManager.foregroundColor.opacity(0.4))
                         
                         Text("Loading")
-                            .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.033))
+                            .font(Font.custom("Merriweather-Regular", size: geometry.size.width * 0.033))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.5))
                         
                         Text(title)
-                            .font(Font.custom("PlayfairDisplay-Regular", size: geometry.size.width * 0.05))
+                            .font(Font.custom("Merriweather-Bold", size: geometry.size.width * 0.05))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.5))
                     }
                 }
@@ -1703,7 +1703,7 @@ struct ReasoningBubbleView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top) {
                 Text(text)
-                    .font(.custom("PlayfairDisplay-Regular", size: 14))
+                    .font(.custom("Merriweather-Regular", size: 14))
                     .foregroundColor(textColor)
                     .lineSpacing(6)
                     .multilineTextAlignment(.leading)

@@ -139,7 +139,7 @@ struct ZodiacInlineRow: View {
                     .padding(.horizontal, 2)
             }
         }
-        .font(.custom("PlayfairDisplay-Regular", size: UIFont.preferredFont(forTextStyle: .callout).pointSize, relativeTo: .callout))
+        .font(.custom("Merriweather-Regular", size: UIFont.preferredFont(forTextStyle: .callout).pointSize, relativeTo: .callout))
         .foregroundColor(themeManager.primaryText)
         .accessibilityLabel(Text("Zodiac: Sun \(sunText), Moon \(moonText), Ascendant \(normalizedAscText)"))
     }

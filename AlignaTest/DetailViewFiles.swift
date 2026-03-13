@@ -351,7 +351,7 @@ struct ReasoningSheet: View {
                     }
 
                     Text(title)
-                        .font(.custom("PlayfairDisplay-Regular", size: 22))
+                        .font(.custom("Merriweather-Bold", size: 22))
                         .foregroundColor(themeManager.primaryText)
                         .lineLimit(2)
                         .minimumScaleFactor(0.85)
@@ -363,7 +363,7 @@ struct ReasoningSheet: View {
                     .overlay((isDark ? Color.white : Color.black).opacity(0.20))
 
                 Text("Reasoning")
-                    .font(.custom("PlayfairDisplay-SemiBold", size: 16))
+                    .font(.custom("Merriweather-Bold", size: 16))
                     .foregroundColor(themeManager.primaryText)
 
                 Text(reasoningText)
@@ -867,7 +867,7 @@ struct PlayerPopup: View {
         DetailSheetShell(themeManager: themeManager) {
             VStack(spacing: 18) {
                 Text("Now Playing")
-                    .font(.custom("PlayfairDisplay-Regular", size: 18))
+                    .font(.custom("Merriweather-Regular", size: 18))
                     .foregroundColor(themeManager.primaryText.opacity(0.82))
 
                 VinylRecord(isRotating: isRotating, centerImageName: documentName)
@@ -875,10 +875,10 @@ struct PlayerPopup: View {
 
                 VStack(spacing: 4) {
                     Text(documentName.replacingOccurrences(of: "_", with: " ").capitalized)
-                        .font(.custom("PlayfairDisplay-SemiBold", size: 20))
+                        .font(.custom("Merriweather-Bold", size: 20))
                         .foregroundColor(Color(hex:"#E6D7C3"))
                     Text("White Noise • Nature Sounds")
-                        .font(.custom("PlayfairDisplay-Regular", size: 13))
+                        .font(.custom("Merriweather-Light", size: 13))
                         .foregroundColor(themeManager.primaryText.opacity(0.72))
                 }
 
@@ -906,7 +906,7 @@ struct PlayerPopup: View {
                         Spacer()
                         Text(timeString(duration))
                     }
-                    .font(.custom("PlayfairDisplay-Regular", size: 13))
+                    .font(.custom("Merriweather-Light", size: 13))
                     .foregroundColor(themeManager.primaryText.opacity(0.72))
                     .frame(width: 320)
                 }
@@ -1213,7 +1213,7 @@ struct DailyAnchorView: View {
                     .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: pulse)
 
                 Text("✦ Daily anchor ✦")
-                    .font(.custom("PlayfairDisplay-Regular", size: 18))
+                    .font(.custom("Merriweather-Italic", size: 18))
                     .foregroundColor(themeManager.foregroundColor.opacity(0.9))
                     .shadow(color: themeManager.foregroundColor.opacity(0.25), radius: 12, x: 0, y: 0)
                     .shadow(color: themeManager.foregroundColor.opacity(0.12), radius: 24, x: 0, y: 0)
@@ -1239,7 +1239,7 @@ struct DailyAnchorView: View {
                     )
 
                 Text("“")
-                    .font(.custom("PlayfairDisplay-Bold", size: 28))
+                    .font(.custom("Merriweather-Black", size: 28))
                     .foregroundColor(quoteMarkColor)
                     .rotationEffect(.degrees(shimmer ? 5 : 0))
                     .opacity(shimmer ? 0.7 : 0.4)
@@ -1248,7 +1248,7 @@ struct DailyAnchorView: View {
                     .animation(.easeInOut(duration: 6).repeatForever(autoreverses: true), value: shimmer)
 
                 Text("”")
-                    .font(.custom("PlayfairDisplay-Bold", size: 28))
+                    .font(.custom("Merriweather-Black", size: 28))
                     .foregroundColor(quoteMarkColor)
                     .rotationEffect(.degrees(shimmer ? 185 : 180))
                     .opacity(shimmer ? 0.7 : 0.4)
@@ -1259,7 +1259,7 @@ struct DailyAnchorView: View {
 
                 // the quote text
                 Text(text)
-                    .font(.custom("PlayfairDisplay-Italic", size: 19))
+                    .font(.custom("Merriweather-Italic", size: 19))
                     .foregroundColor(quoteTextColor)
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
@@ -1420,7 +1420,7 @@ struct GemLinkSheet: View {
                             }
 
                             Text(title)
-                                .font(.custom("PlayfairDisplay-Regular", size: 22))
+                                .font(.custom("Merriweather-Bold", size: 22))
                                 .foregroundColor(themeManager.primaryText)
                                 .lineLimit(2)
                                 .minimumScaleFactor(0.85)
@@ -1437,7 +1437,7 @@ struct GemLinkSheet: View {
 
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Reasoning")
-                                .font(.custom("PlayfairDisplay-SemiBold", size: 16))
+                                .font(.custom("Merriweather-Bold", size: 16))
                                 .foregroundColor(themeManager.primaryText)
 
                             Text(reasoningText)
@@ -1746,7 +1746,7 @@ struct ScentLinkSheet: View {
                         }
 
                         Text(title)
-                            .font(.custom("PlayfairDisplay-Regular", size: 22))
+                            .font(.custom("Merriweather-Bold", size: 22))
                             .foregroundColor(themeManager.primaryText)
                             .lineLimit(2)
                             .minimumScaleFactor(0.85)
@@ -1759,7 +1759,7 @@ struct ScentLinkSheet: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Reasoning")
-                            .font(.custom("PlayfairDisplay-SemiBold", size: 16))
+                            .font(.custom("Merriweather-Bold", size: 16))
                             .foregroundColor(themeManager.primaryText)
 
                         Text(reasoningText)
@@ -1911,12 +1911,12 @@ private struct ScentExtraContent: View {
             if let notice = item.notice, !notice.isEmpty {
                 VStack(spacing: 8) {
                     Text("Usage Note")
-                        .font(.custom("PlayfairDisplay-Regular", size: 14))
+                        .font(.custom("Merriweather-Regular", size: 14))
                         .foregroundColor(themeManager.accent)
                         .bold()
 
                     Text(notice)
-                        .font(.custom("PlayfairDisplay-Regular", size: 12))
+                        .font(.custom("Merriweather-Light", size: 12))
                         .foregroundColor(themeManager.foregroundColor)
                         .lineSpacing(2)
                         .multilineTextAlignment(.center)

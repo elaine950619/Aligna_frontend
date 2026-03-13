@@ -76,7 +76,7 @@ struct AlignaHeading: View {
         HStack(spacing: letterSpacing) {
             ForEach(letters.indices, id: \.self) { i in
                 Text(String(letters[i]))
-                    .font(Font.custom("CormorantGaramond-Bold", size: fontSize))
+                    .font(Font.custom("Merriweather-Bold", size: fontSize))
                     .foregroundColor(textColor)
                     .opacity(show ? 1 : 0)
                     .offset(y: show ? 0 : 8)
@@ -142,7 +142,7 @@ struct OnboardingView: View {
                         Spacer()
                         
                         Text("Alynna")
-                            .font(Font.custom("CormorantGaramond-Bold", size: minLength * 0.12))
+                            .font(Font.custom("Merriweather-Bold", size: minLength * 0.12))
                             .foregroundColor(themeManager.fixedNightTextPrimary)
                         
                         Text("Today is not about perfection. It is about noticing small moments, honoring how I feel, and allowing myself to move forward with patience and care.")
@@ -283,7 +283,7 @@ struct RegisterView: View {
                                     letterSpacing: minL * 0.005
                                 )
                                 Text("Create Account")
-                                    .font(.custom("CormorantGaramond-Regular", size: 28))
+                                    .font(.custom("Merriweather-Bold", size: 28))
                                     .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.9))
                             }
                             .padding(.top, h * 0.01)
@@ -1341,7 +1341,7 @@ struct OnboardingStep3: View {
             }
 
             Text("Alynna")
-                .font(Font.custom("PlayfairDisplay-Regular", size: 34))
+                .font(Font.custom("Merriweather-Black", size: 34))
                 .foregroundColor(.white)
         }
     }
@@ -1602,7 +1602,7 @@ struct OnboardingFinalStep: View {
 
                         // ⬇️ 小副标题：明显小于信息字体
                         Text("Confirm your information")
-                            .font(.custom("PlayfairDisplay-Regular", size: subtitleFontSize))
+                            .font(.custom("Merriweather-Italic", size: subtitleFontSize))
                             .foregroundColor(.white.opacity(0.95))
                             .kerning(minL * 0.0005)
                             .staggered(1, show: $showIntro)

@@ -15,7 +15,7 @@ enum MoonPhase: String, CaseIterable {
 
 enum TimelineType {
     // Timeline title
-    static func title34GloockBlack() -> Font { .custom("Gloock-Regular", size: 34) }
+    static func title34GloockBlack() -> Font { .custom("Merriweather-Black", size: 34) }
     static let title34LineSpacing: CGFloat = 40 - 34  // 6
 
     // Calendar month
@@ -279,4 +279,3 @@ private struct CalendarViewPreviewContainer: View {
 #Preview("Calendar") {
     CalendarViewPreviewContainer()
 }
-
