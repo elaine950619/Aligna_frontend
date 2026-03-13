@@ -338,3 +338,12 @@ struct LoginView: View {
         .toolbarBackground(.hidden, for: .navigationBar)
     }
 }
+#Preview {
+    NavigationStack {
+        LoginView()
+            .environmentObject(StarAnimationManager())
+            .environmentObject(ThemeManager())
+            .environmentObject(OnboardingViewModel())
+    }
+}
+
