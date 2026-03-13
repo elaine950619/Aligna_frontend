@@ -84,8 +84,7 @@ struct JournalView: View {
                                     selectEmotion(emotion)
                                 } label: {
                                     VStack(spacing: 4) {
-                                        Text(emotion.emoji)
-                                            .font(.system(size: 18))
+                                        EmojiGlyph(emoji: emotion.emoji, size: 18)
                                         Text(emotion.title)
                                             .font(.system(size: 12, weight: .medium, design: .rounded))
                                             .lineLimit(1)
