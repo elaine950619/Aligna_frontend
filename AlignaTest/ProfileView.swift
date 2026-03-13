@@ -57,13 +57,13 @@ private struct ProfilePreviewContainer<Content: View>: View {
     }
 }
 
-#Preview("Profile Detail Day") {
+#Preview("Profile Day") {
     ProfilePreviewContainer(theme: .light, wrapsInNavigationStack: false) {
         ProfileDetailView(viewModel: OnboardingViewModel())
     }
 }
 
-#Preview("Profile Detail Night") {
+#Preview("Profile Night") {
     ProfilePreviewContainer(theme: .dark, wrapsInNavigationStack: false) {
         ProfileDetailView(viewModel: OnboardingViewModel())
     }
@@ -1077,6 +1077,7 @@ struct ProfileDetailView: View {
     @State private var chartMoonSign: String = ""
     @State private var chartAscSign: String = ""
     @State private var chartSignature: String = ""
+    @State private var hasLoadedProfileData = false
 
 
     // 编辑状态
@@ -1324,9 +1325,9 @@ private extension ProfileDetailView {
             }
 
             ZodiacInlineRow(
-                sunText:  sunSignText,
-                moonText: moonSignText,
-                ascText:  ascSignText
+                sunText:  hasLoadedProfileData ? sunSignText : "-",
+                moonText: hasLoadedProfileData ? moonSignText : "-",
+                ascText:  hasLoadedProfileData ? ascSignText : "-"
             )
             .environmentObject(themeManager)
         }
@@ -2023,6 +2024,7 @@ private extension ProfileDetailView {
     func loadUser() {
         guard let user = Auth.auth().currentUser else { return }
         isBusy = true
+        hasLoadedProfileData = false
         errorMessage = nil
 
         queryByUID(user.uid) { doc, col in
@@ -2153,6 +2155,7 @@ private extension ProfileDetailView {
             self.birthRawTimeString = nil
         }
 
+        hasLoadedProfileData = true
         clearChartData()
         syncChartDataIfNeeded()
     }
