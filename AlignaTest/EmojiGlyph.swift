@@ -10,6 +10,7 @@ struct EmojiGlyph: View {
             if let image = Self.renderedImage(for: emoji, size: size) {
                 Image(uiImage: image)
                     .resizable()
+                    .renderingMode(.original)
                     .scaledToFit()
             } else {
                 Text(emoji)
@@ -31,20 +32,25 @@ struct EmojiGlyph: View {
 
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size), format: format)
         let image = renderer.image { _ in
-            let paragraph = NSMutableParagraphStyle()
-            paragraph.alignment = .center
+            let label = UILabel(frame: CGRect(x: 0, y: 0, width: size, height: size))
+            label.backgroundColor = .clear
+            label.textAlignment = .center
+            label.text = emoji
+            label.font = emojiUIFont(for: size * 0.92)
+            label.adjustsFontSizeToFitWidth = true
+            label.minimumScaleFactor = 0.8
 
-            let attributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont(name: "AppleColorEmoji", size: size * 0.92) ?? UIFont.systemFont(ofSize: size),
-                .paragraphStyle: paragraph
-            ]
-
-            let text = NSAttributedString(string: emoji, attributes: attributes)
-            text.draw(in: CGRect(x: 0, y: max(0, size * 0.02), width: size, height: size))
+            label.drawHierarchy(in: label.bounds, afterScreenUpdates: true)
         }
 
         EmojiImageCache.shared.setObject(image, forKey: cacheKey)
         return image
+    }
+
+    private static func emojiUIFont(for size: CGFloat) -> UIFont {
+        UIFont(name: "AppleColorEmoji", size: size)
+            ?? UIFont(name: "Apple Color Emoji", size: size)
+            ?? UIFont.systemFont(ofSize: size)
     }
 }
 
