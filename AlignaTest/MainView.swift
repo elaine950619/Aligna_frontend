@@ -245,7 +245,7 @@ struct MainView: View {
 
                                 if isLoggedIn {
                                     NavigationLink(
-                                        destination: ProfileDetailView(viewModel: OnboardingViewModel())
+                                        destination: ProfileView(viewModel: OnboardingViewModel())
                                             .environmentObject(starManager)
                                             .environmentObject(themeManager)
                                     ) {
@@ -258,7 +258,7 @@ struct MainView: View {
                                     }
                                 } else {
                                     NavigationLink(
-                                        destination: ProfileDetailView(viewModel: OnboardingViewModel())
+                                        destination: ProfileView(viewModel: OnboardingViewModel())
                                     ) {
                                         Image("account")
                                             .resizable()

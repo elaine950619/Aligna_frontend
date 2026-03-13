@@ -172,7 +172,7 @@ struct OnboardingView: View {
                             }
 
                         // Log In（按钮文案保留白色）
-                        NavigationLink(destination: ProfileView()
+                        NavigationLink(destination: ProfileLoginView()
                             .environmentObject(starManager)
                             .environmentObject(themeManager)
                             .environmentObject(OnboardingViewModel())) {
@@ -496,7 +496,7 @@ struct RegisterView: View {
                         .environmentObject(themeManager)
                 }
                 .navigationDestination(isPresented: $navigateToLogin) {
-                    ProfileView()
+                    ProfileLoginView()
                         .environmentObject(starManager)
                         .environmentObject(themeManager)
                         .environmentObject(viewModel)

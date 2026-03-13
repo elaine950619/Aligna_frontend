@@ -59,13 +59,13 @@ private struct ProfilePreviewContainer<Content: View>: View {
 
 #Preview("Profile Day") {
     ProfilePreviewContainer(theme: .light, wrapsInNavigationStack: false) {
-        ProfileDetailView(viewModel: OnboardingViewModel())
+        ProfileView(viewModel: OnboardingViewModel())
     }
 }
 
 #Preview("Profile Night") {
     ProfilePreviewContainer(theme: .dark, wrapsInNavigationStack: false) {
-        ProfileDetailView(viewModel: OnboardingViewModel())
+        ProfileView(viewModel: OnboardingViewModel())
     }
 }
 #endif
@@ -254,7 +254,7 @@ extension ThemeManager {
     var fixedNightTextTertiary: Color  { Color(hex: "#A8B5C8") }
 }
 
-struct ProfileView: View {
+struct ProfileLoginView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
@@ -1046,7 +1046,7 @@ extension View {
 }
 
 
-struct ProfileDetailView: View {
+struct ProfileView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
@@ -1279,7 +1279,7 @@ struct ProfileDetailView: View {
 }
 
 // MARK: - UI Sections
-private extension ProfileDetailView {
+private extension ProfileView {
     var headerCard: some View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
@@ -1561,7 +1561,7 @@ private extension ProfileDetailView {
 }
 
 // MARK: - Reusable UI
-private extension ProfileDetailView {
+private extension ProfileView {
 
     func rowCard(icon: String, title: String, subtitle: String) -> some View {
         HStack(spacing: 12) {
@@ -1987,7 +1987,7 @@ private extension ProfileDetailView {
 
 
 // MARK: - Data & Actions
-private extension ProfileDetailView {
+private extension ProfileView {
     func applyPreviewDataIfNeeded() {
         guard nickname.isEmpty, email.isEmpty else { return }
 
@@ -2718,7 +2718,7 @@ private extension ProfileDetailView {
 }
 
 // MARK: - 固定英文展示 & 解析（工具函数，供其它处复用）
-private extension ProfileDetailView {
+private extension ProfileView {
     func dateString(_ d: Date) -> String {
         Self.birthdayDisplayFormatter.string(from: d)
     }
