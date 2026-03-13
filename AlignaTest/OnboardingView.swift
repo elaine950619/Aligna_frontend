@@ -1100,7 +1100,7 @@ struct OnboardingFinalStep: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: minL * 0.045) {
                         Color.clear
-                            .frame(height: geo.safeAreaInsets.top + 8)
+                            .frame(height: geo.safeAreaInsets.top + 7)
 
                         AlignaTopHeader()
 
@@ -1109,7 +1109,7 @@ struct OnboardingFinalStep: View {
                             .padding(.top, 6)
                             .staggered(1, show: $showIntro)
 
-                        VStack(spacing: 14) {
+                        VStack(spacing: 7) {
                             finalInfoCard(title: "Nickname", value: viewModel.nickname)
                                 .staggered(2, show: $showIntro)
                             finalInfoCard(title: "Gender", value: viewModel.gender)
@@ -1241,7 +1241,7 @@ struct OnboardingFinalStep: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 15)
+        .padding(.vertical, 10)
         .background(panelBG)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
