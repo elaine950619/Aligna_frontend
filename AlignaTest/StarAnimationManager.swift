@@ -82,40 +82,29 @@ final class StarAnimationManager: ObservableObject {
             width: max(1, size.width - padding * 2),
             height: max(1, size.height - padding * 2)
         )
-
-        let columns = 3
-        let rows = 6
-        let cellWidth = bounds.width / CGFloat(columns)
-        let cellHeight = bounds.height / CGFloat(rows)
-        let horizontalInset = cellWidth * 0.2
-        let verticalInset = cellHeight * 0.22
-
         var generated: [(position: CGPoint, size: CGFloat)] = []
 
-        for row in 0..<rows {
-            for column in 0..<columns {
-                guard generated.count < count else { break }
+        while generated.count < count {
+            let point = CGPoint(
+                x: CGFloat.random(in: bounds.minX...bounds.maxX),
+                y: CGFloat.random(in: bounds.minY...bounds.maxY)
+            )
 
-                let cellMinX = bounds.minX + CGFloat(column) * cellWidth
-                let cellMinY = bounds.minY + CGFloat(row) * cellHeight
-                let cellMaxX = cellMinX + cellWidth
-                let cellMaxY = cellMinY + cellHeight
-
-                let point = CGPoint(
-                    x: CGFloat.random(in: (cellMinX + horizontalInset)...(cellMaxX - horizontalInset)),
-                    y: CGFloat.random(in: (cellMinY + verticalInset)...(cellMaxY - verticalInset))
-                )
-
-                generated.append(
-                    (
-                        position: point,
-                        size: CGFloat.random(in: 1.8...4.6)
-                    )
-                )
+            let isFarEnough = generated.allSatisfy { existing in
+                hypot(existing.position.x - point.x, existing.position.y - point.y) >= 28
             }
+
+            guard isFarEnough else { continue }
+
+            generated.append(
+                (
+                    position: point,
+                    size: CGFloat.random(in: 1.8...4.2)
+                )
+            )
         }
 
-        return generated.shuffled()
+        return generated
     }
 
     func regenerateStars(in size: CGSize) {

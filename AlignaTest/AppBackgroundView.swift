@@ -29,6 +29,59 @@ struct DecorativeRings: View {
     }
 }
 
+private struct NightStarView: View {
+    let position: CGPoint
+    let size: CGFloat
+    let index: Int
+
+    @State private var twinkling = false
+
+    private var baseOpacity: Double {
+        0.34 + min(max((size - 1.8) / 2.8, 0), 1) * 0.18
+    }
+
+    private var minOpacity: Double {
+        max(0.16, baseOpacity - 0.12 - Double(index % 3) * 0.03)
+    }
+
+    private var maxOpacity: Double {
+        min(0.96, baseOpacity + 0.16 + Double(index % 4) * 0.02)
+    }
+
+    private var minScale: CGFloat {
+        max(0.78, 0.88 - CGFloat(index % 4) * 0.03)
+    }
+
+    private var maxScale: CGFloat {
+        min(1.30, 1.08 + CGFloat(index % 5) * 0.035)
+    }
+
+    private var duration: Double {
+        1.5 + Double(index % 5) * 0.35
+    }
+
+    private var delay: Double {
+        Double(index % 7) * 0.18
+    }
+
+    var body: some View {
+        Circle()
+            .fill(Color.white.opacity(twinkling ? maxOpacity : minOpacity))
+            .frame(width: size, height: size)
+            .scaleEffect(twinkling ? maxScale : minScale)
+            .position(position)
+            .animation(
+                .easeInOut(duration: duration)
+                    .repeatForever(autoreverses: true)
+                    .delay(delay),
+                value: twinkling
+            )
+            .onAppear {
+                twinkling = true
+            }
+    }
+}
+
 // MARK: - Daytime background (for all light mode screens)
 struct DayBackgroundLayer: View {
     let size: CGSize   // from outer GeometryReader
@@ -648,8 +701,6 @@ struct AppBackgroundView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.scenePhase) private var scenePhase
 
-    @State private var visible = false
-
     // 统一计算当前是否夜间
     private var effectiveIsNight: Bool {
         switch mode {
@@ -692,22 +743,22 @@ struct AppBackgroundView: View {
                     Color.clear
                         .task(id: geo.size) {
                             starManager.generateStars(in: geo.size)
-                            visible = true
                         }
 
                     ForEach(0..<starManager.stars.count, id: \.self) { index in
                         let star = starManager.stars[index]
-                        let baseOpacity = 0.34 + min(max((star.size - 1.8) / 2.8, 0), 1) * 0.18
 
-                        Circle()
-                            .fill(Color.white.opacity(visible ? baseOpacity : baseOpacity * 0.45))
-                            .frame(width: star.size, height: star.size)
-                            .position(star.position)
-                            .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: visible)
+                        NightStarView(
+                            position: star.position,
+                            size: star.size,
+                            index: index
+                        )
                     }
 
                     DecorativeRings()
-                        .position(x: geo.size.width / 2, y: geo.size.height * 0.3)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                        .offset(y: -geo.size.height * 0.06)
+                        .allowsHitTesting(false)
                 }
             }
             // let the whole background match the GeometryReader’s size
