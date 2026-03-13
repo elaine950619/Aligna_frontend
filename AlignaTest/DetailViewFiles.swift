@@ -12,6 +12,19 @@ import AVFoundation
 import FirebaseStorage
 import FirebaseAuth
 
+struct RecommendationItem: Codable {
+    var name: String
+    var title: String
+    var description: String
+    var explanation: String
+    let about: String?
+    let notice: String?
+    let anchor: String?
+    let link: String?
+    let stone: String?
+    let candle: String?
+}
+
 private func extractReasoningMapping(from data: [String: Any]) -> [String: String] {
     func coerceToStringDict(_ anyDict: [String: Any]) -> [String: String] {
         anyDict.reduce(into: [String: String]()) { result, pair in
