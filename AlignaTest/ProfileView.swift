@@ -1088,6 +1088,9 @@ struct ProfileView: View {
 
     // 主题偏好
     @AppStorage("themePreference") private var themePreferenceRaw: String = ThemePreference.auto.rawValue
+    @State private var birthPlaceResults: [PlaceResult] = []
+    @State private var didSelectBirthPlaceResult = false
+    @State private var pendingBirthPlaceCoordinate: CLLocationCoordinate2D?
 
     // Busy & Error
     @State private var isBusy = false
@@ -1387,14 +1390,11 @@ private extension ProfileView {
                 }
 
                 HStack(spacing: 12) {
-                    infoRowEditableText(
-                        title: "Birth Place",
-                        text: $birthPlace,
-                        isEditing: $editingBirthPlace,
-                        onSave: { saveField(FSKeys.birthPlace, value: birthPlace) { editingBirthPlace = false } },
-                        onCancel: { editingBirthPlace = false; loadUser() }
-                    )
+                    birthPlaceInfoRow
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .sheet(isPresented: $editingBirthPlace) {
+                        birthPlaceSheet
+                    }
 
                     infoRowWithTrailingButton(
                         title: "Current Place",
@@ -1710,6 +1710,142 @@ private extension ProfileView {
             }
         }
         .padding(.vertical, 6)
+    }
+
+    var birthPlaceInfoRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Birth Place")
+                .font(AlignaTypography.font(.footnote))
+                .foregroundColor(themeManager.descriptionText)
+
+            birthPlaceDisplayContent
+        }
+        .padding(.vertical, 6)
+    }
+
+    var birthPlaceSheet: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Capsule()
+                .fill(themeManager.descriptionText.opacity(0.35))
+                .frame(width: 42, height: 5)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 8)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Select Birth Place")
+                    .font(AlignaTypography.font(.title3))
+                    .foregroundColor(themeManager.primaryText)
+                Text("Search and choose a location to update your birth coordinates.")
+                    .font(AlignaTypography.font(.subheadline))
+                    .foregroundColor(themeManager.descriptionText)
+            }
+
+            TextField("Birth Place", text: $birthPlace)
+                .textInputAutocapitalization(.words)
+                .disableAutocorrection(true)
+                .tint(themeManager.accent)
+                .foregroundColor(themeManager.primaryText)
+                .font(AlignaTypography.font(.headline))
+                .onChange(of: birthPlace) { _, newValue in
+                    if didSelectBirthPlaceResult {
+                        didSelectBirthPlaceResult = false
+                        return
+                    }
+
+                    pendingBirthPlaceCoordinate = nil
+
+                    let query = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !query.isEmpty else {
+                        birthPlaceResults = []
+                        return
+                    }
+                    performBirthPlaceSearch(query: query)
+                }
+
+            if !birthPlaceResults.isEmpty {
+                VStack(spacing: 8) {
+                    ForEach(Array(birthPlaceResults.prefix(4)), id: \.id) { result in
+                        birthPlaceResultButton(for: result)
+                    }
+                }
+            }
+
+            HStack(spacing: 10) {
+                Button(action: saveBirthPlaceSelection) {
+                    Text("Save")
+                        .font(AlignaTypography.font(.body))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(themeManager.accent.opacity(0.16))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                Button(action: cancelBirthPlaceEditing) {
+                    Text("Cancel")
+                        .font(AlignaTypography.font(.body))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(themeManager.panelFill)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+            }
+            .foregroundColor(themeManager.accent)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 20)
+        .preferredColorScheme(themeManager.preferredColorScheme)
+        .presentationDetents([.fraction(0.48), .large])
+        .presentationDragIndicator(.hidden)
+        .presentationBackground(.ultraThinMaterial)
+    }
+
+    var birthPlaceDisplayContent: some View {
+        HStack(spacing: 6) {
+            Text(birthPlace.isEmpty ? "—" : birthPlace)
+                .font(AlignaTypography.font(.headline))
+                .foregroundColor(themeManager.primaryText)
+
+            Button {
+                pendingBirthPlaceCoordinate = CLLocationCoordinate2D(latitude: birthLat, longitude: birthLng)
+                birthPlaceResults = []
+                editingBirthPlace = true
+            } label: {
+                Image(systemName: "pencil")
+                    .font(AlignaTypography.font(.body))
+                    .fontWeight(.semibold)
+                    .foregroundColor(themeManager.accent)
+            }
+            .buttonStyle(.plain)
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    func birthPlaceResultButton(for result: PlaceResult) -> some View {
+        Button {
+            birthPlace = result.name
+            pendingBirthPlaceCoordinate = result.coordinate
+            birthPlaceResults = []
+            didSelectBirthPlaceResult = true
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(result.name)
+                    .font(AlignaTypography.font(.subheadline))
+                    .foregroundColor(themeManager.primaryText)
+                Text(result.subtitle)
+                    .font(AlignaTypography.font(.caption1))
+                    .foregroundColor(themeManager.descriptionText)
+                    .lineLimit(2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(themeManager.panelFill)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(themeManager.panelStrokeHi, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     func themeOption(_ pref: ThemePreference) -> some View {
@@ -2155,6 +2291,9 @@ private extension ProfileView {
             self.birthRawTimeString = nil
         }
 
+        self.pendingBirthPlaceCoordinate = CLLocationCoordinate2D(latitude: birthLat, longitude: birthLng)
+        self.birthPlaceResults = []
+        self.didSelectBirthPlaceResult = false
         hasLoadedProfileData = true
         clearChartData()
         syncChartDataIfNeeded()
@@ -2233,6 +2372,79 @@ private extension ProfileView {
             self.birthTime = BirthTimeUtils.makeLocalTimeDate(hour: h, minute: m)
             self.birthRawTimeString = timeRaw
             self.syncChartDataIfNeeded(force: true, completion: completion)
+        }
+    }
+
+    func saveBirthPlaceSelection() {
+        guard let col = userCollectionUsed, let id = userDocID else {
+            errorMessage = "User document not found."
+            return
+        }
+
+        let placeName = birthPlace.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !placeName.isEmpty else {
+            errorMessage = "Birth place cannot be empty."
+            return
+        }
+
+        guard let coordinate = pendingBirthPlaceCoordinate else {
+            errorMessage = "Please select a birth place from the search results."
+            return
+        }
+
+        isBusy = true
+
+        let payload: [String: Any] = [
+            FSKeys.birthPlace: placeName,
+            "birthLat": coordinate.latitude,
+            "birthLng": coordinate.longitude,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+
+        db.collection(col).document(id).setData(payload, merge: true) { err in
+            self.isBusy = false
+            if let err = err {
+                self.errorMessage = err.localizedDescription
+                return
+            }
+
+            self.birthPlace = placeName
+            self.birthLat = coordinate.latitude
+            self.birthLng = coordinate.longitude
+            self.editingBirthPlace = false
+            self.birthPlaceResults = []
+            self.didSelectBirthPlaceResult = false
+            self.syncChartDataIfNeeded(force: true)
+        }
+    }
+
+    func cancelBirthPlaceEditing() {
+        editingBirthPlace = false
+        birthPlaceResults = []
+        didSelectBirthPlaceResult = false
+        pendingBirthPlaceCoordinate = nil
+        loadUser()
+    }
+
+    func performBirthPlaceSearch(query: String) {
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = query
+        request.resultTypes = [.address, .pointOfInterest]
+
+        MKLocalSearch(request: request).start { response, _ in
+            let results = response?.mapItems.compactMap { item in
+                PlaceResult(
+                    name: item.name ?? "",
+                    subtitle: item.placemark.title ?? "",
+                    coordinate: item.placemark.coordinate
+                )
+            } ?? []
+
+            DispatchQueue.main.async {
+                if self.birthPlace.trimmingCharacters(in: .whitespacesAndNewlines) == query {
+                    self.birthPlaceResults = results
+                }
+            }
         }
     }
 
