@@ -426,21 +426,33 @@ struct ProfileLoginView: View {
                             authBusy = true
                             Auth.auth().signIn(withEmail: email, password: password) { _, error in
                                 authBusy = false
-                                if let error = error,
-                                   let code = AuthErrorCode(rawValue: (error as NSError).code) {
-                                    switch code {
-                                    case .wrongPassword: alertMessage = "Incorrect password. Please try again."
-                                    case .invalidEmail: alertMessage = "Invalid email address."
-                                    case .userDisabled: alertMessage = "This account has been disabled."
-                                    case .userNotFound: alertMessage = "No account found with this email."
-                                    default: alertMessage = error.localizedDescription
+                                if let error = error {
+                                    if let code = AuthErrorCode(rawValue: (error as NSError).code) {
+                                        switch code {
+                                        case .wrongPassword: alertMessage = "Incorrect password. Please try again."
+                                        case .invalidEmail: alertMessage = "Invalid email address."
+                                        case .userDisabled: alertMessage = "This account has been disabled."
+                                        case .userNotFound: alertMessage = "No account found with this email."
+                                        default: alertMessage = error.localizedDescription
+                                        }
+                                    } else {
+                                        alertMessage = error.localizedDescription
                                     }
                                     showAlert = true
                                     return
                                 }
-                                UserDefaults.standard.set(true, forKey: "isLoggedIn")
-                                UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
-                                navigateToHome = true
+                                routeAuthenticatedUser(
+                                    onSuccessToLogin: {
+                                        navigateToHome = true
+                                    },
+                                    onSuccessToOnboarding: {
+                                        dismiss()
+                                    },
+                                    onError: { message in
+                                        alertMessage = message
+                                        showAlert = true
+                                    }
+                                )
                             }
                         }) {
                             Text(authBusy ? "Logging in…" : "Log In")
@@ -623,8 +635,49 @@ func checkIfUserAlreadyRegistered(uid: String, completion: @escaping (Bool) -> V
 // 统一设置本地标记（保持你旧代码兼容性）
 private func updateLocalFlagsForReturningUser() {
     UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+    UserDefaults.standard.set(false, forKey: "shouldOnboardAfterSignIn")
     UserDefaults.standard.set(true, forKey: "isLoggedIn")
     print("🧭 Flags updated: hasCompletedOnboarding=true, isLoggedIn=true")
+}
+
+private func updateLocalFlagsForNeedsOnboarding() {
+    UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+    UserDefaults.standard.set(true, forKey: "shouldOnboardAfterSignIn")
+    UserDefaults.standard.set(false, forKey: "isLoggedIn")
+}
+
+private func clearLocalAuthFlags() {
+    UserDefaults.standard.set(false, forKey: "isLoggedIn")
+    UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+    UserDefaults.standard.set(false, forKey: "shouldOnboardAfterSignIn")
+    UserDefaults.standard.set("",    forKey: "lastRecommendationDate")
+    UserDefaults.standard.set("",    forKey: "lastCurrentPlaceUpdate")
+    UserDefaults.standard.set("",    forKey: "todayFetchLock")
+}
+
+func routeAuthenticatedUser(
+    onSuccessToLogin: @escaping () -> Void,
+    onSuccessToOnboarding: @escaping () -> Void,
+    onError: @escaping (String) -> Void
+) {
+    determineRegistrationPathForCurrentUser { path in
+        DispatchQueue.main.async {
+            switch path {
+            case .existingAccount:
+                updateLocalFlagsForReturningUser()
+                onSuccessToLogin()
+            case .needsOnboarding:
+                updateLocalFlagsForNeedsOnboarding()
+                onSuccessToOnboarding()
+            }
+        }
+    }
+}
+
+func signOutCurrentSession() throws {
+    try Auth.auth().signOut()
+    clearLocalAuthFlags()
+    GIDSignIn.sharedInstance.signOut()
 }
 
 // 2) Google 登录（新版 withPresenting）
@@ -665,23 +718,16 @@ func handleGoogleLogin(
                 onError("Login failed: \(error.localizedDescription)")
                 return
             }
-            guard let uid = Auth.auth().currentUser?.uid else {
+            guard Auth.auth().currentUser?.uid != nil else {
                 onError("Retrieve UID unsuccessful")
                 return
             }
 
-            // 判断是否老用户 → 决定跳转，并为老用户设置本地 flags
-            checkIfUserAlreadyRegistered(uid: uid) { isRegistered in
-                DispatchQueue.main.async {
-                    if isRegistered {
-                        updateLocalFlagsForReturningUser()  // ← 关键：老用户标记完成引导
-                        onSuccessToLogin()
-                    } else {
-                        // 新用户：走 Onboarding，完成后 OnboardingFinalStep 会把 hasCompletedOnboarding 置 true
-                        onSuccessToOnboarding()
-                    }
-                }
-            }
+            routeAuthenticatedUser(
+                onSuccessToLogin: onSuccessToLogin,
+                onSuccessToOnboarding: onSuccessToOnboarding,
+                onError: onError
+            )
         }
     }
 }
@@ -715,21 +761,16 @@ func handleAppleLogin(
                 onError("Apple sign in failed: \(error.localizedDescription)")
                 return
             }
-            guard let uid = Auth.auth().currentUser?.uid else {
+            guard Auth.auth().currentUser?.uid != nil else {
                 onError("Obtain current user UID failed.")
                 return
             }
 
-            checkIfUserAlreadyRegistered(uid: uid) { isRegistered in
-                DispatchQueue.main.async {
-                    if isRegistered {
-                        updateLocalFlagsForReturningUser()  // ← 关键：老用户标记完成引导
-                        onSuccessToLogin()
-                    } else {
-                        onSuccessToOnboarding()
-                    }
-                }
-            }
+            routeAuthenticatedUser(
+                onSuccessToLogin: onSuccessToLogin,
+                onSuccessToOnboarding: onSuccessToOnboarding,
+                onError: onError
+            )
         }
 
     case .failure(let error):
@@ -877,12 +918,12 @@ func handleAppleFromRegister(
 // 辅助：基于“资料完整度”的分流（新增）
 // ===============================
 
-private enum RegistrationPath { case needsOnboarding, existingAccount }
+enum RegistrationPath { case needsOnboarding, existingAccount }
 
 /// 读取当前登录用户在 Firestore 的档案；
 /// 若无文档或文档不完整（缺少昵称/生日/出生时间/出生地），→ 需要 Onboarding；
 /// 若文档完整 → 视为老用户。
-private func determineRegistrationPathForCurrentUser(
+func determineRegistrationPathForCurrentUser(
     completion: @escaping (RegistrationPath) -> Void
 ) {
     guard let uid = Auth.auth().currentUser?.uid else {
@@ -898,7 +939,7 @@ private func determineRegistrationPathForCurrentUser(
 }
 
 /// 依次在 "users" / "user" 集合中按 uid 查找文档，返回 data（任一命中即返回）
-private func fetchUserDocByUID(_ uid: String, completion: @escaping ([String: Any]?) -> Void) {
+func fetchUserDocByUID(_ uid: String, completion: @escaping ([String: Any]?) -> Void) {
     let db = Firestore.firestore()
     let cols = ["users", "user"]
     func go(_ i: Int) {
@@ -916,8 +957,8 @@ private func fetchUserDocByUID(_ uid: String, completion: @escaping ([String: An
 /// - 生日：支持两种历史字段：`birthday`(Timestamp) 或 `birthDate`(String) 任一存在
 /// - 出生时间 birthTime: 非空字符串
 /// - 出生地 birthPlace: 非空字符串
-private func isProfileComplete(_ d: [String: Any]) -> Bool {
-    let nicknameOK   = !(d["nickname"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+func isProfileComplete(_ d: [String: Any]) -> Bool {
+    let nicknameOK   = (d["nickname"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     let hasBirthTS   = d["birthday"] is Timestamp
     let hasBirthStr  = ((d["birthDate"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
     let birthDateOK  = hasBirthTS || hasBirthStr
@@ -1454,8 +1495,12 @@ private extension ProfileView {
 
     var signOutCard: some View {
         Button {
-            do { try Auth.auth().signOut(); dismiss() }
-            catch { errorMessage = error.localizedDescription }
+            do {
+                try signOutCurrentSession()
+                dismiss()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         } label: {
             rowCard(icon: "rectangle.portrait.and.arrow.right",
                     title: "Sign out",
@@ -2630,24 +2675,36 @@ private extension ProfileView {
         let email = user.email
         isBusy = true
         errorMessage = nil
-        purgeAllUserData(uid: uid, email: email) { purgeErr in
-            if let purgeErr = purgeErr {
+        ensureRecentLoginForDeletion { recentLoginErr in
+            if let recentLoginErr = recentLoginErr as NSError? {
                 self.isBusy = false
-                self.errorMessage = "Delete failed (data purge): \(purgeErr.localizedDescription)"
+                if recentLoginErr.code == AuthErrorCode.requiresRecentLogin.rawValue {
+                    self.errorMessage = "For security reasons, please sign in again, then retry deletion."
+                } else {
+                    self.errorMessage = recentLoginErr.localizedDescription
+                }
                 return
             }
-            deleteAuthAccount { authErr in
-                self.isBusy = false
-                if let e = authErr as NSError? {
-                    if e.code == AuthErrorCode.requiresRecentLogin.rawValue {
-                        self.errorMessage = "For security reasons, please re-authenticate and try again."
-                    } else {
-                        self.errorMessage = "Account deletion failed: \(e.localizedDescription)"
-                    }
+
+            self.purgeAllUserData(uid: uid, email: email) { purgeErr in
+                if let purgeErr = purgeErr {
+                    self.isBusy = false
+                    self.errorMessage = "Delete failed (data purge): \(purgeErr.localizedDescription)"
                     return
                 }
-                clearLocalStateAfterAccountDeletion()
-                self.dismiss()
+                self.deleteAuthAccount(allowReauthentication: false) { authErr in
+                    self.isBusy = false
+                    if let e = authErr as NSError? {
+                        if e.code == AuthErrorCode.requiresRecentLogin.rawValue {
+                            self.errorMessage = "For security reasons, please sign in again, then retry deletion."
+                        } else {
+                            self.errorMessage = "Account deletion failed: \(e.localizedDescription)"
+                        }
+                        return
+                    }
+                    clearLocalStateAfterAccountDeletion()
+                    self.dismiss()
+                }
             }
         }
     }
@@ -2768,15 +2825,34 @@ private extension ProfileView {
             }
         }
 
-    func deleteAuthAccount(completion: @escaping (Error?) -> Void) {
+    func ensureRecentLoginForDeletion(completion: @escaping (Error?) -> Void) {
+            guard let user = Auth.auth().currentUser else { completion(nil); return }
+            let providerIDs = user.providerData.map { $0.providerID }
+
+            if providerIDs.contains("password") {
+                completion(NSError(
+                    domain: "Aligna",
+                    code: Int(AuthErrorCode.requiresRecentLogin.rawValue),
+                    userInfo: [NSLocalizedDescriptionKey: "Please sign in again with email & password, then delete."]
+                ))
+                return
+            }
+
+            reauthenticateCurrentUser(completion: completion)
+        }
+
+    func deleteAuthAccount(allowReauthentication: Bool = true, completion: @escaping (Error?) -> Void) {
             guard let user = Auth.auth().currentUser else { completion(nil); return }
             user.delete { err in
                 if let e = err as NSError?,
-                   e.code == AuthErrorCode.requiresRecentLogin.rawValue {
+                   e.code == AuthErrorCode.requiresRecentLogin.rawValue,
+                   allowReauthentication {
                     // 需要最近登录 → 自动 reauth 后重试
                     self.reauthenticateCurrentUser { reErr in
                         if let reErr = reErr { completion(reErr); return }
-                        Auth.auth().currentUser?.delete(completion: completion)
+                        Auth.auth().currentUser?.delete { secondErr in
+                            completion(secondErr)
+                        }
                     }
                 } else {
                     completion(err)
@@ -2850,12 +2926,7 @@ private extension ProfileView {
 
     func clearLocalStateAfterAccountDeletion() {
         // 1) 清空本地标记（避免冷启动误判）
-        UserDefaults.standard.set(false, forKey: "isLoggedIn")
-        UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
-        UserDefaults.standard.set(false, forKey: "shouldOnboardAfterSignIn")
-        UserDefaults.standard.set("",    forKey: "lastRecommendationDate")
-        UserDefaults.standard.set("",    forKey: "lastCurrentPlaceUpdate")
-        UserDefaults.standard.set("",    forKey: "todayFetchLock")
+        clearLocalAuthFlags()
 
         // 2) Firebase sign out（双保险：就算 user.delete 成功，也显式登出一次）
         try? Auth.auth().signOut()

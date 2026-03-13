@@ -1,5 +1,5 @@
 //
-//  DetailViewFiles.swift
+//  DetailViews.swift
 //  AlignaTest
 //
 //  Created by Elaine Hsieh on 8/17/25.

@@ -170,21 +170,33 @@ struct LoginView: View {
                             authBusy = true
                             Auth.auth().signIn(withEmail: email, password: password) { _, error in
                                 authBusy = false
-                                if let error = error,
-                                   let code = AuthErrorCode(rawValue: (error as NSError).code) {
-                                    switch code {
-                                    case .wrongPassword: alertMessage = "Incorrect password. Please try again."
-                                    case .invalidEmail: alertMessage = "Invalid email address."
-                                    case .userDisabled: alertMessage = "This account has been disabled."
-                                    case .userNotFound: alertMessage = "No account found with this email."
-                                    default: alertMessage = error.localizedDescription
+                                if let error = error {
+                                    if let code = AuthErrorCode(rawValue: (error as NSError).code) {
+                                        switch code {
+                                        case .wrongPassword: alertMessage = "Incorrect password. Please try again."
+                                        case .invalidEmail: alertMessage = "Invalid email address."
+                                        case .userDisabled: alertMessage = "This account has been disabled."
+                                        case .userNotFound: alertMessage = "No account found with this email."
+                                        default: alertMessage = error.localizedDescription
+                                        }
+                                    } else {
+                                        alertMessage = error.localizedDescription
                                     }
                                     showAlert = true
                                     return
                                 }
-                                UserDefaults.standard.set(true, forKey: "isLoggedIn")
-                                UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
-                                navigateToHome = true
+                                routeAuthenticatedUser(
+                                    onSuccessToLogin: {
+                                        navigateToHome = true
+                                    },
+                                    onSuccessToOnboarding: {
+                                        dismiss()
+                                    },
+                                    onError: { message in
+                                        alertMessage = message
+                                        showAlert = true
+                                    }
+                                )
                             }
                         }) {
                             Text(authBusy ? "Logging in…" : "Log In")
@@ -346,4 +358,3 @@ struct LoginView: View {
             .environmentObject(OnboardingViewModel())
     }
 }
-

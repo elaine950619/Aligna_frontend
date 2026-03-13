@@ -73,6 +73,10 @@
 		<string>Inter-VariableFont_opsz,wght.ttf</string>
 		<string>PlayfairDisplay-Bold.ttf</string>
 	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIStatusBarStyle</key>
