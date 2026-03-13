@@ -1415,9 +1415,20 @@ struct MainView: View {
                         Text(title)
                             .font(Font.custom("Merriweather-Bold", size: geometry.size.width * 0.05))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.5))
-                    }
+                        }
                 }
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .didDeleteAccount)) { _ in
+            shouldOnboardAfterSignIn = false
+            hasCompletedOnboarding = false
+            isLoggedIn = false
+            authWaitTimedOut = true
+            if let h = authListenerHandle {
+                Auth.auth().removeStateDidChangeListener(h)
+                authListenerHandle = nil
+            }
+            withAnimation(.easeInOut) { bootPhase = .onboarding }
         }
     }
     

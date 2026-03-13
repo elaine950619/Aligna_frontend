@@ -655,6 +655,10 @@ private func clearLocalAuthFlags() {
     UserDefaults.standard.set("",    forKey: "todayFetchLock")
 }
 
+extension Notification.Name {
+    static let didDeleteAccount = Notification.Name("didDeleteAccount")
+}
+
 func routeAuthenticatedUser(
     onSuccessToLogin: @escaping () -> Void,
     onSuccessToOnboarding: @escaping () -> Void,
@@ -2792,6 +2796,15 @@ private extension ProfileView {
                 }
             }
 
+            // C) 单文档派生数据
+            let singleDocCollections = [FSKeys.chartData]
+            for col in singleDocCollections {
+                group.enter()
+                db.collection(col).document(uid).delete { err in
+                    record(err); group.leave()
+                }
+            }
+
             group.notify(queue: .main) { completion(firstErr) }
         }
     func purgeByDocIDPrefix(
@@ -2936,6 +2949,8 @@ private extension ProfileView {
             if let e = error { print("⚠️ Google disconnect failed: \(e)") }
             else { print("✅ Google session disconnected") }
         }
+
+        NotificationCenter.default.post(name: .didDeleteAccount, object: nil)
     }
     
     // ===== Astrology glue (no extra conversion) =====
