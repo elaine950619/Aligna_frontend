@@ -210,12 +210,54 @@ struct AlignaTopHeader: View {
         }
     }
 }
+
+private struct OnboardingBackOverlay: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack {
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.title3.weight(.semibold))
+                        .foregroundColor(.white)
+                        .padding(12)
+                        .background(.ultraThinMaterial, in: Circle())
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+
+            Spacer()
+        }
+    }
+}
 extension Text {
     func onboardingQuestionStyle() -> some View {
         self.font(.custom("Merriweather-Regular", size: 17)) // 统一字号
             .foregroundColor(.white) // 统一颜色
             .multilineTextAlignment(.center) // 统一居中
             .frame(maxWidth: .infinity)
+    }
+
+    func onboardingPrimaryButtonStyle(isEnabled: Bool = true) -> some View {
+        self
+            .font(.custom("Merriweather-Bold", size: 17))
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(isEnabled ? Color.white : Color.white.opacity(0.1))
+            .foregroundColor(isEnabled ? .black : .white)
+            .cornerRadius(16)
+            .shadow(color: .white.opacity(isEnabled ? 0.15 : 0), radius: 8, x: 0, y: 4)
+    }
+
+    func onboardingLabelStyle() -> some View {
+        self
+            .font(.custom("Merriweather-Regular", size: 12))
+            .foregroundColor(.white.opacity(0.8))
     }
 }
 
@@ -373,7 +415,7 @@ struct OnboardingStep1: View {
 
                             if !viewModel.birthPlace.isEmpty {
                                 Text("✓ Selected: \(viewModel.birthPlace)")
-                                    .font(.footnote)
+                                    .onboardingLabelStyle()
                                     .foregroundColor(.green)
                                     .multilineTextAlignment(.center)
                                     .frame(maxWidth: .infinity)
@@ -390,10 +432,10 @@ struct OnboardingStep1: View {
                                     } label: {
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text(result.name)
-                                                .font(.subheadline).fontWeight(.semibold)
+                                                .font(.custom("Merriweather-Bold", size: 15))
                                                 .foregroundColor(.white)
                                             Text(result.subtitle)
-                                                .font(.caption)
+                                                .font(.custom("Merriweather-Regular", size: 12))
                                                 .foregroundColor(.white.opacity(0.8))
                                         }
                                         .padding(12)
@@ -426,25 +468,8 @@ struct OnboardingStep1: View {
                                         radius: 8, x: 0, y: 4)
                         }
                         .padding(.horizontal)
+                        .padding(.top, 10)
                         .disabled(!isFormComplete)
-
-                        // Back
-                        Button {
-                            dismiss()
-                        } label: {
-                            Text("Back")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.white.opacity(0.1))
-                                .foregroundColor(.white)
-                                .cornerRadius(16)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.white.opacity(0.25), lineWidth: 1)
-                                )
-                        }
-                        .padding(.horizontal)
                         .padding(.bottom, 24)
                     }
                 }
@@ -458,6 +483,7 @@ struct OnboardingStep1: View {
                         .frame(height: max(12, geometry.safeAreaInsets.bottom))
                         .allowsHitTesting(false)
                 }
+                OnboardingBackOverlay()
             }
             .preferredColorScheme(.dark)
             .onAppear { }
@@ -549,96 +575,83 @@ struct OnboardingStep2: View {
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
 
-                VStack(spacing: minLength * 0.05) {
-                    // 顶部与 Step1 保持一致（无系统返回）
-                    AlignaTopHeader()
+                ScrollView {
+                    VStack(spacing: minLength * 0.045) {
+                        AlignaTopHeader()
 
-                    Text("When were you born?")
-                        .onboardingQuestionStyle()
+                        Text("When were you born?")
+                            .onboardingQuestionStyle()
+                            .padding(.top, 6)
+
+                        VStack(spacing: 15) {
+                            Text("Birthday")
+                                .onboardingQuestionStyle()
+
+                            Button {
+                                tempBirthDate = viewModel.birth_date
+                                showDatePickerSheet = true
+                            } label: {
+                                HStack {
+                                    Text(viewModel.birth_date.formatted(.dateTime.year().month(.wide).day()))
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    Image(systemName: "chevron.down")
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                                .padding()
+                                .background(panelBG)
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(stroke, lineWidth: 1))
+                                .cornerRadius(12)
+                            }
+                        }
+                        .padding(.horizontal)
+
+                        VStack(spacing: 15) {
+                            Text("Time of Your Birth")
+                                .onboardingQuestionStyle()
+
+                            Button {
+                                tempBirthTime = viewModel.birth_time
+                                showTimePickerSheet = true
+                            } label: {
+                                HStack {
+                                    Text(viewModel.birth_time.formatted(date: .omitted, time: .shortened))
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    Image(systemName: "chevron.down")
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                                .padding()
+                                .background(panelBG)
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(stroke, lineWidth: 1))
+                                .cornerRadius(12)
+                            }
+                        }
+                        .padding(.horizontal)
+
+                        NavigationLink(
+                            destination: OnboardingStep3(viewModel: viewModel)
+                        ) {
+                            Text("Continue")
+                                .onboardingPrimaryButtonStyle()
+                        }
+                        .padding(.horizontal)
                         .padding(.top, 10)
-
-                    // Birthday
-                    VStack(spacing: 15) {
-                        Text("Birthday").onboardingQuestionStyle()
-
-                        Button {
-                            tempBirthDate = viewModel.birth_date
-                            showDatePickerSheet = true
-                        } label: {
-                            HStack {
-                                Text(viewModel.birth_date.formatted(.dateTime.year().month(.wide).day()))
-                                    .foregroundColor(.white)
-                                Spacer()
-                                Image(systemName: "chevron.down")
-                                    .foregroundColor(.white.opacity(0.8))
-                            }
-                            .padding()
-                            .background(panelBG)
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(stroke, lineWidth: 1))
-                            .cornerRadius(12)
-                        }
+                        .padding(.bottom, 24)
                     }
-                    .padding(.horizontal)
-
-                    // Time of Birth
-                    VStack(spacing: 15) {
-                        Text("Time of Your Birth").onboardingQuestionStyle()
-
-                        Button {
-                            tempBirthTime = viewModel.birth_time
-                            showTimePickerSheet = true
-                        } label: {
-                            HStack {
-                                Text(viewModel.birth_time.formatted(date: .omitted, time: .shortened))
-                                    .foregroundColor(.white)
-                                Spacer()
-                                Image(systemName: "chevron.down")
-                                    .foregroundColor(.white.opacity(0.8))
-                            }
-                            .padding()
-                            .background(panelBG)
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(stroke, lineWidth: 1))
-                            .cornerRadius(12)
-                        }
-                    }
-                    .padding(.horizontal)
-
-                    Spacer()
-
-                    // Continue
-                    NavigationLink(
-                        destination: OnboardingStep3(viewModel: viewModel)
-                    ) {
-                        Text("Continue")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.white)
-                            .foregroundColor(.black)
-                            .cornerRadius(16)
-                            .shadow(color: .white.opacity(0.15), radius: 8, x: 0, y: 4)
-                    }
-                    .padding(.horizontal, geometry.size.width * 0.1)
-
-                    // Back（自定义返回按钮，不用系统自带的）
-                    Button(action: { dismiss() }) {
-                        Text("Back")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.white.opacity(0.1))
-                            .foregroundColor(.white)
-                            .cornerRadius(16)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.25), lineWidth: 1)
-                            )
-                    }
-                    .padding(.horizontal, geometry.size.width * 0.1)
-                    .padding(.bottom, 30)
                 }
-                .preferredColorScheme(.dark)
-                .padding(.horizontal)
+                .safeAreaInset(edge: .top) {
+                    Color.clear
+                        .frame(height: geometry.safeAreaInsets.top + 8)
+                        .allowsHitTesting(false)
+                }
+                .safeAreaInset(edge: .bottom) {
+                    Color.clear
+                        .frame(height: max(12, geometry.safeAreaInsets.bottom))
+                        .allowsHitTesting(false)
+                }
+
+                OnboardingBackOverlay()
             }
             .onAppear {
                 // 默认值兜底
@@ -651,68 +664,72 @@ struct OnboardingStep2: View {
             }
             // 日期滚轮
             .sheet(isPresented: $showDatePickerSheet) {
-                VStack(spacing: 12) {
-                    HStack {
-                        Spacer()
-                        Button("Done") {
-                            viewModel.birth_date = tempBirthDate
-                            showDatePickerSheet = false
-                        }
-                        .padding(.trailing)
-                        .padding(.top, 8)
-                    }
-
+                pickerSheet {
                     DatePicker(
                         "",
                         selection: $tempBirthDate,
                         in: dateRange,
                         displayedComponents: [.date]
                     )
-                    .datePickerStyle(.wheel)
-                    .labelsHidden()
-                    .environment(\.colorScheme, .dark)
-                    .padding(.bottom, 24)
+                } done: {
+                    viewModel.birth_date = tempBirthDate
+                    showDatePickerSheet = false
                 }
                 .presentationDetents([.fraction(0.45), .medium])
-                .background(.black.opacity(0.6))
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(28)
+                .presentationBackground(.ultraThinMaterial)
             }
             // 时间滚轮（关键：保存时用 makeLocalDate 固定到本地时区的参考日，防止后续显示漂移）
             .sheet(isPresented: $showTimePickerSheet) {
-                VStack(spacing: 12) {
-                    HStack {
-                        Spacer()
-                        Button("Done") {
-                            let comps = Calendar.current.dateComponents([.hour, .minute], from: tempBirthTime)
-                            if let d = makeLocalDate(hour: comps.hour ?? 0, minute: comps.minute ?? 0) {
-                                viewModel.birth_time = d
-                            } else {
-                                viewModel.birth_time = tempBirthTime
-                            }
-                            showTimePickerSheet = false
-                        }
-                        .padding(.trailing)
-                        .padding(.top, 8)
-                    }
-
+                pickerSheet {
                     DatePicker(
                         "",
                         selection: $tempBirthTime,
                         displayedComponents: [.hourAndMinute]
                     )
-                    .datePickerStyle(.wheel)
-                    .labelsHidden()
-                    .environment(\.colorScheme, .dark)
-                    .padding(.bottom, 24)
+                } done: {
+                    let comps = Calendar.current.dateComponents([.hour, .minute], from: tempBirthTime)
+                    if let d = makeLocalDate(hour: comps.hour ?? 0, minute: comps.minute ?? 0) {
+                        viewModel.birth_time = d
+                    } else {
+                        viewModel.birth_time = tempBirthTime
+                    }
+                    showTimePickerSheet = false
                 }
                 .presentationDetents([.fraction(0.35), .medium])
-                .background(.black.opacity(0.6))
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(28)
+                .presentationBackground(.ultraThinMaterial)
             }
         }
         // === 彻底隐藏系统导航条 & 返回按钮，去掉顶部白条 ===
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .ignoresSafeArea() // 防止出现顶边色带
+    }
+
+    @ViewBuilder
+    private func pickerSheet<PickerContent: View>(
+        @ViewBuilder content: () -> PickerContent,
+        done: @escaping () -> Void
+    ) -> some View {
+        VStack(spacing: 12) {
+            HStack {
+                Spacer()
+                Button("Done", action: done)
+                    .font(.custom("Merriweather-Bold", size: 16))
+                    .foregroundColor(.blue)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 10)
+
+            content()
+                .datePickerStyle(.wheel)
+                .labelsHidden()
+                .environment(\.colorScheme, .dark)
+                .padding(.bottom, 18)
+        }
     }
 }
 
@@ -748,16 +765,14 @@ struct OnboardingStep3: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
 
-    // 选项文案（对齐效果图）
-    private let scentOptions  = ["Floral", "Strong", "Woody",
-                                 "Citrus", "Spicy", "Other"]
+    private let panelBG = Color.white.opacity(0.08)
+    private let stroke = Color.white.opacity(0.25)
+
+    private let scentOptions  = ["Floral", "Strong", "Woody", "Citrus", "Spicy", "Other"]
     private let actOptions    = ["Static", "Dynamic", "No preference"]
-    private let colorOptions  = ["Yellow", "Pink", "Green",
-                                 "Orange", "Purple", "Other"]
-    private let allergyOpts   = ["Pollen/Dust", "Food", "Pet",
-                                 "Chemical", "Seasonal", "Other"]
-    private let musicOptions  = ["Heavy metal", "Classical", "Electronic",
-                                 "Country", "Jazz", "Other"]
+    private let colorOptions  = ["Yellow", "Pink", "Green", "Orange", "Purple", "Other"]
+    private let allergyOpts   = ["Pollen/Dust", "Food", "Pet", "Chemical", "Seasonal", "Other"]
+    private let musicOptions  = ["Heavy metal", "Classical", "Electronic", "Country", "Jazz", "Other"]
 
     private var hasAnySelection: Bool {
         !viewModel.scent_dislike.isEmpty ||
@@ -768,151 +783,118 @@ struct OnboardingStep3: View {
     }
 
     var body: some View {
-        ZStack {
-            AppBackgroundView(mode: .night)
-                .environmentObject(starManager)
-                .environmentObject(themeManager)
+        GeometryReader { geometry in
+            let minLength = min(geometry.size.width, geometry.size.height)
 
-            ScrollView {
-                VStack(spacing: 24) {
-                    header
+            ZStack {
+                AppBackgroundView(mode: .night)
+                    .environmentObject(starManager)
+                    .environmentObject(themeManager)
 
-                    // 说明
-                    subHeader(
-                        title: "A few quick preferences",
-                        subtitle: "This helps us personalize your experience"
-                    )
+                ScrollView {
+                    VStack(spacing: minLength * 0.045) {
+                        Color.clear
+                            .frame(height: geometry.safeAreaInsets.top + 8)
 
-                    // Scents
-                    sectionTitle("Any scents you dislike?")
-                    chips(options: scentOptions,
-                          isSelected: { viewModel.scent_dislike.contains($0) },
-                          toggle: { toggleSet(&viewModel.scent_dislike, $0) })
+                        AlignaTopHeader()
 
-                    // Activity
-                    sectionTitle("Activity preference?")
-                    chips(options: actOptions,
-                          isSelected: { viewModel.act_prefer == $0 },
-                          toggle: { toggleSingle(&viewModel.act_prefer, $0) })
+                        Text("A few quick preferences")
+                            .onboardingQuestionStyle()
+                            .padding(.top, 6)
 
-                    // Colors
-                    sectionTitle("Any colors you dislike?")
-                    chips(options: colorOptions,
-                          isSelected: { viewModel.color_dislike.contains($0) },
-                          toggle: { toggleSet(&viewModel.color_dislike, $0) })
+                        Text("This helps us personalize your experience")
+                            .onboardingQuestionStyle()
+                            .opacity(0.8)
 
-                    // Allergies
-                    sectionTitle("Any allergies we should know about?")
-                    chips(options: allergyOpts,
-                          isSelected: { viewModel.allergies.contains($0) },
-                          toggle: { toggleSet(&viewModel.allergies, $0) })
+                        preferenceSection(
+                            "Any scents you dislike?",
+                            content: chips(options: scentOptions,
+                                           isSelected: { viewModel.scent_dislike.contains($0) },
+                                           toggle: { toggleSet(&viewModel.scent_dislike, $0) })
+                        )
 
-                    // Music
-                    sectionTitle("Any music you dislike?")
-                    chips(options: musicOptions,
-                          isSelected: { viewModel.music_dislike.contains($0) },
-                          toggle: { toggleSet(&viewModel.music_dislike, $0) })
+                        preferenceSection(
+                            "Activity preference?",
+                            content: chips(options: actOptions,
+                                           isSelected: { viewModel.act_prefer == $0 },
+                                           toggle: { toggleSingle(&viewModel.act_prefer, $0) })
+                        )
 
-                    // Continue / Continue without answers
-                    NavigationLink {
-                        OnboardingFinalStep(viewModel: viewModel)
-                    } label: {
-                        Text(hasAnySelection ? "Continue" : "Continue without answers")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.white)
-                            .foregroundColor(.black)
-                            .cornerRadius(16)
-                            .shadow(color: .white.opacity(0.15), radius: 8, x: 0, y: 4)
+                        preferenceSection(
+                            "Any colors you dislike?",
+                            content: chips(options: colorOptions,
+                                           isSelected: { viewModel.color_dislike.contains($0) },
+                                           toggle: { toggleSet(&viewModel.color_dislike, $0) })
+                        )
+
+                        preferenceSection(
+                            "Any allergies we should know about?",
+                            content: chips(options: allergyOpts,
+                                           isSelected: { viewModel.allergies.contains($0) },
+                                           toggle: { toggleSet(&viewModel.allergies, $0) })
+                        )
+
+                        preferenceSection(
+                            "Any music you dislike?",
+                            content: chips(options: musicOptions,
+                                           isSelected: { viewModel.music_dislike.contains($0) },
+                                           toggle: { toggleSet(&viewModel.music_dislike, $0) })
+                        )
+
+                        NavigationLink {
+                            OnboardingFinalStep(viewModel: viewModel)
+                        } label: {
+                            Text(hasAnySelection ? "Continue" : "Continue without answers")
+                                .onboardingPrimaryButtonStyle()
+                        }
+                        .padding(.horizontal, 0)
+                        .padding(.top, 10)
+                        .padding(.bottom, 24)
                     }
-                    .padding(.top, 8)
-
-                    // Back
-                    Button {
-                        dismiss()
-                    } label: {
-                        Text("Back")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.white.opacity(0.1))
-                            .foregroundColor(.white)
-                            .cornerRadius(16)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.25), lineWidth: 1)
-                            )
-                    }
-                    .padding(.bottom, 24)
+                    .padding(.horizontal, 24)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
-            }
 
-            // 顶部 Skip
-            VStack {
-                HStack {
+                OnboardingBackOverlay()
+
+                VStack {
+                    HStack {
+                        Spacer()
+                        NavigationLink {
+                            OnboardingFinalStep(viewModel: viewModel)
+                        } label: {
+                            Text("Skip")
+                                .font(.custom("Merriweather-Regular", size: 14))
+                                .underline()
+                                .foregroundColor(.white.opacity(0.9))
+                                .padding(.trailing, 20)
+                                .padding(.top, 16)
+                        }
+                    }
                     Spacer()
-                    NavigationLink {
-                        OnboardingFinalStep(viewModel: viewModel)
-                    } label: {
-                        Text("Skip")
-                            .font(.subheadline)
-                            .underline()
-                            .foregroundColor(.white.opacity(0.9))
-                            .padding(.trailing, 20)
-                            .padding(.top, 16)
-                    }
                 }
-                Spacer()
             }
         }
         .preferredColorScheme(.dark)
         .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 
-    // MARK: - Header（与 Step1/2 保持一致）
-    private var header: some View {
-        VStack(spacing: 8) {
-            if let _ = UIImage(named: "alignaSymbol") {
-                Image("alignaSymbol")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 64, height: 64)
-                    .padding(.top, 6)
-            } else {
-                Image(systemName: "leaf.circle.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 64, height: 64)
-                    .foregroundColor(.white)
-                    .padding(.top, 6)
-            }
-
-            Text("Alynna")
-                .font(Font.custom("Merriweather-Black", size: 34))
-                .foregroundColor(.white)
-        }
-    }
-
-    // 统一副说明的小字样式
-    private func subHeader(title: String, subtitle: String) -> some View {
-        VStack(spacing: 6) {
-            Text(title).onboardingQuestionStyle()
-            Text(subtitle)
+    private func preferenceSection<Content: View>(_ title: String, content: Content) -> some View {
+        VStack(alignment: .center, spacing: 12) {
+            Text(title)
                 .onboardingQuestionStyle()
-                .opacity(0.8)
+            content
         }
-        .padding(.top, 6)
+        .padding()
+        .background(panelBG)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(stroke, lineWidth: 1)
+        )
+        .cornerRadius(16)
     }
 
-    // 统一题干标题的小字样式
-    private func sectionTitle(_ title: String) -> some View {
-        Text(title).onboardingQuestionStyle()
-    }
-
-    // MARK: - 固定三列的 Chips（大小一致、间距一致）
     private func chips(options: [String],
                        isSelected: @escaping (String) -> Bool,
                        toggle: @escaping (String) -> Void) -> some View {
@@ -925,10 +907,10 @@ struct OnboardingStep3: View {
                 } label: {
                     let selected = isSelected(opt)
                     Text(opt)
-                        .font(.subheadline)
+                        .font(.custom("Merriweather-Regular", size: 14))
                         .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity) // 填满单元列宽
-                        .frame(height: 44)          // 统一高度
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
                         .background(selected ? Color.white : Color.white.opacity(0.08))
                         .foregroundColor(selected ? .black : .white)
                         .overlay(
@@ -943,10 +925,10 @@ struct OnboardingStep3: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: - Toggle Helpers
     private func toggleSet(_ set: inout Set<String>, _ value: String) {
         if set.contains(value) { set.remove(value) } else { set.insert(value) }
     }
+
     private func toggleSingle(_ current: inout String, _ value: String) {
         current = (current == value) ? "" : value
     }
@@ -1103,110 +1085,53 @@ struct OnboardingFinalStep: View {
 
     // 入场动画
     @State private var showIntro = false
+    private let panelBG = Color.white.opacity(0.08)
+    private let stroke = Color.white.opacity(0.25)
 
     var body: some View {
         GeometryReader { geo in
             let minL = min(geo.size.width, geo.size.height)
 
-            // ===== 尺寸与间距（确保副标题 < 信息字体） =====
-            let infoFontSize = max(18, minL * 0.046)           // 信息行字体（略大于 17，随屏变化）
-            let subtitleFontSize = max(16, minL * 0.038)       // 副标题更小，始终 < infoFontSize
-            let listItemSpacing = max(13, minL * 0.055)        // 信息项之间的垂直间距：更大
-            let innerLineSpacing = max(3, minL * 0.016)        // 单个信息项内的行间距（多行时更松）
-
             ZStack {
-                // 夜空背景（与 Step1~3 一致）
                 AppBackgroundView(mode: .night)
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: minL * 0.048) {
-                        // 顶部：Logo + “Aligna”（逐字母入场）
-                        VStack(spacing: 12) {
-                            if let _ = UIImage(named: "alignaSymbol") {
-                                Image("alignaSymbol")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: minL * 0.18, height: minL * 0.18)
-                                    .staggered(0, show: $showIntro)
-                            } else {
-                                Image(systemName: "moon.stars.fill")
-                                    .font(.system(size: minL * 0.18))
-                                    .foregroundColor(.white)
-                                    .staggered(0, show: $showIntro)
-                            }
+                    VStack(spacing: minL * 0.045) {
+                        Color.clear
+                            .frame(height: geo.safeAreaInsets.top + 8)
 
-                            AlignaHeading(
-                                textColor: .white,
-                                show: $showIntro,
-                                text: "Alynna",
-                                fontSize: minL * 0.12,
-                                perLetterDelay: 0.06,
-                                duration: 0.22,
-                                letterSpacing: minL * 0.004
-                            )
-                            .accessibilityHidden(true)
-                        }
-                        .padding(.top, minL * 0.06)
+                        AlignaTopHeader()
 
-                        // ⬇️ 小副标题：明显小于信息字体
                         Text("Confirm your information")
-                            .font(.custom("Merriweather-Italic", size: subtitleFontSize))
-                            .foregroundColor(.white.opacity(0.95))
-                            .kerning(minL * 0.0005)
+                            .onboardingQuestionStyle()
+                            .padding(.top, 6)
                             .staggered(1, show: $showIntro)
 
-                        // 信息条目：更大的项间距 + 更松的行间距
-                        VStack(alignment: .leading, spacing: listItemSpacing) {
-                            bulletRow(
-                                emoji: "👤",
-                                title: "Nickname",
-                                value: viewModel.nickname,
-                                fontSize: infoFontSize,
-                                lineSpacing: innerLineSpacing
-                            )
-                            .staggered(2, show: $showIntro)
-
-                            bulletRow(
-                                emoji: "⚧️",
-                                title: "Gender",
-                                value: viewModel.gender,
-                                fontSize: infoFontSize,
-                                lineSpacing: innerLineSpacing
-                            )
-                            .staggered(3, show: $showIntro)
-
-                            bulletRow(
-                                emoji: "📅",
+                        VStack(spacing: 14) {
+                            finalInfoCard(title: "Nickname", value: viewModel.nickname)
+                                .staggered(2, show: $showIntro)
+                            finalInfoCard(title: "Gender", value: viewModel.gender)
+                                .staggered(3, show: $showIntro)
+                            finalInfoCard(
                                 title: "Birthday",
-                                value: viewModel.birth_date.formatted(.dateTime.year().month().day()),
-                                fontSize: infoFontSize,
-                                lineSpacing: innerLineSpacing
+                                value: viewModel.birth_date.formatted(.dateTime.year().month().day())
                             )
                             .staggered(4, show: $showIntro)
-
-                            bulletRow(
-                                emoji: "⏰",
+                            finalInfoCard(
                                 title: "Time of Birth",
-                                value: viewModel.birth_time.formatted(date: .omitted, time: .shortened),
-                                fontSize: infoFontSize,
-                                lineSpacing: innerLineSpacing
+                                value: viewModel.birth_time.formatted(date: .omitted, time: .shortened)
                             )
                             .staggered(5, show: $showIntro)
-
-                            bulletRow(
-                                emoji: "📍",
+                            finalInfoCard(
                                 title: "Your Current Location",
-                                value: viewModel.currentPlace.isEmpty ? locationMessage : viewModel.currentPlace,
-                                fontSize: infoFontSize,
-                                lineSpacing: innerLineSpacing
+                                value: viewModel.currentPlace.isEmpty ? locationMessage : viewModel.currentPlace
                             )
                             .staggered(6, show: $showIntro)
                         }
                         .padding(.horizontal, geo.size.width * 0.1)
 
-                        // Loading
                         if isLoading {
                             ProgressView("Loading, please wait...")
                                 .foregroundColor(.white)
@@ -1214,46 +1139,21 @@ struct OnboardingFinalStep: View {
                                 .staggered(7, show: $showIntro)
                         }
 
-                        // ✅ 确认按钮（白底 + 黑字，与 Step1~3 一致）
                         Button {
                             guard !isLoading else { return }
                             isLoading = true
                             uploadUserInfo()
                         } label: {
                             Text("Confirm")
-                                .font(AlignaTypography.font(.headline))
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.white)
-                                .foregroundColor(.black)
-                                .cornerRadius(16)
-                                .shadow(color: .white.opacity(0.15), radius: 8, x: 0, y: 4)
+                                .onboardingPrimaryButtonStyle(isEnabled: !isLoading)
                         }
-                        .padding(.horizontal, geo.size.width * 0.1)
-                        .padding(.top, 6)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 10)
                         .staggered(8, show: $showIntro)
-
-                        // 返回（与 Step1~3 一致）
-                        Button {
-                            dismiss()
-                        } label: {
-                            Text("Back")
-                                .font(AlignaTypography.font(.headline))
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.white.opacity(0.1))
-                                .foregroundColor(.white)
-                                .cornerRadius(16)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.white.opacity(0.25), lineWidth: 1)
-                                )
-                        }
-                        .padding(.horizontal, geo.size.width * 0.1)
-                        .padding(.bottom, minL * 0.08)
-                        .staggered(9, show: $showIntro)
+                        .padding(.bottom, 24)
                     }
                 }
+                OnboardingBackOverlay()
             }
             .preferredColorScheme(.dark)
             .onAppear {
@@ -1320,29 +1220,34 @@ struct OnboardingFinalStep: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 
-    // MARK: - 单行条目（emoji + 斜体标题 + 正文字），支持传入字体与行距
-    private func bulletRow(emoji: String, title: String, value: String, fontSize: CGFloat, lineSpacing: CGFloat) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Text(emoji)
-                .font(.system(size: 18))
-                .frame(width: 24, alignment: .center)
+    private func finalInfoCard(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.custom("Merriweather-Regular", size: 12))
+                .foregroundColor(.white.opacity(0.72))
+                .tracking(0.6)
+                .textCase(.uppercase)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            // 组合文本：title 斜体，value 正常体；同一字号，内部行距更松
-            (
-                Text("\(title): ")
-                    .italic()
-                    .font(.custom("Merriweather-Regular", size: fontSize))
-                +
-                Text(value)
-                    .font(.custom("Merriweather-Regular", size: fontSize))
-            )
-            .foregroundColor(.white)
-            .lineSpacing(lineSpacing) // ⬅️ 单项内部行距（多行时生效）
-            .fixedSize(horizontal: false, vertical: true)
+            Text(value)
+                .font(.custom("Merriweather-Bold", size: 19))
+                .foregroundColor(.white)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 15)
+        .background(panelBG)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(stroke, lineWidth: 1)
+        )
+        .cornerRadius(12)
     }
 
     // MARK: - 反向地理编码
@@ -1660,6 +1565,27 @@ private struct OnboardingPreviewContainer<Content: View>: View {
 #Preview("Onboarding Step 1") {
     OnboardingPreviewContainer { viewModel in
         OnboardingStep1(viewModel: viewModel)
+    }
+}
+
+#Preview("Onboarding Step 2") {
+    OnboardingPreviewContainer(configure: { viewModel in
+        viewModel.birth_date = Calendar.current.date(from: DateComponents(year: 1996, month: 3, day: 14)) ?? Date()
+        viewModel.birth_time = BirthTimeUtils.makeLocalTimeDate(hour: 7, minute: 42)
+    }) { viewModel in
+        OnboardingStep2(viewModel: viewModel)
+    }
+}
+
+#Preview("Onboarding Step 3") {
+    OnboardingPreviewContainer(configure: { viewModel in
+        viewModel.scent_dislike = ["Floral", "Strong"]
+        viewModel.act_prefer = "Dynamic"
+        viewModel.color_dislike = ["Yellow"]
+        viewModel.allergies = ["Seasonal"]
+        viewModel.music_dislike = ["Heavy metal"]
+    }) { viewModel in
+        OnboardingStep3(viewModel: viewModel)
     }
 }
 
