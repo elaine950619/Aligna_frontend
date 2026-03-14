@@ -486,6 +486,9 @@ struct OnboardingStep1: View {
                 OnboardingBackOverlay()
             }
             .preferredColorScheme(.dark)
+            .navigationBarBackButtonHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .onAppear { }
         }
     }
