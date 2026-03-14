@@ -125,7 +125,6 @@ struct MainView: View {
     @State private var isFetchingToday: Bool = false
     
     @State private var isMantraExpanded: Bool = false
-    @State private var keepMantraExpandedOnce = false
     
     @State private var showReasoningBubble: Bool = false
 
@@ -338,14 +337,7 @@ struct MainView: View {
                         .buttonStyle(.plain)
                         .contentShape(Rectangle())
                         // ✅ 当 mantra 更新（新的一天/重新拉取）时，自动收起回 “...”
-                        .onChange(of: viewModel.dailyMantra) {
-                            if keepMantraExpandedOnce {
-                                keepMantraExpandedOnce = false
-                                return
-                            }
-                            isMantraExpanded = false
-                        }
-
+                        
                         if !isMantraExpanded {
                             Spacer()
 
@@ -1437,7 +1429,6 @@ struct MainView: View {
         }
         .onChange(of: bootPhase) { phase in
             if phase == .main {
-                keepMantraExpandedOnce = true
                 isMantraExpanded = true
             }
         }
