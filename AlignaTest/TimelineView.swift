@@ -101,19 +101,6 @@ private struct TimelineHeader: View {
                         .kerning(0.5)
 
 
-                    // subtle underline "glow"
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: [ .white.opacity(0.0),
-                                          .white.opacity(0.55),
-                                          .white.opacity(0.0) ],
-                                startPoint: .leading, endPoint: .trailing
-                            )
-                        )
-                        .frame(width: 120, height: 2)
-                        .blur(radius: 0.3)
-                        .offset(y: -2)
                 }
             }
 //            .padding(.top, max(top, 12))
@@ -345,16 +332,12 @@ struct ContentView: View {
             : dailyVM.mantra
     }
 
-    private var displayMantraText: String {
-        "\u{00A0}\u{00A0}\u{00A0}\u{00A0}\u{00A0}\u{00A0}" + mantraText
-    }
-
     private var indentedMantra: AttributedString {
         let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.alignment = .justified
+        paragraphStyle.alignment = .center
 
         let attributed = NSAttributedString(
-            string: displayMantraText,
+            string: mantraText,
             attributes: [.paragraphStyle: paragraphStyle]
         )
 
@@ -371,10 +354,10 @@ struct ContentView: View {
                 
                 ScrollView(showsIndicators: false) {
                     TimelineHeader(title: "Timeline") { dismiss() }
-                                            .padding(.bottom, 8)
+                                            .padding(.bottom, 4)
                                             .foregroundColor(themeManager.foregroundColor)
                     
-                    VStack(spacing: 24) {
+                    VStack(spacing: 18) {
 
                         CalendarView(
                             selectedDate: $selectedDate,
@@ -411,7 +394,7 @@ struct ContentView: View {
                                 .italic()
                                 .multilineTextAlignment(.leading)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal)
+                                .padding(.horizontal, 24)
                                 // use existing theme colors (no new palette)
                                 .foregroundColor(
                                     dailyVM.mantra.isEmpty
