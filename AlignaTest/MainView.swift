@@ -1427,7 +1427,7 @@ struct MainView: View {
             }
             withAnimation(.easeInOut) { bootPhase = .onboarding }
         }
-        .onChange(of: bootPhase) { phase in
+        .onChange(of: bootPhase, initial: false) { _, phase in
             handleBootPhaseChange(phase)
         }
         /*
