@@ -482,7 +482,7 @@ private struct StarField: View {
     var starColor: Color = .white
     @State private var stars: [Star] = (0..<90).map { _ in .random() }
     var body: some View {
-        TimelineView(.animation) { timeline in
+        SwiftUI.TimelineView(.animation) { timeline in
             Canvas { context, size in
                 for star in stars {
                     var s = star
