@@ -266,6 +266,9 @@ struct ProfileLoginView: View {
     @State private var password = ""
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @State private var showInfoAlert = false
+    @State private var infoMessage = ""
+    @State private var dismissAfterInfo = false
     @State private var currentNonce: String? = nil
     @State private var navigateToHome = false
     @State private var authBusy = false
@@ -446,7 +449,9 @@ struct ProfileLoginView: View {
                                         navigateToHome = true
                                     },
                                     onSuccessToOnboarding: {
-                                        dismiss()
+                                        infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
+                                        dismissAfterInfo = true
+                                        showInfoAlert = true
                                     },
                                     onError: { message in
                                         alertMessage = message
@@ -489,6 +494,9 @@ struct ProfileLoginView: View {
                                     },
                                     onSuccessToOnboarding: {
                                         authBusy = false
+                                        infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
+                                        dismissAfterInfo = true
+                                        showInfoAlert = true
                                     },
                                     onError: { message in
                                         authBusy = false
@@ -538,6 +546,9 @@ struct ProfileLoginView: View {
                                         },
                                         onSuccessToOnboarding: {
                                             authBusy = false
+                                            infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
+                                            dismissAfterInfo = true
+                                            showInfoAlert = true
                                         },
                                         onError: { message in
                                             authBusy = false
@@ -579,7 +590,7 @@ struct ProfileLoginView: View {
                     Spacer(minLength: geometry.size.height * 0.08)
                 }
             }
-            .navigationDestination(isPresented: $navigateToHome) {
+            .fullScreenCover(isPresented: $navigateToHome) {
                 MainView()
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
@@ -599,6 +610,16 @@ struct ProfileLoginView: View {
                     message: Text(alertMessage),
                     dismissButton: .default(Text("OK"))
                 )
+            }
+            .alert("Almost there", isPresented: $showInfoAlert) {
+                Button("Continue") {
+                    if dismissAfterInfo {
+                        dismissAfterInfo = false
+                        dismiss()
+                    }
+                }
+            } message: {
+                Text(infoMessage)
             }
         }
         .navigationBarBackButtonHidden(true)
@@ -859,6 +880,7 @@ func handleGoogleFromRegister(
                 onNewUserGoOnboarding()
             } else {
                 // 老用户：提示去登录页
+                try? signOutCurrentSession()
                 onExistingUserGoLogin("This Google account is already registered. Please sign in instead.")
             }
         }
@@ -2759,6 +2781,7 @@ private extension ProfileView {
             if let recentLoginErr = recentLoginErr as NSError? {
                 self.isBusy = false
                 if self.isUserCancelledSignIn(recentLoginErr) {
+                    self.errorMessage = "Sign-in was canceled. Account deletion was not completed."
                     return
                 }
                 if recentLoginErr.code == AuthErrorCode.requiresRecentLogin.rawValue {
@@ -2779,9 +2802,9 @@ private extension ProfileView {
                     self.isBusy = false
                     if let e = authErr as NSError? {
                         if e.code == AuthErrorCode.requiresRecentLogin.rawValue {
-                            self.errorMessage = "For security reasons, please sign in again, then retry deletion."
+                            self.errorMessage = "Your data was removed, but account deletion needs a recent sign-in. Please sign in again, then retry deletion."
                         } else {
-                            self.errorMessage = "Account deletion failed: \(e.localizedDescription)"
+                            self.errorMessage = "Your data was removed, but account deletion failed: \(e.localizedDescription)"
                         }
                         return
                     }

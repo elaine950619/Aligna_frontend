@@ -15,8 +15,11 @@ struct SignUpView: View {
     @State private var password = ""
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @State private var showInfoAlert = false
+    @State private var infoMessage = ""
     @State private var navigateToOnboarding = false
     @State private var navigateToLogin = false
+    @State private var navigateToLoginOnDismiss = false
     @State private var currentNonce: String? = nil
     @State private var authBusy = false
 
@@ -148,6 +151,13 @@ struct SignUpView: View {
                             .staggered(5, show: $showIntro)
 
                             VStack(spacing: minL * 0.025) {
+                                Text("Google may show \"Sign in\" — if you're new, we'll create your account.")
+                                    .font(AlynnaTypography.font(.footnote))
+                                    .foregroundColor(themeManager.fixedNightTextSecondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 6)
+                                    .staggered(6, show: $showIntro)
+
                                 Button(action: {
                                     guard !authBusy else { return }
                                     authBusy = true
@@ -171,11 +181,9 @@ struct SignUpView: View {
                                         onExistingUserGoLogin: { msg in
                                             authBusy = false
                                             shouldOnboardAfterSignIn = false
-                                            alertMessage = msg
-                                            showAlert = true
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                                navigateToLogin = true
-                                            }
+                                            infoMessage = msg
+                                            navigateToLoginOnDismiss = true
+                                            showInfoAlert = true
                                         },
                                         onError: { message in
                                             authBusy = false
@@ -199,7 +207,7 @@ struct SignUpView: View {
                                     .cornerRadius(14)
                                 }
                                 .disabled(authBusy)
-                                .staggered(6, show: $showIntro)
+                                .staggered(8, show: $showIntro)
 
                                 SignInWithAppleButton(
                                     .signUp,
@@ -235,11 +243,9 @@ struct SignUpView: View {
                                                 DispatchQueue.main.async {
                                                     authBusy = false
                                                     shouldOnboardAfterSignIn = false
-                                                    alertMessage = msg
-                                                    showAlert = true
-                                                }
-                                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                                    navigateToLogin = true
+                                                    infoMessage = msg
+                                                    navigateToLoginOnDismiss = true
+                                                    showInfoAlert = true
                                                 }
                                             },
                                             onError: { message in
@@ -257,7 +263,7 @@ struct SignUpView: View {
                                 .signInWithAppleButtonStyle(.white)
                                 .clipShape(RoundedRectangle(cornerRadius: 14))
                                 .disabled(authBusy)
-                                .staggered(7, show: $showIntro)
+                                .staggered(8, show: $showIntro)
                             }
                             .padding(.top, 2)
                         }
@@ -273,6 +279,16 @@ struct SignUpView: View {
                     Alert(title: Text("Notice"),
                           message: Text(alertMessage),
                           dismissButton: .default(Text("OK")))
+                }
+                .alert("Sign In", isPresented: $showInfoAlert) {
+                    Button("Continue") {
+                        if navigateToLoginOnDismiss {
+                            navigateToLoginOnDismiss = false
+                            navigateToLogin = true
+                        }
+                    }
+                } message: {
+                    Text(infoMessage)
                 }
                 .navigationDestination(isPresented: $navigateToOnboarding) {
                     OnboardingStep1(viewModel: viewModel)
@@ -324,11 +340,9 @@ struct SignUpView: View {
                     isLoggedIn = false
                     hasCompletedOnboarding = false
 
-                    alertMessage = "This email is already in use. Redirecting to Sign In..."
-                    showAlert = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                        navigateToLogin = true
-                    }
+                    infoMessage = "This email is already in use. Please sign in instead."
+                    navigateToLoginOnDismiss = true
+                    showInfoAlert = true
                     return
                 }
 

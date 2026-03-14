@@ -21,6 +21,12 @@ enum FontRegistrar {
     ]
 
     static func registerAllFonts() {
+        // If Info.plist UIAppFonts already registered everything, skip to avoid duplicate GSFont logs.
+        let allAvailable = expectedPostScriptNames.allSatisfy { UIFont(name: $0, size: 12) != nil }
+        if allAvailable {
+            return
+        }
+
         let bundle = Bundle.main
         let fontURLs =
             (bundle.urls(forResourcesWithExtension: "ttf", subdirectory: "Fonts") ?? []) +

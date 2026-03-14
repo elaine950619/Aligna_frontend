@@ -1,10 +1,15 @@
 import SwiftUI
+import UIKit
 
 struct FrontPageView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var viewModel: OnboardingViewModel
     @State private var showIntro = false
+
+    private var openingSymbolImage: Image? {
+        UIImage(named: "openingSymbol").map { Image(uiImage: $0) }
+    }
 
     var body: some View {
         NavigationStack {
@@ -45,12 +50,21 @@ struct FrontPageView: View {
 
                         Spacer(minLength: sectionGap)
 
-                        Image("openingSymbol")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: minLength * 0.30)
-                            .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.92))
-                            .staggered(3, show: $showIntro)
+                        Group {
+                            if let openingSymbolImage {
+                                openingSymbolImage
+                                    .resizable()
+                                    .scaledToFit()
+                            } else {
+                                Image(systemName: "sparkles")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .padding(minLength * 0.06)
+                            }
+                        }
+                        .frame(width: minLength * 0.30)
+                        .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.92))
+                        .staggered(3, show: $showIntro)
 
                         Spacer(minLength: sectionGap)
 

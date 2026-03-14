@@ -16,6 +16,9 @@ struct LoginView: View {
     @State private var password = ""
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @State private var showInfoAlert = false
+    @State private var infoMessage = ""
+    @State private var dismissAfterInfo = false
     @State private var currentNonce: String? = nil
     @State private var navigateToHome = false
     @State private var authBusy = false
@@ -190,7 +193,9 @@ struct LoginView: View {
                                         navigateToHome = true
                                     },
                                     onSuccessToOnboarding: {
-                                        dismiss()
+                                        infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
+                                        dismissAfterInfo = true
+                                        showInfoAlert = true
                                     },
                                     onError: { message in
                                         alertMessage = message
@@ -233,6 +238,9 @@ struct LoginView: View {
                                     },
                                     onSuccessToOnboarding: {
                                         authBusy = false
+                                        infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
+                                        dismissAfterInfo = true
+                                        showInfoAlert = true
                                     },
                                     onError: { message in
                                         authBusy = false
@@ -282,6 +290,9 @@ struct LoginView: View {
                                         },
                                         onSuccessToOnboarding: {
                                             authBusy = false
+                                            infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
+                                            dismissAfterInfo = true
+                                            showInfoAlert = true
                                         },
                                         onError: { message in
                                             authBusy = false
@@ -323,7 +334,7 @@ struct LoginView: View {
                     Spacer(minLength: geometry.size.height * 0.08)
                 }
             }
-            .navigationDestination(isPresented: $navigateToHome) {
+            .fullScreenCover(isPresented: $navigateToHome) {
                 MainView()
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
@@ -343,6 +354,16 @@ struct LoginView: View {
                     message: Text(alertMessage),
                     dismissButton: .default(Text("OK"))
                 )
+            }
+            .alert("Almost there", isPresented: $showInfoAlert) {
+                Button("Continue") {
+                    if dismissAfterInfo {
+                        dismissAfterInfo = false
+                        dismiss()
+                    }
+                }
+            } message: {
+                Text(infoMessage)
             }
         }
         .navigationBarBackButtonHidden(true)

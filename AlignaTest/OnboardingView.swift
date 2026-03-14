@@ -1214,7 +1214,7 @@ struct OnboardingFinalStep: View {
                 }
             }
             // 完成后跳首页
-            .navigationDestination(isPresented: $navigateToHome) {
+            .fullScreenCover(isPresented: $navigateToHome) {
                 MainView()
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
