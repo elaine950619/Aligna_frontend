@@ -1428,14 +1428,34 @@ struct MainView: View {
             withAnimation(.easeInOut) { bootPhase = .onboarding }
         }
         .onChange(of: bootPhase) { phase in
-            if phase == .main {
-                isMantraExpanded = true
+            handleBootPhaseChange(phase)
+        }
+        /*
+        // Removed applyBootPhaseChangeHandler and replaced with inline onChange above
+        */
+    }
+    private func handleBootPhaseChange(_ phase: BootPhase) {
+        if phase == .main {
+            isMantraExpanded = true
+        }
+    }
+
+    /*
+    @ViewBuilder
+    private func applyBootPhaseChangeHandler() -> some View {
+        if #available(iOS 17.0, *) {
+            self.onChange(of: bootPhase, initial: false) { _, phase in
+                handleBootPhaseChange(phase)
+            }
+        } else {
+            self.onChange(of: bootPhase) { phase in
+                handleBootPhaseChange(phase)
             }
         }
     }
-    
-    
-    
+    */
+    // REMOVED applyBootPhaseChangeHandler() as per instructions
+
     @ViewBuilder
     private func viewForCategory(title: String, documentName: String) -> some View {
         switch title {
@@ -1992,3 +2012,4 @@ struct CustomBackButton: View {
 import FirebaseFirestore
 import FirebaseAuth
 import MapKit
+
