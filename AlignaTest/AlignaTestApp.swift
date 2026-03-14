@@ -13,6 +13,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         FirebaseApp.configure()
+        FontRegistrar.registerAllFonts()
 
         // 可选：设置音频会话，避免被静音开关/打断（按需修改类别/选项）
         do {
