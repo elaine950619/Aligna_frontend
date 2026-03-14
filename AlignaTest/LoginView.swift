@@ -38,7 +38,7 @@ struct LoginView: View {
                     HStack {
                         Button(action: { dismiss() }) {
                             Image(systemName: "chevron.left")
-                                .font(.title3)
+                                .font(AlynnaTypography.font(.title3))
                                 .padding()
                                 .background(panelBG)
                                 .clipShape(Circle())
@@ -63,10 +63,10 @@ struct LoginView: View {
 
                         VStack(spacing: 6) {
                             Text("Welcome Back")
-                                .font(AlignaTypography.font(.title3))
+                                .font(AlynnaTypography.font(.title3))
                                 .foregroundColor(themeManager.fixedNightTextPrimary)
                             Text("Return to your journal, your rituals, and today's guidance.")
-                                .font(AlignaTypography.font(.subheadline))
+                                .font(AlynnaTypography.font(.subheadline))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                         }
                         .multilineTextAlignment(.center)
@@ -153,7 +153,7 @@ struct LoginView: View {
                                     showAlert = true
                                 }
                             }
-                            .font(AlignaTypography.font(.footnote))
+                            .font(AlynnaTypography.font(.footnote))
                             .foregroundColor(themeManager.fixedNightTextSecondary)
                             .underline()
                         }
@@ -213,7 +213,7 @@ struct LoginView: View {
                         HStack {
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
                             Text("Or with")
-                                .font(AlignaTypography.font(.footnote))
+                                .font(AlynnaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
                         }
@@ -301,7 +301,7 @@ struct LoginView: View {
                         // 去注册
                         HStack {
                             Text("Don't have an account?")
-                                .font(AlignaTypography.font(.footnote))
+                                .font(AlynnaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             NavigationLink(
                                 destination: SignUpView()
@@ -310,7 +310,7 @@ struct LoginView: View {
                                     .environmentObject(viewModel)
                             ) {
                                 Text("Create An Account")
-                                    .font(AlignaTypography.font(.footnote))
+                                    .font(AlynnaTypography.font(.footnote))
                                     .foregroundColor(themeManager.fixedNightTextPrimary)
                                     .underline()
                             }

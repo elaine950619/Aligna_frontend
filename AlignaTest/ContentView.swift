@@ -234,7 +234,7 @@ struct PlaceholderRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(category)
-                .font(.headline)
+                .font(AlynnaTypography.font(.headline))
                 .foregroundColor(.secondary)
                 .textCase(.uppercase)
                 .frame(maxWidth: .infinity, alignment: .center)

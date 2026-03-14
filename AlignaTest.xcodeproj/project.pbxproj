@@ -279,6 +279,30 @@
 			children = (
 				54C65B8C2E6E127B00A41F9A /* AlignaWidgetShared.swift */,
 				54C65B8B2E6E125600A41F9A /* AlignaWidgetExtensionRelease.entitlements */,
+				54DE58B22DC29A91008BE4B8 /* AlignaTest */,
+				54DE58C02DC29A93008BE4B8 /* AlignaTestTests */,
+				54DE58CA2DC29A93008BE4B8 /* AlignaTestUITests */,
+				54C65B772E6E115C00A41F9A /* AlignaWidget */,
+				54C65B722E6E115C00A41F9A /* Frameworks */,
+				54DE58B12DC29A91008BE4B8 /* Products */,
+				6ED3F0842F64E7AD00E0C25F /* Fonts */,
+			);
+			sourceTree = "<group>";
+		};
+		54DE58B12DC29A91008BE4B8 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				54DE58B02DC29A91008BE4B8 /* AlignaTest.app */,
+				54DE58BD2DC29A93008BE4B8 /* AlignaTestTests.xctest */,
+				54DE58C72DC29A93008BE4B8 /* AlignaTestUITests.xctest */,
+				54C65B712E6E115C00A41F9A /* AlignaWidgetExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		6ED3F0842F64E7AD00E0C25F /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
 				54DE58DE2DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf */,
 				B9B23EF42F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf */,
 				F2B9748C2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf */,
@@ -294,24 +318,8 @@
 				B9B23F442F21A19200E620E2 /* Merriweather-Light.ttf */,
 				54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */,
 				54DE58DA2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf */,
-				54DE58B22DC29A91008BE4B8 /* AlignaTest */,
-				54DE58C02DC29A93008BE4B8 /* AlignaTestTests */,
-				54DE58CA2DC29A93008BE4B8 /* AlignaTestUITests */,
-				54C65B772E6E115C00A41F9A /* AlignaWidget */,
-				54C65B722E6E115C00A41F9A /* Frameworks */,
-				54DE58B12DC29A91008BE4B8 /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		54DE58B12DC29A91008BE4B8 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				54DE58B02DC29A91008BE4B8 /* AlignaTest.app */,
-				54DE58BD2DC29A93008BE4B8 /* AlignaTestTests.xctest */,
-				54DE58C72DC29A93008BE4B8 /* AlignaTestUITests.xctest */,
-				54C65B712E6E115C00A41F9A /* AlignaWidgetExtension.appex */,
-			);
-			name = Products;
+			path = Fonts;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -876,6 +884,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YWG7KCKP3D;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
 				MARKETING_VERSION = 1.0;

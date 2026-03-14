@@ -31,7 +31,7 @@ struct FrontPageView: View {
 
 
                             Text("It brings together reflection, ritual, and mood so each day can feel a little clearer, softer,and more your own.")
-                                .font(AlignaTypography.font(.subheadline))
+                                .font(AlynnaTypography.font(.subheadline))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                                 .multilineTextAlignment(.center)
                                 .lineSpacing(4)
@@ -60,7 +60,7 @@ struct FrontPageView: View {
                                 .environmentObject(themeManager)
                                 .environmentObject(viewModel)) {
                                     Text("Sign Up")
-                                        .font(AlignaTypography.font(.headline))
+                                        .font(AlynnaTypography.font(.headline))
                                         .frame(maxWidth: .infinity)
                                         .padding()
                                         .background(themeManager.fixedNightTextPrimary)
@@ -74,7 +74,7 @@ struct FrontPageView: View {
                                 .environmentObject(themeManager)
                                 .environmentObject(viewModel)) {
                                     Text("Log In")
-                                        .font(AlignaTypography.font(.headline))
+                                        .font(AlynnaTypography.font(.headline))
                                         .frame(maxWidth: .infinity)
                                         .padding()
                                         .background(Color.white.opacity(0.1))
@@ -88,7 +88,7 @@ struct FrontPageView: View {
                                 .staggered(5, show: $showIntro)
 
                             Text("Begin with what this day is holding.")
-                                .font(AlignaTypography.font(.footnote))
+                                .font(AlynnaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextTertiary)
                                 .padding(.top, 6)
                                 .staggered(6, show: $showIntro)

@@ -51,7 +51,7 @@ struct SignUpView: View {
                             HStack {
                                 Button(action: { dismiss() }) {
                                     Image(systemName: "chevron.left")
-                                        .font(.title2)
+                                        .font(AlynnaTypography.font(.title2))
                                         .foregroundColor(themeManager.fixedNightTextPrimary)
                                         .padding(10)
                                         .background(Color.white.opacity(0.1))
@@ -69,7 +69,7 @@ struct SignUpView: View {
                                     letterSpacing: minL * 0.005
                                 )
                                 Text("Create Your Space")
-                                    .font(AlignaTypography.font(.title3))
+                                    .font(AlynnaTypography.font(.title3))
                                     .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.9))
                             }
                             .padding(.top, h * 0.01)
@@ -124,7 +124,7 @@ struct SignUpView: View {
 
                             Button(action: { registerWithEmailPassword() }) {
                                 Text("Create Account")
-                                    .font(AlignaTypography.font(.headline))
+                                    .font(AlynnaTypography.font(.headline))
                                     .padding()
                                     .frame(maxWidth: .infinity)
                                     .background(themeManager.fixedNightTextPrimary)
@@ -141,7 +141,7 @@ struct SignUpView: View {
                             HStack {
                                 Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
                                 Text("Or with")
-                                    .font(AlignaTypography.font(.footnote))
+                                    .font(AlynnaTypography.font(.footnote))
                                     .foregroundColor(themeManager.fixedNightTextSecondary)
                                 Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
                             }

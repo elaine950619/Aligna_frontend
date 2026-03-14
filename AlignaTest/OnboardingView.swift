@@ -458,7 +458,7 @@ struct OnboardingStep1: View {
                                 .environmentObject(themeManager)
                         ) {
                             Text("Continue")
-                                .font(.headline)
+                                .font(AlynnaTypography.font(.headline))
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(isFormComplete ? Color.white : Color.white.opacity(0.1))

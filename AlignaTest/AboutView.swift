@@ -30,7 +30,7 @@ struct AboutView: View {
                         .padding(.top, 6)
 
                         Text("About Alynna")
-                            .font(AlignaTypography.font(.title2))
+                            .font(AlynnaTypography.font(.title2))
                             .foregroundColor(titleColor)
 
                         Rectangle()
@@ -51,7 +51,7 @@ struct AboutView: View {
                     card {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Your Energy Companion")
-                                .font(AlignaTypography.font(.headline))
+                                .font(AlynnaTypography.font(.headline))
                                 .foregroundColor(titleColor)
 
                             Text("""
@@ -59,7 +59,7 @@ Alynna is an energy companion app that blends astrology with spatial sensing to 
 
 With one gentle cue a day, Alynna helps you reconnect with your body, your space, and your inner balance, making life feel smoother, more attuned, and more aligned in the digital age.
 """)
-                            .font(AlignaTypography.font(.subheadline))
+                            .font(AlynnaTypography.font(.subheadline))
                             .foregroundColor(bodyColor)
                             .lineSpacing(3)
                         }
@@ -68,7 +68,7 @@ With one gentle cue a day, Alynna helps you reconnect with your body, your space
                     card {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("How Alynna Works")
-                                .font(AlignaTypography.font(.headline))
+                                .font(AlynnaTypography.font(.headline))
                                 .foregroundColor(titleColor)
 
                             featureRow(
@@ -103,14 +103,14 @@ With one gentle cue a day, Alynna helps you reconnect with your body, your space
                                 Text("🔒")
                                     .font(.system(size: 20))
                                 Text("Data & Privacy")
-                                    .font(AlignaTypography.font(.headline))
+                                    .font(AlynnaTypography.font(.headline))
                                     .foregroundColor(titleColor)
                             }
 
                             Text("""
 Your privacy is paramount. All sensor data is processed locally on your device. We do not collect, store, or share your personal information or location data.
 """)
-                            .font(AlignaTypography.font(.subheadline))
+                            .font(AlynnaTypography.font(.subheadline))
                             .foregroundColor(bodyColor)
                             .lineSpacing(3)
 
@@ -126,11 +126,11 @@ Your privacy is paramount. All sensor data is processed locally on your device. 
 
                     VStack(spacing: 6) {
                         Text("Alynna Version 1.0")
-                            .font(AlignaTypography.font(.subheadline))
+                            .font(AlynnaTypography.font(.subheadline))
                             .foregroundColor(bodyColor.opacity(0.85))
 
                         Text("© 2024 Alynna. Made with cosmic intention")
-                            .font(AlignaTypography.font(.subheadline))
+                            .font(AlynnaTypography.font(.subheadline))
                             .foregroundColor(bodyColor.opacity(0.75))
                     }
                     .padding(.top, 8)
@@ -169,11 +169,11 @@ Your privacy is paramount. All sensor data is processed locally on your device. 
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(AlignaTypography.font(.headline))
+                    .font(AlynnaTypography.font(.headline))
                     .foregroundColor(titleColor)
 
                 Text(desc)
-                    .font(AlignaTypography.font(.subheadline))
+                    .font(AlynnaTypography.font(.subheadline))
                     .foregroundColor(bodyColor)
             }
 
@@ -189,7 +189,7 @@ Your privacy is paramount. All sensor data is processed locally on your device. 
                 .padding(.top, 1)
 
             Text(text)
-                .font(AlignaTypography.font(.subheadline))
+                .font(AlynnaTypography.font(.subheadline))
                 .foregroundColor(bodyColor)
                 .fixedSize(horizontal: false, vertical: true)
 

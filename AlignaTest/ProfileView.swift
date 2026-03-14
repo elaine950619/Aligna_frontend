@@ -293,7 +293,7 @@ struct ProfileLoginView: View {
                     HStack {
                         Button(action: { dismiss() }) {
                             Image(systemName: "chevron.left")
-                                .font(.title3)
+                                .font(AlynnaTypography.font(.title3))
                                 .padding()
                                 .background(panelBG)
                                 .clipShape(Circle())
@@ -318,10 +318,10 @@ struct ProfileLoginView: View {
 
                         VStack(spacing: 6) {
                             Text("Welcome Back")
-                                .font(AlignaTypography.font(.title3))
+                                .font(AlynnaTypography.font(.title3))
                                 .foregroundColor(themeManager.fixedNightTextPrimary)
                             Text("Return to your journal, your rituals, and today's guidance.")
-                                .font(AlignaTypography.font(.subheadline))
+                                .font(AlynnaTypography.font(.subheadline))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                         }
                         .multilineTextAlignment(.center)
@@ -409,7 +409,7 @@ struct ProfileLoginView: View {
                                     showAlert = true
                                 }
                             }
-                            .font(AlignaTypography.font(.footnote))
+                            .font(AlynnaTypography.font(.footnote))
                             .foregroundColor(themeManager.fixedNightTextSecondary)
                             .underline()
                         }
@@ -469,7 +469,7 @@ struct ProfileLoginView: View {
                         HStack {
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
                             Text("Or continue with")
-                                .font(AlignaTypography.font(.footnote))
+                                .font(AlynnaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
                         }
@@ -557,7 +557,7 @@ struct ProfileLoginView: View {
                         // 去注册
                         HStack {
                             Text("Don't have an account?")
-                                .font(AlignaTypography.font(.footnote))
+                                .font(AlynnaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             NavigationLink(
                                 destination: SignUpView()
@@ -566,7 +566,7 @@ struct ProfileLoginView: View {
                                     .environmentObject(viewModel)
                             ) {
                             Text("Create Account")
-                                    .font(AlignaTypography.font(.footnote))
+                                    .font(AlynnaTypography.font(.footnote))
                                     .foregroundColor(themeManager.fixedNightTextPrimary)
                                     .underline()
                             }
@@ -1071,13 +1071,22 @@ import GoogleSignIn
 import UIKit
 
 // MARK: - Typography
-enum AlignaTypography {
-    /// Home page body font (used for the mantra).
-    static let homeBodyFontName = "Merriweather-Regular"
-
+enum AlynnaTypography {
     /// Keep the same *size* as a system text style, only swap the font face.
     static func font(_ textStyle: UIFont.TextStyle) -> Font {
-        .custom(homeBodyFontName, size: UIFont.preferredFont(forTextStyle: textStyle).pointSize)
+        let size = UIFont.preferredFont(forTextStyle: textStyle).pointSize
+        switch textStyle {
+        case .largeTitle, .title1, .title2, .title3:
+            return .custom("Merriweather-Black", size: size)
+        case .headline:
+            return .custom("Merriweather-Bold", size: size)
+        case .body, .callout, .subheadline:
+            return .custom("Merriweather-Regular", size: size)
+        case .footnote, .caption1, .caption2:
+            return .custom("Merriweather-Light", size: size)
+        default:
+            return .custom("Merriweather-Regular", size: size)
+        }
     }
 }
 
@@ -1170,6 +1179,8 @@ struct ProfileView: View {
     // Busy & Error
     @State private var isBusy = false
     @State private var showDeleteAlert = false
+    @State private var showReauthPasswordAlert = false
+    @State private var reauthPassword = ""
     @State private var errorMessage: String?
     
     
@@ -1314,6 +1325,13 @@ struct ProfileView: View {
         } message: {
             Text("This will permanently remove your profile and all related data. If you signed up with Google or Apple, you may be asked to confirm sign-in one more time before deletion completes.")
         }
+        .alert("Confirm Password", isPresented: $showReauthPasswordAlert) {
+            SecureField("Password", text: $reauthPassword)
+            Button("Cancel", role: .cancel) { reauthPassword = "" }
+            Button("Confirm", role: .destructive) { handlePasswordReauthAndDelete() }
+        } message: {
+            Text("For security reasons, please enter your password to delete your account.")
+        }
         .alert("Error",
                isPresented: Binding(get: { errorMessage != nil }, set: { _ in errorMessage = nil })) {
             Button("OK", role: .cancel) { }
@@ -1377,7 +1395,7 @@ private extension ProfileView {
                             }
                         } label: {
                             Image(systemName: "checkmark.circle.fill")
-                                .font(.title2)
+                                .font(AlynnaTypography.font(.title2))
                         }
 
                         Button {
@@ -1385,7 +1403,7 @@ private extension ProfileView {
                             loadUser()
                         } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.title2)
+                                .font(AlynnaTypography.font(.title2))
                         }
                     }
                     .foregroundColor(themeManager.accent)
@@ -1396,7 +1414,7 @@ private extension ProfileView {
 
                     Button { editingNickname = true } label: {
                         Image(systemName: "pencil")
-                            .font(.title3)
+                            .font(AlynnaTypography.font(.title3))
                             .foregroundColor(themeManager.accent)
                     }
                 }
@@ -1416,7 +1434,7 @@ private extension ProfileView {
     var personalInfoCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Personal Information")
-                .font(AlignaTypography.font(.title3)).fontWeight(.semibold)
+                .font(AlynnaTypography.font(.title3)).fontWeight(.semibold)
                 .foregroundColor(themeManager.primaryText)
 
             VStack(spacing: 12) {
@@ -1502,10 +1520,10 @@ private extension ProfileView {
                 Image(systemName: "sparkles").foregroundColor(themeManager.accent)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("App Theme")
-                        .font(AlignaTypography.font(.headline))
+                        .font(AlynnaTypography.font(.headline))
                         .foregroundColor(themeManager.primaryText)
                     Text("Customize appearance")
-                        .font(AlignaTypography.font(.subheadline))
+                        .font(AlynnaTypography.font(.subheadline))
                         .foregroundColor(themeManager.descriptionText)
                 }
             }
@@ -1550,11 +1568,11 @@ private extension ProfileView {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Danger Zone")
-                        .font(AlignaTypography.font(.headline))
+                        .font(AlynnaTypography.font(.headline))
                         .foregroundColor(Color.red.opacity(themeManager.isNight ? 0.92 : 0.78))
 
                     Text("Permanently delete your account")
-                        .font(AlignaTypography.font(.subheadline))
+                        .font(AlynnaTypography.font(.subheadline))
                         .foregroundColor(themeManager.descriptionText)
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1581,17 +1599,17 @@ private extension ProfileView {
     var astrologyCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Astrology (approximate)")
-                .font(AlignaTypography.font(.title3)).fontWeight(.semibold)
+                .font(AlynnaTypography.font(.title3)).fontWeight(.semibold)
                 .foregroundColor(themeManager.primaryText)
 
             VStack(spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Sun sign")
-                            .font(AlignaTypography.font(.footnote))
+                            .font(AlynnaTypography.font(.footnote))
                             .foregroundColor(themeManager.descriptionText)
                         Text(sunSignText)
-                            .font(AlignaTypography.font(.headline))
+                            .font(AlynnaTypography.font(.headline))
                             .foregroundColor(themeManager.primaryText)
                     }
                     Spacer()
@@ -1599,10 +1617,10 @@ private extension ProfileView {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Moon sign")
-                            .font(AlignaTypography.font(.footnote))
+                            .font(AlynnaTypography.font(.footnote))
                             .foregroundColor(themeManager.descriptionText)
                         Text(moonSignText)
-                            .font(AlignaTypography.font(.headline))
+                            .font(AlynnaTypography.font(.headline))
                             .foregroundColor(themeManager.primaryText)
                     }
                     Spacer()
@@ -1610,16 +1628,16 @@ private extension ProfileView {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Ascendant")
-                            .font(AlignaTypography.font(.footnote))
+                            .font(AlynnaTypography.font(.footnote))
                             .foregroundColor(themeManager.descriptionText)
                         Text(ascSignText)
-                            .font(AlignaTypography.font(.headline))
+                            .font(AlynnaTypography.font(.headline))
                             .foregroundColor(themeManager.primaryText)
                     }
                     Spacer()
                 }
                 Text("Note: Lightweight astronomical approximations; values near sign cusps may vary slightly.")
-                    .font(AlignaTypography.font(.footnote))
+                    .font(AlynnaTypography.font(.footnote))
                     .foregroundColor(themeManager.descriptionText)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -1649,11 +1667,11 @@ private extension ProfileView {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(AlignaTypography.font(.headline))
+                    .font(AlynnaTypography.font(.headline))
                     .foregroundColor(themeManager.primaryText)
 
                 Text(subtitle)
-                    .font(AlignaTypography.font(.subheadline))
+                    .font(AlynnaTypography.font(.subheadline))
                     .foregroundColor(themeManager.descriptionText)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -1675,19 +1693,19 @@ private extension ProfileView {
         VStack(alignment: .leading, spacing: 4) {
             // 上面一行：标题
             Text(title)
-                .font(AlignaTypography.font(.footnote))
+                .font(AlynnaTypography.font(.footnote))
                 .foregroundColor(themeManager.descriptionText)
 
             // 下面一行：内容 + 小笔 靠在一起
             HStack(spacing: 6) {
                 Text(value)
-                    .font(AlignaTypography.font(.headline))
+                    .font(AlynnaTypography.font(.headline))
                     .foregroundColor(themeManager.primaryText)
 
                 if editable {
                     Button(action: onEdit) {
                         Image(systemName: "pencil")
-                            .font(AlignaTypography.font(.body))
+                            .font(AlynnaTypography.font(.body))
                             .fontWeight(.semibold)
                             .foregroundColor(themeManager.accent)
                     }
@@ -1709,18 +1727,18 @@ private extension ProfileView {
         VStack(alignment: .leading, spacing: 4) {
             // 上面一行：标题
             Text(title)
-                .font(AlignaTypography.font(.footnote))
+                .font(AlynnaTypography.font(.footnote))
                 .foregroundColor(themeManager.descriptionText)
 
             // 下面一行：内容 + 按钮 靠在一起
             HStack(spacing: 6) {
                 Text(value)
-                    .font(AlignaTypography.font(.headline))
+                    .font(AlynnaTypography.font(.headline))
                     .foregroundColor(themeManager.primaryText)
 
                 Button(action: onTap) {
                     Image(systemName: systemImage)
-                        .font(AlignaTypography.font(.body))
+                        .font(AlynnaTypography.font(.body))
                         .fontWeight(.semibold)
                         .foregroundColor(themeManager.accent)
                         .padding(.horizontal, 4)
@@ -1745,7 +1763,7 @@ private extension ProfileView {
         VStack(alignment: .leading, spacing: 4) {
             // 上面一行：标题
             Text(title)
-                .font(AlignaTypography.font(.footnote))
+                .font(AlynnaTypography.font(.footnote))
                 .foregroundColor(themeManager.descriptionText)
 
             // 下面一行：内容 / TextField + 图标 靠在一起
@@ -1756,10 +1774,10 @@ private extension ProfileView {
                         .disableAutocorrection(true)
                         .tint(themeManager.accent)
                         .foregroundColor(themeManager.primaryText)
-                        .font(AlignaTypography.font(.headline))
+                        .font(AlynnaTypography.font(.headline))
                 } else {
                     Text(text.wrappedValue.isEmpty ? "—" : text.wrappedValue)
-                        .font(AlignaTypography.font(.headline))
+                        .font(AlynnaTypography.font(.headline))
                         .foregroundColor(themeManager.primaryText)
                 }
 
@@ -1767,18 +1785,18 @@ private extension ProfileView {
                     HStack(spacing: 10) {
                         Button(action: onSave) {
                             Image(systemName: "checkmark.circle.fill")
-                                .font(AlignaTypography.font(.title3))
+                                .font(AlynnaTypography.font(.title3))
                         }
                         Button(action: onCancel) {
                             Image(systemName: "xmark.circle.fill")
-                                .font(AlignaTypography.font(.title3))
+                                .font(AlynnaTypography.font(.title3))
                         }
                     }
                     .foregroundColor(themeManager.accent)
                 } else {
                     Button { isEditing.wrappedValue = true } label: {
                         Image(systemName: "pencil")
-                            .font(AlignaTypography.font(.body))
+                            .font(AlynnaTypography.font(.body))
                             .fontWeight(.semibold)
                             .foregroundColor(themeManager.accent)
                     }
@@ -1794,7 +1812,7 @@ private extension ProfileView {
     var birthPlaceInfoRow: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Birth Place")
-                .font(AlignaTypography.font(.footnote))
+                .font(AlynnaTypography.font(.footnote))
                 .foregroundColor(themeManager.descriptionText)
 
             birthPlaceDisplayContent
@@ -1812,10 +1830,10 @@ private extension ProfileView {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Select Birth Place")
-                    .font(AlignaTypography.font(.title3))
+                    .font(AlynnaTypography.font(.title3))
                     .foregroundColor(themeManager.primaryText)
                 Text("Search and choose a location to update your birth coordinates.")
-                    .font(AlignaTypography.font(.subheadline))
+                    .font(AlynnaTypography.font(.subheadline))
                     .foregroundColor(themeManager.descriptionText)
             }
 
@@ -1824,7 +1842,7 @@ private extension ProfileView {
                 .disableAutocorrection(true)
                 .tint(themeManager.accent)
                 .foregroundColor(themeManager.primaryText)
-                .font(AlignaTypography.font(.headline))
+                .font(AlynnaTypography.font(.headline))
                 .onChange(of: birthPlace) { _, newValue in
                     if didSelectBirthPlaceResult {
                         didSelectBirthPlaceResult = false
@@ -1852,7 +1870,7 @@ private extension ProfileView {
             HStack(spacing: 10) {
                 Button(action: saveBirthPlaceSelection) {
                     Text("Save")
-                        .font(AlignaTypography.font(.body))
+                        .font(AlynnaTypography.font(.body))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(themeManager.accent.opacity(0.16))
@@ -1860,7 +1878,7 @@ private extension ProfileView {
                 }
                 Button(action: cancelBirthPlaceEditing) {
                     Text("Cancel")
-                        .font(AlignaTypography.font(.body))
+                        .font(AlynnaTypography.font(.body))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(themeManager.panelFill)
@@ -1880,7 +1898,7 @@ private extension ProfileView {
     var birthPlaceDisplayContent: some View {
         HStack(spacing: 6) {
             Text(birthPlace.isEmpty ? "—" : birthPlace)
-                .font(AlignaTypography.font(.headline))
+                .font(AlynnaTypography.font(.headline))
                 .foregroundColor(themeManager.primaryText)
 
             Button {
@@ -1889,7 +1907,7 @@ private extension ProfileView {
                 editingBirthPlace = true
             } label: {
                 Image(systemName: "pencil")
-                    .font(AlignaTypography.font(.body))
+                    .font(AlynnaTypography.font(.body))
                     .fontWeight(.semibold)
                     .foregroundColor(themeManager.accent)
             }
@@ -1908,10 +1926,10 @@ private extension ProfileView {
         } label: {
             VStack(alignment: .leading, spacing: 4) {
                 Text(result.name)
-                    .font(AlignaTypography.font(.subheadline))
+                    .font(AlynnaTypography.font(.subheadline))
                     .foregroundColor(themeManager.primaryText)
                 Text(result.subtitle)
-                    .font(AlignaTypography.font(.caption1))
+                    .font(AlynnaTypography.font(.caption1))
                     .foregroundColor(themeManager.descriptionText)
                     .lineLimit(2)
             }
@@ -1942,10 +1960,10 @@ private extension ProfileView {
         } label: {
             VStack(spacing: 10) {
                 Image(systemName: pref.icon)
-                    .font(AlignaTypography.font(.title2))
+                    .font(AlynnaTypography.font(.title2))
 
                 Text(pref.title)
-                    .font(AlignaTypography.font(.subheadline))
+                    .font(AlynnaTypography.font(.subheadline))
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
@@ -1988,19 +2006,19 @@ private extension ProfileView {
     func zodiacPill(title: String, systemImage: String, signImage: String, value: String) -> some View {
         HStack(spacing: 6) {
             Image(systemName: systemImage)
-                .font(AlignaTypography.font(.caption2))
+                .font(AlynnaTypography.font(.caption2))
                 .fontWeight(.semibold)
 
             Image(systemName: signImage)
-                .font(AlignaTypography.font(.caption2))
+                .font(AlynnaTypography.font(.caption2))
                 .fontWeight(.semibold)
 
             Text(title)
-                .font(AlignaTypography.font(.caption2))
+                .font(AlynnaTypography.font(.caption2))
                 .fontWeight(.semibold)
 
             Text(value)
-                .font(AlignaTypography.font(.caption1))
+                .font(AlynnaTypography.font(.caption1))
                 .fontWeight(.semibold)
         }
         .padding(.horizontal, 10)
@@ -2025,17 +2043,17 @@ private extension ProfileView {
     ) -> some View {
         VStack(spacing: 16) {
             Text(title)
-                .font(AlignaTypography.font(.headline))
+                .font(AlynnaTypography.font(.headline))
                 .foregroundColor(themeManager.primaryText)
 
             picker.tint(themeManager.accent)
 
             HStack {
                 Button("Cancel", action: onCancel)
-                    .font(AlignaTypography.font(.body))
+                    .font(AlynnaTypography.font(.body))
                 Spacer()
                 Button("Save", action: onSave)
-                    .font(AlignaTypography.font(.body))
+                    .font(AlynnaTypography.font(.body))
             }
             .foregroundColor(themeManager.accent)
             .padding(.horizontal)
@@ -2703,13 +2721,41 @@ private extension ProfileView {
         return cal.date(from: comp) ?? datePart
     }
 
-    func deleteAccount() { /* 原样 */
+    func deleteAccount() {
         guard let user = Auth.auth().currentUser else { return }
-        let uid   = user.uid
+        if isPasswordProvider(user) {
+            showReauthPasswordAlert = true
+            return
+        }
+        startDeleteFlow(allowPasswordBypass: false)
+    }
+
+    func handlePasswordReauthAndDelete() {
+        let password = reauthPassword.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !password.isEmpty else {
+            errorMessage = "Please enter your password."
+            return
+        }
+        isBusy = true
+        errorMessage = nil
+        reauthenticateWithPassword(password) { err in
+            self.isBusy = false
+            if let err = err {
+                self.errorMessage = err.localizedDescription
+                return
+            }
+            self.reauthPassword = ""
+            self.startDeleteFlow(allowPasswordBypass: true)
+        }
+    }
+
+    private func startDeleteFlow(allowPasswordBypass: Bool) {
+        guard let user = Auth.auth().currentUser else { return }
+        let uid = user.uid
         let email = user.email
         isBusy = true
         errorMessage = nil
-        ensureRecentLoginForDeletion { recentLoginErr in
+        ensureRecentLoginForDeletion(allowPasswordBypass: allowPasswordBypass) { recentLoginErr in
             if let recentLoginErr = recentLoginErr as NSError? {
                 self.isBusy = false
                 if self.isUserCancelledSignIn(recentLoginErr) {
@@ -2744,6 +2790,20 @@ private extension ProfileView {
                 }
             }
         }
+    }
+
+    private func isPasswordProvider(_ user: User) -> Bool {
+        user.providerData.contains { $0.providerID == "password" }
+    }
+
+    private func reauthenticateWithPassword(_ password: String, completion: @escaping (Error?) -> Void) {
+        guard let user = Auth.auth().currentUser else { completion(nil); return }
+        guard let email = user.email else {
+            completion(NSError(domain: "Aligna", code: -6, userInfo: [NSLocalizedDescriptionKey: "Missing email for password reauthentication."]))
+            return
+        }
+        let credential = EmailAuthProvider.credential(withEmail: email, password: password)
+        user.reauthenticate(with: credential) { _, err in completion(err) }
     }
     func purgeCollection(
             _ name: String,
@@ -2871,16 +2931,20 @@ private extension ProfileView {
             }
         }
 
-    func ensureRecentLoginForDeletion(completion: @escaping (Error?) -> Void) {
+    func ensureRecentLoginForDeletion(allowPasswordBypass: Bool = false, completion: @escaping (Error?) -> Void) {
             guard let user = Auth.auth().currentUser else { completion(nil); return }
             let providerIDs = user.providerData.map { $0.providerID }
 
             if providerIDs.contains("password") {
-                completion(NSError(
-                    domain: "Aligna",
-                    code: Int(AuthErrorCode.requiresRecentLogin.rawValue),
-                    userInfo: [NSLocalizedDescriptionKey: "Please sign in again with email & password, then delete."]
-                ))
+                if allowPasswordBypass {
+                    completion(nil)
+                } else {
+                    completion(NSError(
+                        domain: "Aligna",
+                        code: Int(AuthErrorCode.requiresRecentLogin.rawValue),
+                        userInfo: [NSLocalizedDescriptionKey: "Please sign in again with email & password, then delete."]
+                    ))
+                }
                 return
             }
 
