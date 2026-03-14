@@ -214,7 +214,7 @@ struct MainView: View {
                             HStack(spacing: geometry.size.width * 0.035) {
                                 // Timeline / calendar
                                 NavigationLink(
-                                    destination: ContentView()
+                                    destination: TimelineView()
                                         .environmentObject(starManager)
                                         .environmentObject(themeManager)
                                         .environmentObject(viewModel)

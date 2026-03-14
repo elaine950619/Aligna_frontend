@@ -1505,7 +1505,7 @@ private extension ProfileView {
 
     var timelineCard: some View {
         NavigationLink {
-            ContentView()
+            TimelineView()
                 .environmentObject(starManager)
                 .environmentObject(themeManager)
                 .environmentObject(viewModel)

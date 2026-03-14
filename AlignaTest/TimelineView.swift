@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  TimelineView.swift
 //
 //
 //  Created by Elaine Hsieh on 6/29/25.
@@ -238,7 +238,7 @@ struct PlaceholderRow: View {
     }
 }
 
-struct ContentView: View {
+struct TimelineView: View {
     private let allCategories = [
         "Place","Color","Gemstone","Scent",
         "Activity","Sound","Career","Relationship"
@@ -517,7 +517,7 @@ private struct ContentViewPreviewContainer: View {
     }
 
     var body: some View {
-        ContentView(dailyVM: dailyVM, enableLoading: enableLoading)
+        TimelineView(dailyVM: dailyVM, enableLoading: enableLoading)
             .environmentObject(starManager)
             .environmentObject(themeManager)
             .environmentObject(onboardingViewModel)
