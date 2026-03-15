@@ -85,7 +85,7 @@ struct SignUpView: View {
 
                         VStack(spacing: fieldGap) {
                             Group {
-                                TextField("Email", text: $email)
+                                TextField("Enter your email", text: $email)
                                     .textContentType(.emailAddress)
                                     .keyboardType(.emailAddress)
                                     .textInputAutocapitalization(.never)
@@ -108,7 +108,7 @@ struct SignUpView: View {
                             .animation(nil, value: registerFocus)
 
                             Group {
-                                SecureField("Password", text: $password)
+                                SecureField("Enter your password", text: $password)
                                     .padding()
                                     .background(Color.white.opacity(0.1))
                                     .cornerRadius(14)
@@ -151,13 +151,6 @@ struct SignUpView: View {
                             .staggered(5, show: $showIntro)
 
                             VStack(spacing: minL * 0.025) {
-                                Text("Google may show \"Sign in\" — if you're new, we'll create your account.")
-                                    .font(AlynnaTypography.font(.footnote))
-                                    .foregroundColor(themeManager.fixedNightTextSecondary)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 6)
-                                    .staggered(6, show: $showIntro)
-
                                 Button(action: {
                                     guard !authBusy else { return }
                                     authBusy = true

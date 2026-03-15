@@ -376,6 +376,9 @@ struct MainView: View {
                         themeManager.appBecameActive()
                         ensureDefaultsIfMissing()
                         fetchAllRecommendationTitles()
+                        if bootPhase == .main {
+                            isMantraExpanded = true
+                        }
                     }
                     .coordinateSpace(name: "HomeSpace")
                     .overlay(alignment: .topLeading) {
