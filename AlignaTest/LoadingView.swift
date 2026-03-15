@@ -183,10 +183,12 @@ struct LoadingView: View {
     @State private var cosmicEmojiIndex = 0
     @State private var placeEmojiIndex = 0
     @State private var personalIconIndex = 0
-    @State private var iconShake = false
+    @State private var iconShakePhase: CGFloat = -1
     @State private var dotPhase = 0
     @State private var iconVisible = true
     @State private var autoSkipWorkItem: DispatchWorkItem?
+    @State private var autoSkipSecondsRemaining = 0
+    @State private var autoSkipTimer: Timer?
     @State private var personalCompleted = false
     @State private var didInteractPersonal = false
 
@@ -262,8 +264,10 @@ struct LoadingView: View {
             .onAppear {
                 scheduleStageProgression()
                 startEmojiTimers()
-                if !iconShake {
-                    iconShake = true
+                if iconShakePhase < 0 {
+                    withAnimation(.easeInOut(duration: 0.18).repeatForever(autoreverses: true)) {
+                        iconShakePhase = 1
+                    }
                 }
                 startDotTimer()
                 startIconFadeTimer()
@@ -277,11 +281,15 @@ struct LoadingView: View {
             .onChange(of: anyPersonalSelection, initial: false) { _, hasSelection in
                 if hasSelection {
                     autoSkipWorkItem?.cancel()
+                    autoSkipTimer?.invalidate()
+                    autoSkipSecondsRemaining = 0
                 }
             }
             .onChange(of: didInteractPersonal, initial: false) { _, interacted in
                 if interacted {
                     autoSkipWorkItem?.cancel()
+                    autoSkipTimer?.invalidate()
+                    autoSkipSecondsRemaining = 0
                 }
             }
             .preferredColorScheme(themeManager.preferredColorScheme)
@@ -296,19 +304,22 @@ struct LoadingView: View {
             case .cosmic:
                 stageHeader(title: "Cosmic signals",
                             subtitle: cosmicSubtitle,
-                            iconName: cosmicIcons[cosmicEmojiIndex])
+                            iconName: cosmicIcons[cosmicEmojiIndex],
+                            topPadding: 0)
                     .frame(height: headerHeight + contentHeight, alignment: .top)
 
             case .place:
                 stageHeader(title: "Place signals",
                             subtitle: placeSubtitle,
-                            iconName: placeIcons[placeEmojiIndex])
+                            iconName: placeIcons[placeEmojiIndex],
+                            topPadding: 0)
                     .frame(height: headerHeight + contentHeight, alignment: .top)
 
             case .personal:
                 stageHeader(title: "Personal check-in",
                             subtitle: "Tap what feels true right now.",
-                            iconName: personalIcons[personalIconIndex])
+                            iconName: personalIcons[personalIconIndex],
+                            topPadding: 6)
                     .frame(height: headerHeight, alignment: .top)
                 VStack(spacing: 8) {
                     personalCheckIn
@@ -324,15 +335,14 @@ struct LoadingView: View {
         }
     }
 
-    private func stageHeader(title: String, subtitle: String, iconName: String) -> some View {
+    private func stageHeader(title: String, subtitle: String, iconName: String, topPadding: CGFloat) -> some View {
         VStack(spacing: 20) {
             Text(title)
                 .font(.custom("Merriweather-Bold", size: 20))
                 .foregroundColor(themeManager.primaryText)
             iconView(iconName, size: 56)
                 .opacity(iconVisible ? 1.0 : 0.35)
-                .offset(x: iconShake ? 2 : -2, y: iconShake ? -1 : 1)
-                .animation(.easeInOut(duration: 0.18).repeatForever(autoreverses: true), value: iconShake)
+                .offset(x: iconShakePhase * 2, y: iconShakePhase * -1)
                 .animation(.easeInOut(duration: 0.35), value: iconVisible)
             Text(subtitle)
                 .font(AlignaType.helperSmall())
@@ -342,7 +352,7 @@ struct LoadingView: View {
                 loadingDots
             }
         }
-        .padding(.top, 6)
+        .padding(.top, topPadding)
     }
 
 
@@ -392,25 +402,28 @@ struct LoadingView: View {
                     didInteractPersonal = true
                     completePersonal()
                 } label: {
-                    Text("Skip")
-                        .font(AlignaType.helperSmall())
-                        .foregroundColor(themeManager.primaryText)
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 12)
-                        .background(Color.white.opacity(0.02))
-                        .cornerRadius(10)
-                }
-                Button {
-                    didInteractPersonal = true
-                    completePersonal()
-                } label: {
                     Text("Continue")
-                        .font(AlignaType.helperSmall())
-                        .foregroundColor(themeManager.primaryText)
-                        .padding(.vertical, 6)
+                        .font(.custom("Merriweather-Bold", size: 13))
+                        .foregroundColor(themeManager.isNight ? Color.black : Color.white)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 22)
+                        .background(themeManager.primaryText)
+                        .cornerRadius(13)
+                }
+
+                if autoSkipSecondsRemaining > 0 {
+                    Text("Skip in \(autoSkipSecondsRemaining)s")
+                        .font(.custom("Merriweather-Bold", size: 12))
+                        .foregroundColor(themeManager.primaryText.opacity(0.85))
+                        .padding(.vertical, 10)
                         .padding(.horizontal, 12)
-                        .background(themeManager.primaryText.opacity(0.12))
-                        .cornerRadius(10)
+                        .background(themeManager.primaryText.opacity(0.10))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .stroke(themeManager.primaryText.opacity(0.22), lineWidth: 1)
+                        )
+                        .cornerRadius(11)
+                        .transition(.opacity)
                 }
             }
             .padding(.top, 2)
@@ -425,43 +438,39 @@ struct LoadingView: View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 4)
         return VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(.custom("Merriweather-Bold", size: 13))
+                .font(.custom("Merriweather-Bold", size: 15))
                 .foregroundColor(themeManager.primaryText.opacity(0.9))
                 .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.bottom, 1)
+                .padding(.bottom, 3)
             LazyVGrid(columns: columns, alignment: .leading, spacing: 4) {
                 ForEach(options, id: \.1) { option in
                     Button {
                         didInteractPersonal = true
                         selection.wrappedValue = option.1
                     } label: {
-                        HStack(spacing: 4) {
-                            iconView(option.0, size: 10)
+                        VStack(spacing: 6) {
+                            iconView(option.0, size: 14)
                                 .foregroundColor(themeManager.primaryText)
                             Text(option.1)
-                                .font(AlignaType.helperSmall())
+                                .font(.custom("Merriweather-Bold", size: 10))
                                 .foregroundColor(themeManager.primaryText)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.7)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 3)
+                        .padding(.vertical, 7)
                         .background(selection.wrappedValue == option.1 ? themeManager.primaryText.opacity(0.14) : Color.white.opacity(0.02))
-                        .cornerRadius(7)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(themeManager.primaryText.opacity(0.22), lineWidth: 1)
+                        )
+                        .cornerRadius(8)
                     }
                 }
             }
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .fill(themeManager.isNight ? Color.white.opacity(0.03) : Color.white.opacity(0.14))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .stroke(themeManager.primaryText.opacity(0.14), lineWidth: 1)
-        )
     }
 
     private var cosmicIcons: [String] { ["sun.max.fill", "moon.stars.fill", "sparkles", "sparkle"] }
@@ -547,18 +556,31 @@ struct LoadingView: View {
 
     private func scheduleAutoSkipIfNeeded() {
         autoSkipWorkItem?.cancel()
+        autoSkipTimer?.invalidate()
+
+        let totalSeconds = 3
+        autoSkipSecondsRemaining = totalSeconds
+        autoSkipTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+            autoSkipSecondsRemaining = max(0, autoSkipSecondsRemaining - 1)
+            if autoSkipSecondsRemaining == 0 {
+                timer.invalidate()
+            }
+        }
+
         let item = DispatchWorkItem {
             if shouldAutoSkipPersonal {
                 completePersonal()
             }
         }
         autoSkipWorkItem = item
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: item)
+        DispatchQueue.main.asyncAfter(deadline: .now() + Double(totalSeconds), execute: item)
     }
 
     private func completePersonal() {
         guard !personalCompleted else { return }
         autoSkipWorkItem?.cancel()
+        autoSkipTimer?.invalidate()
+        autoSkipSecondsRemaining = 0
         personalCompleted = true
         onPersonalComplete?()
     }
@@ -570,6 +592,9 @@ private extension LoadingView {
     init(previewStage: LoadingStage) {
         self.init(onStartLoading: nil, onPersonalComplete: nil, fixedMessageIndex: 0)
         _stage = State(initialValue: previewStage)
+        if previewStage == .personal {
+            _autoSkipSecondsRemaining = State(initialValue: 3)
+        }
     }
 }
 

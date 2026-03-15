@@ -46,12 +46,6 @@ struct AlignaWidgetEntryView: View {
 
     var body: some View {
         ZStack {
-            // 简洁的夜色背景（与 App 调性一致）
-            LinearGradient(
-                colors: [Color.black.opacity(0.85), Color.black.opacity(0.75)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            )
-
             VStack(alignment: .leading, spacing: 8) {
 
                 // 顶部行：左-ALIGNA / 右-月相
@@ -91,6 +85,13 @@ struct AlignaWidgetEntryView: View {
             }
             .padding(14)
         }
+        .containerBackground(for: .widget) {
+            // 简洁的夜色背景（与 App 调性一致）
+            LinearGradient(
+                colors: [Color.black.opacity(0.85), Color.black.opacity(0.75)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+        }
         // 点击整个 widget 打开 App（可加深链到某页）
         .widgetURL(URL(string: "aligna://open"))
     }
@@ -124,6 +125,27 @@ struct AlignaWidget: Widget {
         .supportedFamilies([.systemMedium]) // 你这版要“长方形”，即中号
     }
 }
+
+#if DEBUG
+struct AlignaWidget_Previews: PreviewProvider {
+    static var previews: some View {
+        AlignaWidgetEntryView(
+            entry: AlignaEntry(
+                date: Date(),
+                snapshot: AlignaWidgetSnapshot(
+                    mantra: "Embrace the flow of change.",
+                    colorTitle: "Vitality Pink",
+                    placeTitle: "Window seat at a café",
+                    gemstoneTitle: "Rose Quartz",
+                    scentTitle: "Rose Breeze"
+                )
+            )
+        )
+        .previewContext(WidgetPreviewContext(family: .systemMedium))
+    }
+}
+#endif
+
 extension Color {
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
