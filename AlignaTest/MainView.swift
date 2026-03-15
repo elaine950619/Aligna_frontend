@@ -274,36 +274,25 @@ struct MainView: View {
                         }
 
                         // ✅ 只保留按钮本身（气泡放到全局 overlay）
-                        Button {
-                            if viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                debugAndRefreshReasoningSummaryFromFirestore()
-                            }
-
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.86)) {
-                                showReasoningBubble.toggle()
-                            }
-                        } label: {
-                            Text("Alynna")
-                                .font(AlignaType.logo())
-                                .lineSpacing(AlignaType.logoLineSpacing)
-                                .foregroundColor(themeManager.foregroundColor)
-                                .padding(.top, 20)
-                                // ✅ 把 Alynna 的真实位置传出去（在 GeometryReader 的坐标系里）
-                                .background(
-                                    GeometryReader { proxy in
-                                        Color.clear.preference(
-                                            key: AlynnaFrameKey.self,
-                                            value: proxy.frame(in: .named("HomeSpace"))
-                                        )
-                                    }
-                                )
-                        }
-                        .buttonStyle(.plain)
-                        .onPreferenceChange(AlynnaFrameKey.self) { alynnaFrame = $0 }
+                        Text("Alynna")
+                            .font(AlignaType.logo())
+                            .lineSpacing(AlignaType.logoLineSpacing)
+                            .foregroundColor(themeManager.foregroundColor)
+                            .padding(.top, 20)
+                            // ✅ 把 Alynna 的真实位置传出去（在 GeometryReader 的坐标系里）
+                            .background(
+                                GeometryReader { proxy in
+                                    Color.clear.preference(
+                                        key: AlynnaFrameKey.self,
+                                        value: proxy.frame(in: .named("HomeSpace"))
+                                    )
+                                }
+                            )
+                            .onPreferenceChange(AlynnaFrameKey.self) { alynnaFrame = $0 }
                         .opacity(isMantraExpanded ? 0 : 1)
                         .scaleEffect(isMantraExpanded ? 0.92 : 1)
                         .frame(height: isMantraExpanded ? 0 : nil)
-                        .allowsHitTesting(!isMantraExpanded)
+                        .allowsHitTesting(false)
 
 
 
@@ -380,39 +369,7 @@ struct MainView: View {
                         }
                     }
                     .coordinateSpace(name: "HomeSpace")
-                    .overlay(alignment: .topLeading) {
-                        if showReasoningBubble {
-
-                            // ✅ （推荐）透明遮罩：点空白处关闭
-                            Color.black.opacity(0.001)
-                                .ignoresSafeArea()
-                                .onTapGesture {
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
-                                        showReasoningBubble = false
-                                    }
-                                }
-                                .zIndex(99998)
-
-                            ReasoningBubbleView(
-                                text: viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                    ? "No reasoning summary available yet."
-                                    : viewModel.reasoningSummary,
-                                textColor: themeManager.foregroundColor.opacity(0.92)
-                            ) {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
-                                    showReasoningBubble = false
-                                }
-                            }
-                            // ✅ 精准定位：紧贴在 Alynna 标志正下方
-                            .frame(maxWidth: 320, alignment: .center)
-                            .position(
-                                x: alynnaFrame.midX,
-                                y: alynnaFrame.maxY + 14   // ⭐️ 距离 Alynna 底部的间距，可微调 10~18
-                            )
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-                            .zIndex(99999)
-                        }
-                    }
+                    .overlay(alignment: .topLeading) { }
                 }
             }
             // ✅ 只作用在首页这个 ZStack 上，push 新页面后不会带过去

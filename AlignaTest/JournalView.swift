@@ -92,7 +92,7 @@ struct JournalView: View {
                                 .scrollContentBackground(.hidden)
                                 .frame(maxWidth: .infinity, maxHeight: 160, alignment: .topLeading)
                                 .padding(1)
-                                .foregroundColor(themeManager.bodyText)
+                                .foregroundColor(themeManager.descriptionText.opacity(0.85))
                                 .tint(themeManager.accent)
                                 .font(.system(.body, design: .rounded))
                         }

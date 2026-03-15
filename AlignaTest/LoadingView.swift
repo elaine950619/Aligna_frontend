@@ -47,15 +47,15 @@ func currentMoonPhaseLabel(for date: Date = Date()) -> String {
     let days = date.timeIntervalSince(anchor) / 86400
     let phase = (days - floor(days / synodic) * synodic) // [0, synodic)
     switch phase {
-    case 0..<1.84566:  return "New Moon"
-    case 1.84566..<5.53699: return " Waxing Crescent"
-    case 5.53699..<9.22831: return "First Quarter"
-    case 9.22831..<12.91963: return "Waxing Gibbous"
-    case 12.91963..<16.61096: return "Full Moon"
-    case 16.61096..<20.30228: return "Waning Gibbous"
-    case 20.30228..<23.99361: return "Third Quarter"
-    case 23.99361..<27.68493: return "Waning Crescent"
-    default: return "New Moon"
+    case 0..<1.84566:  return "New Moon · the quiet seed"
+    case 1.84566..<5.53699: return "Waxing Crescent · a thin breath of light"
+    case 5.53699..<9.22831: return "First Quarter · the half-lit threshold"
+    case 9.22831..<12.91963: return "Waxing Gibbous · light gathering"
+    case 12.91963..<16.61096: return "Full Moon · the night in bloom"
+    case 16.61096..<20.30228: return "Waning Gibbous · light releasing"
+    case 20.30228..<23.99361: return "Third Quarter · the balance in return"
+    case 23.99361..<27.68493: return "Waning Crescent · a fading whisper"
+    default: return "New Moon · the quiet seed"
     }
 }
 
@@ -318,11 +318,6 @@ struct LoadingView: View {
                     .frame(height: headerHeight, alignment: .top)
                 VStack(spacing: 8) {
                     personalCheckIn
-                    if personalCompleted {
-                        Text("Logged for today.")
-                            .font(AlignaType.helperSmall())
-                            .foregroundColor(themeManager.descriptionText.opacity(0.9))
-                    }
                 }
                 .frame(height: contentHeight, alignment: .top)
                 .padding(.top, 28)
@@ -403,7 +398,7 @@ struct LoadingView: View {
                             .tint(themeManager.isNight ? Color.black : Color.white)
                             .scaleEffect(0.75)
                     }
-                    Text(isProcessingPersonal ? "Processing…" : primaryActionLabel)
+                    Text(isProcessingPersonal ? "Preparing your mantra…" : primaryActionLabel)
                 }
                 .font(.custom("Merriweather-Bold", size: 13))
                 .foregroundColor(themeManager.isNight ? Color.black : Color.white)
@@ -433,6 +428,9 @@ struct LoadingView: View {
                 ForEach(options, id: \.1) { option in
                     Button {
                         didInteractPersonal = true
+                        if isProcessingPersonal {
+                            isProcessingPersonal = false
+                        }
                         selection.wrappedValue = option.1
                     } label: {
                         VStack(spacing: 6) {
@@ -485,10 +483,10 @@ struct LoadingView: View {
         let sun = clean(sunText)
         let moon = clean(moonText)
         let rising = clean(risingText)
-        let phaseLabel = moonPhaseLabel(for: Date())
-        let partsSplit = phaseLabel.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
-        let phaseEmoji = partsSplit.first.map(String.init) ?? ""
-        let phaseName = partsSplit.count > 1 ? String(partsSplit[1]) : phaseLabel
+        let phaseName = moonPhaseLabel(for: Date())
+            .split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
+            .dropFirst()
+            .joined(separator: " ")
 
         let parts: [String] = [
             sun.map { "Sun in \($0)" },
@@ -499,16 +497,12 @@ struct LoadingView: View {
         if !parts.isEmpty {
             let base = "I see your \(parts.joined(separator: ", ")). Today’s phase: "
             let tail = phaseName.isEmpty ? "" : " \(phaseName)."
-            return Text(base).font(AlignaType.helperSmall())
-                + Text(phaseEmoji).font(.system(size: 14))
-                + Text(tail).font(AlignaType.helperSmall())
+            return Text(base + tail).font(AlignaType.helperSmall())
         }
 
         let base = "I’m syncing your chart…\nToday’s phase: "
         let tail = phaseName.isEmpty ? "" : " \(phaseName)."
-        return Text(base).font(AlignaType.helperSmall())
-            + Text(phaseEmoji).font(.system(size: 14))
-            + Text(tail).font(AlignaType.helperSmall())
+        return Text(base + tail).font(AlignaType.helperSmall())
     }
 
     private var placeSubtitleText: Text {
@@ -516,7 +510,8 @@ struct LoadingView: View {
     }
 
     private var personalSubtitleText: Text {
-        Text("Tap what feels true right now.")
+        let text = isProcessingPersonal ? "Logged for today." : "Tap what feels true right now."
+        return Text(text)
             .font(AlignaType.helperSmall())
     }
 
