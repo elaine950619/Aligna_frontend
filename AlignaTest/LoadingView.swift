@@ -47,15 +47,15 @@ func currentMoonPhaseLabel(for date: Date = Date()) -> String {
     let days = date.timeIntervalSince(anchor) / 86400
     let phase = (days - floor(days / synodic) * synodic) // [0, synodic)
     switch phase {
-    case 0..<1.84566:  return "🌑 New Moon"
-    case 1.84566..<5.53699: return "🌒 Waxing Crescent"
-    case 5.53699..<9.22831: return "🌓 First Quarter"
-    case 9.22831..<12.91963: return "🌔 Waxing Gibbous"
-    case 12.91963..<16.61096: return "🌕 Full Moon"
-    case 16.61096..<20.30228: return "🌖 Waning Gibbous"
-    case 20.30228..<23.99361: return "🌗 Third Quarter"
-    case 23.99361..<27.68493: return "🌘 Waning Crescent"
-    default: return "🌑 New Moon"
+    case 0..<1.84566:  return "New Moon"
+    case 1.84566..<5.53699: return " Waxing Crescent"
+    case 5.53699..<9.22831: return "First Quarter"
+    case 9.22831..<12.91963: return "Waxing Gibbous"
+    case 12.91963..<16.61096: return "Full Moon"
+    case 16.61096..<20.30228: return "Waning Gibbous"
+    case 20.30228..<23.99361: return "Third Quarter"
+    case 23.99361..<27.68493: return "Waning Crescent"
+    default: return "New Moon"
     }
 }
 
@@ -297,22 +297,22 @@ struct LoadingView: View {
         return VStack(spacing: 12) {
             switch stage {
             case .cosmic:
-                stageHeader(title: "Cosmic signals",
-                            subtitle: cosmicSubtitle,
+                stageHeader(title: "Reading the cosmos",
+                            subtitle: cosmicSubtitleText,
                             iconName: cosmicIcons[cosmicEmojiIndex],
                             topPadding: 0)
                     .frame(height: headerHeight + contentHeight, alignment: .top)
 
             case .place:
-                stageHeader(title: "Place signals",
-                            subtitle: placeSubtitle,
+                stageHeader(title: "Reading your place",
+                            subtitle: placeSubtitleText,
                             iconName: placeIcons[placeEmojiIndex],
                             topPadding: 0)
                     .frame(height: headerHeight + contentHeight, alignment: .top)
 
             case .personal:
                 stageHeader(title: "Personal check-in",
-                            subtitle: "Tap what feels true right now.",
+                            subtitle: personalSubtitleText,
                             iconName: personalIcons[personalIconIndex],
                             topPadding: 6)
                     .frame(height: headerHeight, alignment: .top)
@@ -330,7 +330,7 @@ struct LoadingView: View {
         }
     }
 
-    private func stageHeader(title: String, subtitle: String, iconName: String, topPadding: CGFloat) -> some View {
+    private func stageHeader(title: String, subtitle: Text, iconName: String, topPadding: CGFloat) -> some View {
         VStack(spacing: 20) {
             Text(title)
                 .font(.custom("Merriweather-Bold", size: 20))
@@ -339,8 +339,7 @@ struct LoadingView: View {
                 .opacity(iconVisible ? 1.0 : 0.35)
                 .offset(x: iconShakePhase * 2, y: iconShakePhase * -1)
                 .animation(.easeInOut(duration: 0.35), value: iconVisible)
-            Text(subtitle)
-                .font(AlignaType.helperSmall())
+            subtitle
                 .foregroundColor(themeManager.descriptionText.opacity(0.85))
                 .multilineTextAlignment(.center)
             if stage != .personal {
@@ -468,26 +467,79 @@ struct LoadingView: View {
     private var footerText: String? {
         switch stage {
         case .cosmic:
-            return "Astronomical observations are sourced from NOAA and NASA."
+            return "Chart data is derived from your current sky conditions."
         case .place:
-            return "Environmental observations are sourced from NASA and ESA."
+            return "Place signals are derived from local environment and weather."
         case .personal:
             return nil
         }
     }
 
-    private var cosmicSubtitle: String {
-        return "Sun: \(sunText) · Moon: \(moonText) · Rising: \(risingText)"
+    private var cosmicSubtitleText: Text {
+        func clean(_ value: String) -> String? {
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty || trimmed == "—" { return nil }
+            return trimmed
+        }
+
+        let sun = clean(sunText)
+        let moon = clean(moonText)
+        let rising = clean(risingText)
+        let phaseLabel = moonPhaseLabel(for: Date())
+        let partsSplit = phaseLabel.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
+        let phaseEmoji = partsSplit.first.map(String.init) ?? ""
+        let phaseName = partsSplit.count > 1 ? String(partsSplit[1]) : phaseLabel
+
+        let parts: [String] = [
+            sun.map { "Sun in \($0)" },
+            moon.map { "Moon in \($0)" },
+            rising.map { "Rising in \($0)" }
+        ].compactMap { $0 }
+
+        if !parts.isEmpty {
+            let base = "I see your \(parts.joined(separator: ", ")). Today’s phase: "
+            let tail = phaseName.isEmpty ? "" : " \(phaseName)."
+            return Text(base).font(AlignaType.helperSmall())
+                + Text(phaseEmoji).font(.system(size: 14))
+                + Text(tail).font(AlignaType.helperSmall())
+        }
+
+        let base = "I’m syncing your chart…\nToday’s phase: "
+        let tail = phaseName.isEmpty ? "" : " \(phaseName)."
+        return Text(base).font(AlignaType.helperSmall())
+            + Text(phaseEmoji).font(.system(size: 14))
+            + Text(tail).font(AlignaType.helperSmall())
+    }
+
+    private var placeSubtitleText: Text {
+        Text(placeSubtitle).font(AlignaType.helperSmall())
+    }
+
+    private var personalSubtitleText: Text {
+        Text("Tap what feels true right now.")
+            .font(AlignaType.helperSmall())
     }
 
     private var placeSubtitle: String {
-        let lines = [
-            "Wind, rain, and light are moving",
-            "Water, air, and temperature shift with you",
-            "Reading today’s living atmosphere"
-        ]
-        let base = lines[placeEmojiIndex % lines.count]
-        return "\(base) · \(locationText) · \(conditionText)"
+        func clean(_ value: String) -> String? {
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty || trimmed == "Your Current Location" || trimmed == "Cloud · Wind · Rain" { return nil }
+            return trimmed
+        }
+
+        let location = clean(locationText)
+        let condition = clean(conditionText)
+
+        if let location, let condition {
+            return "I’m sensing \(location). The air feels like \(condition)."
+        }
+        if let location {
+            return "I’m sensing \(location)."
+        }
+        if let condition {
+            return "The air feels like \(condition)."
+        }
+        return "I’m locating your place…\nI’m sampling today’s air…"
     }
 
     private func scheduleStageProgression() {
