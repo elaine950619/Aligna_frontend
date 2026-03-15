@@ -17,6 +17,8 @@ struct SignUpView: View {
     @State private var alertMessage = ""
     @State private var showInfoAlert = false
     @State private var infoMessage = ""
+    @State private var showVerifyAlert = false
+    @State private var verifyMessage = "We sent a verification email. Please verify and then continue."
     @State private var navigateToOnboarding = false
     @State private var navigateToLogin = false
     @State private var navigateToLoginOnDismiss = false
@@ -85,15 +87,21 @@ struct SignUpView: View {
 
                         VStack(spacing: fieldGap) {
                             Group {
-                                TextField("Enter your email", text: $email)
+                                TextField("", text: $email)
                                     .textContentType(.emailAddress)
                                     .keyboardType(.emailAddress)
                                     .textInputAutocapitalization(.never)
                                     .autocorrectionDisabled(true)
-                                    .padding()
+                                    .padding(.vertical, 14)
+                                    .padding(.leading, 16)
                                     .background(Color.white.opacity(0.1))
                                     .cornerRadius(14)
                                     .foregroundColor(themeManager.fixedNightTextPrimary)
+                                    .placeholder(when: email.isEmpty) {
+                                        Text("Enter your email")
+                                            .foregroundColor(themeManager.fixedNightTextSecondary)
+                                            .padding(.leading, 16)
+                                    }
                                     .focused($registerFocus, equals: .email)
                                     .focusGlow(
                                         active: registerFocus == .email,
@@ -108,11 +116,17 @@ struct SignUpView: View {
                             .animation(nil, value: registerFocus)
 
                             Group {
-                                SecureField("Enter your password", text: $password)
-                                    .padding()
+                                SecureField("", text: $password)
+                                    .padding(.vertical, 14)
+                                    .padding(.leading, 16)
                                     .background(Color.white.opacity(0.1))
                                     .cornerRadius(14)
                                     .foregroundColor(themeManager.fixedNightTextPrimary)
+                                    .placeholder(when: password.isEmpty) {
+                                        Text("Enter your password")
+                                            .foregroundColor(themeManager.fixedNightTextSecondary)
+                                            .padding(.leading, 16)
+                                    }
                                     .focused($registerFocus, equals: .password)
                                     .focusGlow(
                                         active: registerFocus == .password,
@@ -283,6 +297,13 @@ struct SignUpView: View {
                 } message: {
                     Text(infoMessage)
                 }
+                .alert("Verify Email", isPresented: $showVerifyAlert) {
+                    Button("I Verified") { checkEmailVerificationAndContinue() }
+                    Button("Resend") { resendVerificationEmail() }
+                    Button("Cancel", role: .cancel) { }
+                } message: {
+                    Text(verifyMessage)
+                }
                 .navigationDestination(isPresented: $navigateToOnboarding) {
                     OnboardingStep1(viewModel: viewModel)
                         .environmentObject(starManager)
@@ -346,9 +367,40 @@ struct SignUpView: View {
 
             result?.user.sendEmailVerification(completion: nil)
             DispatchQueue.main.async {
-                infoMessage = "We sent a verification email. Please verify your email, then sign in to continue."
-                navigateToLoginOnDismiss = true
-                showInfoAlert = true
+                verifyMessage = "We sent a verification email to \(email). Please verify, then tap 'I Verified' to continue."
+                showVerifyAlert = true
+            }
+        }
+    }
+
+    private func resendVerificationEmail() {
+        Auth.auth().currentUser?.sendEmailVerification(completion: nil)
+    }
+
+    private func checkEmailVerificationAndContinue() {
+        guard let user = Auth.auth().currentUser else {
+            alertMessage = "Please sign in after verifying your email."
+            showAlert = true
+            return
+        }
+
+        user.reload { error in
+            if let error = error {
+                alertMessage = error.localizedDescription
+                showAlert = true
+                return
+            }
+
+            if user.isEmailVerified {
+                DispatchQueue.main.async {
+                    showVerifyAlert = false
+                    navigateToOnboarding = true
+                }
+            } else {
+                DispatchQueue.main.async {
+                    alertMessage = "Email not verified yet. Please check your inbox, then try again."
+                    showAlert = true
+                }
             }
         }
     }
