@@ -271,21 +271,21 @@ struct LoadingView: View {
             case .cosmic:
                 stageHeader(title: "Cosmic signals",
                             subtitle: cosmicSubtitle,
-                            emoji: cosmicEmojis[cosmicEmojiIndex])
+                            iconName: cosmicIcons[cosmicEmojiIndex])
                 stageSupplement("Sun: \(sunText) · Moon: \(moonText) · Rising: \(risingText)")
                 stageSource("Astronomical data from NOAA and NASA.")
 
             case .place:
                 stageHeader(title: "Place signals",
                             subtitle: placeSubtitle,
-                            emoji: placeEmojis[placeEmojiIndex])
+                            iconName: placeIcons[placeEmojiIndex])
                 stageSupplement("Location: \(locationText) · Conditions: \(conditionText)")
                 stageSource("Environmental observations from NASA and ESA satellites.")
 
             case .personal:
                 stageHeader(title: "Personal check-in",
                             subtitle: "Tap what feels true right now.",
-                            emoji: "🙂")
+                            iconName: "face.smiling")
                 personalCheckIn
                 if personalCompleted {
                     Text("Logged for today.")
@@ -296,12 +296,12 @@ struct LoadingView: View {
         }
     }
 
-    private func stageHeader(title: String, subtitle: String, emoji: String) -> some View {
+    private func stageHeader(title: String, subtitle: String, iconName: String) -> some View {
         VStack(spacing: 8) {
             Text(title)
                 .font(AlignaType.loadingSubtitle())
                 .foregroundColor(themeManager.primaryText)
-            emojiText(emoji, size: 64)
+            iconView(iconName, size: 56)
             Text(subtitle)
                 .font(AlignaType.helperSmall())
                 .foregroundColor(themeManager.descriptionText.opacity(0.85))
@@ -323,9 +323,11 @@ struct LoadingView: View {
             .padding(.top, 6)
     }
 
-    private func emojiText(_ emoji: String, size: CGFloat) -> some View {
-        Text(emoji)
-            .font(.custom("AppleColorEmoji", size: size))
+    private func iconView(_ iconName: String, size: CGFloat) -> some View {
+        Image(systemName: iconName)
+            .font(.system(size: size))
+            .foregroundColor(themeManager.primaryText)
+            .frame(width: size, height: size, alignment: .center)
             .textSelection(.disabled)
     }
 
@@ -333,22 +335,22 @@ struct LoadingView: View {
         VStack(spacing: 14) {
             emojiRow(
                 title: "Mood",
-                options: [("😀", "Good"), ("🙂", "Calm"), ("😐", "Neutral"), ("😟", "Anxious"), ("😞", "Low")],
+                options: [("face.smiling", "Good"), ("face.smiling.inverse", "Calm"), ("face.neutral", "Neutral"), ("face.worried", "Anxious"), ("face.dashed", "Low")],
                 selection: $mood
             )
             emojiRow(
                 title: "Stress",
-                options: [("😌", "Low"), ("😬", "Medium"), ("😣", "High")],
+                options: [("face.smiling", "Low"), ("face.neutral", "Medium"), ("face.dashed", "High")],
                 selection: $stress
             )
             emojiRow(
                 title: "Sleep",
-                options: [("😴", "Poor"), ("😌", "OK"), ("😃", "Great")],
+                options: [("bed.double.fill", "Poor"), ("moon.zzz.fill", "OK"), ("sun.max.fill", "Great")],
                 selection: $sleep
             )
             emojiRow(
                 title: "Source",
-                options: [("💼", "Work"), ("🤝", "Relationships"), ("💪", "Health"), ("💸", "Money"), ("❓", "Unclear")],
+                options: [("briefcase.fill", "Work"), ("person.2.fill", "Relationships"), ("heart.fill", "Health"), ("dollarsign.circle.fill", "Money"), ("questionmark.circle", "Unclear")],
                 selection: $source
             )
             HStack(spacing: 12) {
@@ -382,7 +384,7 @@ struct LoadingView: View {
                         selection.wrappedValue = option.1
                     } label: {
                         HStack(spacing: 6) {
-                            emojiText(option.0, size: 16)
+                            iconView(option.0, size: 14)
                             Text(option.1)
                         }
                         .font(AlignaType.helperSmall())
@@ -396,8 +398,8 @@ struct LoadingView: View {
         }
     }
 
-    private var cosmicEmojis: [String] { ["☀️", "🌙", "🪐", "✨"] }
-    private var placeEmojis: [String] { ["🌧️", "🌬️", "☁️", "🌊", "🌲"] }
+    private var cosmicIcons: [String] { ["sun.max.fill", "moon.stars.fill", "sparkles", "sparkle"] }
+    private var placeIcons: [String] { ["cloud.rain.fill", "wind", "cloud.fill", "water.waves", "tree.fill"] }
 
     private var cosmicSubtitle: String {
         let lines = [
@@ -429,10 +431,10 @@ struct LoadingView: View {
 
     private func startEmojiTimers() {
         Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { _ in
-            cosmicEmojiIndex = (cosmicEmojiIndex + 1) % cosmicEmojis.count
+            cosmicEmojiIndex = (cosmicEmojiIndex + 1) % cosmicIcons.count
         }
         Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            placeEmojiIndex = (placeEmojiIndex + 1) % placeEmojis.count
+            placeEmojiIndex = (placeEmojiIndex + 1) % placeIcons.count
         }
     }
 
