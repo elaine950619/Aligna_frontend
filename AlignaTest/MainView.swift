@@ -137,7 +137,6 @@ struct MainView: View {
     @State private var didResolveBootPath = false
     @State private var isBootDataReady = false
     @State private var didCompletePersonalCheckIn = false
-    @State private var shouldSkipPersonalCheckIn = false
 
     @AppStorage("watchdogDay") private var watchdogDay: String = ""
     @AppStorage("todayAutoRefetchAttempts") private var todayAutoRefetchAttempts: Int = 0
@@ -309,46 +308,34 @@ struct MainView: View {
 
 
 
-                        if isMantraExpanded {
-                            ScrollView(.vertical, showsIndicators: false) {
-                                Text(viewModel.dailyMantra)
-                                    .font(AlignaType.expandedMantraBoldItalic())
-                                    .lineSpacing(12)
-                                    .multilineTextAlignment(.center)
-                                    .foregroundColor(themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88))
-                                    .padding(.horizontal, geometry.size.width * 0.14)
-                                    .padding(.top, geometry.size.height * 0.16)
-                                    .padding(.bottom, geometry.size.height * 0.12)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .frame(maxWidth: .infinity)
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isMantraExpanded.toggle()
                             }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    isMantraExpanded.toggle()
-                                }
-                            }
-                        } else {
-                            Button {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    isMantraExpanded.toggle()
-                                }
-                            } label: {
-                                Text(viewModel.dailyMantra)
-                                    .font(AlignaType.homeSubtitle())
-                                    .lineSpacing(AlignaType.descLineSpacing)
-                                    .multilineTextAlignment(.center)
-                                    .foregroundColor(themeManager.foregroundColor.opacity(0.7))
-                                    .padding(.horizontal, geometry.size.width * 0.1)
-                                    .lineLimit(2)     // ✅ 折叠：最多 1 行
-                                    .truncationMode(.tail)                    // ✅ 超出：显示 "..."
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(.plain)
-                            .contentShape(Rectangle())
+                        } label: {
+                            Text(viewModel.dailyMantra)
+                                .font(
+                                    isMantraExpanded
+                                    ? AlignaType.expandedMantraBoldItalic()
+                                    : AlignaType.homeSubtitle()
+                                )
+                                .lineSpacing(isMantraExpanded ? 12 : AlignaType.descLineSpacing)
+                                .multilineTextAlignment(.center)
+                                .foregroundColor(
+                                    isMantraExpanded
+                                    ? themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
+                                    : themeManager.foregroundColor.opacity(0.7)
+                                )
+                                .padding(.horizontal, isMantraExpanded ? geometry.size.width * 0.14 : geometry.size.width * 0.1)
+                                .padding(.top, isMantraExpanded ? geometry.size.height * 0.16 : 0)
+                                .lineLimit(isMantraExpanded ? nil : 2)     // ✅ 折叠：最多 1 行
+                                .truncationMode(.tail)                    // ✅ 超出：显示 "..."
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity)
+                                .frame(maxHeight: isMantraExpanded ? .infinity : nil, alignment: isMantraExpanded ? .top : .center)
                         }
+                        .buttonStyle(.plain)
+                        .contentShape(Rectangle())
                         // ✅ 当 mantra 更新（新的一天/重新拉取）时，自动收起回 “...”
                         
                         if !isMantraExpanded {
@@ -620,18 +607,6 @@ struct MainView: View {
         fetchAndSaveRecommendationIfNeeded()
         waitUntilRecommendationsReady(timeout: 12) { group.leave() }
 
-        group.enter()
-        checkTodayDailyCheckInStatus { didCheckIn in
-            DispatchQueue.main.async {
-                self.shouldSkipPersonalCheckIn = didCheckIn
-                self.didCompletePersonalCheckIn = didCheckIn
-                if didCheckIn {
-                    self.attemptBootAdvance()
-                }
-            }
-            group.leave()
-        }
-
         group.notify(queue: .main) {
             // (If the doc doesn't exist yet, it'll become available after fetch/save.)
             self.reasoningStore.load(for: Date())
@@ -786,48 +761,6 @@ struct MainView: View {
         check()
     }
 
-    private func checkTodayDailyCheckInStatus(completion: @escaping (Bool) -> Void) {
-        guard let uid = Auth.auth().currentUser?.uid else {
-            completion(false)
-            return
-        }
-        let day = todayString()
-        let db = Firestore.firestore()
-
-        func checkUserJournalFallback() {
-            db.collection("users").document(uid)
-                .collection("journals").document(day)
-                .getDocument { doc, _ in
-                    let text = (doc?.data()?["text"] as? String ?? "")
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                    completion(!text.isEmpty)
-                }
-        }
-
-        db.collection("daily_recommendation")
-            .whereField("uid", isEqualTo: uid)
-            .whereField("createdAt", isEqualTo: day)
-            .limit(to: 1)
-            .getDocuments { snap, _ in
-                if let recDoc = snap?.documents.first {
-                    db.collection("daily_recommendation")
-                        .document(recDoc.documentID)
-                        .collection("journals")
-                        .limit(to: 1)
-                        .getDocuments { jSnap, _ in
-                            let hasJournal = jSnap?.documents.first != nil
-                            if hasJournal {
-                                completion(true)
-                            } else {
-                                checkUserJournalFallback()
-                            }
-                        }
-                } else {
-                    checkUserJournalFallback()
-                }
-            }
-    }
-
     private func attemptBootAdvance() {
         guard isBootDataReady, didCompletePersonalCheckIn else { return }
         withAnimation(.easeInOut) { bootPhase = .main }
@@ -844,8 +777,7 @@ struct MainView: View {
                     onPersonalComplete: {
                         didCompletePersonalCheckIn = true
                         attemptBootAdvance()
-                    },
-                    shouldSkipPersonal: shouldSkipPersonalCheckIn
+                    }
                 )
                 .ignoresSafeArea()
                         
@@ -2091,3 +2023,4 @@ struct CustomBackButton: View {
 import FirebaseFirestore
 import FirebaseAuth
 import MapKit
+

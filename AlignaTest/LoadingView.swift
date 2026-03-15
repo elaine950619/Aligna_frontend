@@ -173,7 +173,6 @@ extension View { func shimmer() -> some View { modifier(Shimmer()) } }
 struct LoadingView: View {
     var onStartLoading: (() -> Void)? = nil
     var onPersonalComplete: (() -> Void)? = nil
-    var shouldSkipPersonal: Bool = false
     private let fixedMessageIndex: Int?
 
     @EnvironmentObject var starManager: StarAnimationManager
@@ -187,7 +186,9 @@ struct LoadingView: View {
     @State private var iconShake = false
     @State private var dotPhase = 0
     @State private var iconVisible = true
+    @State private var autoSkipWorkItem: DispatchWorkItem?
     @State private var personalCompleted = false
+    @State private var didInteractPersonal = false
 
     @State private var mood: String? = nil
     @State private var stress: String? = nil
@@ -203,12 +204,10 @@ struct LoadingView: View {
     init(
         onStartLoading: (() -> Void)? = nil,
         onPersonalComplete: (() -> Void)? = nil,
-        shouldSkipPersonal: Bool = false,
         fixedMessageIndex: Int? = nil
     ) {
         self.onStartLoading = onStartLoading
         self.onPersonalComplete = onPersonalComplete
-        self.shouldSkipPersonal = shouldSkipPersonal
         self.fixedMessageIndex = fixedMessageIndex
     }
 
@@ -222,8 +221,8 @@ struct LoadingView: View {
         mood != nil || stress != nil || sleep != nil || source != nil
     }
 
-    private var canCompletePersonal: Bool {
-        shouldSkipPersonal || anyPersonalSelection
+    private var shouldAutoSkipPersonal: Bool {
+        !didInteractPersonal && !anyPersonalSelection
     }
 
     var body: some View {
@@ -270,12 +269,19 @@ struct LoadingView: View {
                 startIconFadeTimer()
                 fetchChartDataFromFirestore()
             }
-            .onChange(of: shouldSkipPersonal, initial: false) { _, skip in
-                if skip {
-                    if stage == .personal {
-                        stage = .place
-                    }
-                    completePersonal()
+            .onChange(of: stage, initial: false) { _, newStage in
+                if newStage == .personal {
+                    scheduleAutoSkipIfNeeded()
+                }
+            }
+            .onChange(of: anyPersonalSelection, initial: false) { _, hasSelection in
+                if hasSelection {
+                    autoSkipWorkItem?.cancel()
+                }
+            }
+            .onChange(of: didInteractPersonal, initial: false) { _, interacted in
+                if interacted {
+                    autoSkipWorkItem?.cancel()
                 }
             }
             .preferredColorScheme(themeManager.preferredColorScheme)
@@ -383,6 +389,7 @@ struct LoadingView: View {
             )
             HStack(spacing: 12) {
                 Button {
+                    didInteractPersonal = true
                     completePersonal()
                 } label: {
                     Text("Skip")
@@ -393,9 +400,8 @@ struct LoadingView: View {
                         .background(Color.white.opacity(0.02))
                         .cornerRadius(10)
                 }
-                .disabled(!canCompletePersonal)
-                .opacity(canCompletePersonal ? 1.0 : 0.4)
                 Button {
+                    didInteractPersonal = true
                     completePersonal()
                 } label: {
                     Text("Continue")
@@ -406,8 +412,6 @@ struct LoadingView: View {
                         .background(themeManager.primaryText.opacity(0.12))
                         .cornerRadius(10)
                 }
-                .disabled(!canCompletePersonal)
-                .opacity(canCompletePersonal ? 1.0 : 0.4)
             }
             .padding(.top, 2)
         }
@@ -428,6 +432,7 @@ struct LoadingView: View {
             LazyVGrid(columns: columns, alignment: .leading, spacing: 4) {
                 ForEach(options, id: \.1) { option in
                     Button {
+                        didInteractPersonal = true
                         selection.wrappedValue = option.1
                     } label: {
                         HStack(spacing: 4) {
@@ -494,13 +499,7 @@ struct LoadingView: View {
             if stage == .cosmic { stage = .place }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 4.4) {
-            if stage == .place {
-                if shouldSkipPersonal {
-                    completePersonal()
-                } else {
-                    stage = .personal
-                }
-            }
+            if stage == .place { stage = .personal }
         }
     }
 
@@ -546,9 +545,20 @@ struct LoadingView: View {
         }
     }
 
+    private func scheduleAutoSkipIfNeeded() {
+        autoSkipWorkItem?.cancel()
+        let item = DispatchWorkItem {
+            if shouldAutoSkipPersonal {
+                completePersonal()
+            }
+        }
+        autoSkipWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: item)
+    }
+
     private func completePersonal() {
         guard !personalCompleted else { return }
-        guard canCompletePersonal else { return }
+        autoSkipWorkItem?.cancel()
         personalCompleted = true
         onPersonalComplete?()
     }
