@@ -180,6 +180,10 @@ struct LoadingView: View {
     @State private var stage: LoadingStage = .cosmic
     @State private var cosmicEmojiIndex = 0
     @State private var placeEmojiIndex = 0
+    @State private var personalIconIndex = 0
+    @State private var iconShake = false
+    @State private var dotPhase = 0
+    @State private var iconVisible = true
     @State private var autoSkipWorkItem: DispatchWorkItem?
     @State private var personalCompleted = false
     @State private var didInteractPersonal = false
@@ -241,10 +245,26 @@ struct LoadingView: View {
                         onStartLoading?()
                     }
                 }
+
+                VStack {
+                    Spacer()
+                    if let footer = footerText {
+                        Text(footer)
+                            .font(.custom("Merriweather-Bold", size: 10))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.7))
+                            .padding(.bottom, 12)
+                    }
+                }
+                .padding(.horizontal, 16)
             }
             .onAppear {
                 scheduleStageProgression()
                 startEmojiTimers()
+                if !iconShake {
+                    iconShake = true
+                }
+                startDotTimer()
+                startIconFadeTimer()
             }
             .onChange(of: stage, initial: false) { _, newStage in
                 if newStage == .personal {
@@ -266,62 +286,63 @@ struct LoadingView: View {
     }
 
     private var stageContent: some View {
-        VStack(spacing: 16) {
+        let headerHeight: CGFloat = 120
+        let contentHeight: CGFloat = 240
+        return VStack(spacing: 12) {
             switch stage {
             case .cosmic:
                 stageHeader(title: "Cosmic signals",
                             subtitle: cosmicSubtitle,
                             iconName: cosmicIcons[cosmicEmojiIndex])
-                stageSupplement("Sun: \(sunText) · Moon: \(moonText) · Rising: \(risingText)")
-                stageSource("Astronomical data from NOAA and NASA.")
+                    .frame(height: headerHeight, alignment: .top)
+                Spacer().frame(height: contentHeight)
 
             case .place:
                 stageHeader(title: "Place signals",
                             subtitle: placeSubtitle,
                             iconName: placeIcons[placeEmojiIndex])
-                stageSupplement("Location: \(locationText) · Conditions: \(conditionText)")
-                stageSource("Environmental observations from NASA and ESA satellites.")
+                    .frame(height: headerHeight, alignment: .top)
+                Spacer().frame(height: contentHeight)
 
             case .personal:
                 stageHeader(title: "Personal check-in",
                             subtitle: "Tap what feels true right now.",
-                            iconName: "face.smiling")
-                personalCheckIn
-                if personalCompleted {
-                    Text("Logged for today.")
-                        .font(AlignaType.helperSmall())
-                        .foregroundColor(themeManager.descriptionText.opacity(0.9))
+                            iconName: personalIcons[personalIconIndex])
+                    .frame(height: headerHeight, alignment: .top)
+                VStack(spacing: 8) {
+                    personalCheckIn
+                    if personalCompleted {
+                        Text("Logged for today.")
+                            .font(AlignaType.helperSmall())
+                            .foregroundColor(themeManager.descriptionText.opacity(0.9))
+                    }
                 }
+                .frame(height: contentHeight, alignment: .top)
             }
         }
     }
 
     private func stageHeader(title: String, subtitle: String, iconName: String) -> some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 14) {
             Text(title)
-                .font(AlignaType.loadingSubtitle())
+                .font(.custom("Merriweather-Bold", size: 20))
                 .foregroundColor(themeManager.primaryText)
             iconView(iconName, size: 56)
+                .opacity(iconVisible ? 1.0 : 0.35)
+                .offset(x: iconShake ? 2 : -2, y: iconShake ? -1 : 1)
+                .animation(.easeInOut(duration: 0.18).repeatForever(autoreverses: true), value: iconShake)
+                .animation(.easeInOut(duration: 0.35), value: iconVisible)
             Text(subtitle)
                 .font(AlignaType.helperSmall())
                 .foregroundColor(themeManager.descriptionText.opacity(0.85))
                 .multilineTextAlignment(.center)
+            if stage != .personal {
+                loadingDots
+            }
         }
         .padding(.top, 6)
     }
 
-    private func stageSupplement(_ text: String) -> some View {
-        Text(text)
-            .font(AlignaType.helperSmall())
-            .foregroundColor(themeManager.descriptionText.opacity(0.85))
-    }
-
-    private func stageSource(_ text: String) -> some View {
-        Text(text)
-            .font(AlignaType.helperSmall())
-            .foregroundColor(themeManager.descriptionText.opacity(0.6))
-            .padding(.top, 6)
-    }
 
     private func iconView(_ iconName: String, size: CGFloat) -> some View {
         Image(systemName: iconName)
@@ -331,29 +352,40 @@ struct LoadingView: View {
             .textSelection(.disabled)
     }
 
+    private var loadingDots: some View {
+        HStack(spacing: 6) {
+            ForEach(0..<3) { index in
+                Circle()
+                    .fill(themeManager.primaryText.opacity(dotPhase == index ? 0.9 : 0.25))
+                    .frame(width: 5, height: 5)
+            }
+        }
+        .padding(.top, 2)
+    }
+
     private var personalCheckIn: some View {
-        VStack(spacing: 14) {
-            emojiRow(
+        VStack(spacing: 6) {
+            compactRow(
                 title: "Mood",
-                options: [("face.smiling", "Good"), ("face.smiling.inverse", "Calm"), ("face.neutral", "Neutral"), ("face.worried", "Anxious"), ("face.dashed", "Low")],
+                options: [("sun.max.fill", "Joy"), ("flame.fill", "Anger"), ("cloud.rain.fill", "Grief"), ("leaf.fill", "Calm")],
                 selection: $mood
             )
-            emojiRow(
+            compactRow(
                 title: "Stress",
-                options: [("face.smiling", "Low"), ("face.neutral", "Medium"), ("face.dashed", "High")],
+                options: [("minus.circle", "Low"), ("equal.circle", "Med"), ("plus.circle", "High"), ("bolt.circle", "Peak")],
                 selection: $stress
             )
-            emojiRow(
+            compactRow(
                 title: "Sleep",
-                options: [("bed.double.fill", "Poor"), ("moon.zzz.fill", "OK"), ("sun.max.fill", "Great")],
+                options: [("bed.double.fill", "Poor"), ("moon.zzz.fill", "OK"), ("sun.max.fill", "Great"), ("zzz", "Rest")],
                 selection: $sleep
             )
-            emojiRow(
-                title: "Source",
-                options: [("briefcase.fill", "Work"), ("person.2.fill", "Relationships"), ("heart.fill", "Health"), ("dollarsign.circle.fill", "Money"), ("questionmark.circle", "Unclear")],
+            compactRow(
+                title: "Emotional Source",
+                options: [("briefcase.fill", "Work"), ("person.2.fill", "People"), ("heart.fill", "Health"), ("dollarsign.circle.fill", "Money")],
                 selection: $source
             )
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 Button("Skip") {
                     didInteractPersonal = true
                     completePersonal()
@@ -365,41 +397,71 @@ struct LoadingView: View {
             }
             .font(AlignaType.helperSmall())
             .foregroundColor(themeManager.primaryText)
+            .padding(.top, 1)
         }
     }
 
-    private func emojiRow(
+    private func compactRow(
         title: String,
         options: [(String, String)],
         selection: Binding<String?>
     ) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 4)
+        return VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(AlignaType.helperSmall())
-                .foregroundColor(themeManager.descriptionText.opacity(0.8))
-            HStack(spacing: 10) {
+                .font(.custom("Merriweather-Bold", size: 13))
+                .foregroundColor(themeManager.primaryText.opacity(0.9))
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.bottom, 1)
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 4) {
                 ForEach(options, id: \.1) { option in
                     Button {
                         didInteractPersonal = true
                         selection.wrappedValue = option.1
                     } label: {
-                        HStack(spacing: 6) {
-                            iconView(option.0, size: 14)
+                        HStack(spacing: 4) {
+                            iconView(option.0, size: 10)
+                                .foregroundColor(themeManager.primaryText)
                             Text(option.1)
+                                .font(AlignaType.helperSmall())
+                                .foregroundColor(themeManager.primaryText)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
                         }
-                        .font(AlignaType.helperSmall())
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 10)
-                        .background(selection.wrappedValue == option.1 ? themeManager.primaryText.opacity(0.2) : Color.white.opacity(0.06))
-                        .cornerRadius(12)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 3)
+                        .background(selection.wrappedValue == option.1 ? themeManager.primaryText.opacity(0.14) : Color.white.opacity(0.02))
+                        .cornerRadius(7)
                     }
                 }
             }
         }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .fill(themeManager.isNight ? Color.white.opacity(0.03) : Color.white.opacity(0.14))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .stroke(themeManager.primaryText.opacity(0.14), lineWidth: 1)
+        )
     }
 
     private var cosmicIcons: [String] { ["sun.max.fill", "moon.stars.fill", "sparkles", "sparkle"] }
     private var placeIcons: [String] { ["cloud.rain.fill", "wind", "cloud.fill", "water.waves", "tree.fill"] }
+    private var personalIcons: [String] { ["person.circle", "person.circle.fill", "person.crop.circle", "person.crop.circle.fill", "person.2.circle"] }
+
+    private var footerText: String? {
+        switch stage {
+        case .cosmic:
+            return "Sources: NOAA, NASA"
+        case .place:
+            return "Sources: NASA, ESA"
+        case .personal:
+            return nil
+        }
+    }
 
     private var cosmicSubtitle: String {
         let lines = [
@@ -407,7 +469,8 @@ struct LoadingView: View {
             "Aligning today’s light and shadow",
             "Listening to the sky’s quiet math"
         ]
-        return lines[cosmicEmojiIndex % lines.count]
+        let base = lines[cosmicEmojiIndex % lines.count]
+        return "\(base) · Sun \(sunText) · Moon \(moonText) · Rising \(risingText)"
     }
 
     private var placeSubtitle: String {
@@ -416,7 +479,8 @@ struct LoadingView: View {
             "Water, air, and temperature shift with you",
             "Reading today’s living atmosphere"
         ]
-        return lines[placeEmojiIndex % lines.count]
+        let base = lines[placeEmojiIndex % lines.count]
+        return "\(base) · \(locationText) · \(conditionText)"
     }
 
     private func scheduleStageProgression() {
@@ -435,6 +499,21 @@ struct LoadingView: View {
         }
         Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             placeEmojiIndex = (placeEmojiIndex + 1) % placeIcons.count
+        }
+        Timer.scheduledTimer(withTimeInterval: 1.1, repeats: true) { _ in
+            personalIconIndex = (personalIconIndex + 1) % personalIcons.count
+        }
+    }
+
+    private func startDotTimer() {
+        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+            dotPhase = (dotPhase + 1) % 3
+        }
+    }
+
+    private func startIconFadeTimer() {
+        Timer.scheduledTimer(withTimeInterval: 0.9, repeats: true) { _ in
+            iconVisible.toggle()
         }
     }
 
