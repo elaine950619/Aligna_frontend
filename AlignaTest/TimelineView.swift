@@ -296,7 +296,8 @@ struct TimelineView: View {
                         .getDocuments { jSnap, _ in
                             DispatchQueue.main.async {
                                 isLoadingJournal = false
-                                journalText = jSnap?.documents.first?.data()["text"] as? String ?? ""
+                                let raw = jSnap?.documents.first?.data()["text"] as? String ?? ""
+                                journalText = sanitizeNotesText(raw)
                             }
                         }
                 } else {
@@ -306,11 +307,27 @@ struct TimelineView: View {
                         .getDocument { doc, _ in
                             DispatchQueue.main.async {
                                 isLoadingJournal = false
-                                journalText = (doc?.data()?["text"] as? String) ?? ""
+                                let raw = (doc?.data()?["text"] as? String) ?? ""
+                                journalText = sanitizeNotesText(raw)
                             }
                         }
                 }
             }
+    }
+
+    private func sanitizeNotesText(_ value: String) -> String {
+        let prefixes = [
+            "Mood:",
+            "Stress:",
+            "Sleep:",
+            "Emotional Source:"
+        ]
+        let lines = value.components(separatedBy: .newlines)
+        let filtered = lines.filter { line in
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            return !prefixes.contains { trimmed.hasPrefix($0) }
+        }
+        return filtered.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     init(dailyVM: DailyViewModel = DailyViewModel(),

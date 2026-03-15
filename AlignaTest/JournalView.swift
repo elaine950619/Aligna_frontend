@@ -101,6 +101,9 @@ struct JournalView: View {
                 }
                 .padding(.horizontal, 24)
 
+                let hasSelections = mood != nil || stress != nil || sleep != nil || emotionalSource != nil
+                let disableActions = (!hasSelections && text.trimmed().isEmpty) || isSaving
+
                 HStack(spacing: 12) {
                     Button {
                         showResetConfirm = true
@@ -110,9 +113,9 @@ struct JournalView: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                     }
-                    .disabled(text.trimmed().isEmpty || isSaving)
+                    .disabled(disableActions)
                     .buttonStyle(SecondaryGhostButtonStyle(
-                        disabled: text.trimmed().isEmpty || isSaving
+                        disabled: disableActions
                     ))
                     .environmentObject(themeManager)
 
@@ -124,9 +127,9 @@ struct JournalView: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                     }
-                    .disabled(text.trimmed().isEmpty || isSaving)
+                    .disabled(disableActions)
                     .buttonStyle(PrimaryGhostButtonStyle(
-                        disabled: text.trimmed().isEmpty || isSaving
+                        disabled: disableActions
                     ))
                     .environmentObject(themeManager)
                 }
@@ -357,7 +360,8 @@ struct JournalView: View {
     @MainActor
     private func saveEntryAndClose() async {
         let sanitizedText = sanitizeNotesText(text)
-        guard !sanitizedText.trimmed().isEmpty else { return }
+        let hasSelections = mood != nil || stress != nil || sleep != nil || emotionalSource != nil
+        guard !sanitizedText.trimmed().isEmpty || hasSelections else { return }
         isSaving = true; defer { isSaving = false }
         guard let userId = Auth.auth().currentUser?.uid else { return }
 

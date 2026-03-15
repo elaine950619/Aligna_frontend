@@ -276,6 +276,7 @@ struct LoadingView: View {
             }
             .onChange(of: stage, initial: false) { _, newStage in
                 if newStage == .personal {
+                    loadPersonalSelections()
                     scheduleAutoSkipIfNeeded()
                 }
             }
@@ -600,6 +601,54 @@ struct LoadingView: View {
         db.collection("users").document(uid)
             .collection("journals").document(ds)
             .setData(payload, merge: true)
+    }
+
+    private func loadPersonalSelections() {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        let ds = dateStringForQuery
+        let db = Firestore.firestore()
+
+        func applySelections(from data: [String: Any]) {
+            func nonEmptyString(_ key: String) -> String? {
+                let raw = data[key] as? String ?? ""
+                let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+                return trimmed.isEmpty ? nil : trimmed
+            }
+
+            mood = nonEmptyString("mood")
+            stress = nonEmptyString("stress")
+            sleep = nonEmptyString("sleep")
+            source = nonEmptyString("emotionalSource")
+        }
+
+        db.collection("daily_recommendation")
+            .whereField("uid", isEqualTo: uid)
+            .whereField("createdAt", isEqualTo: ds)
+            .limit(to: 1)
+            .getDocuments { snapshot, _ in
+                if let recDoc = snapshot?.documents.first {
+                    db.collection("daily_recommendation")
+                        .document(recDoc.documentID)
+                        .collection("journals")
+                        .order(by: "createdAt", descending: false)
+                        .limit(to: 1)
+                        .getDocuments { journSnap, _ in
+                            if let journDoc = journSnap?.documents.first {
+                                DispatchQueue.main.async {
+                                    applySelections(from: journDoc.data())
+                                }
+                            }
+                        }
+                } else {
+                    db.collection("users").document(uid)
+                        .collection("journals").document(ds)
+                        .getDocument { doc, _ in
+                            DispatchQueue.main.async {
+                                applySelections(from: doc?.data() ?? [:])
+                            }
+                        }
+                }
+            }
     }
 
     private func scheduleAutoSkipIfNeeded() {
