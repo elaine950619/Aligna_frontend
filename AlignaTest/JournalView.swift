@@ -2,14 +2,6 @@ import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth
 
-private struct EmotionOption: Identifiable, Hashable {
-    let emoji: String
-    let title: String
-
-    var id: String { "\(emoji)-\(title)" }
-    var displayText: String { "\(emoji) \(title)" }
-}
-
 struct JournalView: View {
     let date: Date
     
@@ -19,7 +11,10 @@ struct JournalView: View {
     @State private var isSaving: Bool = false
     @State private var saveSucceeded: Bool = false
     @State private var showResetConfirm = false
-    @State private var selectedEmotion: EmotionOption? = nil
+    @State private var mood: String? = nil
+    @State private var stress: String? = nil
+    @State private var sleep: String? = nil
+    @State private var emotionalSource: String? = nil
     private enum StorageMode { case recommendation(String), standaloneUser }
     @State private var storageMode: StorageMode? = nil
     private let allowStandaloneIfNoRec = true
@@ -35,21 +30,7 @@ struct JournalView: View {
         return df.string(from: date)
     }
 
-    private let emotionColumns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
-    private let emotionOptions: [EmotionOption] = [
-        EmotionOption(emoji: "😊", title: "Happy"),
-        EmotionOption(emoji: "😌", title: "Calm"),
-        EmotionOption(emoji: "🥰", title: "Loved"),
-        EmotionOption(emoji: "🤍", title: "Tender"),
-        EmotionOption(emoji: "😔", title: "Sad"),
-        EmotionOption(emoji: "😣", title: "Stressed"),
-        EmotionOption(emoji: "😤", title: "Frustrated"),
-        EmotionOption(emoji: "😰", title: "Anxious"),
-        EmotionOption(emoji: "🤩", title: "Inspired"),
-        EmotionOption(emoji: "🙏", title: "Grateful"),
-        EmotionOption(emoji: "😴", title: "Tired"),
-        EmotionOption(emoji: "🌱", title: "Hopeful")
-    ]
+    private let categorySpacing: CGFloat = 10
     
     var body: some View {
         ZStack {
@@ -59,89 +40,80 @@ struct JournalView: View {
                 .ignoresSafeArea()
             
             // Page content
-            VStack(spacing: 24) {
-                // Header
-                VStack(spacing: 10) {
+            VStack(spacing: 20) {
+                VStack(spacing: 8) {
                     Text("Daily Check-in")
-                        .font(.system(size: 34, weight: .semibold, design: .serif))
+                        .font(.custom("Merriweather-Bold", size: 30))
                         .foregroundStyle(themeManager.primaryText)
-                        .shadow(color: .black.opacity(0.25), radius: 6, x: 0, y: 2)
-                    
-                    Text("Pause for a moment.\nHow does today feel for you?")
+                        .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 2)
+
+                    Text("Tap what feels true right now.")
                         .multilineTextAlignment(.center)
-                        .font(.system(size: 20, weight: .medium, design: .serif))
+                        .font(.custom("Merriweather-Regular", size: 16))
                         .foregroundStyle(themeManager.descriptionText)
-                        .lineSpacing(2)
                 }
                 .padding(.top, 10)
-                
-                // Text area (single rounded glass card)
-                GlassCard {
-                    VStack(alignment: .leading, spacing: 14) {
-                        LazyVGrid(columns: emotionColumns, spacing: 10) {
-                            ForEach(emotionOptions) { emotion in
-                                Button {
-                                    selectEmotion(emotion)
-                                } label: {
-                                    VStack(spacing: 4) {
-                                        Text(emotion.emoji)
-                                            .font(.system(size: 18))
-                                        Text(emotion.title)
-                                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                                            .lineLimit(1)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 8)
-                                }
-                                .buttonStyle(.plain)
-                                .foregroundStyle(
-                                    selectedEmotion == emotion
-                                        ? themeManager.primaryText
-                                        : themeManager.descriptionText
-                                )
-                                .background(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .fill(
-                                            selectedEmotion == emotion
-                                                ? themeManager.accent.opacity(themeManager.isNight ? 0.22 : 0.16)
-                                                : themeManager.panelFill.opacity(0.75)
-                                        )
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .stroke(
-                                            selectedEmotion == emotion
-                                                ? themeManager.accent.opacity(0.55)
-                                                : themeManager.panelStrokeHi.opacity(0.5),
-                                            lineWidth: 1
-                                        )
-                                )
-                            }
-                        }
 
+                VStack(spacing: 12) {
+                    sectionTitle("Mood")
+                    sectionCard {
+                        compactRow(
+                            title: "Mood",
+                            options: [("sun.max.fill", "Joy"), ("flame.fill", "Anger"), ("cloud.rain.fill", "Grief"), ("leaf.fill", "Calm")],
+                            selection: $mood
+                        )
+                    }
+
+                    sectionTitle("Stress")
+                    sectionCard {
+                        compactRow(
+                            title: "Stress",
+                            options: [("minus.circle", "Low"), ("equal.circle", "Med"), ("plus.circle", "High"), ("bolt.circle", "Peak")],
+                            selection: $stress
+                        )
+                    }
+
+                    sectionTitle("Sleep")
+                    sectionCard {
+                        compactRow(
+                            title: "Sleep",
+                            options: [("bed.double.fill", "Poor"), ("moon.zzz.fill", "OK"), ("sun.max.fill", "Great"), ("zzz", "Rest")],
+                            selection: $sleep
+                        )
+                    }
+
+                    sectionTitle("Emotional Source")
+                    sectionCard {
+                        compactRow(
+                            title: "Emotional Source",
+                            options: [("briefcase.fill", "Work"), ("person.2.fill", "People"), ("heart.fill", "Health"), ("dollarsign.circle.fill", "Money")],
+                            selection: $emotionalSource
+                        )
+                    }
+
+                    sectionTitle("Notes")
+                    sectionCard {
                         ZStack(alignment: .topLeading) {
                             if text.isEmpty {
                                 Text("Tap to write…")
                                     .foregroundStyle(themeManager.descriptionText.opacity(0.85))
-                                    .padding(.top, 14)
-                                    .padding(.horizontal, 16)
+                                    .padding(.top, 12)
+                                    .padding(.horizontal, 14)
                                     .allowsHitTesting(false)
                             }
                             TextEditor(text: $text)
                                 .scrollContentBackground(.hidden)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                                .padding(8)
+                                .frame(maxWidth: .infinity, maxHeight: 160, alignment: .topLeading)
+                                .padding(6)
                                 .foregroundColor(themeManager.bodyText)
                                 .tint(themeManager.accent)
                                 .font(.system(.body, design: .rounded))
                         }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .frame(maxWidth: .infinity)
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .environmentObject(themeManager)
                 .padding(.horizontal, 24)
-                
+
                 HStack(spacing: 12) {
                     Button {
                         showResetConfirm = true
@@ -201,17 +173,86 @@ struct JournalView: View {
         .onAppear { loadEntry() }
     }
 
-    private func selectEmotion(_ emotion: EmotionOption) {
-        selectedEmotion = emotion
+    private func sectionTitle(_ text: String) -> some View {
+        Text(text)
+            .font(.custom("Merriweather-Bold", size: 13))
+            .foregroundColor(themeManager.primaryText.opacity(0.85))
+            .frame(maxWidth: .infinity)
+            .multilineTextAlignment(.center)
+            .padding(.top, 2)
+    }
 
-        let trimmed = text.trimmed()
+    private func sectionCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        GlassCard {
+            content()
+                .padding(12)
+        }
+        .environmentObject(themeManager)
+    }
+
+    private func compactRow(
+        title: String,
+        options: [(String, String)],
+        selection: Binding<String?>
+    ) -> some View {
+        HStack(spacing: 8) {
+            ForEach(options, id: \.1) { option in
+                optionButton(category: title, icon: option.0, label: option.1, selection: selection)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func optionButton(category: String, icon: String, label: String, selection: Binding<String?>) -> some View {
+        let isSelected = selection.wrappedValue == label
+        return Button {
+            selection.wrappedValue = label
+            appendOrReplaceLine(category: category, value: label)
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .semibold))
+                Text(label)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+            }
+            .foregroundColor(isSelected ? themeManager.primaryText : themeManager.descriptionText)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .frame(minWidth: 0)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(isSelected
+                          ? themeManager.accent.opacity(themeManager.isNight ? 0.20 : 0.14)
+                          : themeManager.panelFill.opacity(0.8))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(
+                        isSelected
+                            ? themeManager.accent.opacity(0.55)
+                            : themeManager.panelStrokeHi.opacity(0.55),
+                        lineWidth: 1
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func appendOrReplaceLine(category: String, value: String) {
+        let prefix = "\(category): "
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
-            text = "\(emotion.displayText) "
+            text = "\(prefix)\(value)"
             return
         }
 
-        if trimmed.hasPrefix(emotion.displayText) { return }
-        text = "\(emotion.displayText)\n\(trimmed)"
+        var lines = text.components(separatedBy: .newlines)
+        if let index = lines.firstIndex(where: { $0.trimmingCharacters(in: .whitespaces).hasPrefix(prefix) }) {
+            lines[index] = "\(prefix)\(value)"
+        } else {
+            lines.append("\(prefix)\(value)")
+        }
+        text = lines.joined(separator: "\n")
     }
     
     // MARK: Firestore (unchanged)
