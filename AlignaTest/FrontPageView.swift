@@ -7,9 +7,6 @@ struct FrontPageView: View {
     @EnvironmentObject var viewModel: OnboardingViewModel
     @State private var showIntro = false
 
-    private var openingSymbolImage: Image? {
-        UIImage(named: "openingSymbol").map { Image(uiImage: $0) }
-    }
 
     var body: some View {
         NavigationStack {
@@ -26,6 +23,16 @@ struct FrontPageView: View {
 
                     VStack(spacing: 0) {
                         VStack(spacing: minLength * 0.022) {
+                            if let _ = UIImage(named: "alignaSymbol") {
+                                Image("alignaSymbol")
+                                    .renderingMode(.template)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: minLength * 0.14)
+                                    .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.92))
+                                    .staggered(0, show: $showIntro)
+                            }
+
                             AlignaHeading(
                                 textColor: themeManager.fixedNightTextPrimary,
                                 show: $showIntro,
@@ -33,9 +40,7 @@ struct FrontPageView: View {
                                 letterSpacing: minLength * 0.005
                             )
 
-
-
-                            Text("It brings together reflection, ritual, and mood so each day can feel a little clearer, softer,and more your own.")
+                            Text("Your daily rhythm companion")
                                 .font(AlynnaTypography.font(.subheadline))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                                 .multilineTextAlignment(.center)
@@ -45,26 +50,8 @@ struct FrontPageView: View {
                                 .padding(.horizontal, w * 0.12)
                                 .staggered(2, show: $showIntro)
                         }
-                        .padding(.top, h * 0.12)
+                        .padding(.top, h * 0.17)
                         .staggered(0, show: $showIntro)
-
-                        Spacer(minLength: sectionGap)
-
-                        Group {
-                            if let openingSymbolImage {
-                                openingSymbolImage
-                                    .resizable()
-                                    .scaledToFit()
-                            } else {
-                                Image(systemName: "sparkles")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .padding(minLength * 0.06)
-                            }
-                        }
-                        .frame(width: minLength * 0.30)
-                        .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.92))
-                        .staggered(3, show: $showIntro)
 
                         Spacer(minLength: sectionGap)
 

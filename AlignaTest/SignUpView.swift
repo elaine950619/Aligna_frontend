@@ -67,6 +67,16 @@ struct SignUpView: View {
                             }
 
                             VStack(spacing: 8) {
+                                if let _ = UIImage(named: "alignaSymbol") {
+                                    Image("alignaSymbol")
+                                        .renderingMode(.template)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: minL * 0.14)
+                                        .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.92))
+                                        .staggered(0, show: $showIntro)
+                                }
+
                                 AlignaHeading(
                                     textColor: themeManager.fixedNightTextPrimary,
                                     show: $showIntro,
@@ -74,8 +84,8 @@ struct SignUpView: View {
                                     letterSpacing: minL * 0.005
                                 )
                                 Text("Create Your Space")
-                                    .font(AlynnaTypography.font(.title3))
-                                    .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.9))
+                                    .font(AlynnaTypography.font(.subheadline))
+                                    .foregroundColor(themeManager.fixedNightTextSecondary)
                             }
                             .padding(.top, h * 0.01)
                             .staggered(1, show: $showIntro)

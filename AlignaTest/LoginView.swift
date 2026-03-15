@@ -57,6 +57,16 @@ struct LoginView: View {
 
                     // 标题区
                     VStack(spacing: minLength * 0.02) {
+                        if let _ = UIImage(named: "alignaSymbol") {
+                            Image("alignaSymbol")
+                                .renderingMode(.template)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: minLength * 0.14)
+                                .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.92))
+                                .staggered(0, show: $showIntro)
+                        }
+
                         AlignaHeading(
                             textColor: themeManager.fixedNightTextPrimary,
                             show: $showIntro,
@@ -66,9 +76,6 @@ struct LoginView: View {
 
                         VStack(spacing: 6) {
                             Text("Welcome Back")
-                                .font(AlynnaTypography.font(.title3))
-                                .foregroundColor(themeManager.fixedNightTextPrimary)
-                            Text("Return to your journal, your rituals, and today's guidance.")
                                 .font(AlynnaTypography.font(.subheadline))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                         }
