@@ -4,6 +4,8 @@ import MapKit
 import CoreLocation
 import Combine
 import WidgetKit
+import FirebaseAuth
+import FirebaseFirestore
 
 enum BootPhase {
     case loading
@@ -193,9 +195,9 @@ struct LoadingView: View {
     @State private var sleep: String? = nil
     @State private var source: String? = nil
 
-    var sunText: String = "—"
-    var moonText: String = "—"
-    var risingText: String = "—"
+    @State private var sunText: String = "—"
+    @State private var moonText: String = "—"
+    @State private var risingText: String = "—"
     var locationText: String = "Your Current Location"
     var conditionText: String = "Cloud · Wind · Rain"
 
@@ -237,7 +239,7 @@ struct LoadingView: View {
                 }
                 .frame(maxWidth: 520)
                 .padding(.horizontal, 20)
-                .padding(.top, 18)
+                .padding(.top, 28)
                 .padding(.bottom, 24)
                 .onAppear {
                     if !didStartLoading {
@@ -265,6 +267,7 @@ struct LoadingView: View {
                 }
                 startDotTimer()
                 startIconFadeTimer()
+                fetchChartDataFromFirestore()
             }
             .onChange(of: stage, initial: false) { _, newStage in
                 if newStage == .personal {
@@ -294,15 +297,13 @@ struct LoadingView: View {
                 stageHeader(title: "Cosmic signals",
                             subtitle: cosmicSubtitle,
                             iconName: cosmicIcons[cosmicEmojiIndex])
-                    .frame(height: headerHeight, alignment: .top)
-                Spacer().frame(height: contentHeight)
+                    .frame(height: headerHeight + contentHeight, alignment: .top)
 
             case .place:
                 stageHeader(title: "Place signals",
                             subtitle: placeSubtitle,
                             iconName: placeIcons[placeEmojiIndex])
-                    .frame(height: headerHeight, alignment: .top)
-                Spacer().frame(height: contentHeight)
+                    .frame(height: headerHeight + contentHeight, alignment: .top)
 
             case .personal:
                 stageHeader(title: "Personal check-in",
@@ -318,12 +319,13 @@ struct LoadingView: View {
                     }
                 }
                 .frame(height: contentHeight, alignment: .top)
+                .padding(.top, 28)
             }
         }
     }
 
     private func stageHeader(title: String, subtitle: String, iconName: String) -> some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 20) {
             Text(title)
                 .font(.custom("Merriweather-Bold", size: 20))
                 .foregroundColor(themeManager.primaryText)
@@ -385,19 +387,33 @@ struct LoadingView: View {
                 options: [("briefcase.fill", "Work"), ("person.2.fill", "People"), ("heart.fill", "Health"), ("dollarsign.circle.fill", "Money")],
                 selection: $source
             )
-            HStack(spacing: 8) {
-                Button("Skip") {
+            HStack(spacing: 12) {
+                Button {
                     didInteractPersonal = true
                     completePersonal()
+                } label: {
+                    Text("Skip")
+                        .font(AlignaType.helperSmall())
+                        .foregroundColor(themeManager.primaryText)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 12)
+                        .background(Color.white.opacity(0.02))
+                        .cornerRadius(10)
                 }
-                Button("Continue") {
+                Button {
                     didInteractPersonal = true
                     completePersonal()
+                } label: {
+                    Text("Continue")
+                        .font(AlignaType.helperSmall())
+                        .foregroundColor(themeManager.primaryText)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 12)
+                        .background(themeManager.primaryText.opacity(0.12))
+                        .cornerRadius(10)
                 }
             }
-            .font(AlignaType.helperSmall())
-            .foregroundColor(themeManager.primaryText)
-            .padding(.top, 1)
+            .padding(.top, 2)
         }
     }
 
@@ -455,22 +471,16 @@ struct LoadingView: View {
     private var footerText: String? {
         switch stage {
         case .cosmic:
-            return "Sources: NOAA, NASA"
+            return "Astronomical observations are sourced from NOAA and NASA."
         case .place:
-            return "Sources: NASA, ESA"
+            return "Environmental observations are sourced from NASA and ESA."
         case .personal:
             return nil
         }
     }
 
     private var cosmicSubtitle: String {
-        let lines = [
-            "Your Sun, Moon, and Rising are coming into view",
-            "Aligning today’s light and shadow",
-            "Listening to the sky’s quiet math"
-        ]
-        let base = lines[cosmicEmojiIndex % lines.count]
-        return "\(base) · Sun \(sunText) · Moon \(moonText) · Rising \(risingText)"
+        return "Sun: \(sunText) · Moon: \(moonText) · Rising: \(risingText)"
     }
 
     private var placeSubtitle: String {
@@ -514,6 +524,24 @@ struct LoadingView: View {
     private func startIconFadeTimer() {
         Timer.scheduledTimer(withTimeInterval: 0.9, repeats: true) { _ in
             iconVisible.toggle()
+        }
+    }
+
+    private func fetchChartDataFromFirestore() {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        Firestore.firestore().collection("chartData").document(uid).getDocument { snap, _ in
+            guard let data = snap?.data(),
+                  let chartData = data["chartData"] as? [String: Any] else { return }
+
+            let sun = (chartData["sun"] as? String ?? chartData["sunSign"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let moon = (chartData["moon"] as? String ?? chartData["moonSign"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let rising = (chartData["ascendant"] as? String ?? chartData["ascendantSign"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+
+            DispatchQueue.main.async {
+                if !sun.isEmpty { sunText = sun }
+                if !moon.isEmpty { moonText = moon }
+                if !rising.isEmpty { risingText = rising }
+            }
         }
     }
 
