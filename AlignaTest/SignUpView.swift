@@ -139,8 +139,11 @@ struct SignUpView: View {
                             .staggered(3, show: $showIntro)
                             .animation(nil, value: registerFocus)
 
-                            Button(action: { registerWithEmailPassword() }) {
-                                Text("Create Account")
+                            Button(action: {
+                                guard !authBusy else { return }
+                                registerWithEmailPassword()
+                            }) {
+                                Text(authBusy ? "Creating..." : "Create Account")
                                     .font(AlynnaTypography.font(.headline))
                                     .padding()
                                     .frame(maxWidth: .infinity)
@@ -148,6 +151,7 @@ struct SignUpView: View {
                                     .foregroundColor(.black)
                                     .cornerRadius(14)
                             }
+                            .disabled(authBusy)
                             .staggered(4, show: $showIntro)
                         }
                         .padding(.horizontal, w * 0.1)
@@ -280,8 +284,14 @@ struct SignUpView: View {
                     }
                     .preferredColorScheme(.dark)
                     .transaction { $0.animation = nil }
+
+                    if authBusy {
+                        ProgressView()
+                            .scaleEffect(1.1)
+                            .padding(18)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    }
                 }
-                .hideKeyboardOnTapOutside($registerFocus)
                 .alert(isPresented: $showAlert) {
                     Alert(title: Text("Notice"),
                           message: Text(alertMessage),
@@ -342,12 +352,14 @@ struct SignUpView: View {
             return
         }
 
+        authBusy = true
         hasCompletedOnboarding = false
         isLoggedIn = false
         shouldOnboardAfterSignIn = true
 
         Auth.auth().createUser(withEmail: email, password: password) { result, error in
             if let error = error {
+                authBusy = false
                 if let errCode = AuthErrorCode(rawValue: error._code),
                    errCode == .emailAlreadyInUse {
                     shouldOnboardAfterSignIn = false
@@ -367,6 +379,7 @@ struct SignUpView: View {
 
             result?.user.sendEmailVerification(completion: nil)
             DispatchQueue.main.async {
+                authBusy = false
                 verifyMessage = "We sent a verification email to \(email). Please verify, then tap 'I Verified' to continue."
                 showVerifyAlert = true
             }
@@ -379,25 +392,27 @@ struct SignUpView: View {
 
     private func checkEmailVerificationAndContinue() {
         guard let user = Auth.auth().currentUser else {
-            alertMessage = "Please sign in after verifying your email."
-            showAlert = true
+            infoMessage = "Your session expired. Please sign in again to continue."
+            navigateToLoginOnDismiss = true
+            showInfoAlert = true
             return
         }
 
+        authBusy = true
         user.reload { error in
-            if let error = error {
-                alertMessage = error.localizedDescription
-                showAlert = true
-                return
-            }
-
-            if user.isEmailVerified {
-                DispatchQueue.main.async {
-                    showVerifyAlert = false
-                    navigateToOnboarding = true
+            DispatchQueue.main.async {
+                authBusy = false
+                if let error = error {
+                    alertMessage = error.localizedDescription
+                    showAlert = true
+                    return
                 }
-            } else {
-                DispatchQueue.main.async {
+
+                if user.isEmailVerified {
+                    showVerifyAlert = false
+                    isLoggedIn = true
+                    navigateToOnboarding = true
+                } else {
                     alertMessage = "Email not verified yet. Please check your inbox, then try again."
                     showAlert = true
                 }
