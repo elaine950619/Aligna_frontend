@@ -774,7 +774,10 @@ struct MainView: View {
                     onStartLoading: {
                         startInitialLoad()
                     },
-                    onPersonalComplete: {
+                    onPersonalComplete: { didProvidePersonal in
+                        if didProvidePersonal {
+                            forceRefetchDailyIfNotLocked()
+                        }
                         didCompletePersonalCheckIn = true
                         attemptBootAdvance()
                     }

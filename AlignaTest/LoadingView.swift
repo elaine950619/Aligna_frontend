@@ -172,7 +172,7 @@ extension View { func shimmer() -> some View { modifier(Shimmer()) } }
 
 struct LoadingView: View {
     var onStartLoading: (() -> Void)? = nil
-    var onPersonalComplete: (() -> Void)? = nil
+    var onPersonalComplete: ((Bool) -> Void)? = nil
     private let fixedMessageIndex: Int?
 
     @EnvironmentObject var starManager: StarAnimationManager
@@ -190,6 +190,7 @@ struct LoadingView: View {
     @State private var autoSkipSecondsRemaining = 0
     @State private var autoSkipTimer: Timer?
     @State private var personalCompleted = false
+    @State private var isProcessingPersonal = false
     @State private var didInteractPersonal = false
 
     @State private var mood: String? = nil
@@ -205,7 +206,7 @@ struct LoadingView: View {
 
     init(
         onStartLoading: (() -> Void)? = nil,
-        onPersonalComplete: (() -> Void)? = nil,
+        onPersonalComplete: ((Bool) -> Void)? = nil,
         fixedMessageIndex: Int? = nil
     ) {
         self.onStartLoading = onStartLoading
@@ -397,35 +398,28 @@ struct LoadingView: View {
                 options: [("briefcase.fill", "Work"), ("person.2.fill", "People"), ("heart.fill", "Health"), ("dollarsign.circle.fill", "Money")],
                 selection: $source
             )
-            HStack(spacing: 12) {
-                Button {
-                    didInteractPersonal = true
-                    completePersonal()
-                } label: {
-                    Text("Continue")
-                        .font(.custom("Merriweather-Bold", size: 13))
-                        .foregroundColor(themeManager.isNight ? Color.black : Color.white)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 22)
-                        .background(themeManager.primaryText)
-                        .cornerRadius(13)
+            Button {
+                didInteractPersonal = true
+                isProcessingPersonal = true
+                completePersonal()
+            } label: {
+                HStack(spacing: 8) {
+                    if isProcessingPersonal {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .tint(themeManager.isNight ? Color.black : Color.white)
+                            .scaleEffect(0.75)
+                    }
+                    Text(isProcessingPersonal ? "Processing…" : primaryActionLabel)
                 }
-
-                if autoSkipSecondsRemaining > 0 {
-                    Text("Skip in \(autoSkipSecondsRemaining)s")
-                        .font(.custom("Merriweather-Bold", size: 12))
-                        .foregroundColor(themeManager.primaryText.opacity(0.85))
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 12)
-                        .background(themeManager.primaryText.opacity(0.10))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                .stroke(themeManager.primaryText.opacity(0.22), lineWidth: 1)
-                        )
-                        .cornerRadius(11)
-                        .transition(.opacity)
-                }
+                .font(.custom("Merriweather-Bold", size: 13))
+                .foregroundColor(themeManager.isNight ? Color.black : Color.white)
+                .padding(.vertical, 10)
+                .padding(.horizontal, 24)
+                .background(themeManager.primaryText)
+                .cornerRadius(13)
             }
+            .disabled(isProcessingPersonal)
             .padding(.top, 2)
         }
     }
@@ -554,6 +548,60 @@ struct LoadingView: View {
         }
     }
 
+    private var dateStringForQuery: String {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        return df.string(from: Date())
+    }
+
+    private func normalizedSelection(_ value: String?) -> String? {
+        let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private func savePersonalSelections() {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        let ds = dateStringForQuery
+        let db = Firestore.firestore()
+
+        let payload: [String: Any] = [
+            "mood": normalizedSelection(mood) ?? "",
+            "stress": normalizedSelection(stress) ?? "",
+            "sleep": normalizedSelection(sleep) ?? "",
+            "emotionalSource": normalizedSelection(source) ?? "",
+            "updatedAt": Timestamp()
+        ]
+
+        db.collection("daily_recommendation")
+            .whereField("uid", isEqualTo: uid)
+            .whereField("createdAt", isEqualTo: ds)
+            .limit(to: 1)
+            .getDocuments { snapshot, _ in
+                if let recDoc = snapshot?.documents.first {
+                    let recID = recDoc.documentID
+                    let journalsRef = db.collection("daily_recommendation")
+                        .document(recID)
+                        .collection("journals")
+                    journalsRef.order(by: "createdAt", descending: false)
+                        .limit(to: 1)
+                        .getDocuments { journSnap, _ in
+                            if let journDoc = journSnap?.documents.first {
+                                journalsRef.document(journDoc.documentID)
+                                    .setData(payload, merge: true)
+                            } else {
+                                journalsRef.addDocument(data: payload.merging([
+                                    "createdAt": Timestamp()
+                                ]) { $1 })
+                            }
+                        }
+                }
+            }
+
+        db.collection("users").document(uid)
+            .collection("journals").document(ds)
+            .setData(payload, merge: true)
+    }
+
     private func scheduleAutoSkipIfNeeded() {
         autoSkipWorkItem?.cancel()
         autoSkipTimer?.invalidate()
@@ -576,13 +624,28 @@ struct LoadingView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + Double(totalSeconds), execute: item)
     }
 
+    private var primaryActionLabel: String {
+        if didInteractPersonal || anyPersonalSelection {
+            return "Continue"
+        }
+        if autoSkipSecondsRemaining > 0 {
+            return "Skip in \(autoSkipSecondsRemaining)s"
+        }
+        return "Continue"
+    }
+
     private func completePersonal() {
         guard !personalCompleted else { return }
         autoSkipWorkItem?.cancel()
         autoSkipTimer?.invalidate()
         autoSkipSecondsRemaining = 0
         personalCompleted = true
-        onPersonalComplete?()
+
+        let hasSelections = anyPersonalSelection
+        if hasSelections {
+            savePersonalSelections()
+        }
+        onPersonalComplete?(hasSelections)
     }
 }
 

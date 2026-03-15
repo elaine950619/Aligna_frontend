@@ -30,7 +30,6 @@ struct JournalView: View {
         return df.string(from: date)
     }
 
-    private let categorySpacing: CGFloat = 10
     
     var body: some View {
         ZStack {
@@ -55,41 +54,29 @@ struct JournalView: View {
                 .padding(.top, 10)
 
                 VStack(spacing: 12) {
-                    sectionTitle("Mood")
-                    sectionCard {
-                        compactRow(
-                            title: "Mood",
-                            options: [("sun.max.fill", "Joy"), ("flame.fill", "Anger"), ("cloud.rain.fill", "Grief"), ("leaf.fill", "Calm")],
-                            selection: $mood
-                        )
-                    }
+                    compactRow(
+                        title: "Mood",
+                        options: [("sun.max.fill", "Joy"), ("flame.fill", "Anger"), ("cloud.rain.fill", "Grief"), ("leaf.fill", "Calm")],
+                        selection: $mood
+                    )
 
-                    sectionTitle("Stress")
-                    sectionCard {
-                        compactRow(
-                            title: "Stress",
-                            options: [("minus.circle", "Low"), ("equal.circle", "Med"), ("plus.circle", "High"), ("bolt.circle", "Peak")],
-                            selection: $stress
-                        )
-                    }
+                    compactRow(
+                        title: "Stress",
+                        options: [("minus.circle", "Low"), ("equal.circle", "Med"), ("plus.circle", "High"), ("bolt.circle", "Peak")],
+                        selection: $stress
+                    )
 
-                    sectionTitle("Sleep")
-                    sectionCard {
-                        compactRow(
-                            title: "Sleep",
-                            options: [("bed.double.fill", "Poor"), ("moon.zzz.fill", "OK"), ("sun.max.fill", "Great"), ("zzz", "Rest")],
-                            selection: $sleep
-                        )
-                    }
+                    compactRow(
+                        title: "Sleep",
+                        options: [("bed.double.fill", "Poor"), ("moon.zzz.fill", "OK"), ("sun.max.fill", "Great"), ("zzz", "Rest")],
+                        selection: $sleep
+                    )
 
-                    sectionTitle("Emotional Source")
-                    sectionCard {
-                        compactRow(
-                            title: "Emotional Source",
-                            options: [("briefcase.fill", "Work"), ("person.2.fill", "People"), ("heart.fill", "Health"), ("dollarsign.circle.fill", "Money")],
-                            selection: $emotionalSource
-                        )
-                    }
+                    compactRow(
+                        title: "Emotional Source",
+                        options: [("briefcase.fill", "Work"), ("person.2.fill", "People"), ("heart.fill", "Health"), ("dollarsign.circle.fill", "Money")],
+                        selection: $emotionalSource
+                    )
 
                     sectionTitle("Notes")
                     sectionCard {
@@ -97,14 +84,14 @@ struct JournalView: View {
                             if text.isEmpty {
                                 Text("Tap to write…")
                                     .foregroundStyle(themeManager.descriptionText.opacity(0.85))
-                                    .padding(.top, 12)
-                                    .padding(.horizontal, 14)
+                                    .padding(.top, 1)
+                                    .padding(.horizontal, 1)
                                     .allowsHitTesting(false)
                             }
                             TextEditor(text: $text)
                                 .scrollContentBackground(.hidden)
                                 .frame(maxWidth: .infinity, maxHeight: 160, alignment: .topLeading)
-                                .padding(6)
+                                .padding(1)
                                 .foregroundColor(themeManager.bodyText)
                                 .tint(themeManager.accent)
                                 .font(.system(.body, design: .rounded))
@@ -166,20 +153,106 @@ struct JournalView: View {
         .toolbarBackground(.hidden, for: .navigationBar)
         .alert("Reset entry?", isPresented: $showResetConfirm) {
             Button("Cancel", role: .cancel) {}
-            Button("Reset", role: .destructive) { text = "" }
+            Button("Reset", role: .destructive) {
+                text = ""
+                mood = nil
+                stress = nil
+                sleep = nil
+                emotionalSource = nil
+            }
         } message: {
             Text("This will clear the current text. It won’t delete anything saved previously.")
         }
         .onAppear { loadEntry() }
+        .onChange(of: mood, initial: false) { _, _ in
+            saveSelectionSnapshotIfPossible()
+        }
+        .onChange(of: stress, initial: false) { _, _ in
+            saveSelectionSnapshotIfPossible()
+        }
+        .onChange(of: sleep, initial: false) { _, _ in
+            saveSelectionSnapshotIfPossible()
+        }
+        .onChange(of: emotionalSource, initial: false) { _, _ in
+            saveSelectionSnapshotIfPossible()
+        }
     }
 
     private func sectionTitle(_ text: String) -> some View {
         Text(text)
-            .font(.custom("Merriweather-Bold", size: 13))
-            .foregroundColor(themeManager.primaryText.opacity(0.85))
-            .frame(maxWidth: .infinity)
+            .font(.custom("Merriweather-Bold", size: 15))
+            .foregroundColor(themeManager.primaryText.opacity(0.9))
+            .frame(maxWidth: .infinity, alignment: .center)
             .multilineTextAlignment(.center)
-            .padding(.top, 2)
+            .padding(.bottom, 3)
+    }
+
+    private func normalizedSelection(_ value: String?) -> String? {
+        let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private func sanitizeNotesText(_ value: String) -> String {
+        let prefixes = [
+            "Mood:",
+            "Stress:",
+            "Sleep:",
+            "Emotional Source:"
+        ]
+        let lines = value.components(separatedBy: .newlines)
+        let filtered = lines.filter { line in
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            return !prefixes.contains { trimmed.hasPrefix($0) }
+        }
+        return filtered.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func applySelections(from data: [String: Any]) {
+        func nonEmptyString(_ key: String) -> String? {
+            let raw = data[key] as? String ?? ""
+            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+
+        mood = nonEmptyString("mood")
+        stress = nonEmptyString("stress")
+        sleep = nonEmptyString("sleep")
+        emotionalSource = nonEmptyString("emotionalSource")
+    }
+
+    private func saveSelectionSnapshotIfPossible() {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+
+        let payload: [String: Any] = [
+            "mood": normalizedSelection(mood) ?? "",
+            "stress": normalizedSelection(stress) ?? "",
+            "sleep": normalizedSelection(sleep) ?? "",
+            "emotionalSource": normalizedSelection(emotionalSource) ?? "",
+            "updatedAt": Timestamp()
+        ]
+
+        let db = Firestore.firestore()
+
+        switch storageMode {
+        case .recommendation(let recID):
+            let journalsRef = db.collection("daily_recommendation")
+                .document(recID)
+                .collection("journals")
+
+            if let journalID = journalDocID {
+                journalsRef.document(journalID).setData(payload, merge: true)
+            } else {
+                journalsRef.addDocument(data: payload.merging([
+                    "createdAt": Timestamp()
+                ]) { $1 })
+            }
+
+        case .standaloneUser, .none:
+            let ds = dateStringForQuery
+            db.collection("users").document(userId)
+                .collection("journals").document(ds)
+                .setData(payload, merge: true)
+        }
     }
 
     private func sectionCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
@@ -195,64 +268,48 @@ struct JournalView: View {
         options: [(String, String)],
         selection: Binding<String?>
     ) -> some View {
-        HStack(spacing: 8) {
-            ForEach(options, id: \.1) { option in
-                optionButton(category: title, icon: option.0, label: option.1, selection: selection)
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 4)
+        return VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.custom("Merriweather-Bold", size: 15))
+                .foregroundColor(themeManager.primaryText.opacity(0.9))
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.bottom, 3)
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 4) {
+                ForEach(options, id: \.1) { option in
+                    optionButton(icon: option.0, label: option.1, selection: selection)
+                }
             }
         }
-        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
     }
 
-    private func optionButton(category: String, icon: String, label: String, selection: Binding<String?>) -> some View {
+    private func optionButton(icon: String, label: String, selection: Binding<String?>) -> some View {
         let isSelected = selection.wrappedValue == label
         return Button {
             selection.wrappedValue = label
-            appendOrReplaceLine(category: category, value: label)
         } label: {
-            HStack(spacing: 5) {
+            VStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 14))
+                    .foregroundColor(themeManager.primaryText)
                 Text(label)
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .font(.custom("Merriweather-Bold", size: 10))
+                    .foregroundColor(themeManager.primaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
-            .foregroundColor(isSelected ? themeManager.primaryText : themeManager.descriptionText)
-            .padding(.vertical, 6)
-            .padding(.horizontal, 8)
-            .frame(minWidth: 0)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(isSelected
-                          ? themeManager.accent.opacity(themeManager.isNight ? 0.20 : 0.14)
-                          : themeManager.panelFill.opacity(0.8))
-            )
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 7)
+            .background(isSelected ? themeManager.primaryText.opacity(0.14) : Color.white.opacity(0.02))
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(
-                        isSelected
-                            ? themeManager.accent.opacity(0.55)
-                            : themeManager.panelStrokeHi.opacity(0.55),
-                        lineWidth: 1
-                    )
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(themeManager.primaryText.opacity(0.22), lineWidth: 1)
             )
+            .cornerRadius(8)
         }
         .buttonStyle(.plain)
-    }
-
-    private func appendOrReplaceLine(category: String, value: String) {
-        let prefix = "\(category): "
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
-            text = "\(prefix)\(value)"
-            return
-        }
-
-        var lines = text.components(separatedBy: .newlines)
-        if let index = lines.firstIndex(where: { $0.trimmingCharacters(in: .whitespaces).hasPrefix(prefix) }) {
-            lines[index] = "\(prefix)\(value)"
-        } else {
-            lines.append("\(prefix)\(value)")
-        }
-        text = lines.joined(separator: "\n")
     }
     
     // MARK: Firestore (unchanged)
@@ -260,7 +317,7 @@ struct JournalView: View {
         guard let userId = Auth.auth().currentUser?.uid else { print("❌ No user"); return }
         let ds = dateStringForQuery
         let db = Firestore.firestore()
-        
+
         db.collection("daily_recommendation")
             .whereField("uid", isEqualTo: userId)
             .whereField("createdAt", isEqualTo: ds)
@@ -277,7 +334,9 @@ struct JournalView: View {
                         .getDocuments { journSnap, journErr in
                             if let journDoc = journSnap?.documents.first {
                                 journalDocID = journDoc.documentID
-                                text = journDoc.data()["text"] as? String ?? ""
+                                let data = journDoc.data()
+                                text = sanitizeNotesText(data["text"] as? String ?? "")
+                                applySelections(from: data)
                             }
                         }
                 } else if allowStandaloneIfNoRec {
@@ -285,7 +344,9 @@ struct JournalView: View {
                     db.collection("users").document(userId)
                         .collection("journals").document(ds)
                         .getDocument { snap, _ in
-                            text = (snap?.data()?["text"] as? String) ?? ""
+                            let data = snap?.data() ?? [:]
+                            text = sanitizeNotesText(data["text"] as? String ?? "")
+                            applySelections(from: data)
                         }
                 } else {
                     print("❌ no rec doc for selected day")
@@ -295,12 +356,20 @@ struct JournalView: View {
     
     @MainActor
     private func saveEntryAndClose() async {
-        guard !text.trimmed().isEmpty else { return }
+        let sanitizedText = sanitizeNotesText(text)
+        guard !sanitizedText.trimmed().isEmpty else { return }
         isSaving = true; defer { isSaving = false }
         guard let userId = Auth.auth().currentUser?.uid else { return }
 
         let db = Firestore.firestore()
         let ds = dateStringForQuery
+
+        let selectionPayload: [String: Any] = [
+            "mood": normalizedSelection(mood) ?? "",
+            "stress": normalizedSelection(stress) ?? "",
+            "sleep": normalizedSelection(sleep) ?? "",
+            "emotionalSource": normalizedSelection(emotionalSource) ?? ""
+        ]
 
         // Small helper: return to previous screen after saving
         func goHome() {
@@ -317,9 +386,9 @@ struct JournalView: View {
             if let journalID = journalDocID {
                 await withCheckedContinuation { c in
                     journalsRef.document(journalID).updateData([
-                        "text": text,
+                        "text": sanitizedText,
                         "updatedAt": Timestamp()
-                    ]) { _ in
+                    ].merging(selectionPayload) { $1 }) { _ in
                         Task { @MainActor in
                             goHome()  // ✅ Jump straight back
                         }
@@ -329,9 +398,9 @@ struct JournalView: View {
             } else {
                 await withCheckedContinuation { c in
                     journalsRef.addDocument(data: [
-                        "text": text,
+                        "text": sanitizedText,
                         "createdAt": Timestamp()
-                    ]) { _ in
+                    ].merging(selectionPayload) { $1 }) { _ in
                         Task { @MainActor in
                             goHome()
                         }
@@ -345,9 +414,9 @@ struct JournalView: View {
                 .collection("journals").document(ds)
             await withCheckedContinuation { c in
                 doc.setData([
-                    "text": text,
+                    "text": sanitizedText,
                     "updatedAt": Timestamp()
-                ], merge: true) { _ in
+                ].merging(selectionPayload) { $1 }, merge: true) { _ in
                     Task { @MainActor in
                         goHome()
                     }
