@@ -47,15 +47,15 @@ func currentMoonPhaseLabel(for date: Date = Date()) -> String {
     let days = date.timeIntervalSince(anchor) / 86400
     let phase = (days - floor(days / synodic) * synodic) // [0, synodic)
     switch phase {
-    case 0..<1.84566:  return "New Moon · the quiet seed"
-    case 1.84566..<5.53699: return "Waxing Crescent · a thin breath of light"
-    case 5.53699..<9.22831: return "First Quarter · the half-lit threshold"
-    case 9.22831..<12.91963: return "Waxing Gibbous · light gathering"
-    case 12.91963..<16.61096: return "Full Moon · the night in bloom"
-    case 16.61096..<20.30228: return "Waning Gibbous · light releasing"
-    case 20.30228..<23.99361: return "Third Quarter · the balance in return"
-    case 23.99361..<27.68493: return "Waning Crescent · a fading whisper"
-    default: return "New Moon · the quiet seed"
+    case 0..<1.84566:  return "New Moon"
+    case 1.84566..<5.53699: return "Waxing Crescent"
+    case 5.53699..<9.22831: return "First Quarter"
+    case 9.22831..<12.91963: return "Waxing Gibbous"
+    case 12.91963..<16.61096: return "Full Moon"
+    case 16.61096..<20.30228: return "Waning Gibbous"
+    case 20.30228..<23.99361: return "Third Quarter"
+    case 23.99361..<27.68493: return "Waning Crescent"
+    default: return "New Moon"
     }
 }
 
@@ -483,10 +483,7 @@ struct LoadingView: View {
         let sun = clean(sunText)
         let moon = clean(moonText)
         let rising = clean(risingText)
-        let phaseName = moonPhaseLabel(for: Date())
-            .split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
-            .dropFirst()
-            .joined(separator: " ")
+        let phaseName = moonPhaseLabel(for: Date()).trimmingCharacters(in: .whitespacesAndNewlines)
 
         let parts: [String] = [
             sun.map { "Sun in \($0)" },
@@ -495,13 +492,13 @@ struct LoadingView: View {
         ].compactMap { $0 }
 
         if !parts.isEmpty {
-            let base = "I see your \(parts.joined(separator: ", ")). Today’s phase: "
-            let tail = phaseName.isEmpty ? "" : " \(phaseName)."
+            let base = "I see your \(parts.joined(separator: ", "))."
+            let tail = phaseName.isEmpty ? "" : " The moon is in \(phaseName)."
             return Text(base + tail).font(AlignaType.helperSmall())
         }
 
-        let base = "I’m syncing your chart…\nToday’s phase: "
-        let tail = phaseName.isEmpty ? "" : " \(phaseName)."
+        let base = "I’m syncing your chart…"
+        let tail = phaseName.isEmpty ? "" : " The moon is in \(phaseName)."
         return Text(base + tail).font(AlignaType.helperSmall())
     }
 
@@ -577,9 +574,19 @@ struct LoadingView: View {
             guard let data = snap?.data(),
                   let chartData = data["chartData"] as? [String: Any] else { return }
 
-            let sun = (chartData["sun"] as? String ?? chartData["sunSign"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            let moon = (chartData["moon"] as? String ?? chartData["moonSign"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            let rising = (chartData["ascendant"] as? String ?? chartData["ascendantSign"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let sunRaw = (chartData["sun"] as? String ?? chartData["sunSign"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let moonRaw = (chartData["moon"] as? String ?? chartData["moonSign"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let risingRaw = (chartData["ascendant"] as? String ?? chartData["ascendantSign"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+
+            func stripEmoji(_ text: String) -> String {
+                let disallowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ").inverted
+                let cleaned = text.components(separatedBy: disallowed).joined()
+                return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+
+            let sun = stripEmoji(sunRaw)
+            let moon = stripEmoji(moonRaw)
+            let rising = stripEmoji(risingRaw)
 
             DispatchQueue.main.async {
                 if !sun.isEmpty { sunText = sun }
