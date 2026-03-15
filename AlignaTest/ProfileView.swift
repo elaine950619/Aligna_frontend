@@ -1204,6 +1204,8 @@ struct ProfileView: View {
     @State private var showReauthPasswordAlert = false
     @State private var reauthPassword = ""
     @State private var errorMessage: String?
+
+    @State private var navigateToFrontPage = false
     
     
     // 保持定位器存活，避免回调丢失
@@ -1364,6 +1366,13 @@ struct ProfileView: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text(refreshAlertMessage)
+        }
+        .fullScreenCover(isPresented: $navigateToFrontPage) {
+            FrontPageView()
+                .environmentObject(starManager)
+                .environmentObject(themeManager)
+                .environmentObject(viewModel)
+                .navigationBarBackButtonHidden(true)
         }
 
         .navigationBarBackButtonHidden(true)
@@ -2809,7 +2818,6 @@ private extension ProfileView {
                         return
                     }
                     clearLocalStateAfterAccountDeletion()
-                    self.dismiss()
                 }
             }
         }
@@ -2885,6 +2893,18 @@ private extension ProfileView {
                 if let em = email, !em.isEmpty { pairs.append(("email", em)) }
                 purgeCollectionByFields(col, fieldsAndValues: pairs) { err in
                     record(err); group.leave()
+                }
+
+                // 兼容：文档 ID 直接为 uid / email 的情况
+                group.enter()
+                db.collection(col).document(uid).delete { err in
+                    record(err); group.leave()
+                }
+                if let em = email, !em.isEmpty {
+                    group.enter()
+                    db.collection(col).document(em).delete { err in
+                        record(err); group.leave()
+                    }
                 }
             }
 
@@ -3069,6 +3089,54 @@ private extension ProfileView {
         GIDSignIn.sharedInstance.disconnect { error in
             if let e = error { print("⚠️ Google disconnect failed: \(e)") }
             else { print("✅ Google session disconnected") }
+        }
+
+        // 4) 清空 Profile 本地 UI 状态，避免残留显示
+        DispatchQueue.main.async {
+            userDocID = nil
+            userCollectionUsed = nil
+
+            email = ""
+
+            nickname = ""
+            birthday = Date()
+            birthTime = Date()
+            birthPlace = ""
+            currentPlace = ""
+
+            birthLat = 0
+            birthLng = 0
+            birthTimezoneOffsetMinutes = TimeZone.current.secondsFromGMT() / 60
+            birthRawTimeString = nil
+
+            chartSunSign = ""
+            chartMoonSign = ""
+            chartAscSign = ""
+            chartSignature = ""
+            hasLoadedProfileData = false
+
+            editingNickname = false
+            editingBirthPlace = false
+            showBirthdaySheet = false
+            showBirthTimeSheet = false
+
+            birthPlaceResults = []
+            didSelectBirthPlaceResult = false
+            pendingBirthPlaceCoordinate = nil
+
+            isBusy = false
+            showDeleteAlert = false
+            showReauthPasswordAlert = false
+            reauthPassword = ""
+            errorMessage = nil
+
+            activeLocationFetcher = nil
+
+            showRefreshAlert = false
+            refreshAlertTitle = ""
+            refreshAlertMessage = ""
+
+            navigateToFrontPage = true
         }
 
         NotificationCenter.default.post(name: .didDeleteAccount, object: nil)

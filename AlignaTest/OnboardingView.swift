@@ -1215,7 +1215,7 @@ struct OnboardingFinalStep: View {
             }
             // 完成后跳首页
             .fullScreenCover(isPresented: $navigateToHome) {
-                MainView()
+                PostOnboardingLoadingFlow()
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
                     .environmentObject(viewModel)
@@ -1493,6 +1493,34 @@ struct OnboardingFinalStep: View {
     }
 
 }
+
+private struct PostOnboardingLoadingFlow: View {
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var viewModel: OnboardingViewModel
+
+    @State private var showLoading = true
+
+    var body: some View {
+        ZStack {
+            MainView()
+                .environmentObject(starManager)
+                .environmentObject(themeManager)
+                .environmentObject(viewModel)
+                .navigationBarBackButtonHidden(true)
+
+            if showLoading {
+                LoadingView(onStartLoading: {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        showLoading = false
+                    }
+                })
+                .ignoresSafeArea()
+            }
+        }
+    }
+}
+
 func firebaseCollectionName(for category: String) -> String {
     let mapping: [String: String] = [
         "Place": "places",

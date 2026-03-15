@@ -134,6 +134,7 @@ struct MainView: View {
 
     @State private var authListenerHandle: AuthStateDidChangeListenerHandle? = nil
     @State private var authWaitTimedOut = false
+    @State private var didResolveBootPath = false
 
     @AppStorage("watchdogDay") private var watchdogDay: String = ""
     @AppStorage("todayAutoRefetchAttempts") private var todayAutoRefetchAttempts: Int = 0
@@ -463,22 +464,7 @@ struct MainView: View {
         resetDailyWatchdogIfNeeded()
 
         if let user = Auth.auth().currentUser, !authWaitTimedOut {
-            // 已有用户（或超时标记未触发）：按你原来的分流逻辑走
-            // A) 未登录
-            if user.uid.isEmpty {
-                shouldOnboardAfterSignIn = false
-                hasCompletedOnboarding = false
-                withAnimation(.easeInOut) { bootPhase = .onboarding }
-                return
-            }
-            // B) 刚注册需要走引导
-            if shouldOnboardAfterSignIn && !hasCompletedOnboarding {
-                withAnimation(.easeInOut) { bootPhase = .onboarding }
-                return
-            }
-            // C) 正常首页启动
-            shouldOnboardAfterSignIn = false
-            proceedNormalBoot()
+            resolveBootPath(for: user)
             return
         }
 
@@ -505,6 +491,53 @@ struct MainView: View {
             shouldOnboardAfterSignIn = false
             hasCompletedOnboarding = false
             withAnimation(.easeInOut) { bootPhase = .onboarding }
+        }
+    }
+
+    private func resolveBootPath(for user: User) {
+        if didResolveBootPath { return }
+        didResolveBootPath = true
+
+        // A) 未登录（极端兜底）
+        if user.uid.isEmpty {
+            shouldOnboardAfterSignIn = false
+            hasCompletedOnboarding = false
+            withAnimation(.easeInOut) { bootPhase = .onboarding }
+            return
+        }
+
+        let ref = Firestore.firestore().collection("users").document(user.uid)
+        ref.getDocument { snapshot, error in
+            let data = snapshot?.data()
+            let nickname = (data?["nickname"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let hasProfile = data != nil && !nickname.isEmpty
+
+            DispatchQueue.main.async {
+                if let _ = error {
+                    // 读取失败则退回本地标记逻辑
+                    didResolveBootPath = false
+                    if shouldOnboardAfterSignIn && !hasCompletedOnboarding {
+                        withAnimation(.easeInOut) { bootPhase = .onboarding }
+                        return
+                    }
+                    shouldOnboardAfterSignIn = false
+                    proceedNormalBoot()
+                    return
+                }
+
+                if hasProfile {
+                    hasCompletedOnboarding = true
+                    shouldOnboardAfterSignIn = false
+                    proceedNormalBoot()
+                    return
+                }
+
+                if shouldOnboardAfterSignIn || !hasCompletedOnboarding {
+                    withAnimation(.easeInOut) { bootPhase = .onboarding }
+                } else {
+                    proceedNormalBoot()
+                }
+            }
         }
     }
 
