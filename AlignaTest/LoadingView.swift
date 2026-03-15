@@ -225,7 +225,7 @@ struct LoadingView: View {
     }
 
     private var shouldAutoSkipPersonal: Bool {
-        !didInteractPersonal && !anyPersonalSelection
+        !didInteractPersonal
     }
 
     var body: some View {
@@ -278,13 +278,6 @@ struct LoadingView: View {
                 if newStage == .personal {
                     loadPersonalSelections()
                     scheduleAutoSkipIfNeeded()
-                }
-            }
-            .onChange(of: anyPersonalSelection, initial: false) { _, hasSelection in
-                if hasSelection {
-                    autoSkipWorkItem?.cancel()
-                    autoSkipTimer?.invalidate()
-                    autoSkipSecondsRemaining = 0
                 }
             }
             .onChange(of: didInteractPersonal, initial: false) { _, interacted in
@@ -666,7 +659,10 @@ struct LoadingView: View {
 
         let item = DispatchWorkItem {
             if shouldAutoSkipPersonal {
-                completePersonal()
+                DispatchQueue.main.async {
+                    isProcessingPersonal = true
+                    completePersonal()
+                }
             }
         }
         autoSkipWorkItem = item
@@ -674,7 +670,7 @@ struct LoadingView: View {
     }
 
     private var primaryActionLabel: String {
-        if didInteractPersonal || anyPersonalSelection {
+        if didInteractPersonal {
             return "Continue"
         }
         if autoSkipSecondsRemaining > 0 {
@@ -690,11 +686,11 @@ struct LoadingView: View {
         autoSkipSecondsRemaining = 0
         personalCompleted = true
 
-        let hasSelections = anyPersonalSelection
-        if hasSelections {
+        let didModify = didInteractPersonal
+        if didModify {
             savePersonalSelections()
         }
-        onPersonalComplete?(hasSelections)
+        onPersonalComplete?(didModify)
     }
 }
 

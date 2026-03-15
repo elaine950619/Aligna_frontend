@@ -97,6 +97,7 @@ func makeCalendarGrid(for month: Date, calendar: Calendar = .current) -> [Date?]
 struct DayCell: View {
     let date: Date?
     let isSelected: Bool
+    let isEnabled: Bool
     let accent: Color
     let tap: ()->Void
 
@@ -112,7 +113,7 @@ struct DayCell: View {
                     ZStack {
                         // gold moon stays as-is
                         Image(systemName: moonSymbol(for: phase))
-                            .font(.system(size: 22))
+                            .font(.system(size: 20))
                             .foregroundStyle(
                                 LinearGradient(colors: [.yellow.opacity(0.95), .orange.opacity(0.9)],
                                                startPoint: .topLeading, endPoint: .bottomTrailing)
@@ -121,7 +122,7 @@ struct DayCell: View {
                         // selection ring uses your accent
                         Circle()
                             .stroke(isSelected ? accent : .clear, lineWidth: 2)
-                            .frame(width: 36, height: 36)
+                            .frame(width: 32, height: 32)
                     }
 
                     // day label uses your theme primary text
@@ -131,9 +132,11 @@ struct DayCell: View {
                         .foregroundColor(themeManager.primaryText.opacity(0.9))
 
                 }
-                .frame(width: 44)
+                .frame(width: 40)
+                .opacity(isEnabled ? 1.0 : 0.35)
             }
             .buttonStyle(.plain)
+            .disabled(!isEnabled)
         } else {
             VStack(spacing: 6) {
                 Color.clear.frame(width: 36, height: 36)
@@ -152,15 +155,17 @@ struct DayCell: View {
 struct CalendarView: View {
     @Binding var selectedDate: Date
     var accentColor: Color = .accentColor
+    var isDateEnabled: (Date) -> Bool = { _ in true }
+    var onMonthChange: (Date) -> Void = { _ in }
 
     @EnvironmentObject var themeManager: ThemeManager    // ← add
 
     @State private var displayMonth: Date = Date()
     private let calendar = Calendar.current
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 7)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 10) {
             // Header
             HStack {
                 Button { prevMonth() } label: {
@@ -186,23 +191,24 @@ struct CalendarView: View {
             }
 
             // Weekday row (aligned to grid)
-            LazyVGrid(columns: columns, spacing: 2) {
+            LazyVGrid(columns: columns, spacing: 1) {
                 ForEach(shortWeekdaySymbols, id: \.self) { wd in
                     Text(wd)
                         .font(TimelineType.date14MerriweatherRegular())
                         .lineSpacing(TimelineType.date14LineSpacing)
                         .foregroundColor(themeManager.foregroundColor.opacity(0.9)) // ✅ match brown labels
-                        .frame(width: 44, alignment: .center) // ✅ same as DayCell width
+                        .frame(width: 40, alignment: .center) // ✅ same as DayCell width
                 }
             }
 
 
             // Grid
-            LazyVGrid(columns: columns, spacing: 2) {
+            LazyVGrid(columns: columns, spacing: 1) {
                 ForEach(Array(makeCalendarGrid(for: displayMonth).enumerated()), id: \.offset) { _, d in
                     DayCell(
                         date: d,
                         isSelected: d.map { calendar.isDate($0, inSameDayAs: selectedDate) } ?? false,
+                        isEnabled: d.map { isDateEnabled($0) } ?? false,
                         accent: accentColor
                     ) {
                         if let d { selectedDate = d }
@@ -211,7 +217,11 @@ struct CalendarView: View {
                 }
             }
         }
-        .padding(4)
+        .padding(2)
+        .onAppear { onMonthChange(displayMonth) }
+        .onChange(of: displayMonth) { _, newValue in
+            onMonthChange(newValue)
+        }
     }
     
     private func prevMonth() { displayMonth = calendar.date(byAdding: .month, value: -1, to: displayMonth)! }

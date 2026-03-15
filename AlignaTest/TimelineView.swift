@@ -245,6 +245,7 @@ struct TimelineView: View {
     ]
     
     @State private var selectedDate = Date()
+    @State private var validDayKeys: Set<String> = []
     @StateObject private var dailyVM: DailyViewModel
     @State private var journalText: String = ""
     @State private var isLoadingJournal: Bool = false
@@ -315,6 +316,35 @@ struct TimelineView: View {
             }
     }
 
+    private func isDateSelectable(_ date: Date) -> Bool {
+        let today = Calendar.current.startOfDay(for: Date())
+        let day = Calendar.current.startOfDay(for: date)
+        if day > today { return false }
+        if day == today { return true }
+        let key = DateFormatter.appDayKey.string(from: day)
+        return validDayKeys.contains(key)
+    }
+
+    private func fetchValidDates(for month: Date) {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        let calendar = Calendar.current
+        guard let interval = calendar.dateInterval(of: .month, for: month) else { return }
+
+        let startKey = DateFormatter.appDayKey.string(from: interval.start)
+        let endKey = DateFormatter.appDayKey.string(from: interval.end.addingTimeInterval(-1))
+
+        Firestore.firestore().collection("daily_recommendation")
+            .whereField("uid", isEqualTo: uid)
+            .whereField("createdAt", isGreaterThanOrEqualTo: startKey)
+            .whereField("createdAt", isLessThanOrEqualTo: endKey)
+            .getDocuments { snap, _ in
+                let keys = snap?.documents.compactMap { $0.data()["createdAt"] as? String } ?? []
+                DispatchQueue.main.async {
+                    validDayKeys = Set(keys)
+                }
+            }
+    }
+
     private func sanitizeNotesText(_ value: String) -> String {
         let prefixes = [
             "Mood:",
@@ -378,9 +408,11 @@ struct TimelineView: View {
 
                         CalendarView(
                             selectedDate: $selectedDate,
-                            accentColor: themeManager.accent          // use your themed accent
+                            accentColor: themeManager.accent,
+                            isDateEnabled: { isDateSelectable($0) },
+                            onMonthChange: { fetchValidDates(for: $0) }
                         )
-                        .padding(12)
+                        .padding(8)
                         .background(
                             RoundedRectangle(cornerRadius: 28, style: .continuous)
                                 .fill(themeManager.panelFill)
