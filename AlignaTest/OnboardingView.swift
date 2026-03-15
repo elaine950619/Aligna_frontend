@@ -1085,6 +1085,8 @@ struct OnboardingFinalStep: View {
     // 上传/跳转
     @State private var isLoading = false
     @State private var navigateToHome = false
+    @State private var showVerificationAlert = false
+    @State private var verificationMessage = "Please verify your email before continuing."
 
     // 入场动画
     @State private var showIntro = false
@@ -1144,6 +1146,15 @@ struct OnboardingFinalStep: View {
 
                         Button {
                             guard !isLoading else { return }
+                            if let user = Auth.auth().currentUser {
+                                let isPasswordProvider = user.providerData.contains { $0.providerID == "password" }
+                                if isPasswordProvider && !user.isEmailVerified {
+                                    user.sendEmailVerification(completion: nil)
+                                    verificationMessage = "Please verify your email before continuing. We just sent you a new verification email."
+                                    showVerificationAlert = true
+                                    return
+                                }
+                            }
                             isLoading = true
                             uploadUserInfo()
                         } label: {
@@ -1220,6 +1231,11 @@ struct OnboardingFinalStep: View {
                     .environmentObject(themeManager)
                     .environmentObject(viewModel)
                     .navigationBarBackButtonHidden(true)
+            }
+            .alert("Email Verification Required", isPresented: $showVerificationAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(verificationMessage)
             }
         }
         .navigationBarBackButtonHidden(true)

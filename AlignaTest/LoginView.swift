@@ -188,6 +188,15 @@ struct LoginView: View {
                                     showAlert = true
                                     return
                                 }
+
+                                if let user = Auth.auth().currentUser, !user.isEmailVerified {
+                                    user.sendEmailVerification(completion: nil)
+                                    try? Auth.auth().signOut()
+                                    alertMessage = "Please verify your email before continuing. We just sent you a new verification email."
+                                    showAlert = true
+                                    return
+                                }
+
                                 routeAuthenticatedUser(
                                     onSuccessToLogin: {
                                         navigateToHome = true

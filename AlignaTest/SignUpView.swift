@@ -346,7 +346,9 @@ struct SignUpView: View {
 
             result?.user.sendEmailVerification(completion: nil)
             DispatchQueue.main.async {
-                navigateToOnboarding = true
+                infoMessage = "We sent a verification email. Please verify your email, then sign in to continue."
+                navigateToLoginOnDismiss = true
+                showInfoAlert = true
             }
         }
     }
