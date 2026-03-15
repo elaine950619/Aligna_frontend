@@ -135,6 +135,8 @@ struct MainView: View {
     @State private var authListenerHandle: AuthStateDidChangeListenerHandle? = nil
     @State private var authWaitTimedOut = false
     @State private var didResolveBootPath = false
+    @State private var isBootDataReady = false
+    @State private var didCompletePersonalCheckIn = false
 
     @AppStorage("watchdogDay") private var watchdogDay: String = ""
     @AppStorage("todayAutoRefetchAttempts") private var todayAutoRefetchAttempts: Int = 0
@@ -149,9 +151,6 @@ struct MainView: View {
     @State private var selectedDate = Date()
     
     @State private var bootPhase: BootPhase = .loading
-    @State private var splashLocation: String = "Your Current Location"
-    @State private var splashZodiac: String = ""
-    @State private var splashMoon: String = ""
     
     @State private var didBootVisuals = false
     @State private var alynnaFrame: CGRect = .zero
@@ -609,12 +608,10 @@ struct MainView: View {
         waitUntilRecommendationsReady(timeout: 12) { group.leave() }
 
         group.notify(queue: .main) {
-            
             // (If the doc doesn't exist yet, it'll become available after fetch/save.)
             self.reasoningStore.load(for: Date())
-            resolveSplashInfoAndAdvance()
-
-            
+            self.isBootDataReady = true
+            attemptBootAdvance()
         }
     }
 
@@ -764,32 +761,24 @@ struct MainView: View {
         check()
     }
 
-    private func resolveSplashInfoAndAdvance() {
-        // Compute zodiac/moon locally (fast)
-        splashZodiac = currentZodiacSign()
-        splashMoon   = currentMoonPhaseLabel()
-
-        // Resolve a friendly city name if we have coordinates now
-        if let coord = locationManager.currentLocation {
-            getAddressFromCoordinate(coord) { place in
-                splashLocation = place ?? "Your Current Location"
-                withAnimation(.easeInOut) { bootPhase = .infoSplash }
-            }
-        } else {
-            splashLocation = "Your Current Location"
-            withAnimation(.easeInOut) { bootPhase = .infoSplash }
-        }
+    private func attemptBootAdvance() {
+        guard isBootDataReady, didCompletePersonalCheckIn else { return }
+        withAnimation(.easeInOut) { bootPhase = .main }
     }
-
-
 
     var body: some View {
         Group {
             switch bootPhase {
             case .loading:
-                LoadingView(onStartLoading: {
-                    startInitialLoad()
-                })
+                LoadingView(
+                    onStartLoading: {
+                        startInitialLoad()
+                    },
+                    onPersonalComplete: {
+                        didCompletePersonalCheckIn = true
+                        attemptBootAdvance()
+                    }
+                )
                 .ignoresSafeArea()
                         
             case .onboarding:
@@ -808,21 +797,7 @@ struct MainView: View {
                             .navigationBarBackButtonHidden(true)
                     }
                 }
-            case .infoSplash:
-                            WelcomeSplashView(location: splashLocation,
-                                                zodiac: splashZodiac,
-                                                moon: splashMoon)
-                            .environmentObject(starManager)
-                            .environmentObject(themeManager)
-                            .onAppear {
-                                // Show the splash briefly, then go main
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                    withAnimation(.easeInOut) { bootPhase = .main }
-                                }
-                            }
-                            .ignoresSafeArea()
-                                    
-                        case .main:
+            case .main:
                             mainContent // (extract your existing NavigationStack content into a computed var)
                         }
                     }

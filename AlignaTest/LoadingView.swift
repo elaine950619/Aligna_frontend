@@ -7,7 +7,6 @@ import WidgetKit
 
 enum BootPhase {
     case loading
-    case infoSplash
     case onboarding   // ← 新增：需要走新手引导
     case main
 }
@@ -171,57 +170,57 @@ extension View { func shimmer() -> some View { modifier(Shimmer()) } }
 
 struct LoadingView: View {
     var onStartLoading: (() -> Void)? = nil
+    var onPersonalComplete: (() -> Void)? = nil
     private let fixedMessageIndex: Int?
-    private let brandDisk: CGFloat = 96
-    
-    @State private var loadingMessages = [
-        "Aligning with the cosmos",
-        "Reading celestial patterns",
-        "Gathering stellar insights",
-        "Preparing your journey"
-    ]
-    @State private var msgIndex = 0
+
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
 
-    @State private var spinFast = false
-    @State private var spinSlow = false
-    @State private var pulse = false
-    @State private var dotPhase: CGFloat = 0
-    @State private var bounce = false
-    
-    @State private var showWelcome = false
-    @State private var currentLocation: String = "Your Current Location"
-    @State private var zodiacSign: String = ""
-    @State private var moonPhase: String = ""
+    @State private var didStartLoading = false
+    @State private var stage: LoadingStage = .cosmic
+    @State private var cosmicEmojiIndex = 0
+    @State private var placeEmojiIndex = 0
+    @State private var autoSkipWorkItem: DispatchWorkItem?
+    @State private var personalCompleted = false
+    @State private var didInteractPersonal = false
 
-    init(onStartLoading: (() -> Void)? = nil, fixedMessageIndex: Int? = nil) {
+    @State private var mood: String? = nil
+    @State private var stress: String? = nil
+    @State private var sleep: String? = nil
+    @State private var source: String? = nil
+
+    var sunText: String = "—"
+    var moonText: String = "—"
+    var risingText: String = "—"
+    var locationText: String = "Your Current Location"
+    var conditionText: String = "Cloud · Wind · Rain"
+
+    init(
+        onStartLoading: (() -> Void)? = nil,
+        onPersonalComplete: (() -> Void)? = nil,
+        fixedMessageIndex: Int? = nil
+    ) {
         self.onStartLoading = onStartLoading
+        self.onPersonalComplete = onPersonalComplete
         self.fixedMessageIndex = fixedMessageIndex
     }
 
-    private var currentLoadingMessage: String {
-        guard let fixedMessageIndex else { return loadingMessages[msgIndex] }
-        let clampedIndex = min(max(fixedMessageIndex, 0), loadingMessages.count - 1)
-        return loadingMessages[clampedIndex]
+    fileprivate enum LoadingStage: Int {
+        case cosmic
+        case place
+        case personal
     }
 
-    @ViewBuilder
-    private var brandTitle: some View {
-        let title = Text("Alynna")
-            .font(AlignaType.brandTitle())
-            .lineSpacing(40 - 34)
-            .foregroundColor(themeManager.primaryText)
+    private var anyPersonalSelection: Bool {
+        mood != nil || stress != nil || sleep != nil || source != nil
+    }
 
-        if themeManager.isNight {
-            title.shimmer()
-        } else {
-            title
-        }
+    private var shouldAutoSkipPersonal: Bool {
+        !didInteractPersonal && !anyPersonalSelection
     }
 
     var body: some View {
-        GeometryReader { geo in
+        GeometryReader { _ in
             ZStack {
                 AppBackgroundView()
                     .environmentObject(starManager)
@@ -229,333 +228,277 @@ struct LoadingView: View {
                     .ignoresSafeArea()
 
                 // === Main content ===
-                VStack(spacing: 32) {
-                    // Logo（透明背景 + 颜色跟随 ThemeManager）
-                    ZStack {
-                        let iconColor: Color = themeManager.primaryText
-
-                        Image("appLogo")
-                            .resizable()
-                            .renderingMode(.template)
-                            .scaledToFit()
-                            .frame(width: brandDisk, height: brandDisk)
-                            .foregroundColor(iconColor)
-                            .scaleEffect(pulse ? 1.04 : 1.0)
-                            .animation(
-                                .easeInOut(duration: 1.8)
-                                    .repeatForever(autoreverses: true),
-                                value: pulse
-                            )
-                    }
-                    .onAppear {
-                        onStartLoading?()
-                        pulse = true
-                    }
-
-                    // Brand title + thin underline + shimmer
-                    VStack(spacing: 6) {
-                        brandTitle
-
-                        Rectangle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        .clear,
-                                        themeManager.primaryText.opacity(0.6), // ✅ 跟随主题
-                                        .clear
-                                    ],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .frame(width: 120, height: 1)
-                    }
-
-                    // Spinner (two rings)
-                    ZStack {
-                        Circle()
-                            .stroke(themeManager.primaryText.opacity(0.20), lineWidth: 2) // ✅
-                            .frame(width: 64, height: 64)
-
-                        Circle()
-                            .trim(from: 0, to: 0.25)
-                            .stroke(themeManager.primaryText, style: StrokeStyle(lineWidth: 2, lineCap: .round)) // ✅
-                            .frame(width: 64, height: 64)
-                            .rotationEffect(.degrees(spinFast ? 360 : 0))
-                            .animation(.linear(duration: 1.0).repeatForever(autoreverses: false), value: spinFast)
-
-                        Circle()
-                            .trim(from: 0, to: 0.25)
-                            .stroke(themeManager.primaryText.opacity(0.4), style: StrokeStyle(lineWidth: 2, lineCap: .round)) // ✅
-                            .frame(width: 48, height: 48)
-                            .rotationEffect(.degrees(spinSlow ? 360 : 0))
-                            .animation(.linear(duration: 2.0).repeatForever(autoreverses: false), value: spinSlow)
-                    }
-                    .onAppear {
-                        spinFast = true
-                        spinSlow = true
-                    }
-
-                    // Loading text + bouncing dots
-                    VStack(spacing: 12) {
-                        Text(currentLoadingMessage)
-                            .font(AlignaType.loadingSubtitle())
-                            .lineSpacing(AlignaType.body16LineSpacing)
-                            .foregroundColor(themeManager.descriptionText.opacity(0.90)) // ✅
-
-                        HStack(spacing: 6) {
-                            ForEach(0..<3) { i in
-                                Circle()
-                                    .fill(themeManager.primaryText.opacity(0.55)) // ✅
-                                    .frame(width: 8, height: 8)
-                                    .offset(y: bounce ? -6 : 0)
-                                    .animation(
-                                        .easeInOut(duration: 0.5)
-                                            .repeatForever(autoreverses: true)
-                                            .delay(Double(i) * 0.15),
-                                        value: bounce
-                                    )
-                            }
-                        }
-                        .padding(.top, 15)
-                    }
-                    .onAppear { bounce = true }
+                VStack(spacing: 22) {
+                    stageContent
                 }
-                .frame(maxWidth: 480)
-                .padding(16)
+                .frame(maxWidth: 520)
+                .padding(.horizontal, 20)
+                .padding(.top, 18)
+                .padding(.bottom, 24)
+                .onAppear {
+                    if !didStartLoading {
+                        didStartLoading = true
+                        onStartLoading?()
+                    }
+                }
             }
             .onAppear {
-                if fixedMessageIndex == nil {
-                    Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { _ in
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            msgIndex = (msgIndex + 1) % loadingMessages.count
-                        }
-                    }
+                scheduleStageProgression()
+                startEmojiTimers()
+            }
+            .onChange(of: stage, initial: false) { _, newStage in
+                if newStage == .personal {
+                    scheduleAutoSkipIfNeeded()
                 }
-                withAnimation { dotPhase = 1 }
+            }
+            .onChange(of: anyPersonalSelection, initial: false) { _, hasSelection in
+                if hasSelection {
+                    autoSkipWorkItem?.cancel()
+                }
+            }
+            .onChange(of: didInteractPersonal, initial: false) { _, interacted in
+                if interacted {
+                    autoSkipWorkItem?.cancel()
+                }
             }
             .preferredColorScheme(themeManager.preferredColorScheme)
         }
     }
 
-    private func dotOffset(for i: Int) -> CGFloat {
-        let up = (Int(dotPhase) + i) % 2 == 0
-        return up ? -4 : 0
-    }
-}
+    private var stageContent: some View {
+        VStack(spacing: 16) {
+            switch stage {
+            case .cosmic:
+                stageHeader(title: "Cosmic signals",
+                            subtitle: cosmicSubtitle,
+                            emoji: cosmicEmojis[cosmicEmojiIndex])
+                stageSupplement("Sun: \(sunText) · Moon: \(moonText) · Rising: \(risingText)")
+                stageSource("Astronomical data from NOAA and NASA.")
 
+            case .place:
+                stageHeader(title: "Place signals",
+                            subtitle: placeSubtitle,
+                            emoji: placeEmojis[placeEmojiIndex])
+                stageSupplement("Location: \(locationText) · Conditions: \(conditionText)")
+                stageSource("Environmental observations from NASA and ESA satellites.")
 
-
-struct WelcomeSplashView: View {
-    let location: String
-    let zodiac: String
-    let moon: String
-    @EnvironmentObject var starManager: StarAnimationManager
-    @EnvironmentObject var themeManager: ThemeManager
-    @State private var appear = false
-
-    // 根据星座文字“包含什么单词”来返回对应 emoji
-    private var zodiacIcon: String {
-        let lower = zodiac.lowercased()
-
-        if lower.contains("aries") { return "♈️" }
-        if lower.contains("taurus") { return "♉️" }
-        if lower.contains("gemini") { return "♊️" }
-        if lower.contains("cancer") { return "♋️" }
-        if lower.contains("leo") { return "♌️" }
-        if lower.contains("virgo") { return "♍️" }
-        if lower.contains("libra") { return "♎️" }
-        if lower.contains("scorpio") { return "♏️" }
-        if lower.contains("sagittarius") { return "♐️" }
-        if lower.contains("capricorn") { return "♑️" }
-        if lower.contains("aquarius") { return "♒️" }
-        if lower.contains("pisces") { return "♓️" }
-
-        return "✨"
-    }
-
-    // 生成“干净”的星座名字
-    private var zodiacText: String {
-        let lower = zodiac.lowercased()
-
-        if lower.contains("aries") { return "Aries" }
-        if lower.contains("taurus") { return "Taurus" }
-        if lower.contains("gemini") { return "Gemini" }
-        if lower.contains("cancer") { return "Cancer" }
-        if lower.contains("leo") { return "Leo" }
-        if lower.contains("virgo") { return "Virgo" }
-        if lower.contains("libra") { return "Libra" }
-        if lower.contains("scorpio") { return "Scorpio" }
-        if lower.contains("sagittarius") { return "Sagittarius" }
-        if lower.contains("capricorn") { return "Capricorn" }
-        if lower.contains("aquarius") { return "Aquarius" }
-        if lower.contains("pisces") { return "Pisces" }
-
-        return zodiac
-    }
-
-    // 去掉 moon 字符串里前面的 emoji，只保留文字描述
-    private var cleanMoonText: String {
-        let parts = moon.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
-        if parts.count == 2 {
-            // 例如 "🌓 First Quarter" -> "First Quarter"
-            return String(parts[1])
-        } else {
-            // 没有 emoji 时就原样返回
-            return moon
-        }
-    }
-
-    var body: some View {
-        ZStack {
-            AppBackgroundView()
-                .environmentObject(starManager)
-                .environmentObject(themeManager)
-                .ignoresSafeArea()
-
-            VStack(spacing: 22) {
-                // Logo（透明背景 + 颜色跟随 ThemeManager）
-                let disk: CGFloat = 96
-                let iconColor: Color = themeManager.primaryText
-
-                Image("appLogo")
-                    .resizable()
-                    .renderingMode(.template)
-                    .scaledToFit()
-                    .frame(width: disk, height: disk)
-                    .foregroundColor(iconColor)
-                
-                // Brand + hairline underline
-                VStack(spacing: 6) {
-                    Text("Alynna")
-                        .font(AlignaType.brandTitle())
-                        .lineSpacing(40 - 34)
-                        .foregroundColor(themeManager.primaryText)
-
-                    Rectangle()
-                        .fill(
-                            LinearGradient(
-                                colors: [.clear, themeManager.primaryText.opacity(0.7), .clear],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(width: 120, height: 1)
+            case .personal:
+                stageHeader(title: "Personal check-in",
+                            subtitle: "Tap what feels true right now.",
+                            emoji: "🙂")
+                personalCheckIn
+                if personalCompleted {
+                    Text("Logged for today.")
+                        .font(AlignaType.helperSmall())
+                        .foregroundColor(themeManager.descriptionText.opacity(0.9))
                 }
-
-                // Info rows: grouped as a light info card for clearer structure.
-                VStack(alignment: .leading, spacing: 12) {
-                    infoLine(icon: "📍",
-                             text: location,
-                             textOpacity: 0.9)
-
-                    infoLine(icon: zodiacIcon,
-                             text: zodiacText,
-                             textOpacity: 0.85)
-
-                    infoLine(icon: "🌙",
-                             text: cleanMoonText,
-                             textOpacity: 0.75)
-                }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 14)
-                .frame(width: 220, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(themeManager.isNight ? Color.white.opacity(0.06) : Color.white.opacity(0.22))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(
-                            themeManager.isNight
-                                ? Color.white.opacity(0.12)
-                                : Color(hex: "#D4A574").opacity(0.18),
-                            lineWidth: 1
-                        )
-                )
-                .shadow(
-                    color: .black.opacity(themeManager.isNight ? 0.10 : 0.05),
-                    radius: 10,
-                    x: 0,
-                    y: 6
-                )
-                .padding(.top, 8)
             }
-            .multilineTextAlignment(.leading)
-            .opacity(appear ? 1 : 0)
-            .offset(y: appear ? -28 : -16)
-            .animation(.easeOut(duration: 0.45), value: appear)
         }
-        .onAppear { appear = true }
     }
 
-    // MARK: - 统一的 Info Row（16pt 字号 + 行高约 22pt + 首字母对齐）
-    private func infoLine(icon: String, text: String, textOpacity: Double) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(verbatim: icon)
-                .font(.system(size: 18, weight: .regular, design: .default))
-                .frame(width: 24, alignment: .leading)
-
-            Text(text)
-                .foregroundColor(themeManager.primaryText.opacity(textOpacity))
-                .font(.system(size: 16))
-                .lineSpacing(AlignaType.body16LineSpacing)
+    private func stageHeader(title: String, subtitle: String, emoji: String) -> some View {
+        VStack(spacing: 8) {
+            Text(title)
+                .font(AlignaType.loadingSubtitle())
+                .foregroundColor(themeManager.primaryText)
+            emojiText(emoji, size: 64)
+            Text(subtitle)
+                .font(AlignaType.helperSmall())
+                .foregroundColor(themeManager.descriptionText.opacity(0.85))
+                .multilineTextAlignment(.center)
         }
+        .padding(.top, 6)
+    }
+
+    private func stageSupplement(_ text: String) -> some View {
+        Text(text)
+            .font(AlignaType.helperSmall())
+            .foregroundColor(themeManager.descriptionText.opacity(0.85))
+    }
+
+    private func stageSource(_ text: String) -> some View {
+        Text(text)
+            .font(AlignaType.helperSmall())
+            .foregroundColor(themeManager.descriptionText.opacity(0.6))
+            .padding(.top, 6)
+    }
+
+    private func emojiText(_ emoji: String, size: CGFloat) -> some View {
+        Text(emoji)
+            .font(.custom("AppleColorEmoji", size: size))
+            .textSelection(.disabled)
+    }
+
+    private var personalCheckIn: some View {
+        VStack(spacing: 14) {
+            emojiRow(
+                title: "Mood",
+                options: [("😀", "Good"), ("🙂", "Calm"), ("😐", "Neutral"), ("😟", "Anxious"), ("😞", "Low")],
+                selection: $mood
+            )
+            emojiRow(
+                title: "Stress",
+                options: [("😌", "Low"), ("😬", "Medium"), ("😣", "High")],
+                selection: $stress
+            )
+            emojiRow(
+                title: "Sleep",
+                options: [("😴", "Poor"), ("😌", "OK"), ("😃", "Great")],
+                selection: $sleep
+            )
+            emojiRow(
+                title: "Source",
+                options: [("💼", "Work"), ("🤝", "Relationships"), ("💪", "Health"), ("💸", "Money"), ("❓", "Unclear")],
+                selection: $source
+            )
+            HStack(spacing: 12) {
+                Button("Skip") {
+                    didInteractPersonal = true
+                    completePersonal()
+                }
+                Button("Continue") {
+                    didInteractPersonal = true
+                    completePersonal()
+                }
+            }
+            .font(AlignaType.helperSmall())
+            .foregroundColor(themeManager.primaryText)
+        }
+    }
+
+    private func emojiRow(
+        title: String,
+        options: [(String, String)],
+        selection: Binding<String?>
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(AlignaType.helperSmall())
+                .foregroundColor(themeManager.descriptionText.opacity(0.8))
+            HStack(spacing: 10) {
+                ForEach(options, id: \.1) { option in
+                    Button {
+                        didInteractPersonal = true
+                        selection.wrappedValue = option.1
+                    } label: {
+                        HStack(spacing: 6) {
+                            emojiText(option.0, size: 16)
+                            Text(option.1)
+                        }
+                        .font(AlignaType.helperSmall())
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 10)
+                        .background(selection.wrappedValue == option.1 ? themeManager.primaryText.opacity(0.2) : Color.white.opacity(0.06))
+                        .cornerRadius(12)
+                    }
+                }
+            }
+        }
+    }
+
+    private var cosmicEmojis: [String] { ["☀️", "🌙", "🪐", "✨"] }
+    private var placeEmojis: [String] { ["🌧️", "🌬️", "☁️", "🌊", "🌲"] }
+
+    private var cosmicSubtitle: String {
+        let lines = [
+            "Your Sun, Moon, and Rising are coming into view",
+            "Aligning today’s light and shadow",
+            "Listening to the sky’s quiet math"
+        ]
+        return lines[cosmicEmojiIndex % lines.count]
+    }
+
+    private var placeSubtitle: String {
+        let lines = [
+            "Wind, rain, and light are moving",
+            "Water, air, and temperature shift with you",
+            "Reading today’s living atmosphere"
+        ]
+        return lines[placeEmojiIndex % lines.count]
+    }
+
+    private func scheduleStageProgression() {
+        guard fixedMessageIndex == nil else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
+            if stage == .cosmic { stage = .place }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.4) {
+            if stage == .place { stage = .personal }
+        }
+    }
+
+    private func startEmojiTimers() {
+        Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { _ in
+            cosmicEmojiIndex = (cosmicEmojiIndex + 1) % cosmicEmojis.count
+        }
+        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            placeEmojiIndex = (placeEmojiIndex + 1) % placeEmojis.count
+        }
+    }
+
+    private func scheduleAutoSkipIfNeeded() {
+        autoSkipWorkItem?.cancel()
+        let item = DispatchWorkItem {
+            if shouldAutoSkipPersonal {
+                completePersonal()
+            }
+        }
+        autoSkipWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: item)
+    }
+
+    private func completePersonal() {
+        guard !personalCompleted else { return }
+        autoSkipWorkItem?.cancel()
+        personalCompleted = true
+        onPersonalComplete?()
     }
 }
+
 
 #if DEBUG
+private extension LoadingView {
+    init(previewStage: LoadingStage) {
+        self.init(onStartLoading: nil, onPersonalComplete: nil, fixedMessageIndex: 0)
+        _stage = State(initialValue: previewStage)
+    }
+}
+
 private struct LoadingViewPreviewContainer: View {
     @StateObject private var starManager = StarAnimationManager()
     @StateObject private var themeManager: ThemeManager
     let isNight: Bool
+    let stage: LoadingView.LoadingStage
 
-    init(isNight: Bool = false) {
+    init(isNight: Bool = false, stage: LoadingView.LoadingStage) {
         self.isNight = isNight
+        self.stage = stage
         let themeManager = ThemeManager()
         themeManager.selected = isNight ? .night : .day
         _themeManager = StateObject(wrappedValue: themeManager)
     }
 
     var body: some View {
-        LoadingView(fixedMessageIndex: 0)
+        LoadingView(previewStage: stage)
             .environmentObject(starManager)
             .environmentObject(themeManager)
             .preferredColorScheme(themeManager.preferredColorScheme)
     }
 }
 
-#Preview("Loading Day") {
-    LoadingViewPreviewContainer()
+#Preview("Loading Cosmic") {
+    LoadingViewPreviewContainer(stage: .cosmic)
+}
+
+#Preview("Loading Place") {
+    LoadingViewPreviewContainer(stage: .place)
+}
+
+#Preview("Loading Personal") {
+    LoadingViewPreviewContainer(stage: .personal)
 }
 
 #Preview("Loading Night") {
-    LoadingViewPreviewContainer(isNight: true)
-}
-
-private struct InfoSplashPreviewContainer: View {
-    @StateObject private var starManager = StarAnimationManager()
-    @StateObject private var themeManager: ThemeManager
-
-    init(isNight: Bool = false) {
-        let themeManager = ThemeManager()
-        themeManager.selected = isNight ? .night : .day
-        _themeManager = StateObject(wrappedValue: themeManager)
-    }
-
-    var body: some View {
-        WelcomeSplashView(
-            location: "Cupertino",
-            zodiac: "♍︎ Virgo",
-            moon: "🌔 Waxing Gibbous"
-        )
-        .environmentObject(starManager)
-        .environmentObject(themeManager)
-        .preferredColorScheme(themeManager.preferredColorScheme)
-    }
-}
-
-#Preview("Info Splash") {
-    InfoSplashPreviewContainer()
+    LoadingViewPreviewContainer(isNight: true, stage: .cosmic)
 }
 #endif
