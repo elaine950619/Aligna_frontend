@@ -1214,6 +1214,8 @@ struct ProfileView: View {
     @State private var editingBirthPlace = false
     @State private var showBirthdaySheet = false
     @State private var showBirthTimeSheet = false
+    @State private var birthdayDraft = Date()
+    @State private var birthTimeDraft = Date()
 
     // 主题偏好
     @AppStorage("themePreference") private var themePreferenceRaw: String = ThemePreference.auto.rawValue
@@ -1495,20 +1497,27 @@ private extension ProfileView {
                 HStack(spacing: 12) {
                     infoRow(
                         title: "Birthday",
-                        value: Self.birthDateDisplayFormatter.string(from: birthday),
-                        editable: true
-                    ) { showBirthdaySheet = true }
+                        value: hasLoadedProfileData ? Self.birthDateDisplayFormatter.string(from: birthday) : "—",
+                        editable: hasLoadedProfileData
+                    ) {
+                        guard hasLoadedProfileData else { return }
+                        birthdayDraft = birthday
+                        showBirthdaySheet = true
+                    }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .sheet(isPresented: $showBirthdaySheet) {
                         pickerSheet(
                             title: "Birthday",
                             picker: AnyView(
-                                DatePicker("", selection: $birthday, displayedComponents: .date)
+                                DatePicker("", selection: $birthdayDraft, displayedComponents: .date)
                                     .datePickerStyle(.wheel)
                                     .labelsHidden()
                             ),
                             onSave: {
-                                saveBirthDateOnly(newDate: birthday) { showBirthdaySheet = false }
+                                showBirthdaySheet = false
+                                saveBirthDateOnly(newDate: birthdayDraft) {
+                                    updateZodiacDisplay()
+                                }
                             },
                             onCancel: { showBirthdaySheet = false }
                         )
@@ -1516,20 +1525,27 @@ private extension ProfileView {
 
                     infoRow(
                         title: "Birth Time",
-                        value: BirthTimeUtils.displayFormatter.string(from: birthTime).lowercased(),
-                        editable: true
-                    ) { showBirthTimeSheet = true }
+                        value: hasLoadedProfileData ? BirthTimeUtils.displayFormatter.string(from: birthTime).lowercased() : "—",
+                        editable: hasLoadedProfileData
+                    ) {
+                        guard hasLoadedProfileData else { return }
+                        birthTimeDraft = birthTime
+                        showBirthTimeSheet = true
+                    }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .sheet(isPresented: $showBirthTimeSheet) {
                         pickerSheet(
                             title: "Birth Time",
                             picker: AnyView(
-                                DatePicker("", selection: $birthTime, displayedComponents: .hourAndMinute)
+                                DatePicker("", selection: $birthTimeDraft, displayedComponents: .hourAndMinute)
                                     .datePickerStyle(.wheel)
                                     .labelsHidden()
                             ),
                             onSave: {
-                                saveBirthTimeOnly(newTime: birthTime) { showBirthTimeSheet = false }
+                                showBirthTimeSheet = false
+                                saveBirthTimeOnly(newTime: birthTimeDraft) {
+                                    updateZodiacDisplay()
+                                }
                             },
                             onCancel: { showBirthTimeSheet = false }
                         )
@@ -1931,7 +1947,7 @@ private extension ProfileView {
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 Button(action: cancelBirthPlaceEditing) {
-                    Text("Cancel")
+                    Text("Close")
                         .font(AlynnaTypography.font(.body))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -2103,7 +2119,7 @@ private extension ProfileView {
             picker.tint(themeManager.accent)
 
             HStack {
-                Button("Cancel", action: onCancel)
+                Button("Close", action: onCancel)
                     .font(AlynnaTypography.font(.body))
                 Spacer()
                 Button("Save", action: onSave)
@@ -2571,7 +2587,9 @@ private extension ProfileView {
             self.editingBirthPlace = false
             self.birthPlaceResults = []
             self.didSelectBirthPlaceResult = false
-            self.syncChartDataIfNeeded(force: true)
+            self.syncChartDataIfNeeded(force: true) {
+                self.updateZodiacDisplay()
+            }
         }
     }
 

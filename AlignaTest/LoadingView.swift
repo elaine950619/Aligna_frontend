@@ -265,16 +265,13 @@ struct LoadingView: View {
             .onAppear {
                 scheduleStageProgression()
                 startEmojiTimers()
-                if iconShakePhase < 0 {
-                    withAnimation(.easeInOut(duration: 0.18).repeatForever(autoreverses: true)) {
-                        iconShakePhase = 1
-                    }
-                }
+                startIconShake()
                 startDotTimer()
                 startIconFadeTimer()
                 fetchChartDataFromFirestore()
             }
             .onChange(of: stage, initial: false) { _, newStage in
+                startIconShake()
                 if newStage == .personal {
                     loadPersonalSelections()
                     scheduleAutoSkipIfNeeded()
@@ -465,7 +462,7 @@ struct LoadingView: View {
     private var footerText: String? {
         switch stage {
         case .cosmic:
-            return "Chart data is derived from your current sky conditions."
+            return "Chart data is derived from your current cosmic conditions."
         case .place:
             return "Place signals are derived from local environment and weather."
         case .personal:
@@ -553,6 +550,13 @@ struct LoadingView: View {
         }
         Timer.scheduledTimer(withTimeInterval: 1.1, repeats: true) { _ in
             personalIconIndex = (personalIconIndex + 1) % personalIcons.count
+        }
+    }
+
+    private func startIconShake() {
+        iconShakePhase = -1
+        withAnimation(.easeInOut(duration: 0.18).repeatForever(autoreverses: true)) {
+            iconShakePhase = 1
         }
     }
 
