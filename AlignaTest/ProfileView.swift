@@ -83,6 +83,8 @@ struct ZodiacInlineRow: View {
     let moonText: String
     let ascText: String
 
+    @State private var loadingPhase = 0
+
     private var normalizedAscText: String {
         let t = ascText.trimmingCharacters(in: .whitespacesAndNewlines)
         return (t.isEmpty || t == "—") ? "Unknown" : t
@@ -104,7 +106,9 @@ struct ZodiacInlineRow: View {
                 .fixedSize(horizontal: true, vertical: false)
 
             Group {
-                if italic {
+                if text == "..." {
+                    animatedDots
+                } else if italic {
                     Text(text).italic()
                 } else {
                     Text(text)
@@ -117,6 +121,21 @@ struct ZodiacInlineRow: View {
         }
         .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .combine)
+    }
+
+    private var animatedDots: some View {
+        HStack(spacing: 3) {
+            ForEach(0..<3) { index in
+                Circle()
+                    .fill(themeManager.descriptionText.opacity(loadingPhase == index ? 0.95 : 0.35))
+                    .frame(width: 4, height: 4)
+            }
+        }
+        .onAppear {
+            Timer.scheduledTimer(withTimeInterval: 0.45, repeats: true) { _ in
+                loadingPhase = (loadingPhase + 1) % 3
+            }
+        }
     }
 
     private var rowContent: some View {
@@ -1184,6 +1203,10 @@ struct ProfileView: View {
     @State private var chartAscSign: String = ""
     @State private var chartSignature: String = ""
     @State private var hasLoadedProfileData = false
+    @State private var isZodiacReady = false
+    @State private var sunSignDisplay = "..."
+    @State private var moonSignDisplay = "..."
+    @State private var ascSignDisplay = "..."
 
 
     // 编辑状态
@@ -1452,9 +1475,9 @@ private extension ProfileView {
             }
 
             ZodiacInlineRow(
-                sunText:  hasLoadedProfileData ? sunSignText : "-",
-                moonText: hasLoadedProfileData ? moonSignText : "-",
-                ascText:  hasLoadedProfileData ? ascSignText : "-"
+                sunText:  isZodiacReady ? sunSignDisplay : "...",
+                moonText: isZodiacReady ? moonSignDisplay : "...",
+                ascText:  isZodiacReady ? ascSignDisplay : "..."
             )
             .environmentObject(themeManager)
         }
@@ -2289,6 +2312,10 @@ private extension ProfileView {
         guard let user = Auth.auth().currentUser else { return }
         isBusy = true
         hasLoadedProfileData = false
+        isZodiacReady = false
+        sunSignDisplay = "..."
+        moonSignDisplay = "..."
+        ascSignDisplay = "..."
         errorMessage = nil
 
         queryByUID(user.uid) { doc, col in
@@ -2424,7 +2451,9 @@ private extension ProfileView {
         self.didSelectBirthPlaceResult = false
         hasLoadedProfileData = true
         clearChartData()
-        syncChartDataIfNeeded()
+        syncChartDataIfNeeded {
+            updateZodiacDisplay()
+        }
     }
 
 
@@ -2593,6 +2622,17 @@ private extension ProfileView {
         chartMoonSign = ""
         chartAscSign = ""
         chartSignature = ""
+    }
+
+    private func updateZodiacDisplay() {
+        let sun = sunSignText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let moon = moonSignText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let asc = ascSignText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        sunSignDisplay = sun.isEmpty ? "..." : sun
+        moonSignDisplay = moon.isEmpty ? "..." : moon
+        ascSignDisplay = asc.isEmpty ? "..." : asc
+        isZodiacReady = true
     }
 
     private func syncChartDataIfNeeded(force: Bool = false, completion: (() -> Void)? = nil) {
