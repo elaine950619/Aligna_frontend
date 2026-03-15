@@ -493,12 +493,12 @@ struct LoadingView: View {
 
         if !parts.isEmpty {
             let base = "I see your \(parts.joined(separator: ", "))."
-            let tail = phaseName.isEmpty ? "" : " The moon is in \(phaseName)."
+            let tail = phaseName.isEmpty ? "" : "\nThe moon is in \(phaseName)."
             return Text(base + tail).font(AlignaType.helperSmall())
         }
 
         let base = "I’m syncing your chart…"
-        let tail = phaseName.isEmpty ? "" : " The moon is in \(phaseName)."
+        let tail = phaseName.isEmpty ? "" : "\nThe moon is in \(phaseName)."
         return Text(base + tail).font(AlignaType.helperSmall())
     }
 

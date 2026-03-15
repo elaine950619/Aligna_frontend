@@ -69,15 +69,15 @@ public func moonPhaseLabel(for date: Date = Date()) -> String {
     let days = date.timeIntervalSince(anchor) / 86400
     let phase = days - floor(days / synodic) * synodic
     switch phase {
-    case 0..<1.84566:        return "🌑 New Moon"
-    case 1.84566..<5.53699:  return "🌒 Waxing Crescent"
-    case 5.53699..<9.22831:  return "🌓 First Quarter"
-    case 9.22831..<12.91963: return "🌔 Waxing Gibbous"
-    case 12.91963..<16.61096:return "🌕 Full Moon"
-    case 16.61096..<20.30228:return "🌖 Waning Gibbous"
-    case 20.30228..<23.99361:return "🌗 Third Quarter"
-    case 23.99361..<27.68493:return "🌘 Waning Crescent"
-    default:                 return "🌑 New Moon"
+    case 0..<1.84566:        return "New Moon"
+    case 1.84566..<5.53699:  return "Waxing Crescent"
+    case 5.53699..<9.22831:  return "First Quarter"
+    case 9.22831..<12.91963: return "Waxing Gibbous"
+    case 12.91963..<16.61096:return "Full Moon"
+    case 16.61096..<20.30228:return "Waning Gibbous"
+    case 20.30228..<23.99361:return "Third Quarter"
+    case 23.99361..<27.68493:return "Waning Crescent"
+    default:                 return "New Moon"
     }
 }
 #if DEBUG
