@@ -6,6 +6,7 @@ import Combine
 import WidgetKit
 
 class OnboardingViewModel: ObservableObject {
+    @Published var userId: String = ""
     @Published var nickname: String = ""
     @Published var gender: String = ""
     @Published var relationshipStatus: String = ""
@@ -1090,6 +1091,9 @@ struct OnboardingFinalStep: View {
 
     // 上传/跳转
     @State private var isLoading = false
+    @State private var authListenerHandle: AuthStateDidChangeListenerHandle? = nil
+    @State private var loadingStageIndex: Int = 0
+    @State private var showLongWaitHint = false
     @State private var navigateToHome = false
 
     // 入场动画
@@ -1141,24 +1145,61 @@ struct OnboardingFinalStep: View {
                         }
                         .padding(.horizontal, geo.size.width * 0.1)
 
-                        if isLoading {
-                            ProgressView("Loading, please wait...")
-                                .foregroundColor(.white)
-                                .padding(.top, 6)
-                                .staggered(7, show: $showIntro)
-                        }
+                        Group {
+                            Button {
+                                guard !isLoading else { return }
+                                isLoading = true
+                                loadingStageIndex = 0
+                                showLongWaitHint = false
+                                ensureAuthenticatedThenUpload()
+                            } label: {
+                                ZStack {
+                                    // The styled text (applies the Text extension correctly)
+                                    Text(isLoading ? "Preparing your profile…" : "Confirm")
+                                        .onboardingPrimaryButtonStyle(isEnabled: !isLoading)
 
-                        Button {
-                            guard !isLoading else { return }
-                            isLoading = true
-                            uploadUserInfo()
-                        } label: {
-                            Text("Confirm")
-                                .onboardingPrimaryButtonStyle(isEnabled: !isLoading)
+                                    // Overlay spinner when loading, centered within the same bounds
+                                    if isLoading {
+                                        HStack(spacing: 8) {
+                                            ProgressView()
+                                                .progressViewStyle(.circular)
+                                                .tint(.black)
+                                                .scaleEffect(0.8)
+                                            // Keep the same text color contrast while loading
+                                            Text("Preparing your profile…")
+                                                .font(.custom("Merriweather-Bold", size: 17))
+                                                .foregroundColor(.black)
+                                                .opacity(0.001) // occupy space without visual duplication
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.top, 10)
+                            .staggered(8, show: $showIntro)
+
+                            if isLoading {
+                                Text("This may take a few seconds.")
+                                    .font(AlynnaTypography.font(.footnote))
+                                    .foregroundColor(themeManager.fixedNightTextSecondary)
+                                    .padding(.top, 6)
+                                    .transition(.opacity)
+
+                                Text(loadingStageText)
+                                    .font(AlynnaTypography.font(.footnote))
+                                    .foregroundColor(themeManager.fixedNightTextSecondary)
+                                    .padding(.top, 2)
+                                    .transition(.opacity)
+
+                                if showLongWaitHint {
+                                    Text("Still working—hang tight.")
+                                        .font(AlynnaTypography.font(.footnote))
+                                        .foregroundColor(themeManager.fixedNightTextSecondary)
+                                        .padding(.top, 2)
+                                        .transition(.opacity)
+                                }
+                            }
                         }
-                        .padding(.horizontal, 24)
-                        .padding(.top, 10)
-                        .staggered(8, show: $showIntro)
                         .padding(.bottom, 24)
                     }
                 }
@@ -1174,6 +1215,12 @@ struct OnboardingFinalStep: View {
                 didAttemptReverseGeocode = false
                 locationMessage = "Requesting location permission..."
                 locationManager.requestLocation()
+            }
+            .onDisappear {
+                if let handle = authListenerHandle {
+                    Auth.auth().removeStateDidChangeListener(handle)
+                    authListenerHandle = nil
+                }
             }
             // 监听坐标，做反向地理编码
             .onReceive(locationManager.$currentLocation.compactMap { $0 }) { coord in
@@ -1277,10 +1324,64 @@ struct OnboardingFinalStep: View {
     @State private var recommendation: [String: String] = [:]
     @State private var mantra: String = ""
 
+    private func ensureAuthenticatedThenUpload() {
+        if Auth.auth().currentUser != nil {
+            uploadUserInfo()
+            return
+        }
+
+        authListenerHandle = Auth.auth().addStateDidChangeListener { _, user in
+            if user != nil {
+                if let handle = authListenerHandle {
+                    Auth.auth().removeStateDidChangeListener(handle)
+                    authListenerHandle = nil
+                }
+                uploadUserInfo()
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            if self.authListenerHandle != nil, Auth.auth().currentUser == nil {
+                if let handle = self.authListenerHandle {
+                    Auth.auth().removeStateDidChangeListener(handle)
+                    self.authListenerHandle = nil
+                }
+                self.isLoading = false
+            }
+        }
+    }
+
+    private var loadingStageText: String {
+        let stages = [
+            "Saving your preferences…",
+            "Personalizing your profile…",
+            "Finalizing recommendations…"
+        ]
+        if stages.isEmpty { return "" }
+        return stages[min(loadingStageIndex, stages.count - 1)]
+    }
+
+    private func startLoadingStages() {
+        loadingStageIndex = 0
+        showLongWaitHint = false
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            if self.isLoading { self.loadingStageIndex = 1 }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+            if self.isLoading { self.loadingStageIndex = 2 }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) {
+            if self.isLoading { self.showLongWaitHint = true }
+        }
+    }
+
     private func uploadUserInfo() {
         guard let userId = Auth.auth().currentUser?.uid else {
             print("❌ 未登录，无法上传")
             isLoading = false
+            loadingStageIndex = 0
+            showLongWaitHint = false
             return
         }
 
@@ -1333,6 +1434,8 @@ struct OnboardingFinalStep: View {
 
         // ===== 下面保持你原有的 FastAPI 请求逻辑 =====
         // 这里仍然用你原来传给后端的“字符串时间”，不会影响我们在 Firestore 的存储方案
+        startLoadingStages()
+
         let timeFormatter = DateFormatter()
         timeFormatter.locale = Locale(identifier: "en_US_POSIX")
         timeFormatter.timeZone = .current
@@ -1349,6 +1452,8 @@ struct OnboardingFinalStep: View {
         guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
             print("❌ 无效的 FastAPI URL")
             isLoading = false
+            loadingStageIndex = 0
+            showLongWaitHint = false
             return
         }
 
@@ -1360,20 +1465,30 @@ struct OnboardingFinalStep: View {
         } catch {
             print("❌ JSON 序列化失败: \(error)")
             isLoading = false
+            loadingStageIndex = 0
+            showLongWaitHint = false
             return
         }
 
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("❌ FastAPI 请求失败: \(error.localizedDescription)")
-                DispatchQueue.main.async { isLoading = false }
+                DispatchQueue.main.async {
+                    isLoading = false
+                    loadingStageIndex = 0
+                    showLongWaitHint = false
+                }
                 return
             }
             guard let data = data,
                   let raw = String(data: data, encoding: .utf8),
                   let cleanedData = raw.data(using: .utf8) else {
                 print("❌ FastAPI 无响应数据或解码失败")
-                DispatchQueue.main.async { isLoading = false }
+                DispatchQueue.main.async {
+                    isLoading = false
+                    loadingStageIndex = 0
+                    showLongWaitHint = false
+                }
                 return
             }
 
@@ -1452,6 +1567,8 @@ struct OnboardingFinalStep: View {
                     DispatchQueue.main.async {
                         viewModel.recommendations = normalizedRecs
                         self.isLoading = false
+                        self.loadingStageIndex = 0
+                        self.showLongWaitHint = false
 
                         guard let userId = Auth.auth().currentUser?.uid else { return }
                         let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
@@ -1489,11 +1606,19 @@ struct OnboardingFinalStep: View {
                     }
                 } else {
                     print("❌ JSON 解包失败或缺少字段")
-                    DispatchQueue.main.async { self.isLoading = false }
+                    DispatchQueue.main.async {
+                        self.isLoading = false
+                        self.loadingStageIndex = 0
+                        self.showLongWaitHint = false
+                    }
                 }
             } catch {
                 print("❌ JSON 解析失败: \(error)")
-                DispatchQueue.main.async { self.isLoading = false }
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.loadingStageIndex = 0
+                    self.showLongWaitHint = false
+                }
             }
         }.resume()
     }

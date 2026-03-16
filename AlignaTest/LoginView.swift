@@ -22,10 +22,15 @@ struct LoginView: View {
     @State private var currentNonce: String? = nil
     @State private var navigateToHome = false
     @State private var authBusy = false
+    @State private var activeAuthAction: AuthAction? = nil
     @State private var showIntro = false
     @FocusState private var loginFocus: LoginField?
     private enum LoginField { case email, password }
+    private enum AuthAction { case emailLogin, google, apple, resetPassword }
     private var panelBG: Color { Color.white.opacity(0.10) }
+    private func isActive(_ action: AuthAction) -> Bool {
+        authBusy && activeAuthAction == action
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -47,6 +52,7 @@ struct LoginView: View {
                                 .clipShape(Circle())
                                 .foregroundColor(themeManager.fixedNightTextPrimary)
                         }
+                        .disabled(authBusy)
                         .padding(.leading, geometry.size.width * 0.05)
                         .padding(.top, geometry.size.height * 0.05)
                         Spacer()
@@ -152,9 +158,11 @@ struct LoginView: View {
                                     showAlert = true
                                     return
                                 }
+                                activeAuthAction = .resetPassword
                                 authBusy = true
                                 Auth.auth().sendPasswordReset(withEmail: email) { error in
                                     authBusy = false
+                                    activeAuthAction = nil
                                     if let error = error {
                                         alertMessage = error.localizedDescription
                                     } else {
@@ -177,9 +185,14 @@ struct LoginView: View {
                                 showAlert = true
                                 return
                             }
+                            activeAuthAction = .emailLogin
                             authBusy = true
                             Auth.auth().signIn(withEmail: email, password: password) { _, error in
                                 authBusy = false
+                                activeAuthAction = nil
+                                if let user = Auth.auth().currentUser {
+                                    viewModel.userId = user.uid
+                                }
                                 if let error = error {
                                     if let code = AuthErrorCode(rawValue: (error as NSError).code) {
                                         switch code {
@@ -206,14 +219,23 @@ struct LoginView: View {
 
                                 routeAuthenticatedUser(
                                     onSuccessToLogin: {
+                                        authBusy = false
+                                        activeAuthAction = nil
                                         navigateToHome = true
                                     },
                                     onSuccessToOnboarding: {
+                                        authBusy = false
+                                        activeAuthAction = nil
+                                        if let user = Auth.auth().currentUser {
+                                            viewModel.userId = user.uid
+                                        }
                                         infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
                                         dismissAfterInfo = true
                                         showInfoAlert = true
                                     },
                                     onError: { message in
+                                        authBusy = false
+                                        activeAuthAction = nil
                                         alertMessage = message
                                         showAlert = true
                                     }
@@ -221,13 +243,13 @@ struct LoginView: View {
                             }
                         }) {
                             HStack(spacing: 8) {
-                                if authBusy {
+                                if isActive(.emailLogin) {
                                     ProgressView()
                                         .progressViewStyle(.circular)
                                         .tint(.black)
                                         .scaleEffect(0.75)
                                 }
-                                Text(authBusy ? "Signing in..." : "Log In")
+                                Text(isActive(.emailLogin) ? "Signing in..." : "Log In")
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
@@ -252,29 +274,36 @@ struct LoginView: View {
                         VStack(spacing: minLength * 0.025) {
                             Button(action: {
                                 guard !authBusy else { return }
+                                activeAuthAction = .google
                                 authBusy = true
                                 handleGoogleLogin(
                                     viewModel: viewModel,
                                     onSuccessToLogin: {
                                         authBusy = false
+                                        activeAuthAction = nil
+                                        if let user = Auth.auth().currentUser {
+                                            viewModel.userId = user.uid
+                                        }
                                         isLoggedIn = true
                                         navigateToHome = true
                                     },
                                     onSuccessToOnboarding: {
                                         authBusy = false
+                                        activeAuthAction = nil
                                         infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
                                         dismissAfterInfo = true
                                         showInfoAlert = true
                                     },
                                     onError: { message in
                                         authBusy = false
+                                        activeAuthAction = nil
                                         alertMessage = message
                                         showAlert = true
                                     }
                                 )
                             }) {
                                 HStack(spacing: 12) {
-                                    if authBusy {
+                                    if isActive(.google) {
                                         ProgressView()
                                             .progressViewStyle(.circular)
                                             .tint(themeManager.fixedNightTextPrimary)
@@ -309,23 +338,33 @@ struct LoginView: View {
                                         showAlert = true
                                         return
                                     }
+                                    activeAuthAction = .apple
                                     authBusy = true
                                     handleAppleLogin(
                                         result: result,
                                         rawNonce: raw,
                                         onSuccessToLogin: {
                                             authBusy = false
+                                            activeAuthAction = nil
+                                            if let user = Auth.auth().currentUser {
+                                                viewModel.userId = user.uid
+                                            }
                                             isLoggedIn = true
                                             navigateToHome = true
                                         },
                                         onSuccessToOnboarding: {
                                             authBusy = false
+                                            activeAuthAction = nil
+                                            if let user = Auth.auth().currentUser {
+                                                viewModel.userId = user.uid
+                                            }
                                             infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
                                             dismissAfterInfo = true
                                             showInfoAlert = true
                                         },
                                         onError: { message in
                                             authBusy = false
+                                            activeAuthAction = nil
                                             alertMessage = message
                                             showAlert = true
                                         }
@@ -336,7 +375,7 @@ struct LoginView: View {
                             .signInWithAppleButtonStyle(.white)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                             .overlay(alignment: .leading) {
-                                if authBusy {
+                                if isActive(.apple) {
                                     ProgressView()
                                         .progressViewStyle(.circular)
                                         .tint(.black)

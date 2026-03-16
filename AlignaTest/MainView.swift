@@ -122,6 +122,7 @@ struct MainView: View {
     @AppStorage("todayFetchLock") private var todayFetchLock: String = ""
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
     @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
+    @AppStorage("didDeleteAccount") private var didDeleteAccount: Bool = false
     @State private var isFetchingToday: Bool = false
     
     @State private var isMantraExpanded: Bool = false
@@ -153,7 +154,6 @@ struct MainView: View {
     @State private var bootPhase: BootPhase = .loading
     
     @State private var didBootVisuals = false
-    @State private var alynnaFrame: CGRect = .zero
 
     
     private func ensureDefaultsIfMissing() {
@@ -167,14 +167,6 @@ struct MainView: View {
             recommendationTitles = DesignRecs.titles
         }
     }
-    
-    private struct AlynnaFrameKey: PreferenceKey {
-        static var defaultValue: CGRect = .zero
-        static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
-            value = nextValue()
-        }
-    }
-
     
     private var updatedOnText: String {
         let date = lastRecommendationDate.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -212,19 +204,6 @@ struct MainView: View {
                         HStack {
                             
                             HStack(spacing: geometry.size.width * 0.035) {
-                                // Timeline / calendar
-                                NavigationLink(
-                                    destination: TimelineView()
-                                        .environmentObject(starManager)
-                                        .environmentObject(themeManager)
-                                        .environmentObject(viewModel)
-                                ) {
-                                    Image(systemName: "calendar")
-                                        .font(.system(size: 20))
-                                        .foregroundColor(themeManager.foregroundColor)
-                                        .frame(width: 28, height: 28)
-                                }
-
                                 // Journal button – book icon
                                 NavigationLink(
                                     destination: JournalView(date: selectedDate)
@@ -279,16 +258,6 @@ struct MainView: View {
                             .lineSpacing(AlignaType.logoLineSpacing)
                             .foregroundColor(themeManager.foregroundColor)
                             .padding(.top, 20)
-                            // ✅ 把 Alynna 的真实位置传出去（在 GeometryReader 的坐标系里）
-                            .background(
-                                GeometryReader { proxy in
-                                    Color.clear.preference(
-                                        key: AlynnaFrameKey.self,
-                                        value: proxy.frame(in: .named("HomeSpace"))
-                                    )
-                                }
-                            )
-                            .onPreferenceChange(AlynnaFrameKey.self) { alynnaFrame = $0 }
                         .opacity(isMantraExpanded ? 0 : 1)
                         .scaleEffect(isMantraExpanded ? 0.92 : 1)
                         .frame(height: isMantraExpanded ? 0 : nil)
@@ -466,13 +435,50 @@ struct MainView: View {
         }
 
         let ref = Firestore.firestore().collection("users").document(user.uid)
-        ref.getDocument { snapshot, error in
+        let source: FirestoreSource = didDeleteAccount ? .server : .default
+        ref.getDocument(source: source) { snapshot, error in
             let data = snapshot?.data()
             let nickname = (data?["nickname"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             let hasProfile = data != nil && !nickname.isEmpty
 
             DispatchQueue.main.async {
                 if let _ = error {
+                    if didDeleteAccount {
+                        didDeleteAccount = false
+                        ref.getDocument { snapshot, error in
+                            DispatchQueue.main.async {
+                                if let _ = error {
+                                    didResolveBootPath = false
+                                    if shouldOnboardAfterSignIn && !hasCompletedOnboarding {
+                                        withAnimation(.easeInOut) { bootPhase = .onboarding }
+                                        return
+                                    }
+                                    shouldOnboardAfterSignIn = false
+                                    proceedNormalBoot()
+                                    return
+                                }
+
+                                let data = snapshot?.data()
+                                let nickname = (data?["nickname"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                                let hasProfile = data != nil && !nickname.isEmpty
+
+                                if hasProfile {
+                                    hasCompletedOnboarding = true
+                                    shouldOnboardAfterSignIn = false
+                                    proceedNormalBoot()
+                                    return
+                                }
+
+                                if shouldOnboardAfterSignIn || !hasCompletedOnboarding {
+                                    withAnimation(.easeInOut) { bootPhase = .onboarding }
+                                } else {
+                                    proceedNormalBoot()
+                                }
+                            }
+                        }
+                        return
+                    }
+
                     // 读取失败则退回本地标记逻辑
                     didResolveBootPath = false
                     if shouldOnboardAfterSignIn && !hasCompletedOnboarding {
@@ -482,6 +488,10 @@ struct MainView: View {
                     shouldOnboardAfterSignIn = false
                     proceedNormalBoot()
                     return
+                }
+
+                if didDeleteAccount {
+                    didDeleteAccount = false
                 }
 
                 if hasProfile {

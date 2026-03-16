@@ -24,6 +24,7 @@ struct SignUpView: View {
     @State private var navigateToLoginOnDismiss = false
     @State private var currentNonce: String? = nil
     @State private var authBusy = false
+    @State private var activeAuthAction: AuthAction? = nil
 
     @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
@@ -34,6 +35,10 @@ struct SignUpView: View {
     @FocusState private var registerFocus: RegisterField?
 
     private enum RegisterField { case email, password }
+    private enum AuthAction { case emailSignUp, google, apple }
+    private func isActive(_ action: AuthAction) -> Bool {
+        authBusy && activeAuthAction == action
+    }
 
     var body: some View {
         NavigationStack {
@@ -62,6 +67,7 @@ struct SignUpView: View {
                                         .background(Color.white.opacity(0.1))
                                         .clipShape(Circle())
                                 }
+                                .disabled(authBusy)
                                 .padding(.leading, w * 0.05)
                                 Spacer()
                             }
@@ -151,16 +157,17 @@ struct SignUpView: View {
 
                             Button(action: {
                                 guard !authBusy else { return }
+                                activeAuthAction = .emailSignUp
                                 registerWithEmailPassword()
                             }) {
                                 HStack(spacing: 8) {
-                                    if authBusy {
+                                    if isActive(.emailSignUp) {
                                         ProgressView()
                                             .progressViewStyle(.circular)
                                             .tint(.black)
                                             .scaleEffect(0.75)
                                     }
-                                    Text(authBusy ? "Creating..." : "Create Account")
+                                    Text(isActive(.emailSignUp) ? "Creating..." : "Create Account")
                                 }
                                 .font(AlynnaTypography.font(.headline))
                                 .padding()
@@ -189,6 +196,7 @@ struct SignUpView: View {
                             VStack(spacing: minL * 0.025) {
                                 Button(action: {
                                     guard !authBusy else { return }
+                                    activeAuthAction = .google
                                     authBusy = true
                                     hasCompletedOnboarding = false
                                     isLoggedIn = false
@@ -196,6 +204,7 @@ struct SignUpView: View {
 
                                     if !GoogleSignInDiagnostics.preflight(context: "SignUpView.GoogleButton") {
                                         authBusy = false
+                                        activeAuthAction = nil
                                         alertMessage = ""
                                         showAlert = true
                                         return
@@ -204,11 +213,16 @@ struct SignUpView: View {
                                     handleGoogleFromRegister(
                                         onNewUserGoOnboarding: {
                                             authBusy = false
+                                            activeAuthAction = nil
+                                            if let user = Auth.auth().currentUser {
+                                                viewModel.userId = user.uid
+                                            }
                                             shouldOnboardAfterSignIn = true
                                             navigateToOnboarding = true
                                         },
                                         onExistingUserGoLogin: { msg in
                                             authBusy = false
+                                            activeAuthAction = nil
                                             shouldOnboardAfterSignIn = false
                                             infoMessage = msg
                                             navigateToLoginOnDismiss = true
@@ -216,6 +230,7 @@ struct SignUpView: View {
                                         },
                                         onError: { message in
                                             authBusy = false
+                                            activeAuthAction = nil
                                             shouldOnboardAfterSignIn = false
                                             alertMessage = message
                                             showAlert = true
@@ -223,7 +238,7 @@ struct SignUpView: View {
                                     )
                                 }) {
                                     HStack(spacing: 12) {
-                                        if authBusy {
+                                        if isActive(.google) {
                                             ProgressView()
                                                 .progressViewStyle(.circular)
                                                 .tint(themeManager.fixedNightTextPrimary)
@@ -259,6 +274,7 @@ struct SignUpView: View {
                                             showAlert = true
                                             return
                                         }
+                                        activeAuthAction = .apple
                                         authBusy = true
                                         hasCompletedOnboarding = false
                                         isLoggedIn = false
@@ -270,6 +286,10 @@ struct SignUpView: View {
                                             onNewUserGoOnboarding: {
                                                 DispatchQueue.main.async {
                                                     authBusy = false
+                                                    activeAuthAction = nil
+                                                    if let user = Auth.auth().currentUser {
+                                                        viewModel.userId = user.uid
+                                                    }
                                                     shouldOnboardAfterSignIn = true
                                                     navigateToOnboarding = true
                                                 }
@@ -277,6 +297,7 @@ struct SignUpView: View {
                                             onExistingUserGoLogin: { msg in
                                                 DispatchQueue.main.async {
                                                     authBusy = false
+                                                    activeAuthAction = nil
                                                     shouldOnboardAfterSignIn = false
                                                     infoMessage = msg
                                                     navigateToLoginOnDismiss = true
@@ -286,6 +307,7 @@ struct SignUpView: View {
                                             onError: { message in
                                                 DispatchQueue.main.async {
                                                     authBusy = false
+                                                    activeAuthAction = nil
                                                     shouldOnboardAfterSignIn = false
                                                     alertMessage = message
                                                     showAlert = true
@@ -298,7 +320,7 @@ struct SignUpView: View {
                                 .signInWithAppleButtonStyle(.white)
                                 .clipShape(RoundedRectangle(cornerRadius: 14))
                                 .overlay(alignment: .leading) {
-                                    if authBusy {
+                                    if isActive(.apple) {
                                         ProgressView()
                                             .progressViewStyle(.circular)
                                             .tint(.black)
@@ -318,12 +340,6 @@ struct SignUpView: View {
                     .preferredColorScheme(.dark)
                     .transaction { $0.animation = nil }
 
-                    if authBusy {
-                        ProgressView()
-                            .scaleEffect(1.1)
-                            .padding(18)
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-                    }
                 }
                 .alert(isPresented: $showAlert) {
                     Alert(title: Text("Notice"),
@@ -393,6 +409,7 @@ struct SignUpView: View {
         Auth.auth().createUser(withEmail: email, password: password) { result, error in
             if let error = error {
                 authBusy = false
+                activeAuthAction = nil
                 if let errCode = AuthErrorCode(rawValue: error._code),
                    errCode == .emailAlreadyInUse {
                     shouldOnboardAfterSignIn = false
@@ -410,9 +427,13 @@ struct SignUpView: View {
                 return
             }
 
+            if let user = result?.user {
+                viewModel.userId = user.uid
+            }
             result?.user.sendEmailVerification(completion: nil)
             DispatchQueue.main.async {
                 authBusy = false
+                activeAuthAction = nil
                 verifyMessage = "We sent a verification email to \(email). Please verify, then tap 'I Verified' to continue."
                 showVerifyAlert = true
             }

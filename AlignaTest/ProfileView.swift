@@ -2894,6 +2894,7 @@ private extension ProfileView {
         let credential = EmailAuthProvider.credential(withEmail: email, password: password)
         user.reauthenticate(with: credential) { _, err in completion(err) }
     }
+
     func purgeCollection(
             _ name: String,
             whereField field: String,
@@ -3165,6 +3166,25 @@ private extension ProfileView {
             birthLat = 0
             birthLng = 0
             birthTimezoneOffsetMinutes = TimeZone.current.secondsFromGMT() / 60
+
+            viewModel.userId = ""
+            viewModel.nickname = ""
+            viewModel.gender = ""
+            viewModel.relationshipStatus = ""
+            viewModel.birth_date = Date()
+            viewModel.birth_time = Date()
+            viewModel.birthPlace = ""
+            viewModel.currentPlace = ""
+            viewModel.birthCoordinate = nil
+            viewModel.currentCoordinate = nil
+            viewModel.recommendations = [:]
+            viewModel.dailyMantra = ""
+            viewModel.reasoningSummary = ""
+            viewModel.scent_dislike = []
+            viewModel.act_prefer = ""
+            viewModel.color_dislike = []
+            viewModel.allergies = []
+            viewModel.music_dislike = []
             birthRawTimeString = nil
 
             chartSunSign = ""
