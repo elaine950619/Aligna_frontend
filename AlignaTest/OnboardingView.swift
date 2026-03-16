@@ -722,7 +722,11 @@ struct OnboardingStep2: View {
                 Spacer()
                 Button("Done", action: done)
                     .font(.custom("Merriweather-Bold", size: 16))
-                    .foregroundColor(.blue)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.14))
+                    .clipShape(Capsule())
             }
             .padding(.horizontal, 20)
             .padding(.top, 10)
@@ -731,6 +735,8 @@ struct OnboardingStep2: View {
                 .datePickerStyle(.wheel)
                 .labelsHidden()
                 .environment(\.colorScheme, .dark)
+                .tint(.white)
+                .foregroundColor(.white)
                 .padding(.bottom, 18)
         }
     }
