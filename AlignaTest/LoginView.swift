@@ -220,12 +220,20 @@ struct LoginView: View {
                                 )
                             }
                         }) {
-                            Text(authBusy ? "Signing in..." : "Log In")
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(themeManager.fixedNightTextPrimary)
-                                .foregroundColor(.black)
-                                .cornerRadius(14)
+                            HStack(spacing: 8) {
+                                if authBusy {
+                                    ProgressView()
+                                        .progressViewStyle(.circular)
+                                        .tint(.black)
+                                        .scaleEffect(0.75)
+                                }
+                                Text(authBusy ? "Signing in..." : "Log In")
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(themeManager.fixedNightTextPrimary)
+                            .foregroundColor(.black)
+                            .cornerRadius(14)
                         }
                         .disabled(authBusy)
                         .staggered(5, show: $showIntro)
@@ -266,6 +274,12 @@ struct LoginView: View {
                                 )
                             }) {
                                 HStack(spacing: 12) {
+                                    if authBusy {
+                                        ProgressView()
+                                            .progressViewStyle(.circular)
+                                            .tint(themeManager.fixedNightTextPrimary)
+                                            .scaleEffect(0.75)
+                                    }
                                     Image("googleIcon")
                                         .resizable()
                                         .frame(width: 20, height: 20)
@@ -321,6 +335,15 @@ struct LoginView: View {
                             .frame(height: 50)
                             .signInWithAppleButtonStyle(.white)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .overlay(alignment: .leading) {
+                                if authBusy {
+                                    ProgressView()
+                                        .progressViewStyle(.circular)
+                                        .tint(.black)
+                                        .scaleEffect(0.75)
+                                        .padding(.leading, 16)
+                                }
+                            }
                             .staggered(8, show: $showIntro)
                         }
                         .padding(.top, 2)

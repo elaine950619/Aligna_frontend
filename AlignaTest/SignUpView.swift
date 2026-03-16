@@ -153,13 +153,21 @@ struct SignUpView: View {
                                 guard !authBusy else { return }
                                 registerWithEmailPassword()
                             }) {
-                                Text(authBusy ? "Creating..." : "Create Account")
-                                    .font(AlynnaTypography.font(.headline))
-                                    .padding()
-                                    .frame(maxWidth: .infinity)
-                                    .background(themeManager.fixedNightTextPrimary)
-                                    .foregroundColor(.black)
-                                    .cornerRadius(14)
+                                HStack(spacing: 8) {
+                                    if authBusy {
+                                        ProgressView()
+                                            .progressViewStyle(.circular)
+                                            .tint(.black)
+                                            .scaleEffect(0.75)
+                                    }
+                                    Text(authBusy ? "Creating..." : "Create Account")
+                                }
+                                .font(AlynnaTypography.font(.headline))
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(themeManager.fixedNightTextPrimary)
+                                .foregroundColor(.black)
+                                .cornerRadius(14)
                             }
                             .disabled(authBusy)
                             .staggered(4, show: $showIntro)
@@ -215,6 +223,12 @@ struct SignUpView: View {
                                     )
                                 }) {
                                     HStack(spacing: 12) {
+                                        if authBusy {
+                                            ProgressView()
+                                                .progressViewStyle(.circular)
+                                                .tint(themeManager.fixedNightTextPrimary)
+                                                .scaleEffect(0.75)
+                                        }
                                         Image("googleIcon")
                                             .resizable()
                                             .frame(width: 20, height: 20)
@@ -283,6 +297,15 @@ struct SignUpView: View {
                                 .frame(height: 50)
                                 .signInWithAppleButtonStyle(.white)
                                 .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(alignment: .leading) {
+                                    if authBusy {
+                                        ProgressView()
+                                            .progressViewStyle(.circular)
+                                            .tint(.black)
+                                            .scaleEffect(0.75)
+                                            .padding(.leading, 16)
+                                    }
+                                }
                                 .disabled(authBusy)
                                 .staggered(8, show: $showIntro)
                             }

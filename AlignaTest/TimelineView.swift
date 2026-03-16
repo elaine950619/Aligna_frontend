@@ -399,13 +399,12 @@ struct TimelineView: View {
                     .ignoresSafeArea()
         
                 
-                ScrollView(showsIndicators: false) {
+                ScrollView(.vertical, showsIndicators: false) {
                     TimelineHeader(title: "Timeline") { dismiss() }
                                             .padding(.bottom, 4)
                                             .foregroundColor(themeManager.foregroundColor)
                     
                     VStack(spacing: 18) {
-
                         CalendarView(
                             selectedDate: $selectedDate,
                             accentColor: themeManager.accent,
@@ -533,6 +532,7 @@ struct TimelineView: View {
                             .padding(.horizontal, 16)
                         }
                     }
+                    .frame(maxWidth: .infinity)
                     .padding(.top)
                 }
             }
