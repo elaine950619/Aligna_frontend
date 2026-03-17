@@ -445,33 +445,57 @@ struct SignUpView: View {
     }
 
     private func checkEmailVerificationAndContinue() {
-        guard let user = Auth.auth().currentUser else {
-            infoMessage = "Your session expired. Please sign in again to continue."
-            navigateToLoginOnDismiss = true
-            showInfoAlert = true
-            return
-        }
+        func proceed(with user: User) {
+            authBusy = true
+            user.reload { error in
+                DispatchQueue.main.async {
+                    authBusy = false
+                    if let error = error {
+                        alertMessage = error.localizedDescription
+                        showAlert = true
+                        return
+                    }
 
-        authBusy = true
-        user.reload { error in
-            DispatchQueue.main.async {
-                authBusy = false
-                if let error = error {
-                    alertMessage = error.localizedDescription
-                    showAlert = true
-                    return
-                }
-
-                if user.isEmailVerified {
-                    showVerifyAlert = false
-                    isLoggedIn = true
-                    navigateToOnboarding = true
-                } else {
-                    alertMessage = "Email not verified yet. Please check your inbox, then try again."
-                    showAlert = true
+                    if user.isEmailVerified {
+                        showVerifyAlert = false
+                        isLoggedIn = true
+                        navigateToOnboarding = true
+                    } else {
+                        alertMessage = "Email not verified yet. Please check your inbox, then try again."
+                        showAlert = true
+                    }
                 }
             }
         }
+
+        // Case 1: Session exists, just reload
+        if let user = Auth.auth().currentUser {
+            proceed(with: user)
+            return
+        }
+
+        // Case 2: Session missing, try silent sign-in with the email/password on this screen
+        if !email.isEmpty, !password.isEmpty {
+            authBusy = true
+            Auth.auth().signIn(withEmail: email, password: password) { result, error in
+                DispatchQueue.main.async {
+                    if let user = result?.user {
+                        proceed(with: user)
+                    } else {
+                        authBusy = false
+                        infoMessage = "会话已过期，请登录后继续。"
+                        navigateToLoginOnDismiss = true
+                        showInfoAlert = true
+                    }
+                }
+            }
+            return
+        }
+
+        // Case 3: No session and no credentials available (e.g., app restarted). Ask user to login.
+        infoMessage = "会话已过期，请登录后继续。"
+        navigateToLoginOnDismiss = true
+        showInfoAlert = true
     }
 }
 
@@ -483,3 +507,4 @@ struct SignUpView: View {
             .environmentObject(OnboardingViewModel())
     }
 }
+
