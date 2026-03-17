@@ -19,6 +19,7 @@ struct SignUpView: View {
     @State private var infoMessage = ""
     @State private var showVerifyAlert = false
     @State private var verifyMessage = "We sent a verification email. Please verify and then continue."
+    @State private var isVerifyingEmail = false
     @State private var navigateToOnboarding = false
     @State private var navigateToLogin = false
     @State private var navigateToLoginOnDismiss = false
@@ -357,9 +358,19 @@ struct SignUpView: View {
                     Text(infoMessage)
                 }
                 .alert("Verify Email", isPresented: $showVerifyAlert) {
-                    Button("I Verified") { checkEmailVerificationAndContinue() }
-                    Button("Resend") { resendVerificationEmail() }
+                    Button("I Verified") {
+                        guard !isVerifyingEmail else { return }
+                        isVerifyingEmail = true
+                        checkEmailVerificationAndContinue()
+                    }
+                    .disabled(isVerifyingEmail)
+                    Button("Resend") {
+                        guard !isVerifyingEmail else { return }
+                        resendVerificationEmail()
+                    }
+                    .disabled(isVerifyingEmail)
                     Button("Cancel", role: .cancel) { }
+                        .disabled(isVerifyingEmail)
                 } message: {
                     Text(verifyMessage)
                 }
@@ -373,6 +384,25 @@ struct SignUpView: View {
                         .environmentObject(starManager)
                         .environmentObject(themeManager)
                         .environmentObject(viewModel)
+                }
+                .overlay {
+                    if isVerifyingEmail {
+                        ZStack {
+                            Color.black.opacity(0.35)
+                                .ignoresSafeArea()
+                            VStack(spacing: 12) {
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                                Text("Checking verification…")
+                                    .font(AlynnaTypography.font(.footnote))
+                                    .foregroundColor(themeManager.fixedNightTextPrimary)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 16)
+                            .background(Color.black.opacity(0.6))
+                            .cornerRadius(14)
+                        }
+                    }
                 }
                 .onAppear {
                     showIntro = false
@@ -412,13 +442,57 @@ struct SignUpView: View {
                 activeAuthAction = nil
                 if let errCode = AuthErrorCode(rawValue: error._code),
                    errCode == .emailAlreadyInUse {
-                    shouldOnboardAfterSignIn = false
-                    isLoggedIn = false
-                    hasCompletedOnboarding = false
+                    // Attempt direct login with the provided credentials.
+                    Auth.auth().signIn(withEmail: email, password: password) { result, signInError in
+                        DispatchQueue.main.async {
+                            if let signInError = signInError {
+                                authBusy = false
+                                activeAuthAction = nil
+                                alertMessage = signInError.localizedDescription
+                                showAlert = true
+                                return
+                            }
 
-                    infoMessage = "This email is already in use. Please sign in instead."
-                    navigateToLoginOnDismiss = true
-                    showInfoAlert = true
+                            guard let user = result?.user else {
+                                authBusy = false
+                                activeAuthAction = nil
+                                alertMessage = "Sign in failed. Please try again."
+                                showAlert = true
+                                return
+                            }
+                            viewModel.userId = user.uid
+
+                            if !user.isEmailVerified {
+                                user.sendEmailVerification(completion: nil)
+                                try? Auth.auth().signOut()
+                                authBusy = false
+                                activeAuthAction = nil
+                                verifyMessage = "We sent a verification email to \(email). Please verify, then tap 'I Verified' to continue."
+                                showVerifyAlert = true
+                                return
+                            }
+
+                            routeAuthenticatedUser(
+                                onSuccessToLogin: {
+                                    authBusy = false
+                                    activeAuthAction = nil
+                                    isLoggedIn = true
+                                    dismiss()
+                                },
+                                onSuccessToOnboarding: {
+                                    authBusy = false
+                                    activeAuthAction = nil
+                                    navigateToOnboarding = true
+                                },
+                                onError: { message in
+                                    authBusy = false
+                                    activeAuthAction = nil
+                                    alertMessage = message
+                                    showAlert = true
+                                }
+                            )
+                        }
+                    }
                     return
                 }
 
@@ -431,6 +505,8 @@ struct SignUpView: View {
                 viewModel.userId = user.uid
             }
             result?.user.sendEmailVerification(completion: nil)
+            // Enforce verification: sign out until verified.
+            try? Auth.auth().signOut()
             DispatchQueue.main.async {
                 authBusy = false
                 activeAuthAction = nil
@@ -450,6 +526,7 @@ struct SignUpView: View {
             user.reload { error in
                 DispatchQueue.main.async {
                     authBusy = false
+                    isVerifyingEmail = false
                     if let error = error {
                         alertMessage = error.localizedDescription
                         showAlert = true
@@ -458,8 +535,21 @@ struct SignUpView: View {
 
                     if user.isEmailVerified {
                         showVerifyAlert = false
-                        isLoggedIn = true
-                        navigateToOnboarding = true
+                        viewModel.userId = user.uid
+                        routeAuthenticatedUser(
+                            onSuccessToLogin: {
+                                isLoggedIn = true
+                                dismiss()
+                            },
+                            onSuccessToOnboarding: {
+                                isLoggedIn = true
+                                navigateToOnboarding = true
+                            },
+                            onError: { message in
+                                alertMessage = message
+                                showAlert = true
+                            }
+                        )
                     } else {
                         alertMessage = "Email not verified yet. Please check your inbox, then try again."
                         showAlert = true
@@ -483,6 +573,7 @@ struct SignUpView: View {
                         proceed(with: user)
                     } else {
                         authBusy = false
+                        isVerifyingEmail = false
                         infoMessage = "会话已过期，请登录后继续。"
                         navigateToLoginOnDismiss = true
                         showInfoAlert = true
@@ -493,6 +584,7 @@ struct SignUpView: View {
         }
 
         // Case 3: No session and no credentials available (e.g., app restarted). Ask user to login.
+        isVerifyingEmail = false
         infoMessage = "会话已过期，请登录后继续。"
         navigateToLoginOnDismiss = true
         showInfoAlert = true

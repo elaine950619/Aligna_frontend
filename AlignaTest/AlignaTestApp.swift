@@ -49,7 +49,7 @@ struct RootRouter: View {
 
     // 路由状态
     @State private var isReady = false
-    @State private var isAuthenticated = (Auth.auth().currentUser != nil)
+    @State private var isAuthenticated = (Auth.auth().currentUser?.isEmailVerified == true)
     @State private var authStateListenerHandle: AuthStateDidChangeListenerHandle?
     private let isPreviewMode: Bool
 
@@ -122,6 +122,16 @@ struct RootRouter: View {
                     UserDefaults.standard.set("", forKey: "lastRecommendationDate")
                     UserDefaults.standard.set("", forKey: "lastCurrentPlaceUpdate")
                     UserDefaults.standard.set("", forKey: "todayFetchLock")
+                    return
+                }
+
+                // Enforce email verification at the root router level.
+                if let user, user.isEmailVerified == false {
+                    try? Auth.auth().signOut()
+                    GIDSignIn.sharedInstance.signOut()
+                    self.isAuthenticated = false
+                    self.isReady = true
+                    print("Auth state -> unverified email, signed out")
                     return
                 }
 

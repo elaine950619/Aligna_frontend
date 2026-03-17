@@ -83,7 +83,7 @@ struct ZodiacInlineRow: View {
     let moonText: String
     let ascText: String
 
-    @State private var loadingPhase = 0
+    @State private var animateDots = false
 
     private var normalizedAscText: String {
         let t = ascText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -127,15 +127,21 @@ struct ZodiacInlineRow: View {
         HStack(spacing: 3) {
             ForEach(0..<3) { index in
                 Circle()
-                    .fill(themeManager.descriptionText.opacity(loadingPhase == index ? 0.95 : 0.35))
+                    .fill(themeManager.descriptionText)
                     .frame(width: 4, height: 4)
+                    .scaleEffect(animateDots ? 1.0 : 0.6)
+                    .offset(y: animateDots ? -2.5 : 2.5)
+                    .opacity(animateDots ? 0.95 : 0.35)
+                    .animation(
+                        .easeInOut(duration: 0.6)
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(index) * 0.15),
+                        value: animateDots
+                    )
             }
         }
-        .onAppear {
-            Timer.scheduledTimer(withTimeInterval: 0.45, repeats: true) { _ in
-                loadingPhase = (loadingPhase + 1) % 3
-            }
-        }
+        .onAppear { animateDots = true }
+        .onDisappear { animateDots = false }
     }
 
     private var rowContent: some View {
