@@ -56,6 +56,8 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>We need to obtain your current location to generate personalized recommendations.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Save your mantra screenshot to Photos.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Gloock-Regular.ttf</string>
