@@ -41,7 +41,7 @@ struct JournalView: View {
             // Page content
             VStack(spacing: 20) {
                 VStack(spacing: 8) {
-                    Text("Personal Check-in")
+                    Text("Check-in")
                         .font(.custom("Merriweather-Bold", size: 30))
                         .foregroundStyle(themeManager.primaryText)
                         .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 2)
