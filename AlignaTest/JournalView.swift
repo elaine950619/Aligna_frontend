@@ -39,21 +39,21 @@ struct JournalView: View {
                 .ignoresSafeArea()
             
             // Page content
-            VStack(spacing: 20) {
-                VStack(spacing: 8) {
+            VStack(spacing: 16) {
+                VStack(spacing: 4) {
                     Text("Check-in")
-                        .font(.custom("Merriweather-Bold", size: 30))
+                        .font(.custom("Merriweather-Bold", size: 26))
                         .foregroundStyle(themeManager.primaryText)
                         .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 2)
 
                     Text("Tap what feels true right now.")
                         .multilineTextAlignment(.center)
-                        .font(.custom("Merriweather-Regular", size: 16))
+                        .font(.custom("Merriweather-Regular", size: 14))
                         .foregroundStyle(themeManager.descriptionText)
                 }
-                .padding(.top, 10)
+                .frame(height: 64, alignment: .center)
 
-                VStack(spacing: 12) {
+                VStack(spacing: 10) {
                     compactRow(
                         title: "Mood",
                         options: [("sun.max.fill", "Joy"), ("flame.fill", "Anger"), ("cloud.rain.fill", "Grief"), ("leaf.fill", "Calm")],
@@ -90,7 +90,7 @@ struct JournalView: View {
                             }
                             TextEditor(text: $text)
                                 .scrollContentBackground(.hidden)
-                                .frame(maxWidth: .infinity, maxHeight: 160, alignment: .topLeading)
+                                .frame(maxWidth: .infinity, maxHeight: 140, alignment: .topLeading)
                                 .padding(1)
                                 .foregroundColor(themeManager.descriptionText.opacity(0.85))
                                 .tint(themeManager.accent)
@@ -111,7 +111,7 @@ struct JournalView: View {
                         Text("Reset")
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
+                            .padding(.vertical, 14)
                     }
                     .disabled(disableActions)
                     .buttonStyle(SecondaryGhostButtonStyle(
@@ -125,7 +125,7 @@ struct JournalView: View {
                         Text("Submit")
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
+                            .padding(.vertical, 14)
                     }
                     .disabled(disableActions)
                     .buttonStyle(PrimaryGhostButtonStyle(
@@ -272,7 +272,7 @@ struct JournalView: View {
         selection: Binding<String?>
     ) -> some View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 4)
-        return VStack(alignment: .leading, spacing: 2) {
+        return VStack(alignment: .leading, spacing: 1) {
             Text(title)
                 .font(.custom("Merriweather-Bold", size: 15))
                 .foregroundColor(themeManager.primaryText.opacity(0.9))
@@ -284,8 +284,8 @@ struct JournalView: View {
                 }
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
     }
 
     private func optionButton(icon: String, label: String, selection: Binding<String?>) -> some View {
@@ -295,16 +295,16 @@ struct JournalView: View {
         } label: {
             VStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 14))
+                    .font(.system(size: 12))
                     .foregroundColor(themeManager.primaryText)
                 Text(label)
-                    .font(.custom("Merriweather-Bold", size: 10))
+                    .font(.custom("Merriweather-Bold", size: 9))
                     .foregroundColor(themeManager.primaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 7)
+            .padding(.vertical, 6)
             .background(isSelected ? themeManager.primaryText.opacity(0.14) : Color.white.opacity(0.02))
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
