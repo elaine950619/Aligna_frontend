@@ -125,6 +125,11 @@ struct MainView: View {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
     @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
     @AppStorage("didDeleteAccount") private var didDeleteAccount: Bool = false
+    @AppStorage("dailyMantraNotificationEnabled") private var dailyMantraNotificationEnabled: Bool = false
+    @AppStorage("dailyMantraNotificationHour") private var dailyMantraNotificationHour: Int = 9
+    @AppStorage("dailyMantraNotificationMinute") private var dailyMantraNotificationMinute: Int = 0
+    @AppStorage("cachedDailyMantra") private var cachedDailyMantra: String = ""
+    @AppStorage("shouldExpandMantraFromNotification") private var shouldExpandMantraFromNotification: Bool = false
     @State private var isFetchingToday: Bool = false
     
     @State private var isMantraExpanded: Bool = false
@@ -156,6 +161,7 @@ struct MainView: View {
     @State private var recommendationTitles: [String: String] = [:]
     
     @State private var selectedDate = Date()
+    @State private var mainNavigationPath = NavigationPath()
     
     @State private var bootPhase: BootPhase = .loading
     
@@ -193,7 +199,7 @@ struct MainView: View {
 
     
     private var mainContent: some View {
-        NavigationStack {
+        NavigationStack(path: $mainNavigationPath) {
             ZStack {
                 // ✅ Full-screen background, not constrained by inner GeometryReader
                 AppBackgroundView()
@@ -1039,6 +1045,36 @@ struct MainView: View {
 
                         starManager.animateStar = true
                         themeManager.appBecameActive()
+
+                        let trimmed = viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !trimmed.isEmpty {
+                            cachedDailyMantra = trimmed
+                            if dailyMantraNotificationEnabled {
+                                MantraNotificationManager.scheduleDaily(
+                                    mantra: trimmed,
+                                    hour: dailyMantraNotificationHour,
+                                    minute: dailyMantraNotificationMinute
+                                )
+                            }
+                        }
+                    }
+                    .onChange(of: viewModel.dailyMantra) { _, newValue in
+                        cachedDailyMantra = newValue
+                        if dailyMantraNotificationEnabled {
+                            MantraNotificationManager.scheduleDaily(
+                                mantra: newValue,
+                                hour: dailyMantraNotificationHour,
+                                minute: dailyMantraNotificationMinute
+                            )
+                        }
+                    }
+                    .onChange(of: shouldExpandMantraFromNotification) { _, newValue in
+                        guard newValue else { return }
+                        mainNavigationPath = NavigationPath()
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isMantraExpanded = true
+                        }
+                        shouldExpandMantraFromNotification = false
                     }
                 }
     private func fetchAllRecommendationTitles() {

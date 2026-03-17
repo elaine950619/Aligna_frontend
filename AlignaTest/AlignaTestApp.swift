@@ -7,9 +7,10 @@ import FirebaseAuth
 import UIKit
 import GoogleSignIn
 import AVFoundation
+import UserNotifications
 
 // MARK: - AppDelegate（Firebase + Google 回调）
-class AppDelegate: NSObject, UIApplicationDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         FirebaseApp.configure()
@@ -21,6 +22,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             print("⚠️ AVAudioSession 配置失败: \(error)")
         }
 
+        UNUserNotificationCenter.current().delegate = self
+
         return true
     }
 
@@ -29,6 +32,18 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                      options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
         if GIDSignIn.sharedInstance.handle(url) { return true }
         return false
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let userInfo = response.notification.request.content.userInfo
+        if let destination = userInfo["destination"] as? String, destination == "main_expanded" {
+            UserDefaults.standard.set(true, forKey: "shouldExpandMantraFromNotification")
+        }
+        completionHandler()
     }
 }
 
@@ -180,6 +195,7 @@ struct AlignaTestApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     
     init() {
+            FontRegistrar.registerAllFonts()
             let appearance = UINavigationBarAppearance()
             appearance.configureWithTransparentBackground()
             appearance.backgroundColor = .clear

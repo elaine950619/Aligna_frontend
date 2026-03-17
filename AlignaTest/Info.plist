@@ -58,24 +58,6 @@
 	<string>We need to obtain your current location to generate personalized recommendations.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Save your mantra screenshot to Photos.</string>
-	<key>UIAppFonts</key>
-	<array>
-		<string>Gloock-Regular.ttf</string>
-		<string>Merriweather-Regular.ttf</string>
-		<string>Merriweather-Italic.ttf</string>
-		<string>Merriweather-Light.ttf</string>
-		<string>Merriweather-LightItalic.ttf</string>
-		<string>Merriweather-Bold.ttf</string>
-		<string>Merriweather-Black.ttf</string>
-		<string>Merriweather-VariableFont_opsz,wdth,wght.ttf</string>
-		<string>Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf</string>
-		<string>CormorantGaramond-Bold.ttf</string>
-		<string>CormorantGaramond-SemiBold.ttf</string>
-		<string>PlayfairDisplay-Italic-VariableFont_wght.ttf</string>
-		<string>PlayfairDisplay-VariableFont_wght.ttf</string>
-		<string>Inter-VariableFont_opsz,wght.ttf</string>
-		<string>PlayfairDisplay-Bold.ttf</string>
-	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

@@ -75,6 +75,8 @@ import CoreLocation
 import Combine
 import WidgetKit
 import CryptoKit
+import UserNotifications
+import UIKit
 
 struct ZodiacInlineRow: View {
     @EnvironmentObject var themeManager: ThemeManager
@@ -1225,6 +1227,13 @@ struct ProfileView: View {
 
     // 主题偏好
     @AppStorage("themePreference") private var themePreferenceRaw: String = ThemePreference.auto.rawValue
+    @AppStorage("dailyMantraNotificationEnabled") private var dailyMantraNotificationEnabled: Bool = true
+    @AppStorage("dailyMantraNotificationHour") private var dailyMantraNotificationHour: Int = 9
+    @AppStorage("dailyMantraNotificationMinute") private var dailyMantraNotificationMinute: Int = 0
+    @AppStorage("cachedDailyMantra") private var cachedDailyMantra: String = ""
+    @State private var notificationAuthStatus: UNAuthorizationStatus = .notDetermined
+    @State private var showNotificationSettingsAlert = false
+    @State private var showNotificationTimeSheet = false
     @State private var birthPlaceResults: [PlaceResult] = []
     @State private var didSelectBirthPlaceResult = false
     @State private var pendingBirthPlaceCoordinate: CLLocationCoordinate2D?
@@ -1325,6 +1334,7 @@ struct ProfileView: View {
                             headerCard
                             personalInfoCard
                             timelineCard
+                            notificationCard
                             themeCard
                             aboutCard
                             signOutCard
@@ -1362,6 +1372,7 @@ struct ProfileView: View {
                 .onAppear {
                     makeNavBarTransparent()
                     themeManager.setSystemColorScheme(colorScheme)
+                    updateNotificationAuthStatus()
                     if isPreviewMode {
                         applyPreviewDataIfNeeded()
                     } else {
@@ -1398,6 +1409,19 @@ struct ProfileView: View {
         } message: {
             Text(refreshAlertMessage)
         }
+        .alert("Enable Notifications", isPresented: $showNotificationSettingsAlert) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("Not Now", role: .cancel) { }
+        } message: {
+            Text("Allow notifications to receive your daily mantra reminder.")
+        }
+        .sheet(isPresented: $showNotificationTimeSheet) {
+            notificationTimeSheet
+        }
         .fullScreenCover(isPresented: $navigateToFrontPage) {
             FrontPageView()
                 .environmentObject(starManager)
@@ -1433,6 +1457,104 @@ struct ProfileView: View {
         nav.scrollEdgeAppearance = ap
         nav.compactAppearance = ap
         nav.isTranslucent = false
+    }
+
+    // MARK: - Notifications
+    private var notificationToggleBinding: Binding<Bool> {
+        Binding(
+            get: { dailyMantraNotificationEnabled },
+            set: { newValue in
+                if newValue {
+                    requestDailyMantraNotifications()
+                } else {
+                    dailyMantraNotificationEnabled = false
+                    showNotificationTimeSheet = false
+                    MantraNotificationManager.cancelDaily()
+                }
+            }
+        )
+    }
+
+    private var notificationTimeBinding: Binding<Date> {
+        Binding(
+            get: {
+                BirthTimeUtils.makeLocalTimeDate(
+                    hour: dailyMantraNotificationHour,
+                    minute: dailyMantraNotificationMinute
+                )
+            },
+            set: { newValue in
+                let components = BirthTimeUtils.hourMinute(from: newValue)
+                dailyMantraNotificationHour = components.hour
+                dailyMantraNotificationMinute = components.minute
+                if dailyMantraNotificationEnabled {
+                    scheduleDailyMantraNotification()
+                }
+            }
+        )
+    }
+
+    private func updateNotificationAuthStatus() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                notificationAuthStatus = settings.authorizationStatus
+                if settings.authorizationStatus == .denied {
+                    dailyMantraNotificationEnabled = false
+                    MantraNotificationManager.cancelDaily()
+                }
+            }
+        }
+    }
+
+    private func requestDailyMantraNotifications() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                DispatchQueue.main.async {
+                    dailyMantraNotificationEnabled = true
+                    notificationAuthStatus = settings.authorizationStatus
+                    showNotificationTimeSheet = true
+                    scheduleDailyMantraNotification()
+                }
+            case .notDetermined:
+                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+                    DispatchQueue.main.async {
+                        dailyMantraNotificationEnabled = granted
+                        updateNotificationAuthStatus()
+                        if granted {
+                            showNotificationTimeSheet = true
+                            scheduleDailyMantraNotification()
+                        } else {
+                            showNotificationSettingsAlert = true
+                        }
+                    }
+                }
+            case .denied:
+                DispatchQueue.main.async {
+                    dailyMantraNotificationEnabled = false
+                    notificationAuthStatus = settings.authorizationStatus
+                    showNotificationSettingsAlert = true
+                }
+            @unknown default:
+                DispatchQueue.main.async {
+                    dailyMantraNotificationEnabled = false
+                    notificationAuthStatus = settings.authorizationStatus
+                }
+            }
+        }
+    }
+
+    private func scheduleDailyMantraNotification() {
+        let liveMantra = viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !liveMantra.isEmpty {
+            cachedDailyMantra = liveMantra
+        }
+        let mantraText = liveMantra.isEmpty ? cachedDailyMantra : liveMantra
+        MantraNotificationManager.scheduleDaily(
+            mantra: mantraText,
+            hour: dailyMantraNotificationHour,
+            minute: dailyMantraNotificationMinute
+        )
     }
 }
 
@@ -1590,12 +1712,69 @@ private extension ProfileView {
         }
     }
 
+    private var dailyNudgeStatusText: String {
+        if dailyMantraNotificationEnabled {
+            let time = BirthTimeUtils.displayFormatter.string(from: notificationTimeBinding.wrappedValue)
+            return "A daily nudge at \(time)."
+        }
+        return "No daily nudge."
+    }
+
+    var notificationCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "bell.badge")
+                    .foregroundColor(themeManager.accent)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Notification")
+                        .font(AlynnaTypography.font(.headline))
+                        .foregroundColor(themeManager.primaryText)
+
+                    Text(dailyNudgeStatusText)
+                        .font(AlynnaTypography.font(.subheadline))
+                        .foregroundColor(themeManager.descriptionText)
+                }
+
+                Spacer()
+
+                Toggle("", isOn: notificationToggleBinding)
+                    .labelsHidden()
+                    .toggleStyle(SwitchToggleStyle(tint: themeManager.accent))
+                    .frame(maxHeight: .infinity, alignment: .center)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(minHeight: 44, alignment: .center)
+
+            if notificationAuthStatus == .denied {
+                Button {
+                    showNotificationSettingsAlert = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(Color.orange.opacity(0.9))
+                        Text("Notifications are off. Tap to enable in Settings.")
+                            .font(AlynnaTypography.font(.footnote))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.85))
+                    }
+                }
+            }
+
+//            Text("We’ll send today’s mantra once a day. Tap to open it in full.")
+//                .font(AlynnaTypography.font(.footnote))
+//                .foregroundColor(themeManager.descriptionText.opacity(0.75))
+//                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding()
+        .alignaCard()
+    }
+
     var themeCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
                 Image(systemName: "sparkles").foregroundColor(themeManager.accent)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("App Theme")
+                    Text("Theme")
                         .font(AlynnaTypography.font(.headline))
                         .foregroundColor(themeManager.primaryText)
                     Text("Customize appearance")
@@ -1894,6 +2073,69 @@ private extension ProfileView {
             birthPlaceDisplayContent
         }
         .padding(.vertical, 6)
+    }
+
+    var notificationTimeSheet: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Capsule()
+                .fill(themeManager.descriptionText.opacity(0.35))
+                .frame(width: 42, height: 5)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 8)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Reminder Time")
+                    .font(AlynnaTypography.font(.title3))
+                    .foregroundColor(themeManager.primaryText)
+                Text("Choose when to receive your daily mantra.")
+                    .font(AlynnaTypography.font(.subheadline))
+                    .foregroundColor(themeManager.descriptionText)
+            }
+
+            DatePicker(
+                "Reminder time",
+                selection: notificationTimeBinding,
+                displayedComponents: .hourAndMinute
+            )
+            .datePickerStyle(.wheel)
+            .labelsHidden()
+            .tint(themeManager.accent)
+            .foregroundStyle(themeManager.primaryText)
+            .colorMultiply(themeManager.primaryText)
+            .environment(\.colorScheme, themeManager.isNight ? .dark : .light)
+            .environment(\.locale, Locale(identifier: "en_US_POSIX"))
+
+            HStack(spacing: 10) {
+                Button(action: {
+                    scheduleDailyMantraNotification()
+                    showNotificationTimeSheet = false
+                }) {
+                    Text("Save")
+                        .font(AlynnaTypography.font(.body))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(themeManager.accent.opacity(0.16))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                Button(action: {
+                    showNotificationTimeSheet = false
+                }) {
+                    Text("Close")
+                        .font(AlynnaTypography.font(.body))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(themeManager.panelFill)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+            }
+            .foregroundColor(themeManager.accent)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 20)
+        .preferredColorScheme(themeManager.preferredColorScheme)
+        .presentationDetents([.fraction(0.48), .large])
+        .presentationDragIndicator(.hidden)
+        .presentationBackground(.ultraThinMaterial)
     }
 
     var birthPlaceSheet: some View {
