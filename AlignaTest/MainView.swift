@@ -306,15 +306,15 @@ struct MainView: View {
                                 saveMantraScreenshotToPhotos()
                             } label: {
                                 HStack(spacing: 8) {
-                                    Image(systemName: "square.and.arrow.down")
-                                    Text("Save")
+                                    Image(systemName: "square.and.arrow.up")
+                                    Text("Share")
                                 }
                                 .font(AlynnaTypography.font(.footnote))
                                 .foregroundColor(themeManager.foregroundColor)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 6)
                             }
-                            .padding(.top, 14)
+                            .padding(.top, 8)
                             .alert("Saved", isPresented: $showMantraSaveAlert) {
                                 Button("OK", role: .cancel) { }
                             } message: {
@@ -326,14 +326,16 @@ struct MainView: View {
                         if !isMantraExpanded {
                             Spacer()
 
-                            VStack(spacing: minLength * 0.05) {
+                            VStack(spacing: minLength * 0.04) {
                                 let columns = [
                                     GridItem(.flexible(), alignment: .center),
                                     GridItem(.flexible(), alignment: .center)
                                 ]
 
+                                let gridHeight = geometry.size.height * (geometry.size.height < 700 ? 0.36 : 0.40)
+
                                 LazyVGrid(columns: columns,
-                                          spacing: geometry.size.height * 0.023) {
+                                          spacing: geometry.size.height * 0.018) {
                                     navItemView(title: "Place", geometry: geometry)
                                     navItemView(title: "Gemstone", geometry: geometry)
                                     navItemView(title: "Color", geometry: geometry)
@@ -343,11 +345,11 @@ struct MainView: View {
                                     navItemView(title: "Career", geometry: geometry)
                                     navItemView(title: "Relationship", geometry: geometry)
                                 }
+                                .frame(height: gridHeight)
                                 .padding(.horizontal, geometry.size.width * 0.05)
                             }
 
-                            // ✅ 给底部说明文字留出空间
-                            Spacer().frame(height: geometry.size.height * 0.11)
+                            Spacer(minLength: 0)
                         }
                     }
                     .padding(.top, 16)
@@ -379,7 +381,7 @@ struct MainView: View {
                     .multilineTextAlignment(.center)
                     .foregroundColor(themeManager.foregroundColor.opacity(0.28))
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 0)
+                    .padding(.bottom, -6)
                 }
             }
 
@@ -1611,7 +1613,7 @@ struct MainView: View {
                         // 图标图像
                         SafeImage(name: documentName, renderingMode: .template, contentMode: .fit)
                             .foregroundColor(themeManager.foregroundColor)
-                            .frame(width: geometry.size.width * 0.18)  // slightly smaller to balance text
+                            .frame(width: geometry.size.width * 0.16)  // slightly smaller to balance text
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                             .shadow(radius: 1.5)
                         
@@ -1633,6 +1635,17 @@ struct MainView: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
                     }
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity)
+                    .frame(maxHeight: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(themeManager.panelFill.opacity(0.55))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(themeManager.panelStrokeHi.opacity(0.6), lineWidth: 1)
+                    )
                 }
             } else {
                 Button {
@@ -1642,7 +1655,7 @@ struct MainView: View {
                         Image(systemName: "questionmark.square.dashed")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: geometry.size.width * 0.18)
+                            .frame(width: geometry.size.width * 0.16)
                             .foregroundColor(themeManager.foregroundColor.opacity(0.4))
                         
                         Text("Loading")
@@ -1652,7 +1665,18 @@ struct MainView: View {
                         Text(title)
                             .font(Font.custom("Merriweather-Bold", size: geometry.size.width * 0.05))
                             .foregroundColor(themeManager.foregroundColor.opacity(0.5))
-                        }
+                    }
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity)
+                    .frame(maxHeight: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(themeManager.panelFill.opacity(0.45))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(themeManager.panelStrokeHi.opacity(0.5), lineWidth: 1)
+                    )
                 }
             }
         }
