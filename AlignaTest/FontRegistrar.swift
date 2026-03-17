@@ -9,15 +9,10 @@ enum FontRegistrar {
         "Merriweather-LightItalic",
         "Merriweather-Bold",
         "Merriweather-Black",
-        "Merriweather-VariableFont_opsz,wdth,wght",
-        "Merriweather-Italic-VariableFont_opsz,wdth,wght",
         "Gloock-Regular",
         "CormorantGaramond-Bold",
         "CormorantGaramond-SemiBold",
-        "PlayfairDisplay-VariableFont_wght",
-        "PlayfairDisplay-Italic-VariableFont_wght",
-        "PlayfairDisplay-Bold",
-        "Inter-VariableFont_opsz,wght"
+        "PlayfairDisplay-Bold"
     ]
 
     static func registerAllFonts() {

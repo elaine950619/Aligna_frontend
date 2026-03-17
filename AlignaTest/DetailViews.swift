@@ -413,6 +413,32 @@ private struct DetailSheetCloseButton: View {
     }
 }
 
+struct BreathingIconModifier: ViewModifier {
+    var scale: CGFloat = 1.04
+    var minOpacity: Double = 0.94
+    var duration: Double = 3.2
+
+    @State private var isBreathing = false
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(isBreathing ? scale : 1.0)
+            .opacity(isBreathing ? minOpacity : 1.0)
+            .animation(
+                .easeInOut(duration: duration).repeatForever(autoreverses: true),
+                value: isBreathing
+            )
+            .onAppear { isBreathing = true }
+            .onDisappear { isBreathing = false }
+    }
+}
+
+extension View {
+    func breathingIcon(scale: CGFloat = 1.04, minOpacity: Double = 0.94, duration: Double = 3.2) -> some View {
+        modifier(BreathingIconModifier(scale: scale, minOpacity: minOpacity, duration: duration))
+    }
+}
+
 struct ClickableHeroImage: View {
     @EnvironmentObject var themeManager: ThemeManager
 
@@ -439,6 +465,7 @@ struct ClickableHeroImage: View {
                 .frame(width: 150, height: 150)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .foregroundColor(themeManager.foregroundColor)
+                .breathingIcon()
                 .contentShape(Rectangle())
                 .onTapGesture {
                     clickCount = min(clickCount + 1, 3)
@@ -997,6 +1024,7 @@ private struct SoundExtraContent: View {
                     .frame(width: 150, height: 150)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .foregroundColor(themeManager.foregroundColor)
+                    .breathingIcon()
                     .contentShape(Rectangle())
                     .onTapGesture {
                         soundClickCount = min(soundClickCount + 1, 3)
@@ -1463,6 +1491,7 @@ private struct GemstoneExtraContent: View {
                     .frame(width: 150, height: 150)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .foregroundColor(themeManager.foregroundColor)
+                    .breathingIcon()
                     .contentShape(Rectangle())
                     .onTapGesture {
                         gemClickCount = min(gemClickCount + 1, 3)
@@ -1751,6 +1780,7 @@ private struct ScentExtraContent: View {
                     .frame(width: 150, height: 150)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .foregroundColor(themeManager.foregroundColor)
+                    .breathingIcon()
                     .contentShape(Rectangle())
                     .onTapGesture {
                         scentClickCount = min(scentClickCount + 1, 3)
