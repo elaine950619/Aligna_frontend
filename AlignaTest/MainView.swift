@@ -130,6 +130,8 @@ struct MainView: View {
     @State private var isMantraExpanded: Bool = false
     @State private var showMantraSaveAlert: Bool = false
     @State private var mantraSaveMessage: String = ""
+    @State private var showShareSheet: Bool = false
+    @State private var savedMantraImage: UIImage? = nil
 
     @State private var showReasoningBubble: Bool = false
 
@@ -308,11 +310,9 @@ struct MainView: View {
                                     Text("Save")
                                 }
                                 .font(AlynnaTypography.font(.footnote))
-                                .foregroundColor(themeManager.fixedNightTextPrimary)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color.white.opacity(0.12))
-                                .cornerRadius(18)
+                                .foregroundColor(themeManager.foregroundColor)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 6)
                             }
                             .padding(.top, 14)
                             .alert("Saved", isPresented: $showMantraSaveAlert) {
@@ -370,21 +370,29 @@ struct MainView: View {
             }
             // ✅ 只作用在首页这个 ZStack 上，push 新页面后不会带过去
             .safeAreaInset(edge: .bottom) {
-                (
-                    Text("The daily rhythms above are derived from integrated modeling of Earth observation, climate, air-quality, physiological, and astrological data, ")
-                    + Text("\(updatedOnFooterText).").bold()
-                )
-                .font(.system(size: 10))
-                .multilineTextAlignment(.center)
-                .foregroundColor(themeManager.foregroundColor.opacity(0.28))
-                .padding(.horizontal, 24)
-                .padding(.bottom, 0)
+                if !isMantraExpanded {
+                    (
+                        Text("The daily rhythms above are derived from integrated modeling of Earth observation, climate, air-quality, physiological, and astrological data, ")
+                        + Text("\(updatedOnFooterText).").bold()
+                    )
+                    .font(.system(size: 10))
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(themeManager.foregroundColor.opacity(0.28))
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 0)
+                }
             }
 
         }
         .navigationViewStyle(.stack)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .sheet(isPresented: $showShareSheet) {
+            if let image = savedMantraImage {
+                ActivityViewController(items: [image])
+                    .presentationDetents([.medium, .large])
+            }
+        }
     }
 
 
@@ -401,7 +409,7 @@ struct MainView: View {
     }
 
     private func saveMantraScreenshotToPhotos() {
-        guard let image = captureScreenshot() else {
+        guard let image = captureMantraImage() else {
             mantraSaveMessage = "Could not capture the screenshot."
             showMantraSaveAlert = true
             return
@@ -416,11 +424,12 @@ struct MainView: View {
                     } completionHandler: { success, error in
                         DispatchQueue.main.async {
                             if success {
-                                mantraSaveMessage = "Saved to Photos."
+                                savedMantraImage = image
+                                showShareSheet = true
                             } else {
                                 mantraSaveMessage = error?.localizedDescription ?? "Failed to save to Photos."
+                                showMantraSaveAlert = true
                             }
-                            showMantraSaveAlert = true
                         }
                     }
                 case .denied, .restricted:
@@ -437,7 +446,7 @@ struct MainView: View {
         }
     }
 
-    private func captureScreenshot() -> UIImage? {
+    private func captureMantraImage() -> UIImage? {
         guard let windowScene = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
             .first(where: { $0.activationState == .foregroundActive }) else {
@@ -448,9 +457,178 @@ struct MainView: View {
             return nil
         }
 
-        let renderer = UIGraphicsImageRenderer(bounds: window.bounds)
+        let size = window.bounds.size
+        let captureView = MantraCaptureView(mantra: viewModel.dailyMantra)
+            .environmentObject(starManager)
+            .environmentObject(themeManager)
+
+        let controller = UIHostingController(rootView: captureView)
+        controller.view.bounds = CGRect(origin: .zero, size: size)
+        controller.view.frame = CGRect(origin: .zero, size: size)
+        controller.view.backgroundColor = .clear
+        controller.view.setNeedsLayout()
+        controller.view.layoutIfNeeded()
+
+        let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { _ in
-            window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+            controller.view.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: true)
+        }
+    }
+
+    private struct MantraCaptureView: View {
+        let mantra: String
+
+        @EnvironmentObject var starManager: StarAnimationManager
+        @EnvironmentObject var themeManager: ThemeManager
+
+        var body: some View {
+            GeometryReader { geometry in
+                ZStack {
+                    AppBackgroundView(nightMotion: .staticBackground)
+                        .ignoresSafeArea()
+
+                    if themeManager.isNight || themeManager.preferredColorScheme == .dark {
+                        StaticStarField(size: geometry.size)
+                    } else {
+                        StaticDayStarField(size: geometry.size)
+                    }
+
+                    Text(mantra)
+                        .font(AlignaType.expandedMantraBoldItalic())
+                        .lineSpacing(12)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(
+                            themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
+                        )
+                        .padding(.horizontal, geometry.size.width * 0.14)
+                        .padding(.top, geometry.size.height * 0.16)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                }
+                .preferredColorScheme(themeManager.preferredColorScheme)
+            }
+        }
+
+        private struct StaticStar {
+            let position: CGPoint
+            let size: CGFloat
+            let opacity: Double
+        }
+
+        private struct StaticStarField: View {
+            let size: CGSize
+            private let count = 90
+
+            var body: some View {
+                ForEach(0..<count, id: \.self) { index in
+                    let star = star(for: index, in: size)
+                    Circle()
+                        .fill(Color.white.opacity(star.opacity))
+                        .frame(width: star.size, height: star.size)
+                        .position(star.position)
+                }
+                .allowsHitTesting(false)
+            }
+
+            private func star(for index: Int, in size: CGSize) -> StaticStar {
+                let x = unit(Double(index) * 12.9898)
+                let y = unit(Double(index) * 78.233)
+                let s = 1.4 + unit(Double(index) * 45.164) * 2.2
+                let o = 0.35 + unit(Double(index) * 93.73) * 0.55
+
+                return StaticStar(
+                    position: CGPoint(x: x * size.width, y: y * size.height),
+                    size: s,
+                    opacity: o
+                )
+            }
+
+            private func unit(_ seed: Double) -> CGFloat {
+                let value = abs(sin(seed) * 43758.5453)
+                return CGFloat(value - floor(value))
+            }
+        }
+
+        private struct StaticDayStar {
+            let position: CGPoint
+            let size: CGFloat
+            let isCross: Bool
+            let fill: Color
+            let stroke: Color
+            let opacity: Double
+        }
+
+        private struct StaticDayStarField: View {
+            let size: CGSize
+            private let count = 20
+
+            var body: some View {
+                ForEach(0..<count, id: \.self) { index in
+                    let star = star(for: index, in: size)
+
+                    if star.isCross {
+                        CrossShape()
+                            .stroke(star.stroke.opacity(star.opacity), lineWidth: 1)
+                            .frame(width: star.size, height: star.size)
+                            .position(star.position)
+                    } else {
+                        FourPointStarShape()
+                            .fill(star.fill.opacity(star.opacity))
+                            .overlay(
+                                FourPointStarShape()
+                                    .stroke(star.stroke.opacity(star.opacity), lineWidth: 1)
+                            )
+                            .frame(width: star.size, height: star.size)
+                            .position(star.position)
+                    }
+                }
+                .allowsHitTesting(false)
+            }
+
+            private func star(for index: Int, in size: CGSize) -> StaticDayStar {
+                let x = unit(Double(index) * 19.13)
+                let y = unit(Double(index) * 57.71)
+                let s = 10 + unit(Double(index) * 31.41) * 8
+                let o = 0.65 + unit(Double(index) * 83.11) * 0.35
+                let isCross = unit(Double(index) * 11.17) > 0.55
+
+                let fillPalette: [Color] = [
+                    Color(hex: "#FFF4B3"),
+                    Color(hex: "#FFD700"),
+                    Color(hex: "#F4D69D")
+                ]
+                let strokePalette: [Color] = [
+                    Color(hex: "#D4A574"),
+                    Color(hex: "#C8925F")
+                ]
+
+                let fill = fillPalette[index % fillPalette.count]
+                let stroke = strokePalette[index % strokePalette.count]
+
+                return StaticDayStar(
+                    position: CGPoint(x: x * size.width, y: y * size.height),
+                    size: s,
+                    isCross: isCross,
+                    fill: fill,
+                    stroke: stroke,
+                    opacity: o
+                )
+            }
+
+            private func unit(_ seed: Double) -> CGFloat {
+                let value = abs(sin(seed) * 43758.5453)
+                return CGFloat(value - floor(value))
+            }
+        }
+    }
+
+    private struct ActivityViewController: UIViewControllerRepresentable {
+        let items: [Any]
+
+        func makeUIViewController(context: Context) -> UIActivityViewController {
+            UIActivityViewController(activityItems: items, applicationActivities: nil)
+        }
+
+        func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
         }
     }
 
