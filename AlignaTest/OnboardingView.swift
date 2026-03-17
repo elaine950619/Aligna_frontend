@@ -817,7 +817,7 @@ struct OnboardingStep3: View {
                             .opacity(0.8)
 
                         preferenceSection(
-                            "Any scents you dislike?",
+                            "Any scent that don’t feel right?",
                             content: chips(options: scentOptions,
                                            isSelected: { viewModel.scent_dislike.contains($0) },
                                            toggle: { toggleSet(&viewModel.scent_dislike, $0) })
@@ -831,7 +831,7 @@ struct OnboardingStep3: View {
                         )
 
                         preferenceSection(
-                            "Any colors you dislike?",
+                            "Any color that don’t feel right?",
                             content: chips(options: colorOptions,
                                            isSelected: { viewModel.color_dislike.contains($0) },
                                            toggle: { toggleSet(&viewModel.color_dislike, $0) })
@@ -845,7 +845,7 @@ struct OnboardingStep3: View {
                         )
 
                         preferenceSection(
-                            "Any music you dislike?",
+                            "Any sound that don’t feel right?",
                             content: chips(options: musicOptions,
                                            isSelected: { viewModel.music_dislike.contains($0) },
                                            toggle: { toggleSet(&viewModel.music_dislike, $0) })
