@@ -224,7 +224,7 @@ struct MainView: View {
                                 ) {
                                     Image(systemName: "book.closed")      // ⬅️ journal symbol
                                         .font(.system(size: 20))
-                                        .foregroundColor(themeManager.foregroundColor)
+                                        .foregroundColor(themeManager.primaryText)
                                         .frame(width: 28, height: 28)
                                 }
                             }
@@ -245,7 +245,7 @@ struct MainView: View {
                                             .renderingMode(.template)
                                             .aspectRatio(contentMode: .fit)
                                             .frame(width: 28, height: 28)
-                                            .foregroundColor(themeManager.foregroundColor)
+                                            .foregroundColor(themeManager.primaryText)
                                     }
                                 } else {
                                     NavigationLink(
@@ -256,7 +256,7 @@ struct MainView: View {
                                             .renderingMode(.template)
                                             .aspectRatio(contentMode: .fit)
                                             .frame(width: 28, height: 28)
-                                            .foregroundColor(themeManager.foregroundColor)
+                                            .foregroundColor(themeManager.primaryText)
                                     }
                                 }
                             }
@@ -268,7 +268,7 @@ struct MainView: View {
                         Text("Alynna")
                             .font(.custom("Merriweather-SemiBold", size: 52))
                             .lineSpacing(AlignaType.logoLineSpacing)
-                            .foregroundColor(themeManager.foregroundColor)
+                            .foregroundColor(themeManager.primaryText)
                             .padding(.top, 20)
                         .opacity(isMantraExpanded ? 0 : 1)
                         .scaleEffect(isMantraExpanded ? 0.92 : 1)
@@ -294,7 +294,7 @@ struct MainView: View {
                                 .foregroundColor(
                                     isMantraExpanded
                                     ? themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
-                                    : themeManager.foregroundColor.opacity(0.7)
+                                    : themeManager.descriptionText
                                 )
                                 .padding(.horizontal, isMantraExpanded ? geometry.size.width * 0.14 : geometry.size.width * 0.1)
                                 .padding(.top, isMantraExpanded ? geometry.size.height * 0.16 : 0)
@@ -316,7 +316,7 @@ struct MainView: View {
                                     Text("Share")
                                 }
                                 .font(AlynnaTypography.font(.footnote))
-                                .foregroundColor(themeManager.foregroundColor)
+                                .foregroundColor(themeManager.primaryText)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 6)
                             }
@@ -385,7 +385,7 @@ struct MainView: View {
                     )
                     .font(.system(size: 10))
                     .multilineTextAlignment(.center)
-                    .foregroundColor(themeManager.foregroundColor.opacity(0.28))
+                    .foregroundColor(themeManager.descriptionText.opacity(0.45))
                     .padding(.horizontal, 24)
                     .padding(.bottom, -6)
                 }
@@ -1648,7 +1648,7 @@ struct MainView: View {
                     VStack(spacing: 2) {   // ⬅️ tighter spacing
                         // 图标图像
                         SafeImage(name: documentName, renderingMode: .template, contentMode: .fit)
-                            .foregroundColor(themeManager.foregroundColor)
+                            .foregroundColor(themeManager.primaryText)
                             .frame(width: geometry.size.width * 0.16)  // slightly smaller to balance text
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                             .shadow(radius: 1.5)
@@ -1657,7 +1657,7 @@ struct MainView: View {
                         Text(recommendationTitles[title] ?? "")
                             .font(AlignaType.gridItemName())
                             .lineSpacing(AlignaType.body16LineSpacing) // 22-16=6
-                            .foregroundColor(themeManager.foregroundColor.opacity(0.8))
+                            .foregroundColor(themeManager.descriptionText)
                             .multilineTextAlignment(.center)
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
@@ -1667,7 +1667,7 @@ struct MainView: View {
                         Text(title)
                             .font(AlignaType.gridCategoryTitle())
                             .lineSpacing(34 - 28) // 6
-                            .foregroundColor(themeManager.foregroundColor)
+                            .foregroundColor(themeManager.primaryText)
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
                     }
@@ -1692,15 +1692,15 @@ struct MainView: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: geometry.size.width * 0.16)
-                            .foregroundColor(themeManager.foregroundColor.opacity(0.4))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.6))
                         
                         Text("Loading")
                             .font(Font.custom("Merriweather-Regular", size: geometry.size.width * 0.033))
-                            .foregroundColor(themeManager.foregroundColor.opacity(0.5))
+                            .foregroundColor(themeManager.descriptionText)
                         
                         Text(title)
                             .font(Font.custom("Merriweather-Bold", size: geometry.size.width * 0.05))
-                            .foregroundColor(themeManager.foregroundColor.opacity(0.5))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.5))
                     }
                     .padding(.vertical, 8)
                     .frame(maxWidth: .infinity)
@@ -2214,7 +2214,7 @@ struct RecommendationPagerView: View {
                             VStack(spacing: 12) {
                                 ProgressView()
                                 Text("Loading \(cat.rawValue)…")
-                                    .foregroundColor(themeManager.foregroundColor.opacity(0.7))
+                                    .foregroundColor(themeManager.descriptionText.opacity(0.7))
                             }
                         }
                     }
@@ -2227,7 +2227,7 @@ struct RecommendationPagerView: View {
                 //                iconSize: 18,
                 ////                paddingSize: 8,
                 //                backgroundColor: Color.black.opacity(0.3),
-                //                iconColor: themeManager.foregroundColor,
+                //                iconColor: themeManager.primaryText,
                 ////                topPadding: 120,
                 //                horizontalPadding: 24
             )
@@ -2289,7 +2289,7 @@ struct CustomBackButton: View {
                 Button(action: { dismiss() }) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: iconSize, weight: .semibold))
-                        .foregroundColor(themeManager.foregroundColor)
+                        .foregroundColor(themeManager.primaryText)
                         .padding(showsBackground ? 12 : 0)
                         .background(showsBackground ? Color.white.opacity(0.10) : Color.clear)
                         .clipShape(Circle())
