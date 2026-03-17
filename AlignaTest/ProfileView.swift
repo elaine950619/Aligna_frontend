@@ -1320,7 +1320,7 @@ struct ProfileView: View {
                         .environmentObject(themeManager)
                         .ignoresSafeArea()
 
-                    ScrollView {
+                    ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 18) {
                             headerCard
                             personalInfoCard
