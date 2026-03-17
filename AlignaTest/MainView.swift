@@ -260,7 +260,7 @@ struct MainView: View {
 
                         // ✅ 只保留按钮本身（气泡放到全局 overlay）
                         Text("Alynna")
-                            .font(AlignaType.logo())
+                            .font(.custom("Merriweather-SemiBold", size: 52))
                             .lineSpacing(AlignaType.logoLineSpacing)
                             .foregroundColor(themeManager.foregroundColor)
                             .padding(.top, 20)
