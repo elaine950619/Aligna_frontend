@@ -4,6 +4,8 @@ import MapKit
 import CoreLocation
 import Combine
 import WidgetKit
+import UIKit
+import Photos
 
 func getAddressFromCoordinate(
     _ coordinate: CLLocationCoordinate2D,
@@ -126,7 +128,9 @@ struct MainView: View {
     @State private var isFetchingToday: Bool = false
     
     @State private var isMantraExpanded: Bool = false
-    
+    @State private var showMantraSaveAlert: Bool = false
+    @State private var mantraSaveMessage: String = ""
+
     @State private var showReasoningBubble: Bool = false
 
     @AppStorage("todayAutoRefetchDone") private var todayAutoRefetchDone: String = ""
@@ -294,6 +298,29 @@ struct MainView: View {
                         }
                         .buttonStyle(.plain)
                         .contentShape(Rectangle())
+                        
+                        if isMantraExpanded {
+                            Button {
+                                saveMantraScreenshotToPhotos()
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "square.and.arrow.down")
+                                    Text("Save")
+                                }
+                                .font(AlynnaTypography.font(.footnote))
+                                .foregroundColor(themeManager.fixedNightTextPrimary)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color.white.opacity(0.12))
+                                .cornerRadius(18)
+                            }
+                            .padding(.top, 14)
+                            .alert("Saved", isPresented: $showMantraSaveAlert) {
+                                Button("OK", role: .cancel) { }
+                            } message: {
+                                Text(mantraSaveMessage)
+                            }
+                        }
                         // ✅ 当 mantra 更新（新的一天/重新拉取）时，自动收起回 “...”
                         
                         if !isMantraExpanded {
@@ -371,6 +398,60 @@ struct MainView: View {
 //            scentTitle: recommendationTitles["Scent"] ?? "Scent"
 //        )
 //        AlignaWidgetStore.save(snap) // ↩︎ 写入 App Group + 刷新 Widget
+    }
+
+    private func saveMantraScreenshotToPhotos() {
+        guard let image = captureScreenshot() else {
+            mantraSaveMessage = "Could not capture the screenshot."
+            showMantraSaveAlert = true
+            return
+        }
+
+        PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
+            DispatchQueue.main.async {
+                switch status {
+                case .authorized, .limited:
+                    PHPhotoLibrary.shared().performChanges {
+                        PHAssetChangeRequest.creationRequestForAsset(from: image)
+                    } completionHandler: { success, error in
+                        DispatchQueue.main.async {
+                            if success {
+                                mantraSaveMessage = "Saved to Photos."
+                            } else {
+                                mantraSaveMessage = error?.localizedDescription ?? "Failed to save to Photos."
+                            }
+                            showMantraSaveAlert = true
+                        }
+                    }
+                case .denied, .restricted:
+                    mantraSaveMessage = "Photos access denied. Please enable access in Settings."
+                    showMantraSaveAlert = true
+                case .notDetermined:
+                    mantraSaveMessage = "Photos permission not determined."
+                    showMantraSaveAlert = true
+                @unknown default:
+                    mantraSaveMessage = "Unknown Photos permission status."
+                    showMantraSaveAlert = true
+                }
+            }
+        }
+    }
+
+    private func captureScreenshot() -> UIImage? {
+        guard let windowScene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }) else {
+            return nil
+        }
+
+        guard let window = windowScene.windows.first(where: { $0.isKeyWindow }) else {
+            return nil
+        }
+
+        let renderer = UIGraphicsImageRenderer(bounds: window.bounds)
+        return renderer.image { _ in
+            window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
     }
 
     
