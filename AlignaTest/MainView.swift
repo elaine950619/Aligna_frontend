@@ -166,6 +166,7 @@ struct MainView: View {
     @State private var bootPhase: BootPhase = .loading
     
     @State private var didBootVisuals = false
+    @State private var shouldCollapseMantraOnReturn = false
 
     
     private func ensureDefaultsIfMissing() {
@@ -330,18 +331,23 @@ struct MainView: View {
                         // ✅ 当 mantra 更新（新的一天/重新拉取）时，自动收起回 “...”
                         
                         if !isMantraExpanded {
-                            Spacer()
+                            let totalH = geometry.size.height
+                            let verticalPadding = totalH * 0.08
+                            let footerHeight: CGFloat = 22
+                            let gridSpacing = min(geometry.size.width, geometry.size.height) * 0.018
+                            let availableGridHeight = max(0, totalH - (verticalPadding * 2) - footerHeight)
+                            let gridHeight = min(availableGridHeight, totalH * 0.34)
 
-                            VStack(spacing: minLength * 0.04) {
+                            Spacer(minLength: verticalPadding)
+
+                            VStack(spacing: gridSpacing) {
                                 let columns = [
-                                    GridItem(.flexible(), alignment: .center),
-                                    GridItem(.flexible(), alignment: .center)
+                                    GridItem(.flexible(), spacing: gridSpacing, alignment: .center),
+                                    GridItem(.flexible(), spacing: gridSpacing, alignment: .center)
                                 ]
 
-                                let gridHeight = geometry.size.height * (geometry.size.height < 700 ? 0.36 : 0.40)
-
                                 LazyVGrid(columns: columns,
-                                          spacing: geometry.size.height * 0.018) {
+                                          spacing: gridSpacing) {
                                     navItemView(title: "Place", geometry: geometry)
                                     navItemView(title: "Gemstone", geometry: geometry)
                                     navItemView(title: "Color", geometry: geometry)
@@ -355,7 +361,7 @@ struct MainView: View {
                                 .padding(.horizontal, geometry.size.width * 0.05)
                             }
 
-                            Spacer(minLength: 0)
+                            Spacer(minLength: verticalPadding)
                         }
                     }
                     .padding(.top, 16)
@@ -387,8 +393,14 @@ struct MainView: View {
                     .multilineTextAlignment(.center)
                     .foregroundColor(themeManager.descriptionText.opacity(0.45))
                     .padding(.horizontal, 24)
-                    .padding(.bottom, -6)
+                    .padding(.bottom, 8)
                 }
+            }
+            .navigationDestination(for: RecCategory.self) { cat in
+                RecommendationPagerView(docsByCategory: makeDocsMap(), selected: cat)
+                    .environmentObject(starManager)
+                    .environmentObject(themeManager)
+                    .environmentObject(viewModel)
             }
 
         }
@@ -1040,22 +1052,37 @@ struct MainView: View {
                     }
                     .onAppear {
                         // run once on cold start
-                        guard !didBootVisuals else { return }
-                        didBootVisuals = true
+                        if !didBootVisuals {
+                            didBootVisuals = true
+                            starManager.animateStar = true
+                            themeManager.appBecameActive()
 
-                        starManager.animateStar = true
-                        themeManager.appBecameActive()
-
-                        let trimmed = viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !trimmed.isEmpty {
-                            cachedDailyMantra = trimmed
-                            if dailyMantraNotificationEnabled {
-                                MantraNotificationManager.scheduleDaily(
-                                    mantra: trimmed,
-                                    hour: dailyMantraNotificationHour,
-                                    minute: dailyMantraNotificationMinute
-                                )
+                            let trimmed = viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines)
+                            if !trimmed.isEmpty {
+                                cachedDailyMantra = trimmed
+                                if dailyMantraNotificationEnabled {
+                                    MantraNotificationManager.scheduleDaily(
+                                        mantra: trimmed,
+                                        hour: dailyMantraNotificationHour,
+                                        minute: dailyMantraNotificationMinute
+                                    )
+                                }
                             }
+                        }
+
+                        if shouldCollapseMantraOnReturn {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isMantraExpanded = false
+                            }
+                            shouldCollapseMantraOnReturn = false
+                        }
+                    }
+                    .onChange(of: mainNavigationPath) { _, newValue in
+                        if newValue.isEmpty, shouldCollapseMantraOnReturn {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isMantraExpanded = false
+                            }
+                            shouldCollapseMantraOnReturn = false
                         }
                     }
                     .onChange(of: viewModel.dailyMantra) { _, newValue in
@@ -1629,22 +1656,12 @@ struct MainView: View {
     private func navItemView(title: String, geometry: GeometryProxy) -> some View {
         let documentName = viewModel.recommendations[title] ?? ""
         let startCat = RecCategory(rawValue: title) // "Place" -> .Place
-        
         return Group {
             if let startCat, !documentName.isEmpty {
-                        NavigationLink {
-                            // Build the docs map for all eight categories from your viewModel
-                            let docsMap: [RecCategory: String] = Dictionary(uniqueKeysWithValues:
-                                RecCategory.allCases.map { cat in
-                                    let key = cat.rawValue
-                                    return (cat, viewModel.recommendations[key] ?? "")
-                                }
-                            )
-                            RecommendationPagerView(docsByCategory: docsMap, selected: startCat)
-                                .environmentObject(starManager)
-                                .environmentObject(themeManager)
-                                .environmentObject(viewModel)
-                        } label: {
+                Button {
+                    shouldCollapseMantraOnReturn = true
+                    mainNavigationPath.append(startCat)
+                } label: {
                     VStack(spacing: 2) {   // ⬅️ tighter spacing
                         // 图标图像
                         SafeImage(name: documentName, renderingMode: .template, contentMode: .fit)
@@ -1682,7 +1699,9 @@ struct MainView: View {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .stroke(themeManager.panelStrokeHi.opacity(0.6), lineWidth: 1)
                     )
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
             } else {
                 Button {
                     print("⚠️ 无法进入 '\(title)'，推荐结果尚未加载")
@@ -1738,6 +1757,13 @@ struct MainView: View {
         if phase == .main {
             isMantraExpanded = true
         }
+    }
+
+    private func makeDocsMap() -> [RecCategory: String] {
+        Dictionary(uniqueKeysWithValues: RecCategory.allCases.map { cat in
+            let key = cat.rawValue
+            return (cat, viewModel.recommendations[key] ?? "")
+        })
     }
 
     /*
