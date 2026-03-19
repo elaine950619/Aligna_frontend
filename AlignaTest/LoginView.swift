@@ -94,6 +94,133 @@ struct LoginView: View {
 
                     // 表单
                     VStack(spacing: minLength * 0.035) {
+                        // Google / Apple
+                        VStack(spacing: minLength * 0.025) {
+                            Button(action: {
+                                guard !authBusy else { return }
+                                activeAuthAction = .google
+                                authBusy = true
+                                handleGoogleLogin(
+                                    viewModel: viewModel,
+                                    onSuccessToLogin: {
+                                        authBusy = false
+                                        activeAuthAction = nil
+                                        if let user = Auth.auth().currentUser {
+                                            viewModel.userId = user.uid
+                                        }
+                                        isLoggedIn = true
+                                        navigateToHome = true
+                                    },
+                                    onSuccessToOnboarding: {
+                                        authBusy = false
+                                        activeAuthAction = nil
+                                        infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
+                                        dismissAfterInfo = true
+                                        showInfoAlert = true
+                                    },
+                                    onError: { message in
+                                        authBusy = false
+                                        activeAuthAction = nil
+                                        alertMessage = message
+                                        showAlert = true
+                                    }
+                                )
+                            }) {
+                                HStack(spacing: 12) {
+                                    if isActive(.google) {
+                                        ProgressView()
+                                            .progressViewStyle(.circular)
+                                            .tint(themeManager.fixedNightTextPrimary)
+                                            .scaleEffect(0.75)
+                                    }
+                                    Image("googleIcon")
+                                        .resizable()
+                                        .frame(width: 20, height: 20)
+                                    Text("Sign in with Google")
+                                        .font(.system(size: 14))
+                                }
+                                .foregroundColor(themeManager.fixedNightTextPrimary)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(panelBG)
+                                .cornerRadius(14)
+                            }
+                            .staggered(2, show: $showIntro)
+
+                            SignInWithAppleButton(
+                                .signIn,
+                                onRequest: { request in
+                                    let nonce = randomNonceString()
+                                    currentNonce = nonce
+                                    request.requestedScopes = [.fullName, .email]
+                                    request.nonce = sha256(nonce)
+                                },
+                                onCompletion: { result in
+                                    guard !authBusy else { return }
+                                    guard let raw = currentNonce, !raw.isEmpty else {
+                                        alertMessage = "Missing nonce. Please try again."
+                                        showAlert = true
+                                        return
+                                    }
+                                    activeAuthAction = .apple
+                                    authBusy = true
+                                    handleAppleLogin(
+                                        result: result,
+                                        rawNonce: raw,
+                                        onSuccessToLogin: {
+                                            authBusy = false
+                                            activeAuthAction = nil
+                                            if let user = Auth.auth().currentUser {
+                                                viewModel.userId = user.uid
+                                            }
+                                            isLoggedIn = true
+                                            navigateToHome = true
+                                        },
+                                        onSuccessToOnboarding: {
+                                            authBusy = false
+                                            activeAuthAction = nil
+                                            if let user = Auth.auth().currentUser {
+                                                viewModel.userId = user.uid
+                                            }
+                                            infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
+                                            dismissAfterInfo = true
+                                            showInfoAlert = true
+                                        },
+                                        onError: { message in
+                                            authBusy = false
+                                            activeAuthAction = nil
+                                            alertMessage = message
+                                            showAlert = true
+                                        }
+                                    )
+                                }
+                            )
+                            .frame(height: 50)
+                            .signInWithAppleButtonStyle(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .overlay(alignment: .leading) {
+                                if isActive(.apple) {
+                                    ProgressView()
+                                        .progressViewStyle(.circular)
+                                        .tint(.black)
+                                        .scaleEffect(0.75)
+                                        .padding(.leading, 16)
+                                }
+                            }
+                            .staggered(3, show: $showIntro)
+                        }
+                        .padding(.top, 2)
+
+                        // 分隔线
+                        HStack {
+                            Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
+                            Text("Or with")
+                                .font(AlynnaTypography.font(.footnote))
+                                .foregroundColor(themeManager.fixedNightTextSecondary)
+                            Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
+                        }
+                        .staggered(4, show: $showIntro)
+
                         // Email
                         Group {
                             TextField("", text: $email)
@@ -120,7 +247,7 @@ struct LoginView: View {
                                 .submitLabel(.next)
                                 .onSubmit { loginFocus = .password }
                         }
-                        .staggered(2, show: $showIntro)
+                        .staggered(5, show: $showIntro)
                         .animation(nil, value: loginFocus)
 
                         // Password
@@ -145,7 +272,7 @@ struct LoginView: View {
                                 )
                                 .submitLabel(.done)
                         }
-                        .staggered(3, show: $showIntro)
+                        .staggered(6, show: $showIntro)
                         .animation(nil, value: loginFocus)
 
                         // Forgot Password
@@ -175,7 +302,7 @@ struct LoginView: View {
                             .foregroundColor(themeManager.fixedNightTextSecondary)
                             .underline()
                         }
-                        .staggered(4, show: $showIntro)
+                        .staggered(7, show: $showIntro)
 
                         // Log In
                         Button(action: {
@@ -258,134 +385,7 @@ struct LoginView: View {
                             .cornerRadius(14)
                         }
                         .disabled(authBusy)
-                        .staggered(5, show: $showIntro)
-
-                        // 分隔线
-                        HStack {
-                            Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
-                            Text("Or with")
-                                .font(AlynnaTypography.font(.footnote))
-                                .foregroundColor(themeManager.fixedNightTextSecondary)
-                            Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
-                        }
-                        .staggered(6, show: $showIntro)
-
-                        // Google / Apple
-                        VStack(spacing: minLength * 0.025) {
-                            Button(action: {
-                                guard !authBusy else { return }
-                                activeAuthAction = .google
-                                authBusy = true
-                                handleGoogleLogin(
-                                    viewModel: viewModel,
-                                    onSuccessToLogin: {
-                                        authBusy = false
-                                        activeAuthAction = nil
-                                        if let user = Auth.auth().currentUser {
-                                            viewModel.userId = user.uid
-                                        }
-                                        isLoggedIn = true
-                                        navigateToHome = true
-                                    },
-                                    onSuccessToOnboarding: {
-                                        authBusy = false
-                                        activeAuthAction = nil
-                                        infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
-                                        dismissAfterInfo = true
-                                        showInfoAlert = true
-                                    },
-                                    onError: { message in
-                                        authBusy = false
-                                        activeAuthAction = nil
-                                        alertMessage = message
-                                        showAlert = true
-                                    }
-                                )
-                            }) {
-                                HStack(spacing: 12) {
-                                    if isActive(.google) {
-                                        ProgressView()
-                                            .progressViewStyle(.circular)
-                                            .tint(themeManager.fixedNightTextPrimary)
-                                            .scaleEffect(0.75)
-                                    }
-                                    Image("googleIcon")
-                                        .resizable()
-                                        .frame(width: 20, height: 20)
-                                    Text("Sign in with Google")
-                                        .font(.system(size: 14))
-                                }
-                                .foregroundColor(themeManager.fixedNightTextPrimary)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(panelBG)
-                                .cornerRadius(14)
-                            }
-                            .staggered(7, show: $showIntro)
-
-                            SignInWithAppleButton(
-                                .signIn,
-                                onRequest: { request in
-                                    let nonce = randomNonceString()
-                                    currentNonce = nonce
-                                    request.requestedScopes = [.fullName, .email]
-                                    request.nonce = sha256(nonce)
-                                },
-                                onCompletion: { result in
-                                    guard !authBusy else { return }
-                                    guard let raw = currentNonce, !raw.isEmpty else {
-                                        alertMessage = "Missing nonce. Please try again."
-                                        showAlert = true
-                                        return
-                                    }
-                                    activeAuthAction = .apple
-                                    authBusy = true
-                                    handleAppleLogin(
-                                        result: result,
-                                        rawNonce: raw,
-                                        onSuccessToLogin: {
-                                            authBusy = false
-                                            activeAuthAction = nil
-                                            if let user = Auth.auth().currentUser {
-                                                viewModel.userId = user.uid
-                                            }
-                                            isLoggedIn = true
-                                            navigateToHome = true
-                                        },
-                                        onSuccessToOnboarding: {
-                                            authBusy = false
-                                            activeAuthAction = nil
-                                            if let user = Auth.auth().currentUser {
-                                                viewModel.userId = user.uid
-                                            }
-                                            infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
-                                            dismissAfterInfo = true
-                                            showInfoAlert = true
-                                        },
-                                        onError: { message in
-                                            authBusy = false
-                                            activeAuthAction = nil
-                                            alertMessage = message
-                                            showAlert = true
-                                        }
-                                    )
-                                }
-                            )
-                            .frame(height: 50)
-                            .signInWithAppleButtonStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .overlay(alignment: .leading) {
-                                if isActive(.apple) {
-                                    ProgressView()
-                                        .progressViewStyle(.circular)
-                                        .tint(.black)
-                                        .scaleEffect(0.75)
-                                        .padding(.leading, 16)
-                                }
-                            }
-                            .staggered(8, show: $showIntro)
-                        }
-                        .padding(.top, 2)
+                        .staggered(8, show: $showIntro)
 
                         // 去注册
                         HStack {

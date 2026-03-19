@@ -50,7 +50,6 @@ struct SignUpView: View {
 
                 let sectionGap = h * 0.075
                 let fieldGap = minL * 0.030
-                let socialGap = minL * 0.035
 
                 ZStack {
                     AppBackgroundView(mode: .night)
@@ -103,97 +102,6 @@ struct SignUpView: View {
                         Spacer(minLength: sectionGap)
 
                         VStack(spacing: fieldGap) {
-                            Group {
-                                TextField("", text: $email)
-                                    .textContentType(.emailAddress)
-                                    .keyboardType(.emailAddress)
-                                    .textInputAutocapitalization(.never)
-                                    .autocorrectionDisabled(true)
-                                    .padding(.vertical, 14)
-                                    .padding(.leading, 16)
-                                    .background(Color.white.opacity(0.1))
-                                    .cornerRadius(14)
-                                    .foregroundColor(themeManager.fixedNightTextPrimary)
-                                    .placeholder(when: email.isEmpty) {
-                                        Text("Enter your email")
-                                            .foregroundColor(themeManager.fixedNightTextSecondary)
-                                            .padding(.leading, 16)
-                                    }
-                                    .focused($registerFocus, equals: .email)
-                                    .focusGlow(
-                                        active: registerFocus == .email,
-                                        color: themeManager.fixedNightTextPrimary,
-                                        lineWidth: 2.2,
-                                        cornerRadius: 14
-                                    )
-                                    .submitLabel(.next)
-                                    .onSubmit { registerFocus = .password }
-                            }
-                            .staggered(2, show: $showIntro)
-                            .animation(nil, value: registerFocus)
-
-                            Group {
-                                SecureField("", text: $password)
-                                    .padding(.vertical, 14)
-                                    .padding(.leading, 16)
-                                    .background(Color.white.opacity(0.1))
-                                    .cornerRadius(14)
-                                    .foregroundColor(themeManager.fixedNightTextPrimary)
-                                    .placeholder(when: password.isEmpty) {
-                                        Text("Enter your password")
-                                            .foregroundColor(themeManager.fixedNightTextSecondary)
-                                            .padding(.leading, 16)
-                                    }
-                                    .focused($registerFocus, equals: .password)
-                                    .focusGlow(
-                                        active: registerFocus == .password,
-                                        color: themeManager.fixedNightTextPrimary,
-                                        lineWidth: 2.2,
-                                        cornerRadius: 14
-                                    )
-                                    .submitLabel(.done)
-                            }
-                            .staggered(3, show: $showIntro)
-                            .animation(nil, value: registerFocus)
-
-                            Button(action: {
-                                guard !authBusy else { return }
-                                activeAuthAction = .emailSignUp
-                                registerWithEmailPassword()
-                            }) {
-                                HStack(spacing: 8) {
-                                    if isActive(.emailSignUp) {
-                                        ProgressView()
-                                            .progressViewStyle(.circular)
-                                            .tint(.black)
-                                            .scaleEffect(0.75)
-                                    }
-                                    Text(isActive(.emailSignUp) ? "Creating..." : "Create Account")
-                                }
-                                .font(AlynnaTypography.font(.headline))
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(themeManager.fixedNightTextPrimary)
-                                .foregroundColor(.black)
-                                .cornerRadius(14)
-                            }
-                            .disabled(authBusy)
-                            .staggered(4, show: $showIntro)
-                        }
-                        .padding(.horizontal, w * 0.1)
-
-                        Spacer(minLength: sectionGap)
-
-                        VStack(spacing: socialGap) {
-                            HStack {
-                                Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
-                                Text("Or with")
-                                    .font(AlynnaTypography.font(.footnote))
-                                    .foregroundColor(themeManager.fixedNightTextSecondary)
-                                Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
-                            }
-                            .staggered(5, show: $showIntro)
-
                             VStack(spacing: minL * 0.025) {
                                 Button(action: {
                                     guard !authBusy else { return }
@@ -258,7 +166,7 @@ struct SignUpView: View {
                                     .cornerRadius(14)
                                 }
                                 .disabled(authBusy)
-                                .staggered(8, show: $showIntro)
+                                .staggered(2, show: $showIntro)
 
                                 SignInWithAppleButton(
                                     .signUp,
@@ -330,9 +238,95 @@ struct SignUpView: View {
                                     }
                                 }
                                 .disabled(authBusy)
-                                .staggered(8, show: $showIntro)
+                                .staggered(3, show: $showIntro)
                             }
                             .padding(.top, 2)
+
+                            HStack {
+                                Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
+                                Text("Or with")
+                                    .font(AlynnaTypography.font(.footnote))
+                                    .foregroundColor(themeManager.fixedNightTextSecondary)
+                                Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
+                            }
+                            .staggered(4, show: $showIntro)
+
+                            Group {
+                                TextField("", text: $email)
+                                    .textContentType(.emailAddress)
+                                    .keyboardType(.emailAddress)
+                                    .textInputAutocapitalization(.never)
+                                    .autocorrectionDisabled(true)
+                                    .padding(.vertical, 14)
+                                    .padding(.leading, 16)
+                                    .background(Color.white.opacity(0.1))
+                                    .cornerRadius(14)
+                                    .foregroundColor(themeManager.fixedNightTextPrimary)
+                                    .placeholder(when: email.isEmpty) {
+                                        Text("Enter your email")
+                                            .foregroundColor(themeManager.fixedNightTextSecondary)
+                                            .padding(.leading, 16)
+                                    }
+                                    .focused($registerFocus, equals: .email)
+                                    .focusGlow(
+                                        active: registerFocus == .email,
+                                        color: themeManager.fixedNightTextPrimary,
+                                        lineWidth: 2.2,
+                                        cornerRadius: 14
+                                    )
+                                    .submitLabel(.next)
+                                    .onSubmit { registerFocus = .password }
+                            }
+                            .staggered(5, show: $showIntro)
+                            .animation(nil, value: registerFocus)
+
+                            Group {
+                                SecureField("", text: $password)
+                                    .padding(.vertical, 14)
+                                    .padding(.leading, 16)
+                                    .background(Color.white.opacity(0.1))
+                                    .cornerRadius(14)
+                                    .foregroundColor(themeManager.fixedNightTextPrimary)
+                                    .placeholder(when: password.isEmpty) {
+                                        Text("Enter your password")
+                                            .foregroundColor(themeManager.fixedNightTextSecondary)
+                                            .padding(.leading, 16)
+                                    }
+                                    .focused($registerFocus, equals: .password)
+                                    .focusGlow(
+                                        active: registerFocus == .password,
+                                        color: themeManager.fixedNightTextPrimary,
+                                        lineWidth: 2.2,
+                                        cornerRadius: 14
+                                    )
+                                    .submitLabel(.done)
+                            }
+                            .staggered(6, show: $showIntro)
+                            .animation(nil, value: registerFocus)
+
+                            Button(action: {
+                                guard !authBusy else { return }
+                                activeAuthAction = .emailSignUp
+                                registerWithEmailPassword()
+                            }) {
+                                HStack(spacing: 8) {
+                                    if isActive(.emailSignUp) {
+                                        ProgressView()
+                                            .progressViewStyle(.circular)
+                                            .tint(.black)
+                                            .scaleEffect(0.75)
+                                    }
+                                    Text(isActive(.emailSignUp) ? "Creating..." : "Create Account")
+                                }
+                                .font(AlynnaTypography.font(.headline))
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(themeManager.fixedNightTextPrimary)
+                                .foregroundColor(.black)
+                                .cornerRadius(14)
+                            }
+                            .disabled(authBusy)
+                            .staggered(7, show: $showIntro)
                         }
                         .padding(.horizontal, w * 0.1)
 
