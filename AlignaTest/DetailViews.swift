@@ -899,29 +899,31 @@ struct PlayerPopup: View {
 
     // MARK: - Playback
     private func prepareAndStartIfNeeded() {
-        if soundPlayer.player == nil {
+        if soundPlayer.player == nil || soundPlayer.currentSoundKey != documentName {
             soundPlayer.playSound(named: documentName)
         } else {
             soundPlayer.player?.play()
+            soundPlayer.isPlaying = true
         }
-        isPlaying = true
-        isRotating = true
+        isPlaying = soundPlayer.isPlaying
+        isRotating = isPlaying
         duration = soundPlayer.player?.duration ?? 0
         startTimer()
     }
 
     private func togglePlay() {
         if isPlaying {
-            soundPlayer.player?.pause()
+            soundPlayer.pause()
             isPlaying = false
             isRotating = false
             // keep timer to update position if you like, or stop:
             // stopTimer()
         } else {
-            if soundPlayer.player == nil {
+            if soundPlayer.player == nil || soundPlayer.currentSoundKey != documentName {
                 soundPlayer.playSound(named: documentName)
             } else {
                 soundPlayer.player?.play()
+                soundPlayer.isPlaying = true
             }
             isPlaying = true
             isRotating = true
@@ -934,13 +936,24 @@ struct PlayerPopup: View {
         stopTimer()
         timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in
             Task { @MainActor in
-                guard let p = soundPlayer.player else { return }
+                guard let p = soundPlayer.player else {
+                    isPlaying = false
+                    isRotating = false
+                    progress = 0
+                    currentTime = 0
+                    duration = 0
+                    return
+                }
                 currentTime = p.currentTime
                 duration = p.duration
                 progress = duration > 0 ? p.currentTime / duration : 0
                 if !p.isPlaying {
                     isPlaying = false
                     isRotating = false
+                    soundPlayer.isPlaying = false
+                } else {
+                    isPlaying = true
+                    isRotating = true
                 }
             }
         }

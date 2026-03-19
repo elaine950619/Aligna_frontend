@@ -113,6 +113,7 @@ struct MainView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var viewModel: OnboardingViewModel
+    @EnvironmentObject var soundPlayer: SoundPlayer
     
     @EnvironmentObject var reasoningStore: DailyReasoningStore
     
@@ -136,6 +137,8 @@ struct MainView: View {
     
     @State private var isMantraExpanded: Bool = false
     @State private var showMantraSaveAlert: Bool = false
+    @State private var showTodaySoundPlayer: Bool = false
+    @State private var showNoSoundToast: Bool = false
     @State private var mantraSaveMessage: String = ""
 
     @State private var showReasoningBubble: Bool = false
@@ -202,6 +205,46 @@ struct MainView: View {
     }
     private var updatedOnFooterText: String {
         updatedOnText.replacingOccurrences(of: "Updated on", with: "updated on")
+    }
+
+    private var todaySoundKey: String {
+        viewModel.recommendations["Sound"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+
+    private var isTodaySoundPlaying: Bool {
+        !todaySoundKey.isEmpty
+            && soundPlayer.isPlaying
+            && soundPlayer.currentSoundKey == todaySoundKey
+    }
+
+    private var noSoundToastView: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "speaker.slash.fill")
+                .font(.system(size: 12, weight: .semibold))
+            Text("No sound today")
+                .font(.custom("Merriweather-Regular", size: 12))
+        }
+        .foregroundColor(themeManager.primaryText.opacity(0.9))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(
+            Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 6)
+        .accessibilityLabel("No sound recommendation")
+    }
+
+    private func showNoSoundToastIfNeeded() {
+        guard !showNoSoundToast else { return }
+        withAnimation(.easeOut(duration: 0.2)) {
+            showNoSoundToast = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+            withAnimation(.easeIn(duration: 0.2)) {
+                showNoSoundToast = false
+            }
+        }
     }
 
     
@@ -315,24 +358,61 @@ struct MainView: View {
                         .contentShape(Rectangle())
                         
                         if isMantraExpanded {
-                            Button {
-                                presentMantraShareSheet()
-                            } label: {
-                                HStack(spacing: 8) {
+                            HStack(spacing: 12) {
+                                Button {
+                                    presentMantraShareSheet()
+                                } label: {
                                     Image(systemName: "square.and.arrow.up")
-                                    Text("Share")
+                                        .font(AlynnaTypography.font(.footnote))
+                                        .foregroundColor(themeManager.primaryText)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 6)
                                 }
-                                .font(AlynnaTypography.font(.footnote))
-                                .foregroundColor(themeManager.primaryText)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 6)
+                                .alert("Share failed", isPresented: $showMantraSaveAlert) {
+                                    Button("OK", role: .cancel) { }
+                                } message: {
+                                    Text(mantraSaveMessage)
+                                }
+
+                                Button {
+                                    if isTodaySoundPlaying {
+                                        soundPlayer.pause()
+                                    } else if todaySoundKey.isEmpty {
+                                        showNoSoundToastIfNeeded()
+                                    } else {
+                                        showTodaySoundPlayer = true
+                                    }
+                                } label: {
+                                    Group {
+                                        if isTodaySoundPlaying {
+                                            Image(systemName: "pause.fill")
+                                                .font(AlynnaTypography.font(.footnote))
+                                                .foregroundColor(themeManager.primaryText)
+                                                .breathingIcon(scale: 1.06, minOpacity: 0.8, duration: 1.6)
+                                        } else {
+                                            Image(systemName: "play.fill")
+                                                .font(AlynnaTypography.font(.footnote))
+                                                .foregroundColor(
+                                                    themeManager.primaryText.opacity(todaySoundKey.isEmpty ? 0.35 : 1)
+                                                )
+                                        }
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                                }
+                                .buttonStyle(.plain)
+                                .sheet(isPresented: $showTodaySoundPlayer) {
+                                    PlayerPopup(
+                                        documentName: todaySoundKey,
+                                        dismiss: { showTodaySoundPlayer = false }
+                                    )
+                                    .presentationBackground(.clear)
+                                    .presentationDetents([.fraction(0.6), .large])
+                                    .presentationDragIndicator(.visible)
+                                    .presentationCornerRadius(24)
+                                }
                             }
                             .padding(.top, 8)
-                            .alert("Share failed", isPresented: $showMantraSaveAlert) {
-                                Button("OK", role: .cancel) { }
-                            } message: {
-                                Text(mantraSaveMessage)
-                            }
                         }
                         // ✅ 当 mantra 更新（新的一天/重新拉取）时，自动收起回 “...”
                         
@@ -400,6 +480,13 @@ struct MainView: View {
                     .foregroundColor(themeManager.descriptionText.opacity(0.45))
                     .padding(.horizontal, 24)
                     .padding(.bottom, 8)
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if showNoSoundToast {
+                    noSoundToastView
+                        .padding(.bottom, isMantraExpanded ? 22 : 10)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
             .navigationDestination(for: RecCategory.self) { cat in
