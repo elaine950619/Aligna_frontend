@@ -128,6 +128,9 @@ struct MainView: View {
     @AppStorage("dailyMantraNotificationHour") private var dailyMantraNotificationHour: Int = 9
     @AppStorage("dailyMantraNotificationMinute") private var dailyMantraNotificationMinute: Int = 0
     @AppStorage("cachedDailyMantra") private var cachedDailyMantra: String = ""
+    @AppStorage("lastRecommendationTimestamp") private var lastRecommendationTimestamp: Double = 0
+    @AppStorage("lastRecommendationHasFullSet") private var lastRecommendationHasFullSet: Bool = false
+    @AppStorage("shouldExpandMantraOnBoot") private var shouldExpandMantraOnBoot: Bool = false
     @AppStorage("shouldExpandMantraFromNotification") private var shouldExpandMantraFromNotification: Bool = false
     @State private var isFetchingToday: Bool = false
     
@@ -164,6 +167,12 @@ struct MainView: View {
     
     @State private var didBootVisuals = false
     @State private var shouldCollapseMantraOnReturn = false
+
+    private var hasRecentRecommendation: Bool {
+        guard lastRecommendationHasFullSet else { return false }
+        let age = Date().timeIntervalSince1970 - lastRecommendationTimestamp
+        return age >= 0 && age < 24 * 60 * 60
+    }
 
     
     private func ensureDefaultsIfMissing() {
@@ -417,6 +426,16 @@ struct MainView: View {
 //            scentTitle: recommendationTitles["Scent"] ?? "Scent"
 //        )
 //        AlignaWidgetStore.save(snap) // ↩︎ 写入 App Group + 刷新 Widget
+    }
+
+    private func updateLastRecommendationStampIfReady(mantra: String, recs: [String: String]) {
+        let trimmed = mantra.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, recs.count >= 8 else {
+            lastRecommendationHasFullSet = false
+            return
+        }
+        lastRecommendationTimestamp = Date().timeIntervalSince1970
+        lastRecommendationHasFullSet = true
     }
 
     private func presentMantraShareSheet() {
@@ -996,6 +1015,8 @@ struct MainView: View {
                     onPersonalComplete: { didProvidePersonal in
                         if didProvidePersonal {
                             forceRefetchDailyIfNotLocked()
+                        } else if hasRecentRecommendation {
+                            isBootDataReady = true
                         }
                         didCompletePersonalCheckIn = true
                         attemptBootAdvance()
@@ -1523,6 +1544,7 @@ struct MainView: View {
                         viewModel.dailyMantra = mantra
                         lastRecommendationDate = today
                         viewModel.reasoningSummary = reasoning
+                        updateLastRecommendationStampIfReady(mantra: mantra, recs: normalized)
 
 
                         // ✅ 先用一个“可用的地点”占位（立即显示），随后用反地理编码精确覆盖
@@ -1729,6 +1751,9 @@ struct MainView: View {
     private func handleBootPhaseChange(_ phase: BootPhase) {
         if phase == .main {
             isMantraExpanded = true
+            if shouldExpandMantraOnBoot {
+                shouldExpandMantraOnBoot = false
+            }
         }
     }
 
@@ -1852,6 +1877,9 @@ struct MainView: View {
                     // 诊断日志：帮助你确认 Firestore 是否写入了 mantra
                     print("⚠️ Firestore 今日文档没有 mantra 或为空（docId=\(userId)_\(today)）")
                 }
+
+                let resolvedMantra = mantraTrim.isEmpty ? self.viewModel.dailyMantra : fetchedMantra
+                self.updateLastRecommendationStampIfReady(mantra: resolvedMantra, recs: recs)
 
                 let reasoningTrim = fetchedReasoning.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !reasoningTrim.isEmpty {

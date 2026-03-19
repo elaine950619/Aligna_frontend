@@ -179,7 +179,13 @@ struct LoadingView: View {
     @EnvironmentObject var themeManager: ThemeManager
 
     @State private var didStartLoading = false
-    @State private var stage: LoadingStage = .cosmic
+    @State private var stage: LoadingStage = .initial
+    @State private var initialPulse = false
+
+    @AppStorage("lastRecommendationTimestamp") private var lastRecommendationTimestamp: Double = 0
+    @AppStorage("lastRecommendationHasFullSet") private var lastRecommendationHasFullSet: Bool = false
+    @AppStorage("cachedDailyMantra") private var cachedDailyMantra: String = ""
+    @AppStorage("shouldExpandMantraOnBoot") private var shouldExpandMantraOnBoot: Bool = false
     @State private var cosmicEmojiIndex = 0
     @State private var placeEmojiIndex = 0
     @State private var personalIconIndex = 0
@@ -215,6 +221,7 @@ struct LoadingView: View {
     }
 
     fileprivate enum LoadingStage: Int {
+        case initial
         case cosmic
         case place
         case personal
@@ -226,6 +233,16 @@ struct LoadingView: View {
 
     private var shouldAutoSkipPersonal: Bool {
         !didInteractPersonal
+    }
+
+    private var hasRecentRecommendation: Bool {
+        guard lastRecommendationHasFullSet else { return false }
+        let age = Date().timeIntervalSince1970 - lastRecommendationTimestamp
+        return age >= 0 && age < 24 * 60 * 60
+    }
+
+    private var shouldRunFullLoading: Bool {
+        !hasRecentRecommendation
     }
 
     var body: some View {
@@ -293,6 +310,10 @@ struct LoadingView: View {
         let contentHeight: CGFloat = 240
         return VStack(spacing: 12) {
             switch stage {
+            case .initial:
+                initialHeader
+                    .frame(height: headerHeight + contentHeight, alignment: .top)
+
             case .cosmic:
                 stageHeader(title: "Reading the cosmos",
                             subtitle: cosmicSubtitleText,
@@ -334,7 +355,7 @@ struct LoadingView: View {
             subtitle
                 .foregroundColor(themeManager.descriptionText.opacity(0.85))
                 .multilineTextAlignment(.center)
-            if stage != .personal {
+            if stage == .cosmic || stage == .place {
                 loadingDots
             }
         }
@@ -342,12 +363,50 @@ struct LoadingView: View {
     }
 
 
+    private var initialHeader: some View {
+        VStack(spacing: 20) {
+            Text("Initializing")
+                .font(.custom("Merriweather-Bold", size: 20))
+                .foregroundColor(themeManager.primaryText)
+            logoView(size: 56)
+                .scaleEffect(initialPulse ? 1.0 : 0.96)
+                .opacity(initialPulse ? 1.0 : 0.0)
+                .animation(.easeOut(duration: 0.6), value: initialPulse)
+            initialSubtitleText
+                .foregroundColor(themeManager.descriptionText.opacity(0.85))
+                .multilineTextAlignment(.center)
+        }
+        .onAppear {
+            initialPulse = true
+        }
+    }
+
     private func iconView(_ iconName: String, size: CGFloat) -> some View {
         Image(systemName: iconName)
             .font(.system(size: size))
             .foregroundColor(themeManager.primaryText)
             .frame(width: size, height: size, alignment: .center)
             .textSelection(.disabled)
+    }
+
+    @ViewBuilder
+    private func logoView(size: CGFloat) -> some View {
+        if UIImage(named: "alignaSymbol") != nil {
+            Image("alignaSymbol")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: size, height: size, alignment: .center)
+                .foregroundColor(themeManager.primaryText)
+                .textSelection(.disabled)
+        } else {
+            Image(systemName: "sparkles")
+                .resizable()
+                .scaledToFit()
+                .frame(width: size, height: size, alignment: .center)
+                .foregroundColor(themeManager.primaryText)
+                .textSelection(.disabled)
+        }
     }
 
     private var loadingDots: some View {
@@ -461,6 +520,8 @@ struct LoadingView: View {
 
     private var footerText: String? {
         switch stage {
+        case .initial:
+            return nil
         case .cosmic:
             return "Chart data is derived from your current cosmic conditions."
         case .place:
@@ -509,6 +570,11 @@ struct LoadingView: View {
             .font(AlignaType.helperSmall())
     }
 
+    private var initialSubtitleText: Text {
+        Text("Warming up your space…")
+            .font(AlignaType.helperSmall())
+    }
+
     private var placeSubtitle: String {
         func clean(_ value: String) -> String? {
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -533,10 +599,22 @@ struct LoadingView: View {
 
     private func scheduleStageProgression() {
         guard fixedMessageIndex == nil else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
+
+        if !shouldRunFullLoading {
+            shouldExpandMantraOnBoot = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                onPersonalComplete?(false)
+            }
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            if stage == .initial { stage = .cosmic }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.7) {
             if stage == .cosmic { stage = .place }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.4) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.9) {
             if stage == .place { stage = .personal }
         }
     }
@@ -788,6 +866,10 @@ private struct LoadingViewPreviewContainer: View {
 
 #Preview("Loading Cosmic") {
     LoadingViewPreviewContainer(stage: .cosmic)
+}
+
+#Preview("Loading Initial") {
+    LoadingViewPreviewContainer(stage: .initial)
 }
 
 #Preview("Loading Place") {
