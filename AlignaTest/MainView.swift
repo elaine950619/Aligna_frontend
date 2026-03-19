@@ -5,7 +5,6 @@ import CoreLocation
 import Combine
 import WidgetKit
 import UIKit
-import Photos
 
 func getAddressFromCoordinate(
     _ coordinate: CLLocationCoordinate2D,
@@ -135,8 +134,6 @@ struct MainView: View {
     @State private var isMantraExpanded: Bool = false
     @State private var showMantraSaveAlert: Bool = false
     @State private var mantraSaveMessage: String = ""
-    @State private var showShareSheet: Bool = false
-    @State private var savedMantraImage: UIImage? = nil
 
     @State private var showReasoningBubble: Bool = false
 
@@ -310,7 +307,7 @@ struct MainView: View {
                         
                         if isMantraExpanded {
                             Button {
-                                saveMantraScreenshotToPhotos()
+                                presentMantraShareSheet()
                             } label: {
                                 HStack(spacing: 8) {
                                     Image(systemName: "square.and.arrow.up")
@@ -322,7 +319,7 @@ struct MainView: View {
                                 .padding(.vertical, 6)
                             }
                             .padding(.top, 8)
-                            .alert("Saved", isPresented: $showMantraSaveAlert) {
+                            .alert("Share failed", isPresented: $showMantraSaveAlert) {
                                 Button("OK", role: .cancel) { }
                             } message: {
                                 Text(mantraSaveMessage)
@@ -407,12 +404,6 @@ struct MainView: View {
         .navigationViewStyle(.stack)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .sheet(isPresented: $showShareSheet) {
-            if let image = savedMantraImage {
-                ActivityViewController(items: [image])
-                    .presentationDetents([.medium, .large])
-            }
-        }
     }
 
 
@@ -428,42 +419,34 @@ struct MainView: View {
 //        AlignaWidgetStore.save(snap) // ↩︎ 写入 App Group + 刷新 Widget
     }
 
-    private func saveMantraScreenshotToPhotos() {
+    private func presentMantraShareSheet() {
         guard let image = captureMantraImage() else {
             mantraSaveMessage = "Could not capture the screenshot."
             showMantraSaveAlert = true
             return
         }
 
-        PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
-            DispatchQueue.main.async {
-                switch status {
-                case .authorized, .limited:
-                    PHPhotoLibrary.shared().performChanges {
-                        PHAssetChangeRequest.creationRequestForAsset(from: image)
-                    } completionHandler: { success, error in
-                        DispatchQueue.main.async {
-                            if success {
-                                savedMantraImage = image
-                                showShareSheet = true
-                            } else {
-                                mantraSaveMessage = error?.localizedDescription ?? "Failed to save to Photos."
-                                showMantraSaveAlert = true
-                            }
-                        }
-                    }
-                case .denied, .restricted:
-                    mantraSaveMessage = "Photos access denied. Please enable access in Settings."
-                    showMantraSaveAlert = true
-                case .notDetermined:
-                    mantraSaveMessage = "Photos permission not determined."
-                    showMantraSaveAlert = true
-                @unknown default:
-                    mantraSaveMessage = "Unknown Photos permission status."
-                    showMantraSaveAlert = true
-                }
-            }
+        presentShareController(with: image)
+    }
+
+    private func presentShareController(with image: UIImage) {
+        guard let windowScene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }) else {
+            return
         }
+
+        guard let root = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController else {
+            return
+        }
+
+        let activity = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+        if let popover = activity.popoverPresentationController {
+            popover.sourceView = root.view
+            popover.sourceRect = CGRect(x: root.view.bounds.midX, y: root.view.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+        root.present(activity, animated: true)
     }
 
     private func captureMantraImage() -> UIImage? {
@@ -641,16 +624,6 @@ struct MainView: View {
         }
     }
 
-    private struct ActivityViewController: UIViewControllerRepresentable {
-        let items: [Any]
-
-        func makeUIViewController(context: Context) -> UIActivityViewController {
-            UIActivityViewController(activityItems: items, applicationActivities: nil)
-        }
-
-        func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
-        }
-    }
 
     
     // 冷启动只看“是否已登录 + 本地标记”来分流；不再在这里查 Firestore 决定是否强拉 Onboarding。
