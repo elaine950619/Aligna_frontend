@@ -792,6 +792,25 @@ struct OnboardingStep3: View {
         !viewModel.act_prefer.isEmpty
     }
 
+    @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding = false
+    @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
+    @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
+
+    @State private var isLoading = false
+    @State private var authListenerHandle: AuthStateDidChangeListenerHandle? = nil
+    @State private var loadingStageIndex: Int = 0
+    @State private var showLongWaitHint = false
+    @State private var navigateToHome = false
+    @State private var showLoadingOverlay = false
+    @State private var loadingErrorMessage: String? = nil
+
+    @StateObject private var locationManager = LocationManager()
+    @State private var locationMessage = "Requesting location permission..."
+    @State private var didAttemptReverseGeocode = false
+
+    @State private var recommendation: [String: String] = [:]
+    @State private var mantra: String = ""
+
     var body: some View {
         GeometryReader { geometry in
             let minLength = min(geometry.size.width, geometry.size.height)
@@ -851,14 +870,53 @@ struct OnboardingStep3: View {
                                            toggle: { toggleSet(&viewModel.music_dislike, $0) })
                         )
 
-                        NavigationLink {
-                            OnboardingFinalStep(viewModel: viewModel)
-                        } label: {
-                            Text(hasAnySelection ? "Continue" : "Continue without answers")
-                                .onboardingPrimaryButtonStyle()
+                        Group {
+                            HStack(spacing: 12) {
+                                Button {
+                                    guard !isLoading else { return }
+                                    loadingErrorMessage = nil
+                                    showLoadingOverlay = true
+                                    isLoading = true
+                                    loadingStageIndex = 0
+                                    showLongWaitHint = false
+                                    ensureAuthenticatedThenUpload()
+                                } label: {
+                                    Text("Skip")
+                                        .font(.custom("Merriweather-Bold", size: 16))
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .background(Color.white.opacity(0.08))
+                                        .foregroundColor(.white)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(Color.white.opacity(0.35), lineWidth: 1)
+                                        )
+                                        .cornerRadius(16)
+                                }
+                                .disabled(isLoading)
+
+                                Button {
+                                    guard !isLoading else { return }
+                                    loadingErrorMessage = nil
+                                    showLoadingOverlay = true
+                                    isLoading = true
+                                    loadingStageIndex = 0
+                                    showLongWaitHint = false
+                                    ensureAuthenticatedThenUpload()
+                                } label: {
+                                    Text(hasAnySelection ? "Continue" : "Continue without answers")
+                                        .font(.custom("Merriweather-Bold", size: 16))
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .background(Color.white)
+                                        .foregroundColor(.black)
+                                        .cornerRadius(16)
+                                }
+                                .disabled(isLoading)
+                            }
+                            .padding(.horizontal, 0)
+                            .padding(.top, 10)
                         }
-                        .padding(.horizontal, 0)
-                        .padding(.top, 10)
                         .padding(.bottom, 24)
                     }
                     .padding(.horizontal, 24)
@@ -866,25 +924,66 @@ struct OnboardingStep3: View {
 
                 OnboardingBackOverlay()
 
-                VStack {
-                    HStack {
-                        Spacer()
-                        NavigationLink {
-                            OnboardingFinalStep(viewModel: viewModel)
-                        } label: {
-                            Text("Skip")
-                                .font(.custom("Merriweather-Regular", size: 14))
-                                .underline()
-                                .foregroundColor(.white.opacity(0.9))
-                                .padding(.trailing, 20)
-                                .padding(.top, 16)
-                        }
-                    }
-                    Spacer()
-                }
+            }
+
+            if showLoadingOverlay {
+                loadingOverlay
             }
         }
         .preferredColorScheme(.dark)
+        .onAppear {
+            didAttemptReverseGeocode = false
+            locationMessage = "Requesting location permission..."
+            locationManager.requestLocation()
+        }
+        .onDisappear {
+            if let handle = authListenerHandle {
+                Auth.auth().removeStateDidChangeListener(handle)
+                authListenerHandle = nil
+            }
+        }
+        .onReceive(locationManager.$currentLocation.compactMap { $0 }) { coord in
+            if !viewModel.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+               !isCoordinateLikeString(viewModel.currentPlace) {
+                return
+            }
+            guard !didAttemptReverseGeocode else { return }
+            didAttemptReverseGeocode = true
+
+            getAddressFromCoordinate(coord, preferredLocale: .current) { place in
+                DispatchQueue.main.async {
+                    if let place = place, !place.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        viewModel.currentPlace = place
+                        viewModel.currentCoordinate = coord
+                        locationMessage = "✓ Current Place detected: \(place)"
+                    } else {
+                        viewModel.currentCoordinate = coord
+                        let coordText = String(format: "%.4f, %.4f", coord.latitude, coord.longitude)
+                        viewModel.currentPlace = coordText
+                        locationMessage = "Location acquired, resolving address failed."
+
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                            didAttemptReverseGeocode = false
+                        }
+                    }
+                }
+            }
+        }
+        .onReceive(locationManager.$locationStatus.compactMap { $0 }) { status in
+            switch status {
+            case .denied, .restricted:
+                locationMessage = "Location permission denied. Current place will be left blank."
+            default:
+                break
+            }
+        }
+        .fullScreenCover(isPresented: $navigateToHome) {
+            PostOnboardingLoadingFlow()
+                .environmentObject(starManager)
+                .environmentObject(themeManager)
+                .environmentObject(viewModel)
+                .navigationBarBackButtonHidden(true)
+        }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
@@ -941,6 +1040,378 @@ struct OnboardingStep3: View {
 
     private func toggleSingle(_ current: inout String, _ value: String) {
         current = (current == value) ? "" : value
+    }
+
+    private var loadingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.55)
+                .ignoresSafeArea()
+
+            VStack(spacing: 14) {
+                Text("Preparing your profile…")
+                    .font(.custom("Merriweather-Bold", size: 17))
+                    .foregroundColor(.white)
+
+                if isLoading {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .tint(.white)
+                        .scaleEffect(0.9)
+                }
+
+                if let error = loadingErrorMessage {
+                    Text(error)
+                        .font(AlynnaTypography.font(.footnote))
+                        .foregroundColor(.white.opacity(0.75))
+                        .multilineTextAlignment(.center)
+
+                    HStack(spacing: 12) {
+                        Button("Close") {
+                            showLoadingOverlay = false
+                            loadingErrorMessage = nil
+                        }
+                        .font(.custom("Merriweather-Bold", size: 14))
+                        .foregroundColor(.white)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 14)
+                        .background(Color.white.opacity(0.12))
+                        .cornerRadius(10)
+
+                        Button("Retry") {
+                            loadingErrorMessage = nil
+                            isLoading = true
+                            loadingStageIndex = 0
+                            showLongWaitHint = false
+                            ensureAuthenticatedThenUpload()
+                        }
+                        .font(.custom("Merriweather-Bold", size: 14))
+                        .foregroundColor(.white)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 14)
+                        .background(Color.white.opacity(0.2))
+                        .cornerRadius(10)
+                    }
+                } else {
+                    Text("This may take around a minute.")
+                        .font(AlynnaTypography.font(.footnote))
+                        .foregroundColor(.white.opacity(0.7))
+
+                    Text(loadingStageText)
+                        .font(AlynnaTypography.font(.footnote))
+                        .foregroundColor(.white.opacity(0.7))
+
+                    if showLongWaitHint {
+                        Text("Still working—hang tight.")
+                            .font(AlynnaTypography.font(.footnote))
+                            .foregroundColor(.white.opacity(0.7))
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 18)
+            .background(Color.black.opacity(0.7))
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            )
+            .frame(maxWidth: 320)
+        }
+    }
+
+    private var loadingStageText: String {
+        let stages = [
+            "Saving your preferences…",
+            "Personalizing your profile…",
+            "Finalizing recommendations…"
+        ]
+        if stages.isEmpty { return "" }
+        return stages[min(loadingStageIndex, stages.count - 1)]
+    }
+
+    private func startLoadingStages() {
+        loadingStageIndex = 0
+        showLongWaitHint = false
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            if self.isLoading { self.loadingStageIndex = 1 }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+            if self.isLoading { self.loadingStageIndex = 2 }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) {
+            if self.isLoading { self.showLongWaitHint = true }
+        }
+    }
+
+    private func ensureAuthenticatedThenUpload() {
+        if Auth.auth().currentUser != nil {
+            uploadUserInfo()
+            return
+        }
+
+        authListenerHandle = Auth.auth().addStateDidChangeListener { _, user in
+            if user != nil {
+                if let handle = authListenerHandle {
+                    Auth.auth().removeStateDidChangeListener(handle)
+                    authListenerHandle = nil
+                }
+                uploadUserInfo()
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            if self.authListenerHandle != nil, Auth.auth().currentUser == nil {
+                if let handle = self.authListenerHandle {
+                    Auth.auth().removeStateDidChangeListener(handle)
+                    self.authListenerHandle = nil
+                }
+                self.isLoading = false
+                self.loadingErrorMessage = "Couldn’t start sign-in. Please try again."
+            }
+        }
+    }
+
+    private func uploadUserInfo() {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            print("❌ 未登录，无法上传")
+            isLoading = false
+            loadingStageIndex = 0
+            showLongWaitHint = false
+            return
+        }
+
+        let db = Firestore.firestore()
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.timeZone = .current
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let birthDateString = dateFormatter.string(from: viewModel.birth_date)
+
+        let (h, m) = BirthTimeUtils.hourMinute(from: viewModel.birth_time)
+
+        let lat = viewModel.currentCoordinate?.latitude ?? 0
+        let lng = viewModel.currentCoordinate?.longitude ?? 0
+        let currentPlace = viewModel.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedPlace = currentPlace.isEmpty ? "Unknown" : currentPlace
+
+        var data: [String: Any] = [
+            "uid": userId,
+            "nickname": viewModel.nickname,
+            "gender": viewModel.gender,
+            "relationshipStatus": viewModel.relationshipStatus,
+            "birthDate": birthDateString,
+            "birthHour": h,
+            "birthMinute": m,
+            "birthPlace": viewModel.birthPlace,
+            "currentPlace": resolvedPlace,
+            "birthLat": viewModel.birthCoordinate?.latitude ?? 0,
+            "birthLng": viewModel.birthCoordinate?.longitude ?? 0,
+            "currentLat": lat,
+            "currentLng": lng,
+            "createdAt": Timestamp()
+        ]
+
+        data["birthday"] = Timestamp(date: viewModel.birth_date)
+
+        let ref = db.collection("users").document(userId)
+        ref.setData(data, merge: true) { error in
+            if let error = error {
+                print("❌ Firebase 写入失败: \(error)")
+            } else {
+                print("✅ 用户信息已保存/更新（users/\(userId)）")
+                hasCompletedOnboarding = true
+            }
+        }
+
+        startLoadingStages()
+
+        let timeFormatter = DateFormatter()
+        timeFormatter.locale = Locale(identifier: "en_US_POSIX")
+        timeFormatter.timeZone = .current
+        timeFormatter.dateFormat = "HH:mm"
+        let birthTimeString = timeFormatter.string(from: viewModel.birth_time)
+
+        let payload: [String: Any] = [
+            "birth_date": birthDateString,
+            "birth_time": birthTimeString,
+            "latitude": lat,
+            "longitude": lng
+        ]
+
+        guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
+            print("❌ 无效的 FastAPI URL")
+            isLoading = false
+            loadingStageIndex = 0
+            showLongWaitHint = false
+            loadingErrorMessage = "Couldn’t reach the server. Please try again."
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+        } catch {
+            print("❌ JSON 序列化失败: \(error)")
+            isLoading = false
+            loadingStageIndex = 0
+            showLongWaitHint = false
+            loadingErrorMessage = "Couldn’t prepare your data. Please try again."
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("❌ FastAPI 请求失败: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    isLoading = false
+                    loadingStageIndex = 0
+                    showLongWaitHint = false
+                    loadingErrorMessage = "Network error. Please try again."
+                }
+                return
+            }
+            guard let data = data,
+                  let raw = String(data: data, encoding: .utf8),
+                  let cleanedData = raw.data(using: .utf8) else {
+                print("❌ FastAPI 无响应数据或解码失败")
+                DispatchQueue.main.async {
+                    isLoading = false
+                    loadingStageIndex = 0
+                    showLongWaitHint = false
+                    loadingErrorMessage = "No response from server. Please try again."
+                }
+                return
+            }
+
+            do {
+                if let parsed = try JSONSerialization.jsonObject(with: cleanedData) as? [String: Any],
+                   let recs = parsed["recommendations"] as? [String: String],
+                   let mantraText = parsed["mantra"] as? String {
+
+                    func canonicalCategoryKey(_ raw: String) -> String? {
+                        switch raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+                        case "place": return "Place"
+                        case "gemstone": return "Gemstone"
+                        case "color": return "Color"
+                        case "scent": return "Scent"
+                        case "activity": return "Activity"
+                        case "sound": return "Sound"
+                        case "career": return "Career"
+                        case "relationship": return "Relationship"
+                        default: return nil
+                        }
+                    }
+
+                    func sanitizeDocName(_ raw: String) -> String {
+                        let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
+                        return String(raw.unicodeScalars.map { allowed.contains($0) ? Character($0) : "_" })
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
+
+                    let normalizedRecs: [String: String] = recs.reduce(into: [:]) { acc, pair in
+                        guard let canon = canonicalCategoryKey(pair.key) else { return }
+                        acc[canon] = sanitizeDocName(pair.value)
+                    }
+
+                    func coerceStringDict(_ any: Any?) -> [String: String] {
+                        if let dict = any as? [String: String] { return dict }
+                        guard let dict = any as? [String: Any] else { return [:] }
+                        return dict.reduce(into: [String: String]()) { acc, pair in
+                            if let s = pair.value as? String { acc[pair.key] = s }
+                        }
+                    }
+
+                    let rawReasoning: [String: String] = {
+                        if let mappingAny = parsed["mapping"] {
+                            return coerceStringDict(mappingAny)
+                        }
+                        if let explanation = parsed["explanation"] as? [String: Any] {
+                            if let mappingAny = explanation["mapping"] {
+                                return coerceStringDict(mappingAny)
+                            }
+                            if let reasoningAny = explanation["reasoning"] as? [String: Any] {
+                                if let nested = reasoningAny["mapping"] {
+                                    return coerceStringDict(nested)
+                                }
+                                return coerceStringDict(reasoningAny)
+                            }
+                        }
+                        if let reasoningAny = parsed["reasoning"] as? [String: Any] {
+                            if let nested = reasoningAny["mapping"] {
+                                return coerceStringDict(nested)
+                            }
+                            return coerceStringDict(reasoningAny)
+                        }
+                        if let reasoning = parsed["reasoning"] as? [String: String] {
+                            return reasoning
+                        }
+                        return [:]
+                    }()
+
+                    print("🧠 FastAPI(raw) reasoning count:", rawReasoning.count, "keys:", rawReasoning.keys.sorted())
+
+                    DispatchQueue.main.async {
+                        viewModel.recommendations = normalizedRecs
+                        isLoading = false
+                        loadingStageIndex = 0
+                        showLongWaitHint = false
+
+                        guard let userId = Auth.auth().currentUser?.uid else { return }
+                        let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
+                        let createdAt = df.string(from: Date())
+
+                        var recommendationData: [String: Any] = normalizedRecs
+                        recommendationData["uid"] = userId
+                        recommendationData["createdAt"] = createdAt
+                        recommendationData["mantra"] = mantraText
+
+                        if !rawReasoning.isEmpty {
+                            recommendationData["reasoning"] = rawReasoning
+                            recommendationData["mapping"] = rawReasoning
+                        }
+
+                        let docId = "\(userId)_\(createdAt)"
+                        Firestore.firestore()
+                            .collection("daily_recommendation")
+                            .document(docId)
+                            .setData(recommendationData, merge: true) { error in
+                                if let error = error {
+                                    print("❌ 保存 daily_recommendation 失败：\(error)")
+                                } else {
+                                    print("✅ 推荐结果保存成功（幂等写入）")
+                                    UserDefaults.standard.set(createdAt, forKey: "lastRecommendationDate")
+                                }
+                            }
+
+                        isLoggedIn = true
+                        hasCompletedOnboarding = true
+                        shouldOnboardAfterSignIn = false
+                        showLoadingOverlay = false
+                        navigateToHome = true
+                    }
+                } else {
+                    print("❌ JSON 解包失败或缺少字段")
+                    DispatchQueue.main.async {
+                        isLoading = false
+                        loadingStageIndex = 0
+                        showLongWaitHint = false
+                        loadingErrorMessage = "Something went wrong. Please try again."
+                    }
+                }
+            } catch {
+                print("❌ JSON 解析失败: \(error)")
+                DispatchQueue.main.async {
+                    isLoading = false
+                    loadingStageIndex = 0
+                    showLongWaitHint = false
+                    loadingErrorMessage = "Couldn’t read the server response. Please try again."
+                }
+            }
+        }.resume()
     }
 }
 
@@ -1154,22 +1625,19 @@ struct OnboardingFinalStep: View {
                                 ensureAuthenticatedThenUpload()
                             } label: {
                                 ZStack {
-                                    // The styled text (applies the Text extension correctly)
-                                    Text(isLoading ? "Preparing your profile…" : "Confirm")
+                                    Text("Confirm")
                                         .onboardingPrimaryButtonStyle(isEnabled: !isLoading)
+                                        .opacity(isLoading ? 0.0 : 1.0)
 
-                                    // Overlay spinner when loading, centered within the same bounds
                                     if isLoading {
-                                        HStack(spacing: 8) {
+                                        HStack(spacing: 12) {
                                             ProgressView()
                                                 .progressViewStyle(.circular)
                                                 .tint(.black)
                                                 .scaleEffect(0.8)
-                                            // Keep the same text color contrast while loading
                                             Text("Preparing your profile…")
                                                 .font(.custom("Merriweather-Bold", size: 17))
                                                 .foregroundColor(.black)
-                                                .opacity(0.001) // occupy space without visual duplication
                                         }
                                     }
                                 }
@@ -1283,14 +1751,14 @@ struct OnboardingFinalStep: View {
     private func finalInfoCard(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.custom("Merriweather-Regular", size: 12))
+                .font(.custom("Merriweather-Regular", size: 11))
                 .foregroundColor(.white.opacity(0.72))
                 .tracking(0.6)
                 .textCase(.uppercase)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(value)
-                .font(.custom("Merriweather-Bold", size: 19))
+                .font(.custom("Merriweather-Bold", size: 17))
                 .foregroundColor(.white)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
