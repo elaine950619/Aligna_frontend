@@ -598,6 +598,7 @@ final class SoundPlayer: ObservableObject {
     var player: AVAudioPlayer?
 
     private var downloadTask: StorageDownloadTask?
+    private var prefetchTask: StorageDownloadTask?
 
     /// 你在 Firebase Storage 里存音频的文件夹：sounds/<documentName>.<ext>
     private let storageFolder = "sounds"
@@ -624,6 +625,11 @@ final class SoundPlayer: ObservableObject {
     /// 直接调用：soundPlayer.playSound(named: documentName)
     func playSound(named rawKey: String) {
         Task { await playSoundFromFirebase(named: rawKey) }
+    }
+
+    /// 预下载到缓存（不改变播放状态）
+    func prefetch(named rawKey: String) {
+        Task { await prefetchSoundFromFirebase(named: rawKey) }
     }
 
     /// 可选：如果你想把按钮逻辑变简单，用这个
@@ -684,6 +690,24 @@ final class SoundPlayer: ObservableObject {
             isPlaying = false
             lastErrorMessage = "Failed to load sound: \(error.localizedDescription)"
             print("❌ Firebase audio download error: \(error)")
+        }
+    }
+
+    private func prefetchSoundFromFirebase(named rawKey: String) async {
+        // 允许 rawKey 传入 "brown_noise" 或 "brown_noise.mp3"
+        let normalized = normalizeKey(rawKey)
+        let key = normalized.key
+        let exts = normalized.extensions
+
+        if findCachedFileURL(for: key, extensions: exts) != nil {
+            return
+        }
+
+        do {
+            _ = try await downloadFirstAvailableSoundToCachePrefetch(for: key, extensions: exts)
+        } catch {
+            // 静默失败
+            print("⚠️ Prefetch failed: \(error.localizedDescription)")
         }
     }
 
@@ -763,6 +787,33 @@ final class SoundPlayer: ObservableObject {
         ])
     }
 
+    private func downloadFirstAvailableSoundToCachePrefetch(for key: String, extensions: [String]) async throws -> URL {
+        var lastError: Error?
+
+        for ext in extensions {
+            let localURL = cachedFileURL(for: key, ext: ext)
+            if FileManager.default.fileExists(atPath: localURL.path) {
+                return localURL
+            }
+
+            do {
+                return try await downloadSoundToPrefetch(localURL: localURL, key: key, ext: ext)
+            } catch {
+                lastError = error
+
+                if isObjectNotFound(error) {
+                    continue
+                } else {
+                    throw error
+                }
+            }
+        }
+
+        throw lastError ?? NSError(domain: "SoundPlayer", code: -1, userInfo: [
+            NSLocalizedDescriptionKey: "No audio file found in Firebase Storage for key: \(key)"
+        ])
+    }
+
     private func downloadSoundTo(localURL: URL, key: String, ext: String) async throws -> URL {
         let path = "\(storageFolder)/\(key).\(ext)"
         let ref = Storage.storage().reference(withPath: path)
@@ -778,6 +829,35 @@ final class SoundPlayer: ObservableObject {
 
                 if let error = error {
                     // 下载失败时删掉残留文件
+                    try? FileManager.default.removeItem(at: localURL)
+                    continuation.resume(throwing: error)
+                    return
+                }
+
+                if let url = url {
+                    continuation.resume(returning: url)
+                } else {
+                    continuation.resume(throwing: NSError(domain: "SoundPlayer", code: -2, userInfo: [
+                        NSLocalizedDescriptionKey: "Firebase download finished but file URL is nil"
+                    ]))
+                }
+            }
+        }
+    }
+
+    private func downloadSoundToPrefetch(localURL: URL, key: String, ext: String) async throws -> URL {
+        let path = "\(storageFolder)/\(key).\(ext)"
+        let ref = Storage.storage().reference(withPath: path)
+
+        if FileManager.default.fileExists(atPath: localURL.path) {
+            try? FileManager.default.removeItem(at: localURL)
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            prefetchTask = ref.write(toFile: localURL) { url, error in
+                self.prefetchTask = nil
+
+                if let error = error {
                     try? FileManager.default.removeItem(at: localURL)
                     continuation.resume(throwing: error)
                     return
@@ -1057,7 +1137,10 @@ private struct SoundExtraContent: View {
             }
 
             // ✅ Play button tap = Player popup
-            Button { showPlayer = true } label: {
+            Button {
+                soundPlayer.playSound(named: documentName)
+                showPlayer = true
+            } label: {
                 ZStack {
                     Circle()
                         .fill(playRingFill)

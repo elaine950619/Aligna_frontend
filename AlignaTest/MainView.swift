@@ -139,6 +139,7 @@ struct MainView: View {
     @State private var showMantraSaveAlert: Bool = false
     @State private var showTodaySoundPlayer: Bool = false
     @State private var showNoSoundToast: Bool = false
+    @State private var lastPrefetchedSoundKey: String = ""
     @State private var mantraSaveMessage: String = ""
 
     @State private var showReasoningBubble: Bool = false
@@ -214,6 +215,12 @@ struct MainView: View {
     private var isTodaySoundPlaying: Bool {
         !todaySoundKey.isEmpty
             && soundPlayer.isPlaying
+            && soundPlayer.currentSoundKey == todaySoundKey
+    }
+
+    private var isTodaySoundLoading: Bool {
+        !todaySoundKey.isEmpty
+            && soundPlayer.isLoading
             && soundPlayer.currentSoundKey == todaySoundKey
     }
 
@@ -380,11 +387,16 @@ struct MainView: View {
                                     } else if todaySoundKey.isEmpty {
                                         showNoSoundToastIfNeeded()
                                     } else {
+                                        soundPlayer.playSound(named: todaySoundKey)
                                         showTodaySoundPlayer = true
                                     }
                                 } label: {
                                     Group {
-                                        if isTodaySoundPlaying {
+                                        if isTodaySoundLoading {
+                                            ProgressView()
+                                                .progressViewStyle(.circular)
+                                                .tint(themeManager.primaryText)
+                                        } else if isTodaySoundPlaying {
                                             Image(systemName: "pause.fill")
                                                 .font(AlynnaTypography.font(.footnote))
                                                 .foregroundColor(themeManager.primaryText)
@@ -460,6 +472,10 @@ struct MainView: View {
                         themeManager.appBecameActive()
                         ensureDefaultsIfMissing()
                         fetchAllRecommendationTitles()
+                        if !todaySoundKey.isEmpty, todaySoundKey != lastPrefetchedSoundKey {
+                            lastPrefetchedSoundKey = todaySoundKey
+                            soundPlayer.prefetch(named: todaySoundKey)
+                        }
                         if bootPhase == .main {
                             isMantraExpanded = true
                         }
@@ -1175,6 +1191,12 @@ struct MainView: View {
                                 minute: dailyMantraNotificationMinute
                             )
                         }
+                    }
+                    .onChange(of: viewModel.recommendations) { _, newValue in
+                        let key = (newValue["Sound"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !key.isEmpty, key != lastPrefetchedSoundKey else { return }
+                        lastPrefetchedSoundKey = key
+                        soundPlayer.prefetch(named: key)
                     }
                     .onChange(of: shouldExpandMantraFromNotification) { _, newValue in
                         guard newValue else { return }
