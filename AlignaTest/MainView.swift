@@ -322,8 +322,8 @@ struct MainView: View {
                         }
 
                         // ✅ 只保留按钮本身（气泡放到全局 overlay）
-                        Text("Alynna")
-                            .font(.custom("Merriweather-SemiBold", size: 52))
+                        Text("Daily Rhythm")
+                            .font(.custom("Merriweather-SemiBold", size: 38))
                             .lineSpacing(AlignaType.logoLineSpacing)
                             .foregroundColor(themeManager.primaryText)
                             .padding(.top, 20)
@@ -430,14 +430,14 @@ struct MainView: View {
                         
                         if !isMantraExpanded {
                             let totalH = geometry.size.height
-                            let gridTopPadding = totalH * 0.12
-                            let gridBottomPadding = totalH * 0.14
-                            let footerHeight: CGFloat = 38
+                            let mantraToGridGap = totalH * 0.12
+                            let gridToFooterGap = totalH * 0.14
+                            let footerHeight: CGFloat = 32
                             let gridSpacing = min(geometry.size.width, geometry.size.height) * 0.018
-                            let availableGridHeight = max(0, totalH - gridTopPadding - gridBottomPadding - footerHeight)
-                            let gridHeight = min(availableGridHeight, totalH * 0.27)
+                            let availableGridHeight = max(0, totalH - mantraToGridGap - gridToFooterGap - footerHeight)
+                            let gridHeight = min(availableGridHeight, totalH * 0.30)
 
-                            Spacer(minLength: gridTopPadding)
+                            Spacer(minLength: mantraToGridGap)
 
                             VStack(spacing: gridSpacing) {
                                 let columns = [
@@ -460,7 +460,7 @@ struct MainView: View {
                                 .padding(.horizontal, geometry.size.width * 0.05)
                             }
 
-                            Spacer(minLength: gridBottomPadding)
+                            Spacer(minLength: gridToFooterGap)
                         }
                     }
                     .padding(.top, 16)
