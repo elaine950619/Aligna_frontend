@@ -430,13 +430,14 @@ struct MainView: View {
                         
                         if !isMantraExpanded {
                             let totalH = geometry.size.height
-                            let verticalPadding = totalH * 0.08
-                            let footerHeight: CGFloat = 22
+                            let gridTopPadding = totalH * 0.12
+                            let gridBottomPadding = totalH * 0.14
+                            let footerHeight: CGFloat = 38
                             let gridSpacing = min(geometry.size.width, geometry.size.height) * 0.018
-                            let availableGridHeight = max(0, totalH - (verticalPadding * 2) - footerHeight)
-                            let gridHeight = min(availableGridHeight, totalH * 0.34)
+                            let availableGridHeight = max(0, totalH - gridTopPadding - gridBottomPadding - footerHeight)
+                            let gridHeight = min(availableGridHeight, totalH * 0.27)
 
-                            Spacer(minLength: verticalPadding)
+                            Spacer(minLength: gridTopPadding)
 
                             VStack(spacing: gridSpacing) {
                                 let columns = [
@@ -459,7 +460,7 @@ struct MainView: View {
                                 .padding(.horizontal, geometry.size.width * 0.05)
                             }
 
-                            Spacer(minLength: verticalPadding)
+                            Spacer(minLength: gridBottomPadding)
                         }
                     }
                     .padding(.top, 16)
