@@ -4,6 +4,7 @@ import FirebaseAuth
 import FirebaseCore
 import GoogleSignIn
 import FirebaseFirestore
+import UIKit
 
 struct SignUpView: View {
     @Environment(\.dismiss) private var dismiss
@@ -34,6 +35,9 @@ struct SignUpView: View {
     @StateObject private var appleAuth = AppleAuthManager()
     @State private var showIntro = false
     @FocusState private var registerFocus: RegisterField?
+    @State private var keyboardHeight: CGFloat = 0
+    @State private var keyboardShowObserver: NSObjectProtocol?
+    @State private var keyboardHideObserver: NSObjectProtocol?
 
     private enum RegisterField { case email, password }
     private enum AuthAction { case emailSignUp, google, apple }
@@ -56,144 +60,73 @@ struct SignUpView: View {
                         .environmentObject(starManager)
                         .environmentObject(themeManager)
 
-                    VStack(spacing: 0) {
-                        VStack(spacing: minL * 0.02) {
-                            HStack {
-                                Button(action: { dismiss() }) {
-                                    Image(systemName: "chevron.left")
-                                        .font(AlynnaTypography.font(.title2))
-                                        .foregroundColor(themeManager.fixedNightTextPrimary)
-                                        .padding(10)
-                                        .background(Color.white.opacity(0.1))
-                                        .clipShape(Circle())
-                                }
-                                .disabled(authBusy)
-                                .padding(.leading, w * 0.05)
-                                Spacer()
-                            }
-
-                            VStack(spacing: 8) {
-                                if let _ = UIImage(named: "alignaSymbol") {
-                                    Image("alignaSymbol")
-                                        .renderingMode(.template)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: minL * 0.14)
-                                        .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.92))
-                                        .staggered(0, show: $showIntro)
-                                }
-
-                                AlignaHeading(
-                                    textColor: themeManager.fixedNightTextPrimary,
-                                    show: $showIntro,
-                                    fontSize: minL * 0.12,
-                                    letterSpacing: minL * 0.005
-                                )
-                                Text("Create Your Space")
-                                    .font(AlynnaTypography.font(.subheadline))
-                                    .foregroundColor(themeManager.fixedNightTextSecondary)
-                            }
-                            .padding(.top, h * 0.01)
-                            .staggered(1, show: $showIntro)
-                        }
-                        .padding(.top, h * 0.05)
-                        .staggered(0, show: $showIntro)
-
-                        Spacer(minLength: sectionGap)
-
-                        VStack(spacing: fieldGap) {
-                            VStack(spacing: minL * 0.025) {
-                                Button(action: {
-                                    guard !authBusy else { return }
-                                    activeAuthAction = .google
-                                    authBusy = true
-                                    hasCompletedOnboarding = false
-                                    isLoggedIn = false
-                                    shouldOnboardAfterSignIn = true
-
-                                    if !GoogleSignInDiagnostics.preflight(context: "SignUpView.GoogleButton") {
-                                        authBusy = false
-                                        activeAuthAction = nil
-                                        alertMessage = ""
-                                        showAlert = true
-                                        return
+                    ScrollViewReader { proxy in
+                        ScrollView(showsIndicators: false) {
+                            VStack(spacing: 0) {
+                                VStack(spacing: minL * 0.02) {
+                                    HStack {
+                                        Button(action: { dismiss() }) {
+                                            Image(systemName: "chevron.left")
+                                                .font(AlynnaTypography.font(.title2))
+                                                .foregroundColor(themeManager.fixedNightTextPrimary)
+                                                .padding(10)
+                                                .background(Color.white.opacity(0.1))
+                                                .clipShape(Circle())
+                                        }
+                                        .disabled(authBusy)
+                                        .padding(.leading, w * 0.05)
+                                        Spacer()
                                     }
 
-                                    handleGoogleFromRegister(
-                                        onNewUserGoOnboarding: {
-                                            authBusy = false
-                                            activeAuthAction = nil
-                                            if let user = Auth.auth().currentUser {
-                                                viewModel.userId = user.uid
-                                            }
+                                    VStack(spacing: 8) {
+                                        if let _ = UIImage(named: "alignaSymbol") {
+                                            Image("alignaSymbol")
+                                                .renderingMode(.template)
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(width: minL * 0.14)
+                                                .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.92))
+                                                .staggered(0, show: $showIntro)
+                                        }
+
+                                        AlignaHeading(
+                                            textColor: themeManager.fixedNightTextPrimary,
+                                            show: $showIntro,
+                                            fontSize: minL * 0.12,
+                                            letterSpacing: minL * 0.005
+                                        )
+                                        Text("Create Your Space")
+                                            .font(AlynnaTypography.font(.subheadline))
+                                            .foregroundColor(themeManager.fixedNightTextSecondary)
+                                    }
+                                    .padding(.top, h * 0.01)
+                                    .staggered(1, show: $showIntro)
+                                }
+                                .padding(.top, h * 0.05)
+                                .staggered(0, show: $showIntro)
+
+                                Spacer(minLength: sectionGap)
+
+                                VStack(spacing: fieldGap) {
+                                    VStack(spacing: minL * 0.025) {
+                                        Button(action: {
+                                            guard !authBusy else { return }
+                                            activeAuthAction = .google
+                                            authBusy = true
+                                            hasCompletedOnboarding = false
+                                            isLoggedIn = false
                                             shouldOnboardAfterSignIn = true
-                                            navigateToOnboarding = true
-                                        },
-                                        onExistingUserGoLogin: { msg in
-                                            authBusy = false
-                                            activeAuthAction = nil
-                                            shouldOnboardAfterSignIn = false
-                                            infoMessage = msg
-                                            navigateToLoginOnDismiss = true
-                                            showInfoAlert = true
-                                        },
-                                        onError: { message in
-                                            authBusy = false
-                                            activeAuthAction = nil
-                                            shouldOnboardAfterSignIn = false
-                                            alertMessage = message
-                                            showAlert = true
-                                        }
-                                    )
-                                }) {
-                                    HStack(spacing: 12) {
-                                        if isActive(.google) {
-                                            ProgressView()
-                                                .progressViewStyle(.circular)
-                                                .tint(themeManager.fixedNightTextPrimary)
-                                                .scaleEffect(0.75)
-                                        }
-                                        Image("googleIcon")
-                                            .resizable()
-                                            .frame(width: 20, height: 20)
-                                        Text("Sign up with Google")
-                                            .font(.system(size: 14))
-                                    }
-                                    .foregroundColor(themeManager.fixedNightTextPrimary)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.white.opacity(0.1))
-                                    .cornerRadius(14)
-                                }
-                                .disabled(authBusy)
-                                .staggered(2, show: $showIntro)
 
-                                SignInWithAppleButton(
-                                    .signUp,
-                                    onRequest: { request in
-                                        let nonce = randomNonceString()
-                                        currentNonce = nonce
-                                        request.requestedScopes = [.fullName, .email]
-                                        request.nonce = sha256(nonce)
-                                    },
-                                    onCompletion: { result in
-                                        guard !authBusy else { return }
-                                        guard let raw = currentNonce, !raw.isEmpty else {
-                                            alertMessage = "Missing nonce. Please try again."
-                                            showAlert = true
-                                            return
-                                        }
-                                        activeAuthAction = .apple
-                                        authBusy = true
-                                        hasCompletedOnboarding = false
-                                        isLoggedIn = false
-                                        shouldOnboardAfterSignIn = true
+                                            if !GoogleSignInDiagnostics.preflight(context: "SignUpView.GoogleButton") {
+                                                authBusy = false
+                                                activeAuthAction = nil
+                                                alertMessage = ""
+                                                showAlert = true
+                                                return
+                                            }
 
-                                        handleAppleFromRegister(
-                                            result: result,
-                                            rawNonce: raw,
-                                            onNewUserGoOnboarding: {
-                                                DispatchQueue.main.async {
+                                            handleGoogleFromRegister(
+                                                onNewUserGoOnboarding: {
                                                     authBusy = false
                                                     activeAuthAction = nil
                                                     if let user = Auth.auth().currentUser {
@@ -201,136 +134,222 @@ struct SignUpView: View {
                                                     }
                                                     shouldOnboardAfterSignIn = true
                                                     navigateToOnboarding = true
-                                                }
-                                            },
-                                            onExistingUserGoLogin: { msg in
-                                                DispatchQueue.main.async {
+                                                },
+                                                onExistingUserGoLogin: { msg in
                                                     authBusy = false
                                                     activeAuthAction = nil
                                                     shouldOnboardAfterSignIn = false
                                                     infoMessage = msg
                                                     navigateToLoginOnDismiss = true
                                                     showInfoAlert = true
-                                                }
-                                            },
-                                            onError: { message in
-                                                DispatchQueue.main.async {
+                                                },
+                                                onError: { message in
                                                     authBusy = false
                                                     activeAuthAction = nil
                                                     shouldOnboardAfterSignIn = false
                                                     alertMessage = message
                                                     showAlert = true
                                                 }
+                                            )
+                                        }) {
+                                            HStack(spacing: 12) {
+                                                if isActive(.google) {
+                                                    ProgressView()
+                                                        .progressViewStyle(.circular)
+                                                        .tint(themeManager.fixedNightTextPrimary)
+                                                        .scaleEffect(0.75)
+                                                }
+                                                Image("googleIcon")
+                                                    .resizable()
+                                                    .frame(width: 20, height: 20)
+                                                Text("Sign up with Google")
+                                                    .font(.system(size: 14))
+                                            }
+                                            .foregroundColor(themeManager.fixedNightTextPrimary)
+                                            .frame(maxWidth: .infinity)
+                                            .padding()
+                                            .background(Color.white.opacity(0.1))
+                                            .cornerRadius(14)
+                                        }
+                                        .disabled(authBusy)
+                                        .staggered(2, show: $showIntro)
+
+                                        SignInWithAppleButton(
+                                            .signUp,
+                                            onRequest: { request in
+                                                let nonce = randomNonceString()
+                                                currentNonce = nonce
+                                                request.requestedScopes = [.fullName, .email]
+                                                request.nonce = sha256(nonce)
+                                            },
+                                            onCompletion: { result in
+                                                guard !authBusy else { return }
+                                                guard let raw = currentNonce, !raw.isEmpty else {
+                                                    alertMessage = "Missing nonce. Please try again."
+                                                    showAlert = true
+                                                    return
+                                                }
+                                                activeAuthAction = .apple
+                                                authBusy = true
+                                                hasCompletedOnboarding = false
+                                                isLoggedIn = false
+                                                shouldOnboardAfterSignIn = true
+
+                                                handleAppleFromRegister(
+                                                    result: result,
+                                                    rawNonce: raw,
+                                                    onNewUserGoOnboarding: {
+                                                        DispatchQueue.main.async {
+                                                            authBusy = false
+                                                            activeAuthAction = nil
+                                                            if let user = Auth.auth().currentUser {
+                                                                viewModel.userId = user.uid
+                                                            }
+                                                            shouldOnboardAfterSignIn = true
+                                                            navigateToOnboarding = true
+                                                        }
+                                                    },
+                                                    onExistingUserGoLogin: { msg in
+                                                        DispatchQueue.main.async {
+                                                            authBusy = false
+                                                            activeAuthAction = nil
+                                                            shouldOnboardAfterSignIn = false
+                                                            infoMessage = msg
+                                                            navigateToLoginOnDismiss = true
+                                                            showInfoAlert = true
+                                                        }
+                                                    },
+                                                    onError: { message in
+                                                        DispatchQueue.main.async {
+                                                            authBusy = false
+                                                            activeAuthAction = nil
+                                                            shouldOnboardAfterSignIn = false
+                                                            alertMessage = message
+                                                            showAlert = true
+                                                        }
+                                                    }
+                                                )
                                             }
                                         )
+                                        .frame(height: 50)
+                                        .signInWithAppleButtonStyle(.white)
+                                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                                        .overlay(alignment: .leading) {
+                                            if isActive(.apple) {
+                                                ProgressView()
+                                                    .progressViewStyle(.circular)
+                                                    .tint(.black)
+                                                    .scaleEffect(0.75)
+                                                    .padding(.leading, 16)
+                                            }
+                                        }
+                                        .disabled(authBusy)
+                                        .staggered(3, show: $showIntro)
                                     }
-                                )
-                                .frame(height: 50)
-                                .signInWithAppleButtonStyle(.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 14))
-                                .overlay(alignment: .leading) {
-                                    if isActive(.apple) {
-                                        ProgressView()
-                                            .progressViewStyle(.circular)
-                                            .tint(.black)
-                                            .scaleEffect(0.75)
-                                            .padding(.leading, 16)
-                                    }
-                                }
-                                .disabled(authBusy)
-                                .staggered(3, show: $showIntro)
-                            }
-                            .padding(.top, 2)
+                                    .padding(.top, 2)
 
-                            HStack {
-                                Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
-                                Text("Or with")
-                                    .font(AlynnaTypography.font(.footnote))
-                                    .foregroundColor(themeManager.fixedNightTextSecondary)
-                                Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
-                            }
-                            .staggered(4, show: $showIntro)
-
-                            Group {
-                                TextField("", text: $email)
-                                    .textContentType(.emailAddress)
-                                    .keyboardType(.emailAddress)
-                                    .textInputAutocapitalization(.never)
-                                    .autocorrectionDisabled(true)
-                                    .padding(.vertical, 14)
-                                    .padding(.leading, 16)
-                                    .background(Color.white.opacity(0.1))
-                                    .cornerRadius(14)
-                                    .foregroundColor(themeManager.fixedNightTextPrimary)
-                                    .placeholder(when: email.isEmpty) {
-                                        Text("Enter your email")
+                                    HStack {
+                                        Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
+                                        Text("Or with")
+                                            .font(AlynnaTypography.font(.footnote))
                                             .foregroundColor(themeManager.fixedNightTextSecondary)
-                                            .padding(.leading, 16)
+                                        Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
                                     }
-                                    .focused($registerFocus, equals: .email)
-                                    .focusGlow(
-                                        active: registerFocus == .email,
-                                        color: themeManager.fixedNightTextPrimary,
-                                        lineWidth: 2.2,
-                                        cornerRadius: 14
-                                    )
-                                    .submitLabel(.next)
-                                    .onSubmit { registerFocus = .password }
-                            }
-                            .staggered(5, show: $showIntro)
-                            .animation(nil, value: registerFocus)
+                                    .staggered(4, show: $showIntro)
 
-                            Group {
-                                SecureField("", text: $password)
-                                    .padding(.vertical, 14)
-                                    .padding(.leading, 16)
-                                    .background(Color.white.opacity(0.1))
-                                    .cornerRadius(14)
-                                    .foregroundColor(themeManager.fixedNightTextPrimary)
-                                    .placeholder(when: password.isEmpty) {
-                                        Text("Enter your password")
-                                            .foregroundColor(themeManager.fixedNightTextSecondary)
+                                    Group {
+                                        TextField("", text: $email)
+                                            .textContentType(.emailAddress)
+                                            .keyboardType(.emailAddress)
+                                            .textInputAutocapitalization(.never)
+                                            .autocorrectionDisabled(true)
+                                            .padding(.vertical, 14)
                                             .padding(.leading, 16)
+                                            .background(Color.white.opacity(0.1))
+                                            .cornerRadius(14)
+                                            .foregroundColor(themeManager.fixedNightTextPrimary)
+                                            .placeholder(when: email.isEmpty) {
+                                                Text("Enter your email")
+                                                    .foregroundColor(themeManager.fixedNightTextSecondary)
+                                                    .padding(.leading, 16)
+                                            }
+                                            .focused($registerFocus, equals: .email)
+                                            .focusGlow(
+                                                active: registerFocus == .email,
+                                                color: themeManager.fixedNightTextPrimary,
+                                                lineWidth: 2.2,
+                                                cornerRadius: 14
+                                            )
+                                            .submitLabel(.next)
+                                            .onSubmit { registerFocus = .password }
+                                            .id(RegisterField.email)
                                     }
-                                    .focused($registerFocus, equals: .password)
-                                    .focusGlow(
-                                        active: registerFocus == .password,
-                                        color: themeManager.fixedNightTextPrimary,
-                                        lineWidth: 2.2,
-                                        cornerRadius: 14
-                                    )
-                                    .submitLabel(.done)
-                            }
-                            .staggered(6, show: $showIntro)
-                            .animation(nil, value: registerFocus)
+                                    .staggered(5, show: $showIntro)
+                                    .animation(nil, value: registerFocus)
 
-                            Button(action: {
-                                guard !authBusy else { return }
-                                activeAuthAction = .emailSignUp
-                                registerWithEmailPassword()
-                            }) {
-                                HStack(spacing: 8) {
-                                    if isActive(.emailSignUp) {
-                                        ProgressView()
-                                            .progressViewStyle(.circular)
-                                            .tint(.black)
-                                            .scaleEffect(0.75)
+                                    Group {
+                                        SecureField("", text: $password)
+                                            .padding(.vertical, 14)
+                                            .padding(.leading, 16)
+                                            .background(Color.white.opacity(0.1))
+                                            .cornerRadius(14)
+                                            .foregroundColor(themeManager.fixedNightTextPrimary)
+                                            .placeholder(when: password.isEmpty) {
+                                                Text("Enter your password")
+                                                    .foregroundColor(themeManager.fixedNightTextSecondary)
+                                                    .padding(.leading, 16)
+                                            }
+                                            .focused($registerFocus, equals: .password)
+                                            .focusGlow(
+                                                active: registerFocus == .password,
+                                                color: themeManager.fixedNightTextPrimary,
+                                                lineWidth: 2.2,
+                                                cornerRadius: 14
+                                            )
+                                            .submitLabel(.done)
+                                            .id(RegisterField.password)
                                     }
-                                    Text(isActive(.emailSignUp) ? "Creating..." : "Create Account")
+                                    .staggered(6, show: $showIntro)
+                                    .animation(nil, value: registerFocus)
+
+                                    Button(action: {
+                                        guard !authBusy else { return }
+                                        activeAuthAction = .emailSignUp
+                                        registerWithEmailPassword()
+                                    }) {
+                                        HStack(spacing: 8) {
+                                            if isActive(.emailSignUp) {
+                                                ProgressView()
+                                                    .progressViewStyle(.circular)
+                                                    .tint(.black)
+                                                    .scaleEffect(0.75)
+                                            }
+                                            Text(isActive(.emailSignUp) ? "Creating..." : "Create Account")
+                                        }
+                                        .font(AlynnaTypography.font(.headline))
+                                        .padding()
+                                        .frame(maxWidth: .infinity)
+                                        .background(themeManager.fixedNightTextPrimary)
+                                        .foregroundColor(.black)
+                                        .cornerRadius(14)
+                                    }
+                                    .disabled(authBusy)
+                                    .staggered(7, show: $showIntro)
                                 }
-                                .font(AlynnaTypography.font(.headline))
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(themeManager.fixedNightTextPrimary)
-                                .foregroundColor(.black)
-                                .cornerRadius(14)
+                                .padding(.horizontal, w * 0.1)
+
+                                Spacer(minLength: h * 0.08)
                             }
-                            .disabled(authBusy)
-                            .staggered(7, show: $showIntro)
+                            .frame(minHeight: h)
                         }
-                        .padding(.horizontal, w * 0.1)
-
-                        Spacer(minLength: h * 0.08)
+                        .scrollDismissesKeyboard(.interactively)
+                        .padding(.bottom, keyboardHeight)
+                        .onChange(of: registerFocus) { _, newValue in
+                            guard let target = newValue else { return }
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                proxy.scrollTo(target, anchor: .center)
+                            }
+                        }
                     }
                     .preferredColorScheme(.dark)
                     .transaction { $0.animation = nil }
@@ -405,8 +424,12 @@ struct SignUpView: View {
                         registerFocus = .email
                     }
                     _ = GoogleSignInDiagnostics.run(context: "SignUpView.onAppear")
+                    registerKeyboardNotifications()
                 }
-                .onDisappear { showIntro = false }
+                .onDisappear {
+                    showIntro = false
+                    unregisterKeyboardNotifications()
+                }
                 .navigationBarBackButtonHidden(true)
                 .toolbar {
                     ToolbarItemGroup(placement: .keyboard) {
@@ -415,6 +438,42 @@ struct SignUpView: View {
                     }
                 }
             }
+        }
+    }
+
+    private func registerKeyboardNotifications() {
+        guard keyboardShowObserver == nil, keyboardHideObserver == nil else { return }
+
+        keyboardShowObserver = NotificationCenter.default.addObserver(
+            forName: UIResponder.keyboardWillShowNotification,
+            object: nil,
+            queue: .main
+        ) { notification in
+            guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+            withAnimation(.easeOut(duration: 0.2)) {
+                keyboardHeight = frame.height
+            }
+        }
+
+        keyboardHideObserver = NotificationCenter.default.addObserver(
+            forName: UIResponder.keyboardWillHideNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            withAnimation(.easeOut(duration: 0.2)) {
+                keyboardHeight = 0
+            }
+        }
+    }
+
+    private func unregisterKeyboardNotifications() {
+        if let observer = keyboardShowObserver {
+            NotificationCenter.default.removeObserver(observer)
+            keyboardShowObserver = nil
+        }
+        if let observer = keyboardHideObserver {
+            NotificationCenter.default.removeObserver(observer)
+            keyboardHideObserver = nil
         }
     }
 
@@ -593,4 +652,3 @@ struct SignUpView: View {
             .environmentObject(OnboardingViewModel())
     }
 }
-
