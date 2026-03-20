@@ -52,13 +52,19 @@ struct SignUpView: View {
                 let h = geometry.size.height
                 let minL = min(w, h)
 
-                let sectionGap = h * 0.075
+                let keyboardInset = max(0, keyboardHeight - geometry.safeAreaInsets.bottom)
+                let isKeyboardVisible = keyboardInset > 0
+                let sectionGap = isKeyboardVisible ? h * 0.02 : h * 0.075
                 let fieldGap = minL * 0.030
+                let headerTopPadding = isKeyboardVisible ? h * 0.015 : h * 0.05
+                let focusExtraSpace: CGFloat = isKeyboardVisible ? 32 : 0
 
                 ZStack {
                     AppBackgroundView(mode: .night)
                         .environmentObject(starManager)
                         .environmentObject(themeManager)
+                        .contentShape(Rectangle())
+                        .onTapGesture { registerFocus = nil }
 
                     ScrollViewReader { proxy in
                         ScrollView(showsIndicators: false) {
@@ -102,7 +108,7 @@ struct SignUpView: View {
                                     .padding(.top, h * 0.01)
                                     .staggered(1, show: $showIntro)
                                 }
-                                .padding(.top, h * 0.05)
+                                .padding(.top, headerTopPadding)
                                 .staggered(0, show: $showIntro)
 
                                 Spacer(minLength: sectionGap)
@@ -307,6 +313,7 @@ struct SignUpView: View {
                                                 cornerRadius: 14
                                             )
                                             .submitLabel(.done)
+                                            .onSubmit { registerFocus = nil }
                                             .id(RegisterField.password)
                                     }
                                     .staggered(6, show: $showIntro)
@@ -339,15 +346,27 @@ struct SignUpView: View {
                                 .padding(.horizontal, w * 0.1)
 
                                 Spacer(minLength: h * 0.08)
+                                Color.clear
+                                    .frame(height: focusExtraSpace)
                             }
                             .frame(minHeight: h)
                         }
                         .scrollDismissesKeyboard(.interactively)
-                        .padding(.bottom, keyboardHeight)
+                        .safeAreaInset(edge: .bottom) {
+                            Color.clear
+                                .frame(height: keyboardInset)
+                                .allowsHitTesting(false)
+                        }
                         .onChange(of: registerFocus) { _, newValue in
                             guard let target = newValue else { return }
                             withAnimation(.easeInOut(duration: 0.2)) {
-                                proxy.scrollTo(target, anchor: .center)
+                                proxy.scrollTo(target, anchor: .bottom)
+                            }
+                        }
+                        .onChange(of: keyboardHeight) { _, _ in
+                            guard let target = registerFocus else { return }
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                proxy.scrollTo(target, anchor: .bottom)
                             }
                         }
                     }
@@ -431,12 +450,6 @@ struct SignUpView: View {
                     unregisterKeyboardNotifications()
                 }
                 .navigationBarBackButtonHidden(true)
-                .toolbar {
-                    ToolbarItemGroup(placement: .keyboard) {
-                        Spacer()
-                        Button("Done") { registerFocus = nil }
-                    }
-                }
             }
         }
     }

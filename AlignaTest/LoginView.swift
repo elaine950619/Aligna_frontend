@@ -3,6 +3,7 @@ import FirebaseAuth
 import GoogleSignIn
 import AuthenticationServices
 import FirebaseCore
+import UIKit
 
 struct LoginView: View {
     @Environment(\.dismiss) private var dismiss
@@ -25,6 +26,9 @@ struct LoginView: View {
     @State private var activeAuthAction: AuthAction? = nil
     @State private var showIntro = false
     @FocusState private var loginFocus: LoginField?
+    @State private var keyboardHeight: CGFloat = 0
+    @State private var keyboardShowObserver: NSObjectProtocol?
+    @State private var keyboardHideObserver: NSObjectProtocol?
     private enum LoginField { case email, password }
     private enum AuthAction { case emailLogin, google, apple, resetPassword }
     private var panelBG: Color { Color.white.opacity(0.10) }
@@ -35,14 +39,24 @@ struct LoginView: View {
     var body: some View {
         GeometryReader { geometry in
             let minLength = min(geometry.size.width, geometry.size.height)
+            let keyboardInset = max(0, keyboardHeight - geometry.safeAreaInsets.bottom)
+            let isKeyboardVisible = keyboardInset > 0
+            let headerTopPadding = isKeyboardVisible ? geometry.size.height * 0.015 : geometry.size.height * 0.05
+            let sectionGap = isKeyboardVisible ? geometry.size.height * 0.01 : geometry.size.height * 0.03
+            let headerGap = isKeyboardVisible ? geometry.size.height * 0.01 : geometry.size.height * 0.02
+            let focusExtraSpace: CGFloat = isKeyboardVisible ? 32 : 0
 
             ZStack {
                 AppBackgroundView(mode: .night)
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
+                    .contentShape(Rectangle())
+                    .onTapGesture { loginFocus = nil }
 
-                VStack {
-                    // 顶部返回
+                ScrollViewReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        VStack {
+                            // 顶部返回
                     HStack {
                         Button(action: { dismiss() }) {
                             Image(systemName: "chevron.left")
@@ -54,12 +68,12 @@ struct LoginView: View {
                         }
                         .disabled(authBusy)
                         .padding(.leading, geometry.size.width * 0.05)
-                        .padding(.top, geometry.size.height * 0.05)
+                        .padding(.top, headerTopPadding)
                         Spacer()
                     }
                     .staggered(0, show: $showIntro)
 
-                    Spacer(minLength: geometry.size.height * 0.03)
+                    Spacer(minLength: sectionGap)
 
                     // 标题区
                     VStack(spacing: minLength * 0.02) {
@@ -90,7 +104,7 @@ struct LoginView: View {
                     }
                     .staggered(1, show: $showIntro)
 
-                    Spacer(minLength: geometry.size.height * 0.02)
+                    Spacer(minLength: headerGap)
 
                     // 表单
                     VStack(spacing: minLength * 0.035) {
@@ -246,6 +260,7 @@ struct LoginView: View {
                                 )
                                 .submitLabel(.next)
                                 .onSubmit { loginFocus = .password }
+                                .id(LoginField.email)
                         }
                         .staggered(5, show: $showIntro)
                         .animation(nil, value: loginFocus)
@@ -271,6 +286,8 @@ struct LoginView: View {
                                     cornerRadius: 14
                                 )
                                 .submitLabel(.done)
+                                .onSubmit { loginFocus = nil }
+                                .id(LoginField.password)
                         }
                         .staggered(6, show: $showIntro)
                         .animation(nil, value: loginFocus)
@@ -410,9 +427,32 @@ struct LoginView: View {
                     .padding(.horizontal, geometry.size.width * 0.1)
 
                     Spacer(minLength: geometry.size.height * 0.08)
+                    Color.clear
+                        .frame(height: focusExtraSpace)
+                }
+                .frame(minHeight: geometry.size.height)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .bottom) {
+                Color.clear
+                    .frame(height: keyboardInset)
+                    .allowsHitTesting(false)
+            }
+            .onChange(of: loginFocus) { _, newValue in
+                guard let target = newValue else { return }
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    proxy.scrollTo(target, anchor: .bottom)
                 }
             }
-            .fullScreenCover(isPresented: $navigateToHome) {
+            .onChange(of: keyboardHeight) { _, _ in
+                guard let target = loginFocus else { return }
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    proxy.scrollTo(target, anchor: .bottom)
+                }
+            }
+        }
+    }
+    .fullScreenCover(isPresented: $navigateToHome) {
                 MainView()
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
@@ -424,8 +464,12 @@ struct LoginView: View {
                 starManager.animateStar = true
                 showIntro = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { showIntro = true }
+                registerKeyboardNotifications()
             }
-            .onDisappear { showIntro = false }
+            .onDisappear {
+                showIntro = false
+                unregisterKeyboardNotifications()
+            }
             .alert(isPresented: $showAlert) {
                 Alert(
                     title: Text("Error"),
@@ -447,6 +491,42 @@ struct LoginView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
+    }
+
+    private func registerKeyboardNotifications() {
+        guard keyboardShowObserver == nil, keyboardHideObserver == nil else { return }
+
+        keyboardShowObserver = NotificationCenter.default.addObserver(
+            forName: UIResponder.keyboardWillShowNotification,
+            object: nil,
+            queue: .main
+        ) { notification in
+            guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+            withAnimation(.easeOut(duration: 0.2)) {
+                keyboardHeight = frame.height
+            }
+        }
+
+        keyboardHideObserver = NotificationCenter.default.addObserver(
+            forName: UIResponder.keyboardWillHideNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            withAnimation(.easeOut(duration: 0.2)) {
+                keyboardHeight = 0
+            }
+        }
+    }
+
+    private func unregisterKeyboardNotifications() {
+        if let observer = keyboardShowObserver {
+            NotificationCenter.default.removeObserver(observer)
+            keyboardShowObserver = nil
+        }
+        if let observer = keyboardHideObserver {
+            NotificationCenter.default.removeObserver(observer)
+            keyboardHideObserver = nil
+        }
     }
 }
 #Preview {
