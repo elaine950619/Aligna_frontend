@@ -1,6 +1,7 @@
 import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth
+import UIKit
 
 struct JournalView: View {
     let date: Date
@@ -15,6 +16,9 @@ struct JournalView: View {
     @State private var stress: String? = nil
     @State private var sleep: String? = nil
     @State private var emotionalSource: String? = nil
+    @State private var keyboardHeight: CGFloat = 0
+    @State private var keyboardShowObserver: NSObjectProtocol?
+    @State private var keyboardHideObserver: NSObjectProtocol?
     private enum StorageMode { case recommendation(String), standaloneUser }
     @State private var storageMode: StorageMode? = nil
     private let allowStandaloneIfNoRec = true
@@ -32,14 +36,20 @@ struct JournalView: View {
 
     
     var body: some View {
-        ZStack {
+        GeometryReader { geometry in
+            let keyboardInset = max(0, keyboardHeight - geometry.safeAreaInsets.bottom)
+
+            ZStack {
             AppBackgroundView()
                 .environmentObject(starManager)
                 .environmentObject(themeManager)
                 .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
             
             // Page content
-            VStack(spacing: 16) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 16) {
                 VStack(spacing: 4) {
                     Text("Check-in")
                         .font(.custom("Merriweather-Bold", size: 26))
@@ -90,11 +100,12 @@ struct JournalView: View {
                             }
                             TextEditor(text: $text)
                                 .scrollContentBackground(.hidden)
-                                .frame(maxWidth: .infinity, maxHeight: 140, alignment: .topLeading)
+                                .frame(maxWidth: .infinity, minHeight: 140, maxHeight: .infinity, alignment: .topLeading)
                                 .padding(1)
                                 .foregroundColor(themeManager.descriptionText.opacity(0.85))
                                 .tint(themeManager.accent)
                                 .font(.system(.body, design: .rounded))
+                                .layoutPriority(1)
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -135,7 +146,15 @@ struct JournalView: View {
                 }
                 .padding(.horizontal, 24)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .bottom) {
+                Color.clear
+                    .frame(height: keyboardInset)
+                    .allowsHitTesting(false)
+            }
+            .frame(minHeight: geometry.size.height - 24, alignment: .top)
+            .frame(maxWidth: .infinity, alignment: .top)
             .padding(.top, 24) // move content down from the curved top like the mock
             
             // ---- Custom top overlay controls (Back + Reset) ----
@@ -166,7 +185,11 @@ struct JournalView: View {
         } message: {
             Text("This will clear the current text. It won’t delete anything saved previously.")
         }
-        .onAppear { loadEntry() }
+        .onAppear {
+            loadEntry()
+            registerKeyboardNotifications()
+        }
+        .onDisappear { unregisterKeyboardNotifications() }
         .onChange(of: mood, initial: false) { _, _ in
             saveSelectionSnapshotIfPossible()
         }
@@ -179,6 +202,7 @@ struct JournalView: View {
         .onChange(of: emotionalSource, initial: false) { _, _ in
             saveSelectionSnapshotIfPossible()
         }
+        }
     }
 
     private func sectionTitle(_ text: String) -> some View {
@@ -188,6 +212,42 @@ struct JournalView: View {
             .frame(maxWidth: .infinity, alignment: .center)
             .multilineTextAlignment(.center)
             .padding(.bottom, 3)
+    }
+
+    private func registerKeyboardNotifications() {
+        guard keyboardShowObserver == nil, keyboardHideObserver == nil else { return }
+
+        keyboardShowObserver = NotificationCenter.default.addObserver(
+            forName: UIResponder.keyboardWillShowNotification,
+            object: nil,
+            queue: .main
+        ) { notification in
+            guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+            withAnimation(.easeOut(duration: 0.2)) {
+                keyboardHeight = frame.height
+            }
+        }
+
+        keyboardHideObserver = NotificationCenter.default.addObserver(
+            forName: UIResponder.keyboardWillHideNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            withAnimation(.easeOut(duration: 0.2)) {
+                keyboardHeight = 0
+            }
+        }
+    }
+
+    private func unregisterKeyboardNotifications() {
+        if let observer = keyboardShowObserver {
+            NotificationCenter.default.removeObserver(observer)
+            keyboardShowObserver = nil
+        }
+        if let observer = keyboardHideObserver {
+            NotificationCenter.default.removeObserver(observer)
+            keyboardHideObserver = nil
+        }
     }
 
     private func normalizedSelection(_ value: String?) -> String? {
