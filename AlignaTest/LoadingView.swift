@@ -174,6 +174,7 @@ struct LoadingView: View {
     var onStartLoading: (() -> Void)? = nil
     var onPersonalComplete: ((Bool) -> Void)? = nil
     private let fixedMessageIndex: Int?
+    private let forceFullLoading: Bool
 
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
@@ -213,11 +214,13 @@ struct LoadingView: View {
     init(
         onStartLoading: (() -> Void)? = nil,
         onPersonalComplete: ((Bool) -> Void)? = nil,
-        fixedMessageIndex: Int? = nil
+        fixedMessageIndex: Int? = nil,
+        forceFullLoading: Bool = false
     ) {
         self.onStartLoading = onStartLoading
         self.onPersonalComplete = onPersonalComplete
         self.fixedMessageIndex = fixedMessageIndex
+        self.forceFullLoading = forceFullLoading
     }
 
     fileprivate enum LoadingStage: Int {
@@ -242,7 +245,7 @@ struct LoadingView: View {
     }
 
     private var shouldRunFullLoading: Bool {
-        !hasRecentRecommendation
+        forceFullLoading || !hasRecentRecommendation
     }
 
     var body: some View {
@@ -834,7 +837,7 @@ struct LoadingView: View {
 #if DEBUG
 private extension LoadingView {
     init(previewStage: LoadingStage) {
-        self.init(onStartLoading: nil, onPersonalComplete: nil, fixedMessageIndex: 0)
+        self.init(onStartLoading: nil, onPersonalComplete: nil, fixedMessageIndex: 0, forceFullLoading: true)
         _stage = State(initialValue: previewStage)
         if previewStage == .personal {
             _autoSkipSecondsRemaining = State(initialValue: 3)

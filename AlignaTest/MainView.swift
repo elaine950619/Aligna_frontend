@@ -131,6 +131,7 @@ struct MainView: View {
     @AppStorage("cachedDailyMantra") private var cachedDailyMantra: String = ""
     @AppStorage("lastRecommendationTimestamp") private var lastRecommendationTimestamp: Double = 0
     @AppStorage("lastRecommendationHasFullSet") private var lastRecommendationHasFullSet: Bool = false
+    @AppStorage("lastManualRefreshTimestamp") private var lastManualRefreshTimestamp: Double = 0
     @AppStorage("shouldExpandMantraOnBoot") private var shouldExpandMantraOnBoot: Bool = false
     @AppStorage("shouldExpandMantraFromNotification") private var shouldExpandMantraFromNotification: Bool = false
     @State private var isFetchingToday: Bool = false
@@ -143,6 +144,9 @@ struct MainView: View {
     @State private var mantraSaveMessage: String = ""
 
     @State private var showReasoningBubble: Bool = false
+    @State private var showRefreshCooldownAlert = false
+    @State private var refreshCooldownMessage = ""
+    @State private var isManualRefreshFlow = false
 
     @AppStorage("todayAutoRefetchDone") private var todayAutoRefetchDone: String = ""
 
@@ -273,17 +277,15 @@ struct MainView: View {
                         HStack {
                             
                             HStack(spacing: geometry.size.width * 0.035) {
-                                // Journal button – book icon
-                                NavigationLink(
-                                    destination: JournalView(date: selectedDate)
-                                        .environmentObject(starManager)
-                                        .environmentObject(themeManager)
-                                ) {
-                                    Image(systemName: "book.closed")      // ⬅️ journal symbol
+                                Button {
+                                    handleManualRefreshTap()
+                                } label: {
+                                    Image(systemName: isFetchingToday || isManualRefreshFlow ? "arrow.triangle.2.circlepath" : "arrow.clockwise")
                                         .font(.system(size: 20))
                                         .foregroundColor(themeManager.primaryText)
                                         .frame(width: 28, height: 28)
                                 }
+                                .disabled(isFetchingToday || isManualRefreshFlow)
                             }
                             .padding(.leading, geometry.size.width * 0.05)
 
@@ -511,6 +513,11 @@ struct MainView: View {
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
                     .environmentObject(viewModel)
+            }
+            .alert("Update Unavailable", isPresented: $showRefreshCooldownAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(refreshCooldownMessage)
             }
 
         }
@@ -1108,12 +1115,46 @@ struct MainView: View {
         withAnimation(.easeInOut) { bootPhase = .main }
     }
 
+    private func handleManualRefreshTap() {
+        guard manualRefreshAllowed() else {
+            refreshCooldownMessage = refreshCooldownText()
+            showRefreshCooldownAlert = true
+            return
+        }
+        isManualRefreshFlow = true
+        didCompletePersonalCheckIn = false
+        bootPhase = .loading
+    }
+
+    private func manualRefreshAllowed() -> Bool {
+        let now = Date().timeIntervalSince1970
+        return now - lastManualRefreshTimestamp >= 12 * 60 * 60
+    }
+
+    private func refreshCooldownText() -> String {
+        guard lastManualRefreshTimestamp > 0 else {
+            return "You can refresh again in about 12 hours."
+        }
+        let last = Date(timeIntervalSince1970: lastManualRefreshTimestamp)
+        let next = last.addingTimeInterval(12 * 60 * 60)
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        let lastText = formatter.string(from: last)
+        let nextText = formatter.string(from: next)
+        return "Updated at \(lastText). You can refresh again after \(nextText)."
+    }
+
     var body: some View {
         Group {
             switch bootPhase {
             case .loading:
                 LoadingView(
                     onStartLoading: {
+                        if isManualRefreshFlow {
+                            return
+                        }
                         startInitialLoad()
                     },
                     onPersonalComplete: { didProvidePersonal in
@@ -1122,9 +1163,17 @@ struct MainView: View {
                         } else if hasRecentRecommendation {
                             isBootDataReady = true
                         }
+                        if isManualRefreshFlow {
+                            if didProvidePersonal {
+                                lastManualRefreshTimestamp = Date().timeIntervalSince1970
+                            }
+                            isManualRefreshFlow = false
+                            isBootDataReady = true
+                        }
                         didCompletePersonalCheckIn = true
                         attemptBootAdvance()
-                    }
+                    },
+                    forceFullLoading: isManualRefreshFlow
                 )
                 .ignoresSafeArea()
                         
