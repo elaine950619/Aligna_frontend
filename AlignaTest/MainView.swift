@@ -183,6 +183,18 @@ struct MainView: View {
     }
 
     
+    private let colorHexMapping: [String:String] = [
+        "amber":"#FFBF00", "cream":"#FFFDD0", "forest_green":"#228B22",
+        "ice_blue":"#ADD8E6", "indigo":"#4B0082", "rose":"#FF66CC",
+        "sage_green":"#9EB49F", "silver_white":"#C0C0C0", "slate_blue":"#6A5ACD",
+        "teal":"#008080"
+    ]
+
+    private func todayColorHex() -> String? {
+        let key = viewModel.recommendations["Color"]?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+        return colorHexMapping[key]
+    }
+
     private func ensureDefaultsIfMissing() {
         // If nothing loaded yet, supply local demo content
         if viewModel.recommendations.isEmpty {
@@ -425,6 +437,27 @@ struct MainView: View {
                                     .presentationDragIndicator(.visible)
                                     .presentationCornerRadius(24)
                                 }
+
+                                let colorDoc = viewModel.recommendations["Color"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                                let colorHex = todayColorHex() ?? "#CBBBA0"
+                                Button {
+                                    if !colorDoc.isEmpty {
+                                        mainNavigationPath.append(RecCategory.Color)
+                                    }
+                                } label: {
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(Color(hex: colorHex))
+                                        .frame(width: 14, height: 14)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 5)
+                                                .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                                        )
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 6)
+                                        .opacity(colorDoc.isEmpty ? 0.4 : 1)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(colorDoc.isEmpty)
                             }
                             .padding(.top, 8)
                         }
