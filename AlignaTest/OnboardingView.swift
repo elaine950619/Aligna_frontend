@@ -800,9 +800,10 @@ struct OnboardingStep3: View {
     @State private var authListenerHandle: AuthStateDidChangeListenerHandle? = nil
     @State private var loadingStageIndex: Int = 0
     @State private var showLongWaitHint = false
-    @State private var navigateToHome = false
-    @State private var showLoadingOverlay = false
     @State private var loadingErrorMessage: String? = nil
+    @State private var navigateToHome = false
+    @StateObject private var appleAuth = AppleAuthManager()
+    @State private var showLoadingOverlay = false
 
     @StateObject private var locationManager = LocationManager()
     @State private var locationMessage = "Requesting location permission..."
@@ -1150,24 +1151,126 @@ struct OnboardingStep3: View {
             return
         }
 
-        authListenerHandle = Auth.auth().addStateDidChangeListener { _, user in
-            if user != nil {
-                if let handle = authListenerHandle {
-                    Auth.auth().removeStateDidChangeListener(handle)
-                    authListenerHandle = nil
+        let lastProvider = UserDefaults.standard.string(forKey: "lastAuthProvider")
+        switch lastProvider {
+        case "google.com":
+            attemptGoogleRestoreOrSignIn { success in
+                if success {
+                    uploadUserInfo()
+                } else {
+                    isLoading = false
+                    loadingStageIndex = 0
+                    showLongWaitHint = false
+                    loadingErrorMessage = "Please sign in with Google to finish onboarding."
                 }
-                uploadUserInfo()
             }
+        case "apple.com":
+            presentInteractiveAppleSignIn { success in
+                if success {
+                    uploadUserInfo()
+                } else {
+                    isLoading = false
+                    loadingStageIndex = 0
+                    showLongWaitHint = false
+                    loadingErrorMessage = "Please sign in with Apple to finish onboarding."
+                }
+            }
+        case "password":
+            isLoading = false
+            loadingStageIndex = 0
+            showLongWaitHint = false
+            loadingErrorMessage = "Please sign in with email to finish onboarding."
+        default:
+            isLoading = false
+            loadingStageIndex = 0
+            showLongWaitHint = false
+            loadingErrorMessage = "Please sign in again to finish onboarding."
+        }
+    }
+
+    private func attemptGoogleRestoreOrSignIn(completion: @escaping (Bool) -> Void) {
+        if GIDSignIn.sharedInstance.hasPreviousSignIn() {
+            GIDSignIn.sharedInstance.restorePreviousSignIn { user, _ in
+                if let user = user, let idToken = user.idToken?.tokenString {
+                    let credential = GoogleAuthProvider.credential(
+                        withIDToken: idToken,
+                        accessToken: user.accessToken.tokenString
+                    )
+                    Auth.auth().signIn(with: credential) { _, err in
+                        if err != nil {
+                            self.presentInteractiveGoogleSignIn(completion: completion)
+                        } else {
+                            completion(true)
+                        }
+                    }
+                } else {
+                    self.presentInteractiveGoogleSignIn(completion: completion)
+                }
+            }
+        } else {
+            presentInteractiveGoogleSignIn(completion: completion)
+        }
+    }
+
+    private func presentInteractiveGoogleSignIn(completion: @escaping (Bool) -> Void) {
+        guard let clientID = FirebaseApp.app()?.options.clientID else {
+            completion(false)
+            return
+        }
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
+
+        guard let presenter = UIApplication.shared.topViewController_aligna else {
+            completion(false)
+            return
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            if self.authListenerHandle != nil, Auth.auth().currentUser == nil {
-                if let handle = self.authListenerHandle {
-                    Auth.auth().removeStateDidChangeListener(handle)
-                    self.authListenerHandle = nil
+        GIDSignIn.sharedInstance.signIn(withPresenting: presenter) { signInResult, signInError in
+            if let signInError = signInError {
+                print("❌ Google sign-in failed: \(signInError.localizedDescription)")
+                completion(false)
+                return
+            }
+            guard
+                let user = signInResult?.user,
+                let idToken = user.idToken?.tokenString
+            else {
+                completion(false)
+                return
+            }
+
+            let credential = GoogleAuthProvider.credential(
+                withIDToken: idToken,
+                accessToken: user.accessToken.tokenString
+            )
+            Auth.auth().signIn(with: credential) { _, err in
+                completion(err == nil)
+            }
+        }
+    }
+
+    private func presentInteractiveAppleSignIn(completion: @escaping (Bool) -> Void) {
+        let nonce = randomNonceString()
+        appleAuth.startSignUp(nonce: nonce) { result in
+            switch result {
+            case .success(let authorization):
+                guard
+                    let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                    let identityToken = appleIDCredential.identityToken,
+                    let tokenString = String(data: identityToken, encoding: .utf8)
+                else {
+                    completion(false)
+                    return
                 }
-                self.isLoading = false
-                self.loadingErrorMessage = "Couldn’t start sign-in. Please try again."
+                let credential = OAuthProvider.credential(
+                    providerID: .apple,
+                    idToken: tokenString,
+                    rawNonce: nonce
+                )
+                Auth.auth().signIn(with: credential) { _, err in
+                    completion(err == nil)
+                }
+            case .failure:
+                completion(false)
             }
         }
     }
@@ -1196,12 +1299,19 @@ struct OnboardingStep3: View {
         let currentPlace = viewModel.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines)
         let resolvedPlace = currentPlace.isEmpty ? "Unknown" : currentPlace
 
+        let timeFormatter = DateFormatter()
+        timeFormatter.locale = Locale(identifier: "en_US_POSIX")
+        timeFormatter.timeZone = .current
+        timeFormatter.dateFormat = "HH:mm"
+        let birthTimeString = timeFormatter.string(from: viewModel.birth_time)
+
         var data: [String: Any] = [
             "uid": userId,
             "nickname": viewModel.nickname,
             "gender": viewModel.gender,
             "relationshipStatus": viewModel.relationshipStatus,
             "birthDate": birthDateString,
+            "birthTime": birthTimeString,
             "birthHour": h,
             "birthMinute": m,
             "birthPlace": viewModel.birthPlace,
@@ -1226,12 +1336,6 @@ struct OnboardingStep3: View {
         }
 
         startLoadingStages()
-
-        let timeFormatter = DateFormatter()
-        timeFormatter.locale = Locale(identifier: "en_US_POSIX")
-        timeFormatter.timeZone = .current
-        timeFormatter.dateFormat = "HH:mm"
-        let birthTimeString = timeFormatter.string(from: viewModel.birth_time)
 
         let payload: [String: Any] = [
             "birth_date": birthDateString,
@@ -1565,7 +1669,9 @@ struct OnboardingFinalStep: View {
     @State private var authListenerHandle: AuthStateDidChangeListenerHandle? = nil
     @State private var loadingStageIndex: Int = 0
     @State private var showLongWaitHint = false
+    @State private var loadingErrorMessage: String? = nil
     @State private var navigateToHome = false
+    @StateObject private var appleAuth = AppleAuthManager()
 
     // 入场动画
     @State private var showIntro = false
@@ -1619,6 +1725,7 @@ struct OnboardingFinalStep: View {
                         Group {
                             Button {
                                 guard !isLoading else { return }
+                                loadingErrorMessage = nil
                                 isLoading = true
                                 loadingStageIndex = 0
                                 showLongWaitHint = false
@@ -1666,6 +1773,14 @@ struct OnboardingFinalStep: View {
                                         .padding(.top, 2)
                                         .transition(.opacity)
                                 }
+                            }
+
+                            if let error = loadingErrorMessage {
+                                Text(error)
+                                    .font(AlynnaTypography.font(.footnote))
+                                    .foregroundColor(themeManager.fixedNightTextSecondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.top, 8)
                             }
                         }
                         .padding(.bottom, 24)
@@ -1798,23 +1913,105 @@ struct OnboardingFinalStep: View {
             return
         }
 
-        authListenerHandle = Auth.auth().addStateDidChangeListener { _, user in
-            if user != nil {
-                if let handle = authListenerHandle {
-                    Auth.auth().removeStateDidChangeListener(handle)
-                    authListenerHandle = nil
-                }
+        attemptGoogleRestoreOrSignIn { success in
+            if success {
                 uploadUserInfo()
+            } else {
+                isLoading = false
+                loadingStageIndex = 0
+                showLongWaitHint = false
+                loadingErrorMessage = "Sign-in is required to finish onboarding."
             }
         }
+    }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            if self.authListenerHandle != nil, Auth.auth().currentUser == nil {
-                if let handle = self.authListenerHandle {
-                    Auth.auth().removeStateDidChangeListener(handle)
-                    self.authListenerHandle = nil
+    private func attemptGoogleRestoreOrSignIn(completion: @escaping (Bool) -> Void) {
+        if GIDSignIn.sharedInstance.hasPreviousSignIn() {
+            GIDSignIn.sharedInstance.restorePreviousSignIn { user, _ in
+                if let user = user, let idToken = user.idToken?.tokenString {
+                    let credential = GoogleAuthProvider.credential(
+                        withIDToken: idToken,
+                        accessToken: user.accessToken.tokenString
+                    )
+                    Auth.auth().signIn(with: credential) { _, err in
+                        if err != nil {
+                            self.presentInteractiveGoogleSignIn(completion: completion)
+                        } else {
+                            completion(true)
+                        }
+                    }
+                } else {
+                    self.presentInteractiveGoogleSignIn(completion: completion)
                 }
-                self.isLoading = false
+            }
+        } else {
+            presentInteractiveGoogleSignIn(completion: completion)
+        }
+    }
+
+    private func presentInteractiveGoogleSignIn(completion: @escaping (Bool) -> Void) {
+        guard let clientID = FirebaseApp.app()?.options.clientID else {
+            presentInteractiveAppleSignIn(completion: completion)
+            return
+        }
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
+
+        guard let presenter = UIApplication.shared.topViewController_aligna else {
+            presentInteractiveAppleSignIn(completion: completion)
+            return
+        }
+
+        GIDSignIn.sharedInstance.signIn(withPresenting: presenter) { signInResult, signInError in
+            if let signInError = signInError {
+                print("❌ Google sign-in failed: \(signInError.localizedDescription)")
+                self.presentInteractiveAppleSignIn(completion: completion)
+                return
+            }
+            guard
+                let user = signInResult?.user,
+                let idToken = user.idToken?.tokenString
+            else {
+                self.presentInteractiveAppleSignIn(completion: completion)
+                return
+            }
+
+            let credential = GoogleAuthProvider.credential(
+                withIDToken: idToken,
+                accessToken: user.accessToken.tokenString
+            )
+            Auth.auth().signIn(with: credential) { _, err in
+                if err != nil {
+                    self.presentInteractiveAppleSignIn(completion: completion)
+                } else {
+                    completion(true)
+                }
+            }
+        }
+    }
+
+    private func presentInteractiveAppleSignIn(completion: @escaping (Bool) -> Void) {
+        let nonce = randomNonceString()
+        appleAuth.startSignUp(nonce: nonce) { result in
+            switch result {
+            case .success(let authorization):
+                guard
+                    let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                    let identityToken = appleIDCredential.identityToken,
+                    let tokenString = String(data: identityToken, encoding: .utf8)
+                else {
+                    completion(false)
+                    return
+                }
+                let credential = OAuthProvider.credential(
+                    providerID: .apple,
+                    idToken: tokenString,
+                    rawNonce: nonce
+                )
+                Auth.auth().signIn(with: credential) { _, err in
+                    completion(err == nil)
+                }
+            case .failure:
+                completion(false)
             }
         }
     }
@@ -1868,6 +2065,12 @@ struct OnboardingFinalStep: View {
         let lat = viewModel.currentCoordinate?.latitude ?? 0
         let lng = viewModel.currentCoordinate?.longitude ?? 0
 
+        let timeFormatter = DateFormatter()
+        timeFormatter.locale = Locale(identifier: "en_US_POSIX")
+        timeFormatter.timeZone = .current
+        timeFormatter.dateFormat = "HH:mm"
+        let birthTimeString = timeFormatter.string(from: viewModel.birth_time)
+
         // ✅ 用 var，后面可追加字段
         var data: [String: Any] = [
             "uid": userId,
@@ -1875,6 +2078,7 @@ struct OnboardingFinalStep: View {
             "gender": viewModel.gender,
             "relationshipStatus": viewModel.relationshipStatus,
             "birthDate": birthDateString,          // 你原来的字符串生日
+            "birthTime": birthTimeString,
             "birthHour": h,                        // ✅ 新增：小时
             "birthMinute": m,                      // ✅ 新增：分钟
             "birthPlace": viewModel.birthPlace,
@@ -1903,12 +2107,6 @@ struct OnboardingFinalStep: View {
         // ===== 下面保持你原有的 FastAPI 请求逻辑 =====
         // 这里仍然用你原来传给后端的“字符串时间”，不会影响我们在 Firestore 的存储方案
         startLoadingStages()
-
-        let timeFormatter = DateFormatter()
-        timeFormatter.locale = Locale(identifier: "en_US_POSIX")
-        timeFormatter.timeZone = .current
-        timeFormatter.dateFormat = "HH:mm"
-        let birthTimeString = timeFormatter.string(from: viewModel.birth_time)
 
         let payload: [String: Any] = [
             "birth_date": birthDateString,

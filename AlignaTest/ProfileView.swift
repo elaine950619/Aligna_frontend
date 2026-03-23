@@ -1045,7 +1045,10 @@ func isProfileComplete(_ d: [String: Any]) -> Bool {
     let hasBirthTS   = d["birthday"] is Timestamp
     let hasBirthStr  = ((d["birthDate"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
     let birthDateOK  = hasBirthTS || hasBirthStr
-    let birthTimeOK  = ((d["birthTime"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
+    let birthTimeStrOK = ((d["birthTime"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
+    let birthHourOK = d["birthHour"] is Int
+    let birthMinuteOK = d["birthMinute"] is Int
+    let birthTimeOK = birthTimeStrOK || (birthHourOK && birthMinuteOK)
     let birthPlaceOK = ((d["birthPlace"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
 
     return nicknameOK && birthDateOK && birthTimeOK && birthPlaceOK
@@ -1243,6 +1246,7 @@ struct ProfileView: View {
     @State private var showDeleteAlert = false
     @State private var showReauthPasswordAlert = false
     @State private var reauthPassword = ""
+    @State private var appleReauthCoordinator: AppleReauthCoordinator? = nil
     @State private var errorMessage: String?
 
     @State private var navigateToFrontPage = false
@@ -3184,7 +3188,65 @@ private extension ProfileView {
             }
             group.notify(queue: .main) { completion(firstErr) }
         }
-    func purgeAllUserData(uid: String, email: String?, completion: @escaping (Error?) -> Void) {
+
+        func purgeCollectionRef(
+            _ ref: CollectionReference,
+            batchSize: Int = 200,
+            completion: @escaping (Error?) -> Void
+        ) {
+            ref.limit(to: batchSize).getDocuments { snap, err in
+                if let err = err { completion(err); return }
+                let docs = snap?.documents ?? []
+                if docs.isEmpty { completion(nil); return }
+
+                let batch = self.db.batch()
+                docs.forEach { batch.deleteDocument($0.reference) }
+                batch.commit { err in
+                    if let err = err { completion(err); return }
+                    self.purgeCollectionRef(ref, batchSize: batchSize, completion: completion)
+                }
+            }
+        }
+
+        func purgeSubcollectionsByFields(
+            _ name: String,
+            subcollectionName: String,
+            fieldsAndValues: [(String, Any)],
+            completion: @escaping (Error?) -> Void
+        ) {
+            let outer = DispatchGroup()
+            var firstErr: Error?
+
+            for (f, v) in fieldsAndValues {
+                outer.enter()
+                db.collection(name).whereField(f, isEqualTo: v).getDocuments { snap, err in
+                    if let err = err {
+                        if firstErr == nil { firstErr = err }
+                        outer.leave()
+                        return
+                    }
+                    let docs = snap?.documents ?? []
+                    if docs.isEmpty {
+                        outer.leave()
+                        return
+                    }
+
+                    let inner = DispatchGroup()
+                    for doc in docs {
+                        inner.enter()
+                        purgeCollectionRef(doc.reference.collection(subcollectionName)) { err in
+                            if let err = err, firstErr == nil { firstErr = err }
+                            inner.leave()
+                        }
+                    }
+                    inner.notify(queue: .main) { outer.leave() }
+                }
+            }
+
+            outer.notify(queue: .main) { completion(firstErr) }
+        }
+
+        func purgeAllUserData(uid: String, email: String?, completion: @escaping (Error?) -> Void) {
             let group = DispatchGroup()
             var firstErr: Error?
 
@@ -3195,10 +3257,30 @@ private extension ProfileView {
             // A) 用户档案：users / user
             let userCols = ["users", "user"]
             for col in userCols {
+                // A0) 清理用户子集合（如 journals）
                 group.enter()
-                var pairs: [(String, Any)] = [("uid", uid)]
-                if let em = email, !em.isEmpty { pairs.append(("email", em)) }
-                purgeCollectionByFields(col, fieldsAndValues: pairs) { err in
+                var pairsForSubcollections: [(String, Any)] = [("uid", uid)]
+                if let em = email, !em.isEmpty { pairsForSubcollections.append(("email", em)) }
+                purgeSubcollectionsByFields(col, subcollectionName: "journals", fieldsAndValues: pairsForSubcollections) { err in
+                    record(err); group.leave()
+                }
+
+                // 兼容：文档 ID 直接为 uid / email 的情况（子集合也要清理）
+                group.enter()
+                purgeCollectionRef(db.collection(col).document(uid).collection("journals")) { err in
+                    record(err); group.leave()
+                }
+                if let em = email, !em.isEmpty {
+                    group.enter()
+                    purgeCollectionRef(db.collection(col).document(em).collection("journals")) { err in
+                        record(err); group.leave()
+                    }
+                }
+
+                group.enter()
+                var pairsForDocs: [(String, Any)] = [("uid", uid)]
+                if let em = email, !em.isEmpty { pairsForDocs.append(("email", em)) }
+                purgeCollectionByFields(col, fieldsAndValues: pairsForDocs) { err in
                     record(err); group.leave()
                 }
 
@@ -3220,20 +3302,27 @@ private extension ProfileView {
             for col in recCols {
                 // B1) 按字段删（uid / 兼容旧 email）
                 group.enter()
-                var pairs: [(String, Any)] = [("uid", uid)]
-                if let em = email, !em.isEmpty { pairs.append(("email", em)) }
-                purgeCollectionByFields(col, fieldsAndValues: pairs) { err in
+                var pairsForSubcollections: [(String, Any)] = [("uid", uid)]
+                if let em = email, !em.isEmpty { pairsForSubcollections.append(("email", em)) }
+                purgeSubcollectionsByFields(col, subcollectionName: "journals", fieldsAndValues: pairsForSubcollections) { err in
+                    record(err); group.leave()
+                }
+
+                group.enter()
+                var pairsForDocs: [(String, Any)] = [("uid", uid)]
+                if let em = email, !em.isEmpty { pairsForDocs.append(("email", em)) }
+                purgeCollectionByFields(col, fieldsAndValues: pairsForDocs) { err in
                     record(err); group.leave()
                 }
 
                 // B2) 追加按文档ID前缀删（历史数据可能没有 uid 字段）
                 group.enter()
-                purgeByDocIDPrefix(col, prefix: uid + "_") { err in
+                purgeByDocIDPrefix(col, prefix: uid + "_", subcollectionName: "journals") { err in
                     record(err); group.leave()
                 }
                 if let em = email, !em.isEmpty {
                     group.enter()
-                    purgeByDocIDPrefix(col, prefix: em + "_") { err in
+                    purgeByDocIDPrefix(col, prefix: em + "_", subcollectionName: "journals") { err in
                         record(err); group.leave()
                     }
                 }
@@ -3254,6 +3343,7 @@ private extension ProfileView {
             _ name: String,
             prefix: String,
             batchSize: Int = 400,
+            subcollectionName: String? = nil,
             completion: @escaping (Error?) -> Void
         ) {
             guard !prefix.isEmpty else { completion(nil); return }
@@ -3271,12 +3361,39 @@ private extension ProfileView {
                 let docs = snap?.documents ?? []
                 if docs.isEmpty { completion(nil); return }
 
-                let batch = self.db.batch()
-                docs.forEach { batch.deleteDocument($0.reference) }
-                batch.commit { err in
-                    if let err = err { completion(err); return }
-                    // 继续删下一页
-                    self.purgeByDocIDPrefix(name, prefix: prefix, batchSize: batchSize, completion: completion)
+                let deleteDocs: () -> Void = {
+                    let batch = self.db.batch()
+                    docs.forEach { batch.deleteDocument($0.reference) }
+                    batch.commit { err in
+                        if let err = err { completion(err); return }
+                        // 继续删下一页
+                        self.purgeByDocIDPrefix(
+                            name,
+                            prefix: prefix,
+                            batchSize: batchSize,
+                            subcollectionName: subcollectionName,
+                            completion: completion
+                        )
+                    }
+                }
+
+                guard let subcollectionName = subcollectionName else {
+                    deleteDocs()
+                    return
+                }
+
+                let group = DispatchGroup()
+                var firstErr: Error?
+                for doc in docs {
+                    group.enter()
+                    self.purgeCollectionRef(doc.reference.collection(subcollectionName)) { err in
+                        if let err = err, firstErr == nil { firstErr = err }
+                        group.leave()
+                    }
+                }
+                group.notify(queue: .main) {
+                    if let err = firstErr { completion(err); return }
+                    deleteDocs()
                 }
             }
         }
@@ -3368,14 +3485,23 @@ private extension ProfileView {
             request.nonce = sha256(nonce)
 
             let coordinator = AppleReauthCoordinator(nonce: nonce) { token, err in
-                if let err = err { completion(err); return }
+                if let err = err {
+                    completion(err)
+                    self.appleReauthCoordinator = nil
+                    return
+                }
                 guard let token = token, let tokenStr = String(data: token, encoding: .utf8) else {
                     completion(NSError(domain: "Aligna", code: -5, userInfo: [NSLocalizedDescriptionKey: "Missing Apple token."]))
+                    self.appleReauthCoordinator = nil
                     return
                 }
                 let credential = OAuthProvider.credential(providerID: .apple, idToken: tokenStr, rawNonce: nonce)
-                Auth.auth().currentUser?.reauthenticate(with: credential) { _, err in completion(err) }
+                Auth.auth().currentUser?.reauthenticate(with: credential) { _, err in
+                    completion(err)
+                    self.appleReauthCoordinator = nil
+                }
             }
+            self.appleReauthCoordinator = coordinator
 
             let controller = ASAuthorizationController(authorizationRequests: [request])
             controller.delegate = coordinator

@@ -22,8 +22,6 @@ struct FrontPageView: View {
                         .environmentObject(themeManager)
 
                     VStack(spacing: 0) {
-                        Spacer(minLength: h * 0.12)
-
                         VStack(spacing: minLength * 0.022) {
                             if let _ = UIImage(named: "alignaSymbol") {
                                 Image("alignaSymbol")
@@ -51,16 +49,19 @@ struct FrontPageView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 .padding(.horizontal, w * 0.12)
                                 .staggered(2, show: $showIntro)
+                        }
+                        .padding(.top, h * 0.17)
+                        .staggered(0, show: $showIntro)
 
-                            Spacer(minLength: sectionGap)
+                        Spacer(minLength: sectionGap)
 
+                        VStack(spacing: minLength * 0.032) {
                             NavigationLink(destination: SignUpView()
                                 .environmentObject(starManager)
                                 .environmentObject(themeManager)
                                 .environmentObject(viewModel)) {
                                     Text("Sign Up")
                                         .font(AlynnaTypography.font(.headline))
-                                        .fontWeight(.semibold)
                                         .frame(maxWidth: .infinity)
                                         .padding()
                                         .background(themeManager.fixedNightTextPrimary)
@@ -68,29 +69,32 @@ struct FrontPageView: View {
                                         .cornerRadius(14)
                                 }
                                 .staggered(4, show: $showIntro)
-                        }
-                        .padding(.horizontal, w * 0.10)
-                        .staggered(0, show: $showIntro)
 
-                        Spacer()
-
-                        VStack(spacing: 10) {
                             NavigationLink(destination: LoginView()
                                 .environmentObject(starManager)
                                 .environmentObject(themeManager)
                                 .environmentObject(viewModel)) {
                                     Text("Log In")
-                                        .font(AlynnaTypography.font(.footnote))
-                                        .foregroundColor(themeManager.fixedNightTextPrimary)
-                                        .underline()
+                                        .font(AlynnaTypography.font(.headline))
+                                        .frame(maxWidth: .infinity)
+                                        .padding()
+                                        .background(Color.white.opacity(0.1))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 14)
+                                                .stroke(Color.white.opacity(0.6), lineWidth: 1)
+                                        )
+                                        .foregroundColor(.white)
+                                        .cornerRadius(14)
                                 }
                                 .staggered(5, show: $showIntro)
 
                             Text("Begin with what this day is holding.")
                                 .font(AlynnaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextTertiary)
+                                .padding(.top, 6)
                                 .staggered(6, show: $showIntro)
                         }
+                        .padding(.horizontal, w * 0.10)
                         .padding(.bottom, h * 0.08)
                     }
                     .preferredColorScheme(.dark)
@@ -98,15 +102,11 @@ struct FrontPageView: View {
             }
         }
         .onAppear {
-            starManager.setTwinkleAutoEnabled(false)
             starManager.animateStar = true
             showIntro = false
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { showIntro = true }
         }
-        .onDisappear {
-            starManager.setTwinkleAutoEnabled(true)
-            showIntro = false
-        }
+        .onDisappear { showIntro = false }
         .navigationBarBackButtonHidden(true)
     }
 }

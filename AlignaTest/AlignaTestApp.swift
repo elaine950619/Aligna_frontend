@@ -65,6 +65,7 @@ struct RootRouter: View {
     // 路由状态
     @State private var isReady = false
     @State private var isAuthenticated = (Auth.auth().currentUser?.isEmailVerified == true)
+    @State private var needsOnboarding: Bool? = nil
     @State private var authStateListenerHandle: AuthStateDidChangeListenerHandle?
     private let isPreviewMode: Bool
 
@@ -79,12 +80,15 @@ struct RootRouter: View {
         case .loading:
             _isReady = State(initialValue: false)
             _isAuthenticated = State(initialValue: false)
+            _needsOnboarding = State(initialValue: nil)
         case .signedOut:
             _isReady = State(initialValue: true)
             _isAuthenticated = State(initialValue: false)
+            _needsOnboarding = State(initialValue: nil)
         case .signedIn:
             _isReady = State(initialValue: true)
             _isAuthenticated = State(initialValue: true)
+            _needsOnboarding = State(initialValue: false)
         }
     }
 #endif
@@ -108,6 +112,17 @@ struct RootRouter: View {
                 .environmentObject(themeManager)
                 .environmentObject(onboardingViewModel)
                 .environmentObject(soundPlayer)  // ✅ 注入
+                .environmentObject(reasoningStore)
+                .preferredColorScheme(themeManager.isNight ? .dark : .light)
+            } else if needsOnboarding == true {
+                // 已登录但资料不完整 → Onboarding
+                NavigationStack {
+                    OnboardingStep1(viewModel: onboardingViewModel)
+                }
+                .environmentObject(starManager)
+                .environmentObject(themeManager)
+                .environmentObject(onboardingViewModel)
+                .environmentObject(soundPlayer)
                 .environmentObject(reasoningStore)
                 .preferredColorScheme(themeManager.isNight ? .dark : .light)
             } else {
@@ -151,17 +166,26 @@ struct RootRouter: View {
                 }
 
                 self.isAuthenticated = (user != nil)
-                self.isReady = true
                 print("Auth state -> isAuthenticated=\(self.isAuthenticated)")
 
-                // 🧹 关键：一旦变为“未登录”，清掉所有可能误触发 Onboarding 的本地标记
                 if user == nil {
+                    self.needsOnboarding = nil
+                    self.isReady = true
+                    // 🧹 关键：一旦变为“未登录”，清掉所有可能误触发 Onboarding 的本地标记
                     UserDefaults.standard.set(false, forKey: "shouldOnboardAfterSignIn")
                     UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
                     UserDefaults.standard.set(false, forKey: "isLoggedIn")
                     UserDefaults.standard.set("",    forKey: "lastRecommendationDate")
                     UserDefaults.standard.set("",    forKey: "lastCurrentPlaceUpdate")
                     UserDefaults.standard.set("",    forKey: "todayFetchLock")
+                } else {
+                    self.isReady = false
+                    determineRegistrationPathForCurrentUser { path in
+                        DispatchQueue.main.async {
+                            self.needsOnboarding = (path == .needsOnboarding)
+                            self.isReady = true
+                        }
+                    }
                 }
             }
         }

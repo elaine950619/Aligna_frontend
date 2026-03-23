@@ -21,7 +21,6 @@ struct SignUpView: View {
     @State private var showVerifyAlert = false
     @State private var verifyMessage = "We sent a verification email. Please verify and then continue."
     @State private var isVerifyingEmail = false
-    @State private var inlineErrorMessage: String? = nil
     @State private var navigateToOnboarding = false
     @State private var navigateToLogin = false
     @State private var navigateToLoginOnDismiss = false
@@ -56,8 +55,7 @@ struct SignUpView: View {
                 let keyboardInset = max(0, keyboardHeight - geometry.safeAreaInsets.bottom)
                 let isKeyboardVisible = keyboardInset > 0
                 let sectionGap = isKeyboardVisible ? h * 0.02 : h * 0.075
-                let socialButtonGap = minL * 0.030
-                let inputGap = minL * 0.020
+                let fieldGap = minL * 0.030
                 let headerTopPadding = isKeyboardVisible ? h * 0.015 : h * 0.05
                 let focusExtraSpace: CGFloat = isKeyboardVisible ? 32 : 0
 
@@ -115,7 +113,7 @@ struct SignUpView: View {
 
                                 Spacer(minLength: sectionGap)
 
-                                VStack(spacing: socialButtonGap) {
+                                VStack(spacing: fieldGap) {
                                     VStack(spacing: minL * 0.025) {
                                         Button(action: {
                                             guard !authBusy else { return }
@@ -137,6 +135,7 @@ struct SignUpView: View {
                                                 onNewUserGoOnboarding: {
                                                     authBusy = false
                                                     activeAuthAction = nil
+                                                    UserDefaults.standard.set("google.com", forKey: "lastAuthProvider")
                                                     if let user = Auth.auth().currentUser {
                                                         viewModel.userId = user.uid
                                                     }
@@ -146,6 +145,7 @@ struct SignUpView: View {
                                                 onExistingUserGoLogin: { msg in
                                                     authBusy = false
                                                     activeAuthAction = nil
+                                                    UserDefaults.standard.set("google.com", forKey: "lastAuthProvider")
                                                     shouldOnboardAfterSignIn = false
                                                     infoMessage = msg
                                                     navigateToLoginOnDismiss = true
@@ -175,7 +175,6 @@ struct SignUpView: View {
                                                     .frame(width: 24, height: 24)
                                                 Text("Sign up with Google")
                                                     .font(AlynnaTypography.font(.headline))
-                                                    .fontWeight(.semibold)
                                             }
                                             .foregroundColor(.black)
                                             .frame(maxWidth: .infinity)
@@ -186,90 +185,69 @@ struct SignUpView: View {
                                         .disabled(authBusy)
                                         .staggered(2, show: $showIntro)
 
-                                        ZStack {
-                                            HStack(spacing: 10) {
-                                                if isActive(.apple) {
-                                                    ProgressView()
-                                                        .progressViewStyle(.circular)
-                                                        .tint(.black)
-                                                        .scaleEffect(0.75)
+                                        SignInWithAppleButton(
+                                            .signUp,
+                                            onRequest: { request in
+                                                let nonce = randomNonceString()
+                                                currentNonce = nonce
+                                                request.requestedScopes = [.fullName, .email]
+                                                request.nonce = sha256(nonce)
+                                            },
+                                            onCompletion: { result in
+                                                guard !authBusy else { return }
+                                                guard let raw = currentNonce, !raw.isEmpty else {
+                                                    alertMessage = "Missing nonce. Please try again."
+                                                    showAlert = true
+                                                    return
                                                 }
-                                                Image(systemName: "applelogo")
-                                                    .font(.system(size: 16, weight: .regular))
-                                                    .frame(width: 24, height: 24)
-                                                Text("Sign up with Apple")
-                                                    .font(AlynnaTypography.font(.headline))
-                                                    .fontWeight(.semibold)
-                                            }
-                                            .foregroundColor(.black)
-                                            .frame(maxWidth: .infinity)
-                                            .frame(height: 50)
-                                            .background(themeManager.fixedNightTextPrimary)
-                                            .cornerRadius(14)
+                                                activeAuthAction = .apple
+                                                authBusy = true
+                                                hasCompletedOnboarding = false
+                                                isLoggedIn = false
+                                                shouldOnboardAfterSignIn = true
 
-                                            SignInWithAppleButton(
-                                                .signUp,
-                                                onRequest: { request in
-                                                    let nonce = randomNonceString()
-                                                    currentNonce = nonce
-                                                    request.requestedScopes = [.fullName, .email]
-                                                    request.nonce = sha256(nonce)
-                                                },
-                                                onCompletion: { result in
-                                                    guard !authBusy else { return }
-                                                    guard let raw = currentNonce, !raw.isEmpty else {
-                                                        alertMessage = "Missing nonce. Please try again."
-                                                        showAlert = true
-                                                        return
-                                                    }
-                                                    activeAuthAction = .apple
-                                                    authBusy = true
-                                                    hasCompletedOnboarding = false
-                                                    isLoggedIn = false
-                                                    shouldOnboardAfterSignIn = true
-
-                                                    handleAppleFromRegister(
-                                                        result: result,
-                                                        rawNonce: raw,
-                                                        onNewUserGoOnboarding: {
-                                                            DispatchQueue.main.async {
-                                                                authBusy = false
-                                                                activeAuthAction = nil
-                                                                if let user = Auth.auth().currentUser {
-                                                                    viewModel.userId = user.uid
-                                                                }
-                                                                shouldOnboardAfterSignIn = true
-                                                                navigateToOnboarding = true
+                                                handleAppleFromRegister(
+                                                    result: result,
+                                                    rawNonce: raw,
+                                                    onNewUserGoOnboarding: {
+                                                        DispatchQueue.main.async {
+                                                            authBusy = false
+                                                            activeAuthAction = nil
+                                                            UserDefaults.standard.set("apple.com", forKey: "lastAuthProvider")
+                                                            if let user = Auth.auth().currentUser {
+                                                                viewModel.userId = user.uid
                                                             }
-                                                        },
-                                                        onExistingUserGoLogin: { msg in
-                                                            DispatchQueue.main.async {
-                                                                authBusy = false
-                                                                activeAuthAction = nil
-                                                                shouldOnboardAfterSignIn = false
-                                                                infoMessage = msg
-                                                                navigateToLoginOnDismiss = true
-                                                                showInfoAlert = true
-                                                            }
-                                                        },
-                                                        onError: { message in
-                                                            DispatchQueue.main.async {
-                                                                authBusy = false
-                                                                activeAuthAction = nil
-                                                                shouldOnboardAfterSignIn = false
-                                                                alertMessage = message
-                                                                showAlert = true
-                                                            }
+                                                            shouldOnboardAfterSignIn = true
+                                                            navigateToOnboarding = true
                                                         }
-                                                    )
-                                                }
-                                            )
-                                            .signInWithAppleButtonStyle(.white)
-                                            .frame(height: 50)
-                                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                                            .opacity(0.02)
-                                        }
+                                                    },
+                                                    onExistingUserGoLogin: { msg in
+                                                        DispatchQueue.main.async {
+                                                            authBusy = false
+                                                            activeAuthAction = nil
+                                                            UserDefaults.standard.set("apple.com", forKey: "lastAuthProvider")
+                                                            shouldOnboardAfterSignIn = false
+                                                            infoMessage = msg
+                                                            navigateToLoginOnDismiss = true
+                                                            showInfoAlert = true
+                                                        }
+                                                    },
+                                                    onError: { message in
+                                                        DispatchQueue.main.async {
+                                                            authBusy = false
+                                                            activeAuthAction = nil
+                                                            shouldOnboardAfterSignIn = false
+                                                            alertMessage = message
+                                                            showAlert = true
+                                                        }
+                                                    }
+                                                )
+                                            }
+                                        )
+                                        .signInWithAppleButtonStyle(.white)
+                                        .frame(maxWidth: .infinity)
                                         .frame(height: 50)
+                                        .clipShape(RoundedRectangle(cornerRadius: 14))
                                         .disabled(authBusy)
                                         .staggered(3, show: $showIntro)
                                     }
@@ -282,80 +260,66 @@ struct SignUpView: View {
                                             .foregroundColor(themeManager.fixedNightTextSecondary)
                                         Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
                                     }
-                                    .padding(.vertical, minL * 0.02)
                                     .staggered(4, show: $showIntro)
 
-                                    VStack(spacing: inputGap) {
-                                        Group {
-                                            TextField("", text: $email)
-                                                .textContentType(.emailAddress)
-                                                .keyboardType(.emailAddress)
-                                                .textInputAutocapitalization(.never)
-                                                .autocorrectionDisabled(true)
-                                                .padding(.vertical, 14)
-                                                .padding(.leading, 16)
-                                                .background(Color.white.opacity(0.1))
-                                                .cornerRadius(14)
-                                                .foregroundColor(themeManager.fixedNightTextPrimary)
-                                                .placeholder(when: email.isEmpty) {
-                                                    Text("Enter your email")
-                                                        .foregroundColor(themeManager.fixedNightTextSecondary)
-                                                        .padding(.leading, 16)
-                                                }
-                                                .focused($registerFocus, equals: .email)
-                                                .focusGlow(
-                                                    active: registerFocus == .email,
-                                                    color: themeManager.fixedNightTextPrimary,
-                                                    lineWidth: 2.2,
-                                                    cornerRadius: 14
-                                                )
-                                                .submitLabel(.next)
-                                                .onSubmit { registerFocus = .password }
-                                                .onChange(of: email) { _, _ in inlineErrorMessage = nil }
-                                                .id(RegisterField.email)
-                                        }
-                                        .staggered(5, show: $showIntro)
-                                        .animation(nil, value: registerFocus)
-
-                                        Group {
-                                            SecureField("", text: $password)
-                                                .padding(.vertical, 14)
-                                                .padding(.leading, 16)
-                                                .background(Color.white.opacity(0.1))
-                                                .cornerRadius(14)
-                                                .foregroundColor(themeManager.fixedNightTextPrimary)
-                                                .placeholder(when: password.isEmpty) {
-                                                    Text("Enter your password")
-                                                        .foregroundColor(themeManager.fixedNightTextSecondary)
-                                                        .padding(.leading, 16)
-                                                }
-                                                .focused($registerFocus, equals: .password)
-                                                .focusGlow(
-                                                    active: registerFocus == .password,
-                                                    color: themeManager.fixedNightTextPrimary,
-                                                    lineWidth: 2.2,
-                                                    cornerRadius: 14
-                                                )
-                                                .submitLabel(.done)
-                                                .onSubmit { registerFocus = nil }
-                                                .onChange(of: password) { _, _ in inlineErrorMessage = nil }
-                                                .id(RegisterField.password)
-                                        }
-                                        .staggered(6, show: $showIntro)
-                                        .animation(nil, value: registerFocus)
-
-                                        if let inlineErrorMessage {
-                                            Text(inlineErrorMessage)
-                                                .font(AlynnaTypography.font(.footnote))
-                                                .foregroundColor(Color.red.opacity(0.85))
-                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                                .padding(.leading, 6)
-                                        }
+                                    Group {
+                                        TextField("", text: $email)
+                                            .textContentType(.emailAddress)
+                                            .keyboardType(.emailAddress)
+                                            .textInputAutocapitalization(.never)
+                                            .autocorrectionDisabled(true)
+                                            .padding(.vertical, 14)
+                                            .padding(.leading, 16)
+                                            .background(Color.white.opacity(0.1))
+                                            .cornerRadius(14)
+                                            .foregroundColor(themeManager.fixedNightTextPrimary)
+                                            .placeholder(when: email.isEmpty) {
+                                                Text("Enter your email")
+                                                    .foregroundColor(themeManager.fixedNightTextSecondary)
+                                                    .padding(.leading, 16)
+                                            }
+                                            .focused($registerFocus, equals: .email)
+                                            .focusGlow(
+                                                active: registerFocus == .email,
+                                                color: themeManager.fixedNightTextPrimary,
+                                                lineWidth: 2.2,
+                                                cornerRadius: 14
+                                            )
+                                            .submitLabel(.next)
+                                            .onSubmit { registerFocus = .password }
+                                            .id(RegisterField.email)
                                     }
+                                    .staggered(5, show: $showIntro)
+                                    .animation(nil, value: registerFocus)
+
+                                    Group {
+                                        SecureField("", text: $password)
+                                            .padding(.vertical, 14)
+                                            .padding(.leading, 16)
+                                            .background(Color.white.opacity(0.1))
+                                            .cornerRadius(14)
+                                            .foregroundColor(themeManager.fixedNightTextPrimary)
+                                            .placeholder(when: password.isEmpty) {
+                                                Text("Enter your password")
+                                                    .foregroundColor(themeManager.fixedNightTextSecondary)
+                                                    .padding(.leading, 16)
+                                            }
+                                            .focused($registerFocus, equals: .password)
+                                            .focusGlow(
+                                                active: registerFocus == .password,
+                                                color: themeManager.fixedNightTextPrimary,
+                                                lineWidth: 2.2,
+                                                cornerRadius: 14
+                                            )
+                                            .submitLabel(.done)
+                                            .onSubmit { registerFocus = nil }
+                                            .id(RegisterField.password)
+                                    }
+                                    .staggered(6, show: $showIntro)
+                                    .animation(nil, value: registerFocus)
 
                                     Button(action: {
                                         guard !authBusy else { return }
-                                        inlineErrorMessage = nil
                                         activeAuthAction = .emailSignUp
                                         registerWithEmailPassword()
                                     }) {
@@ -369,7 +333,6 @@ struct SignUpView: View {
                                             Text(isActive(.emailSignUp) ? "Creating..." : "Create Account")
                                         }
                                         .font(AlynnaTypography.font(.headline))
-                                        .fontWeight(.semibold)
                                         .padding()
                                         .frame(maxWidth: .infinity)
                                         .background(themeManager.fixedNightTextPrimary)
@@ -525,7 +488,8 @@ struct SignUpView: View {
 
     private func registerWithEmailPassword() {
         guard !email.isEmpty, !password.isEmpty else {
-            inlineErrorMessage = "Please fill in all fields."
+            alertMessage = "Please fill in all fields."
+            showAlert = true
             return
         }
 
@@ -546,14 +510,16 @@ struct SignUpView: View {
                             if let signInError = signInError {
                                 authBusy = false
                                 activeAuthAction = nil
-                                inlineErrorMessage = signInError.localizedDescription
+                                alertMessage = signInError.localizedDescription
+                                showAlert = true
                                 return
                             }
 
                             guard let user = result?.user else {
                                 authBusy = false
                                 activeAuthAction = nil
-                                inlineErrorMessage = "Sign in failed. Please try again."
+                                alertMessage = "Sign in failed. Please try again."
+                                showAlert = true
                                 return
                             }
                             viewModel.userId = user.uid
@@ -583,7 +549,8 @@ struct SignUpView: View {
                                 onError: { message in
                                     authBusy = false
                                     activeAuthAction = nil
-                                    inlineErrorMessage = message
+                                    alertMessage = message
+                                    showAlert = true
                                 }
                             )
                         }
@@ -591,7 +558,8 @@ struct SignUpView: View {
                     return
                 }
 
-                inlineErrorMessage = error.localizedDescription
+                alertMessage = error.localizedDescription
+                showAlert = true
                 return
             }
 
@@ -630,6 +598,7 @@ struct SignUpView: View {
                     if user.isEmailVerified {
                         showVerifyAlert = false
                         viewModel.userId = user.uid
+                        UserDefaults.standard.set("password", forKey: "lastAuthProvider")
                         routeAuthenticatedUser(
                             onSuccessToLogin: {
                                 isLoggedIn = true
