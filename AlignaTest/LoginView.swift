@@ -140,7 +140,7 @@ struct LoginView: View {
                                     }
                                 )
                             }) {
-                                HStack(spacing: 12) {
+                                HStack(spacing: 10) {
                                     if isActive(.google) {
                                         ProgressView()
                                             .progressViewStyle(.circular)
@@ -148,79 +148,96 @@ struct LoginView: View {
                                             .scaleEffect(0.75)
                                     }
                                     Image("googleIcon")
+                                        .renderingMode(.template)
                                         .resizable()
-                                        .frame(width: 20, height: 20)
+                                        .frame(width: 16, height: 16)
+                                        .foregroundColor(.black)
+                                        .frame(width: 24, height: 24)
                                     Text("Sign in with Google")
-                                        .font(.system(size: 14))
+                                        .font(AlynnaTypography.font(.headline))
                                 }
-                                .foregroundColor(themeManager.fixedNightTextPrimary)
+                                .foregroundColor(.black)
                                 .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(panelBG)
+                                .frame(height: 50)
+                                .background(themeManager.fixedNightTextPrimary)
                                 .cornerRadius(14)
                             }
                             .staggered(2, show: $showIntro)
 
-                            SignInWithAppleButton(
-                                .signIn,
-                                onRequest: { request in
-                                    let nonce = randomNonceString()
-                                    currentNonce = nonce
-                                    request.requestedScopes = [.fullName, .email]
-                                    request.nonce = sha256(nonce)
-                                },
-                                onCompletion: { result in
-                                    guard !authBusy else { return }
-                                    guard let raw = currentNonce, !raw.isEmpty else {
-                                        alertMessage = "Missing nonce. Please try again."
-                                        showAlert = true
-                                        return
+                            ZStack {
+                                HStack(spacing: 10) {
+                                    if isActive(.apple) {
+                                        ProgressView()
+                                            .progressViewStyle(.circular)
+                                            .tint(.black)
+                                            .scaleEffect(0.75)
                                     }
-                                    activeAuthAction = .apple
-                                    authBusy = true
-                                    handleAppleLogin(
-                                        result: result,
-                                        rawNonce: raw,
-                                        onSuccessToLogin: {
-                                            authBusy = false
-                                            activeAuthAction = nil
-                                            if let user = Auth.auth().currentUser {
-                                                viewModel.userId = user.uid
-                                            }
-                                            isLoggedIn = true
-                                            navigateToHome = true
-                                        },
-                                        onSuccessToOnboarding: {
-                                            authBusy = false
-                                            activeAuthAction = nil
-                                            if let user = Auth.auth().currentUser {
-                                                viewModel.userId = user.uid
-                                            }
-                                            infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
-                                            dismissAfterInfo = true
-                                            showInfoAlert = true
-                                        },
-                                        onError: { message in
-                                            authBusy = false
-                                            activeAuthAction = nil
-                                            alertMessage = message
+                                    Image(systemName: "applelogo")
+                                        .font(.system(size: 16, weight: .regular))
+                                        .frame(width: 24, height: 24)
+                                    Text("Sign in with Apple")
+                                        .font(AlynnaTypography.font(.headline))
+                                }
+                                .foregroundColor(.black)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                                .background(themeManager.fixedNightTextPrimary)
+                                .cornerRadius(14)
+
+                                SignInWithAppleButton(
+                                    .signIn,
+                                    onRequest: { request in
+                                        let nonce = randomNonceString()
+                                        currentNonce = nonce
+                                        request.requestedScopes = [.fullName, .email]
+                                        request.nonce = sha256(nonce)
+                                    },
+                                    onCompletion: { result in
+                                        guard !authBusy else { return }
+                                        guard let raw = currentNonce, !raw.isEmpty else {
+                                            alertMessage = "Missing nonce. Please try again."
                                             showAlert = true
+                                            return
                                         }
-                                    )
-                                }
-                            )
-                            .frame(height: 50)
-                            .signInWithAppleButtonStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .overlay(alignment: .leading) {
-                                if isActive(.apple) {
-                                    ProgressView()
-                                        .progressViewStyle(.circular)
-                                        .tint(.black)
-                                        .scaleEffect(0.75)
-                                        .padding(.leading, 16)
-                                }
+                                        activeAuthAction = .apple
+                                        authBusy = true
+                                        handleAppleLogin(
+                                            result: result,
+                                            rawNonce: raw,
+                                            onSuccessToLogin: {
+                                                authBusy = false
+                                                activeAuthAction = nil
+                                                if let user = Auth.auth().currentUser {
+                                                    viewModel.userId = user.uid
+                                                }
+                                                isLoggedIn = true
+                                                navigateToHome = true
+                                            },
+                                            onSuccessToOnboarding: {
+                                                authBusy = false
+                                                activeAuthAction = nil
+                                                if let user = Auth.auth().currentUser {
+                                                    viewModel.userId = user.uid
+                                                }
+                                                infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
+                                                dismissAfterInfo = true
+                                                showInfoAlert = true
+                                            },
+                                            onError: { message in
+                                                authBusy = false
+                                                activeAuthAction = nil
+                                                alertMessage = message
+                                                showAlert = true
+                                            }
+                                        )
+                                    }
+                                )
+                                .signInWithAppleButtonStyle(.white)
+                                .frame(height: 50)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .opacity(0.02)
                             }
+                            .frame(height: 50)
                             .staggered(3, show: $showIntro)
                         }
                         .padding(.top, 2)
@@ -463,6 +480,7 @@ struct LoginView: View {
             .onAppear {
                 starManager.animateStar = true
                 showIntro = false
+                loginFocus = nil
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { showIntro = true }
                 registerKeyboardNotifications()
             }
