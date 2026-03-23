@@ -20,6 +20,7 @@ struct LoginView: View {
     @State private var showInfoAlert = false
     @State private var infoMessage = ""
     @State private var dismissAfterInfo = false
+    @State private var inlineErrorMessage: String? = nil
     @State private var currentNonce: String? = nil
     @State private var navigateToHome = false
     @State private var authBusy = false
@@ -44,6 +45,8 @@ struct LoginView: View {
             let headerTopPadding = isKeyboardVisible ? geometry.size.height * 0.015 : geometry.size.height * 0.05
             let sectionGap = isKeyboardVisible ? geometry.size.height * 0.01 : geometry.size.height * 0.03
             let headerGap = isKeyboardVisible ? geometry.size.height * 0.01 : geometry.size.height * 0.02
+            let socialButtonGap = minLength * 0.030
+            let inputGap = minLength * 0.020
             let focusExtraSpace: CGFloat = isKeyboardVisible ? 32 : 0
 
             ZStack {
@@ -107,7 +110,7 @@ struct LoginView: View {
                     Spacer(minLength: headerGap)
 
                     // 表单
-                    VStack(spacing: minLength * 0.035) {
+                    VStack(spacing: socialButtonGap) {
                         // Google / Apple
                         VStack(spacing: minLength * 0.025) {
                             Button(action: {
@@ -155,6 +158,7 @@ struct LoginView: View {
                                         .frame(width: 24, height: 24)
                                     Text("Sign in with Google")
                                         .font(AlynnaTypography.font(.headline))
+                                        .fontWeight(.semibold)
                                 }
                                 .foregroundColor(.black)
                                 .frame(maxWidth: .infinity)
@@ -177,6 +181,7 @@ struct LoginView: View {
                                         .frame(width: 24, height: 24)
                                     Text("Sign in with Apple")
                                         .font(AlynnaTypography.font(.headline))
+                                        .fontWeight(.semibold)
                                 }
                                 .foregroundColor(.black)
                                 .frame(maxWidth: .infinity)
@@ -250,64 +255,76 @@ struct LoginView: View {
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
                         }
+                        .padding(.vertical, minLength * 0.02)
                         .staggered(4, show: $showIntro)
 
-                        // Email
-                        Group {
-                            TextField("", text: $email)
-                                .keyboardType(.emailAddress)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled(true)
-                                .padding(.vertical, 14)
-                                .padding(.leading, 16)
-                                .background(panelBG)
-                                .cornerRadius(14)
-                                .foregroundColor(themeManager.fixedNightTextPrimary)
-                                .placeholder(when: email.isEmpty) {
-                                    Text("Enter your email")
-                                        .foregroundColor(themeManager.fixedNightTextSecondary)
-                                        .padding(.leading, 16)
-                                }
-                                .focused($loginFocus, equals: .email)
-                                .focusGlow(
-                                    active: loginFocus == .email,
-                                    color: themeManager.fixedNightTextPrimary,
-                                    lineWidth: 2,
-                                    cornerRadius: 14
-                                )
-                                .submitLabel(.next)
-                                .onSubmit { loginFocus = .password }
-                                .id(LoginField.email)
-                        }
-                        .staggered(5, show: $showIntro)
-                        .animation(nil, value: loginFocus)
+                        // Email + Password
+                        VStack(spacing: inputGap) {
+                            Group {
+                                TextField("", text: $email)
+                                    .keyboardType(.emailAddress)
+                                    .textInputAutocapitalization(.never)
+                                    .autocorrectionDisabled(true)
+                                    .padding(.vertical, 14)
+                                    .padding(.leading, 16)
+                                    .background(panelBG)
+                                    .cornerRadius(14)
+                                    .foregroundColor(themeManager.fixedNightTextPrimary)
+                                    .placeholder(when: email.isEmpty) {
+                                        Text("Enter your email")
+                                            .foregroundColor(themeManager.fixedNightTextSecondary)
+                                            .padding(.leading, 16)
+                                    }
+                                    .focused($loginFocus, equals: .email)
+                                    .focusGlow(
+                                        active: loginFocus == .email,
+                                        color: themeManager.fixedNightTextPrimary,
+                                        lineWidth: 2,
+                                        cornerRadius: 14
+                                    )
+                                    .submitLabel(.next)
+                                    .onSubmit { loginFocus = .password }
+                                    .onChange(of: email) { _, _ in inlineErrorMessage = nil }
+                                    .id(LoginField.email)
+                            }
+                            .staggered(5, show: $showIntro)
+                            .animation(nil, value: loginFocus)
 
-                        // Password
-                        Group {
-                            SecureField("", text: $password)
-                                .padding(.vertical, 14)
-                                .padding(.leading, 16)
-                                .background(panelBG)
-                                .cornerRadius(14)
-                                .foregroundColor(themeManager.fixedNightTextPrimary)
-                                .placeholder(when: password.isEmpty) {
-                                    Text("Enter your password")
-                                        .foregroundColor(themeManager.fixedNightTextSecondary)
-                                        .padding(.leading, 16)
-                                }
-                                .focused($loginFocus, equals: .password)
-                                .focusGlow(
-                                    active: loginFocus == .password,
-                                    color: themeManager.fixedNightTextPrimary,
-                                    lineWidth: 2,
-                                    cornerRadius: 14
-                                )
-                                .submitLabel(.done)
-                                .onSubmit { loginFocus = nil }
-                                .id(LoginField.password)
+                            Group {
+                                SecureField("", text: $password)
+                                    .padding(.vertical, 14)
+                                    .padding(.leading, 16)
+                                    .background(panelBG)
+                                    .cornerRadius(14)
+                                    .foregroundColor(themeManager.fixedNightTextPrimary)
+                                    .placeholder(when: password.isEmpty) {
+                                        Text("Enter your password")
+                                            .foregroundColor(themeManager.fixedNightTextSecondary)
+                                            .padding(.leading, 16)
+                                    }
+                                    .focused($loginFocus, equals: .password)
+                                    .focusGlow(
+                                        active: loginFocus == .password,
+                                        color: themeManager.fixedNightTextPrimary,
+                                        lineWidth: 2,
+                                        cornerRadius: 14
+                                    )
+                                    .submitLabel(.done)
+                                    .onSubmit { loginFocus = nil }
+                                    .onChange(of: password) { _, _ in inlineErrorMessage = nil }
+                                    .id(LoginField.password)
+                            }
+                            .staggered(6, show: $showIntro)
+                            .animation(nil, value: loginFocus)
+
+                            if let inlineErrorMessage {
+                                Text(inlineErrorMessage)
+                                    .font(AlynnaTypography.font(.footnote))
+                                    .foregroundColor(Color.red.opacity(0.85))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.leading, 6)
+                            }
                         }
-                        .staggered(6, show: $showIntro)
-                        .animation(nil, value: loginFocus)
 
                         // Forgot Password
                         HStack {
@@ -341,9 +358,9 @@ struct LoginView: View {
                         // Log In
                         Button(action: {
                             guard !authBusy else { return }
+                            inlineErrorMessage = nil
                             if email.isEmpty || password.isEmpty {
-                                alertMessage = "Please enter both email and password."
-                                showAlert = true
+                                inlineErrorMessage = "Please enter both email and password."
                                 return
                             }
                             activeAuthAction = .emailLogin
@@ -357,24 +374,22 @@ struct LoginView: View {
                                 if let error = error {
                                     if let code = AuthErrorCode(rawValue: (error as NSError).code) {
                                         switch code {
-                                        case .wrongPassword: alertMessage = "Incorrect password. Please try again."
-                                        case .invalidEmail: alertMessage = "Invalid email address."
-                                        case .userDisabled: alertMessage = "This account has been disabled."
-                                        case .userNotFound: alertMessage = "No account found with this email."
-                                        default: alertMessage = error.localizedDescription
+                                        case .wrongPassword: inlineErrorMessage = "Incorrect password. Please try again."
+                                        case .invalidEmail: inlineErrorMessage = "Invalid email address."
+                                        case .userDisabled: inlineErrorMessage = "This account has been disabled."
+                                        case .userNotFound: inlineErrorMessage = "No account found with this email."
+                                        default: inlineErrorMessage = error.localizedDescription
                                         }
                                     } else {
-                                        alertMessage = error.localizedDescription
+                                        inlineErrorMessage = error.localizedDescription
                                     }
-                                    showAlert = true
                                     return
                                 }
 
                                 if let user = Auth.auth().currentUser, !user.isEmailVerified {
                                     user.sendEmailVerification(completion: nil)
                                     try? Auth.auth().signOut()
-                                    alertMessage = "Please verify your email before continuing. We just sent you a new verification email."
-                                    showAlert = true
+                                    inlineErrorMessage = "Please verify your email before continuing. We just sent you a new verification email."
                                     return
                                 }
 
@@ -397,8 +412,7 @@ struct LoginView: View {
                                     onError: { message in
                                         authBusy = false
                                         activeAuthAction = nil
-                                        alertMessage = message
-                                        showAlert = true
+                                        inlineErrorMessage = message
                                     }
                                 )
                             }
@@ -412,6 +426,7 @@ struct LoginView: View {
                                 }
                                 Text(isActive(.emailLogin) ? "Signing in..." : "Log In")
                             }
+                            .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(themeManager.fixedNightTextPrimary)

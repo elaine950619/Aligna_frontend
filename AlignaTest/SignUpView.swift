@@ -21,6 +21,7 @@ struct SignUpView: View {
     @State private var showVerifyAlert = false
     @State private var verifyMessage = "We sent a verification email. Please verify and then continue."
     @State private var isVerifyingEmail = false
+    @State private var inlineErrorMessage: String? = nil
     @State private var navigateToOnboarding = false
     @State private var navigateToLogin = false
     @State private var navigateToLoginOnDismiss = false
@@ -55,7 +56,8 @@ struct SignUpView: View {
                 let keyboardInset = max(0, keyboardHeight - geometry.safeAreaInsets.bottom)
                 let isKeyboardVisible = keyboardInset > 0
                 let sectionGap = isKeyboardVisible ? h * 0.02 : h * 0.075
-                let fieldGap = minL * 0.030
+                let socialButtonGap = minL * 0.030
+                let inputGap = minL * 0.020
                 let headerTopPadding = isKeyboardVisible ? h * 0.015 : h * 0.05
                 let focusExtraSpace: CGFloat = isKeyboardVisible ? 32 : 0
 
@@ -113,7 +115,7 @@ struct SignUpView: View {
 
                                 Spacer(minLength: sectionGap)
 
-                                VStack(spacing: fieldGap) {
+                                VStack(spacing: socialButtonGap) {
                                     VStack(spacing: minL * 0.025) {
                                         Button(action: {
                                             guard !authBusy else { return }
@@ -173,6 +175,7 @@ struct SignUpView: View {
                                                     .frame(width: 24, height: 24)
                                                 Text("Sign up with Google")
                                                     .font(AlynnaTypography.font(.headline))
+                                                    .fontWeight(.semibold)
                                             }
                                             .foregroundColor(.black)
                                             .frame(maxWidth: .infinity)
@@ -196,6 +199,7 @@ struct SignUpView: View {
                                                     .frame(width: 24, height: 24)
                                                 Text("Sign up with Apple")
                                                     .font(AlynnaTypography.font(.headline))
+                                                    .fontWeight(.semibold)
                                             }
                                             .foregroundColor(.black)
                                             .frame(maxWidth: .infinity)
@@ -278,66 +282,80 @@ struct SignUpView: View {
                                             .foregroundColor(themeManager.fixedNightTextSecondary)
                                         Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
                                     }
+                                    .padding(.vertical, minL * 0.02)
                                     .staggered(4, show: $showIntro)
 
-                                    Group {
-                                        TextField("", text: $email)
-                                            .textContentType(.emailAddress)
-                                            .keyboardType(.emailAddress)
-                                            .textInputAutocapitalization(.never)
-                                            .autocorrectionDisabled(true)
-                                            .padding(.vertical, 14)
-                                            .padding(.leading, 16)
-                                            .background(Color.white.opacity(0.1))
-                                            .cornerRadius(14)
-                                            .foregroundColor(themeManager.fixedNightTextPrimary)
-                                            .placeholder(when: email.isEmpty) {
-                                                Text("Enter your email")
-                                                    .foregroundColor(themeManager.fixedNightTextSecondary)
-                                                    .padding(.leading, 16)
-                                            }
-                                            .focused($registerFocus, equals: .email)
-                                            .focusGlow(
-                                                active: registerFocus == .email,
-                                                color: themeManager.fixedNightTextPrimary,
-                                                lineWidth: 2.2,
-                                                cornerRadius: 14
-                                            )
-                                            .submitLabel(.next)
-                                            .onSubmit { registerFocus = .password }
-                                            .id(RegisterField.email)
-                                    }
-                                    .staggered(5, show: $showIntro)
-                                    .animation(nil, value: registerFocus)
+                                    VStack(spacing: inputGap) {
+                                        Group {
+                                            TextField("", text: $email)
+                                                .textContentType(.emailAddress)
+                                                .keyboardType(.emailAddress)
+                                                .textInputAutocapitalization(.never)
+                                                .autocorrectionDisabled(true)
+                                                .padding(.vertical, 14)
+                                                .padding(.leading, 16)
+                                                .background(Color.white.opacity(0.1))
+                                                .cornerRadius(14)
+                                                .foregroundColor(themeManager.fixedNightTextPrimary)
+                                                .placeholder(when: email.isEmpty) {
+                                                    Text("Enter your email")
+                                                        .foregroundColor(themeManager.fixedNightTextSecondary)
+                                                        .padding(.leading, 16)
+                                                }
+                                                .focused($registerFocus, equals: .email)
+                                                .focusGlow(
+                                                    active: registerFocus == .email,
+                                                    color: themeManager.fixedNightTextPrimary,
+                                                    lineWidth: 2.2,
+                                                    cornerRadius: 14
+                                                )
+                                                .submitLabel(.next)
+                                                .onSubmit { registerFocus = .password }
+                                                .onChange(of: email) { _, _ in inlineErrorMessage = nil }
+                                                .id(RegisterField.email)
+                                        }
+                                        .staggered(5, show: $showIntro)
+                                        .animation(nil, value: registerFocus)
 
-                                    Group {
-                                        SecureField("", text: $password)
-                                            .padding(.vertical, 14)
-                                            .padding(.leading, 16)
-                                            .background(Color.white.opacity(0.1))
-                                            .cornerRadius(14)
-                                            .foregroundColor(themeManager.fixedNightTextPrimary)
-                                            .placeholder(when: password.isEmpty) {
-                                                Text("Enter your password")
-                                                    .foregroundColor(themeManager.fixedNightTextSecondary)
-                                                    .padding(.leading, 16)
-                                            }
-                                            .focused($registerFocus, equals: .password)
-                                            .focusGlow(
-                                                active: registerFocus == .password,
-                                                color: themeManager.fixedNightTextPrimary,
-                                                lineWidth: 2.2,
-                                                cornerRadius: 14
-                                            )
-                                            .submitLabel(.done)
-                                            .onSubmit { registerFocus = nil }
-                                            .id(RegisterField.password)
+                                        Group {
+                                            SecureField("", text: $password)
+                                                .padding(.vertical, 14)
+                                                .padding(.leading, 16)
+                                                .background(Color.white.opacity(0.1))
+                                                .cornerRadius(14)
+                                                .foregroundColor(themeManager.fixedNightTextPrimary)
+                                                .placeholder(when: password.isEmpty) {
+                                                    Text("Enter your password")
+                                                        .foregroundColor(themeManager.fixedNightTextSecondary)
+                                                        .padding(.leading, 16)
+                                                }
+                                                .focused($registerFocus, equals: .password)
+                                                .focusGlow(
+                                                    active: registerFocus == .password,
+                                                    color: themeManager.fixedNightTextPrimary,
+                                                    lineWidth: 2.2,
+                                                    cornerRadius: 14
+                                                )
+                                                .submitLabel(.done)
+                                                .onSubmit { registerFocus = nil }
+                                                .onChange(of: password) { _, _ in inlineErrorMessage = nil }
+                                                .id(RegisterField.password)
+                                        }
+                                        .staggered(6, show: $showIntro)
+                                        .animation(nil, value: registerFocus)
+
+                                        if let inlineErrorMessage {
+                                            Text(inlineErrorMessage)
+                                                .font(AlynnaTypography.font(.footnote))
+                                                .foregroundColor(Color.red.opacity(0.85))
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                .padding(.leading, 6)
+                                        }
                                     }
-                                    .staggered(6, show: $showIntro)
-                                    .animation(nil, value: registerFocus)
 
                                     Button(action: {
                                         guard !authBusy else { return }
+                                        inlineErrorMessage = nil
                                         activeAuthAction = .emailSignUp
                                         registerWithEmailPassword()
                                     }) {
@@ -351,6 +369,7 @@ struct SignUpView: View {
                                             Text(isActive(.emailSignUp) ? "Creating..." : "Create Account")
                                         }
                                         .font(AlynnaTypography.font(.headline))
+                                        .fontWeight(.semibold)
                                         .padding()
                                         .frame(maxWidth: .infinity)
                                         .background(themeManager.fixedNightTextPrimary)
@@ -506,8 +525,7 @@ struct SignUpView: View {
 
     private func registerWithEmailPassword() {
         guard !email.isEmpty, !password.isEmpty else {
-            alertMessage = "Please fill in all fields."
-            showAlert = true
+            inlineErrorMessage = "Please fill in all fields."
             return
         }
 
@@ -528,16 +546,14 @@ struct SignUpView: View {
                             if let signInError = signInError {
                                 authBusy = false
                                 activeAuthAction = nil
-                                alertMessage = signInError.localizedDescription
-                                showAlert = true
+                                inlineErrorMessage = signInError.localizedDescription
                                 return
                             }
 
                             guard let user = result?.user else {
                                 authBusy = false
                                 activeAuthAction = nil
-                                alertMessage = "Sign in failed. Please try again."
-                                showAlert = true
+                                inlineErrorMessage = "Sign in failed. Please try again."
                                 return
                             }
                             viewModel.userId = user.uid
@@ -567,8 +583,7 @@ struct SignUpView: View {
                                 onError: { message in
                                     authBusy = false
                                     activeAuthAction = nil
-                                    alertMessage = message
-                                    showAlert = true
+                                    inlineErrorMessage = message
                                 }
                             )
                         }
@@ -576,8 +591,7 @@ struct SignUpView: View {
                     return
                 }
 
-                alertMessage = error.localizedDescription
-                showAlert = true
+                inlineErrorMessage = error.localizedDescription
                 return
             }
 
