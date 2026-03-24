@@ -140,6 +140,7 @@ struct MainView: View {
     @State private var showMantraSaveAlert: Bool = false
     @State private var showTodaySoundPlayer: Bool = false
     @State private var showNoSoundToast: Bool = false
+    @State private var journalSpinAngle: Double = 0
     @State private var lastPrefetchedSoundKey: String = ""
     @State private var mantraSaveMessage: String = ""
 
@@ -158,6 +159,8 @@ struct MainView: View {
     @State private var didResolveBootPath = false
     @State private var isBootDataReady = false
     @State private var didCompletePersonalCheckIn = false
+    @State private var pendingMantraExpansion = false
+    @State private var isMantraReady = false
 
     @AppStorage("watchdogDay") private var watchdogDay: String = ""
     @AppStorage("todayAutoRefetchAttempts") private var todayAutoRefetchAttempts: Int = 0
@@ -200,6 +203,9 @@ struct MainView: View {
         if viewModel.recommendations.isEmpty {
             viewModel.recommendations = DesignRecs.docs
             viewModel.dailyMantra = viewModel.dailyMantra.isEmpty ? DesignRecs.mantra : viewModel.dailyMantra
+        }
+        if viewModel.dailyMantra.isEmpty, !cachedDailyMantra.isEmpty {
+            viewModel.dailyMantra = cachedDailyMantra
         }
         // If we don’t have human-facing titles yet, use local titles
         if recommendationTitles.isEmpty {
@@ -290,14 +296,19 @@ struct MainView: View {
                             
                             HStack(spacing: geometry.size.width * 0.035) {
                                 Button {
+                                    withAnimation(.easeInOut(duration: 0.5)) {
+                                        journalSpinAngle += 360
+                                    }
                                     handleManualRefreshTap()
                                 } label: {
-                                    Image(systemName: isFetchingToday || isManualRefreshFlow ? "arrow.triangle.2.circlepath" : "arrow.clockwise")
+                                    Image(systemName: "arrow.triangle.2.circlepath")
                                         .font(.system(size: 20))
                                         .foregroundColor(themeManager.primaryText)
                                         .frame(width: 28, height: 28)
+                                        .rotationEffect(.degrees(journalSpinAngle))
                                 }
                                 .disabled(isFetchingToday || isManualRefreshFlow)
+                                .accessibilityLabel("Refresh")
                             }
                             .padding(.leading, geometry.size.width * 0.05)
 
@@ -350,6 +361,7 @@ struct MainView: View {
 
 
                         Button {
+                            guard isMantraReady else { return }
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 isMantraExpanded.toggle()
                             }
@@ -374,9 +386,11 @@ struct MainView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 .frame(maxWidth: .infinity)
                                 .frame(maxHeight: isMantraExpanded ? .infinity : nil, alignment: isMantraExpanded ? .top : .center)
+                                .opacity(isMantraReady ? 1 : 0)
                         }
                         .buttonStyle(.plain)
                         .contentShape(Rectangle())
+                        .allowsHitTesting(isMantraReady)
                         
                         if isMantraExpanded {
                             HStack(spacing: 12) {
@@ -512,8 +526,10 @@ struct MainView: View {
                             lastPrefetchedSoundKey = todaySoundKey
                             soundPlayer.prefetch(named: todaySoundKey)
                         }
+                    }
+                    .onChange(of: viewModel.dailyMantra) { _ in
                         if bootPhase == .main {
-                            isMantraExpanded = true
+                            markMantraReadyIfPossible()
                         }
                     }
                     .coordinateSpace(name: "HomeSpace")
@@ -580,6 +596,18 @@ struct MainView: View {
         }
         lastRecommendationTimestamp = Date().timeIntervalSince1970
         lastRecommendationHasFullSet = true
+    }
+
+    private func makeReasoningSummary(from reasoning: [String: String]) -> String {
+        let order = ["Color", "Place", "Gemstone", "Scent", "Activity", "Sound", "Career", "Relationship"]
+        let parts = order.compactMap { key -> String? in
+            guard let value = reasoning[key]?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
+                return nil
+            }
+            return "\(key): \(value)"
+        }
+        let limited = Array(parts.prefix(2))
+        return limited.joined(separator: " | ")
     }
 
     private func presentMantraShareSheet() {
@@ -792,8 +820,8 @@ struct MainView: View {
     // 冷启动只看“是否已登录 + 本地标记”来分流；不再在这里查 Firestore 决定是否强拉 Onboarding。
     // === 替换你原来的 startInitialLoad()（整段替换） ===
     private func startInitialLoad() {
-        
-        
+        isMantraReady = false
+
         #if DEBUG
         if _isPreview { bootPhase = .main; return }
         #endif
@@ -1146,6 +1174,8 @@ struct MainView: View {
     private func attemptBootAdvance() {
         guard isBootDataReady, didCompletePersonalCheckIn else { return }
         withAnimation(.easeInOut) { bootPhase = .main }
+        pendingMantraExpansion = true
+        markMantraReadyIfPossible()
         if shouldShowBootLoading {
             shouldShowBootLoading = false
         }
@@ -1159,6 +1189,7 @@ struct MainView: View {
         }
         isManualRefreshFlow = true
         didCompletePersonalCheckIn = false
+        isMantraReady = false
         bootPhase = .loading
     }
 
@@ -1180,6 +1211,25 @@ struct MainView: View {
         let lastText = formatter.string(from: last)
         let nextText = formatter.string(from: next)
         return "Updated at \(lastText). You can refresh again after \(nextText)."
+    }
+
+    private func expandMantraIfNeeded() {
+        guard pendingMantraExpansion else { return }
+        pendingMantraExpansion = false
+        withAnimation(.easeInOut(duration: 0.2)) {
+            isMantraExpanded = true
+        }
+    }
+
+    private func markMantraReadyIfPossible() {
+        let trimmed = viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard bootPhase == .main, !trimmed.isEmpty else { return }
+        if !isMantraReady {
+            isMantraReady = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            expandMantraIfNeeded()
+        }
     }
 
     var body: some View {
@@ -1994,9 +2044,24 @@ struct MainView: View {
             var recs: [String: String] = [:]
             var fetchedMantra = ""
             var fetchedReasoning = ""
+            var reasoningMap: [String: String] = [:]
 
             let fetchedPlace = (data["generatedPlace"] as? String ?? "")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if let rawReasoning = data["reasoning"] as? [String: Any] {
+                for (key, value) in rawReasoning {
+                    if let s = value as? String {
+                        reasoningMap[key] = s
+                    }
+                }
+            } else if let rawReasoning = data["mapping"] as? [String: Any] {
+                for (key, value) in rawReasoning {
+                    if let s = value as? String {
+                        reasoningMap[key] = s
+                    }
+                }
+            }
 
             for (key, value) in data {
 
@@ -2057,12 +2122,19 @@ struct MainView: View {
                 if !reasoningTrim.isEmpty {
                     self.viewModel.reasoningSummary = fetchedReasoning
                 } else {
-                    print("⚠️ Firestore 今日文档没有 reasoning_summary 或为空（docId=\(userId)_\(today)）")
+                    let fallback = makeReasoningSummary(from: reasoningMap)
+                    if !fallback.isEmpty {
+                        self.viewModel.reasoningSummary = fallback
+                        print("⚠️ Firestore 今日文档没有 reasoning_summary 或为空（docId=\(userId)_\(today)），已从 reasoning 生成")
+                    } else {
+                        print("⚠️ Firestore 今日文档没有 reasoning_summary 或为空（docId=\(userId)_\(today)）")
+                    }
                 }
 
                 self.ensureDefaultsIfMissing()
                 self.fetchAllRecommendationTitles()
                 self.persistWidgetSnapshotFromViewModel()
+                self.markMantraReadyIfPossible()
 
                 print("✅ 成功加载今日推荐（固定 docId 优先）：\(recs), mantra=\(!mantraTrim.isEmpty), reasoning=\(!reasoningTrim.isEmpty), place=\(fetchedPlace)")
             }

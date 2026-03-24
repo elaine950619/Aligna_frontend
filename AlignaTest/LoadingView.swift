@@ -368,7 +368,7 @@ struct LoadingView: View {
 
     private var initialHeader: some View {
         VStack(spacing: 20) {
-            Text("Initializing")
+            Text("Loading")
                 .font(.custom("Merriweather-Bold", size: 20))
                 .foregroundColor(themeManager.primaryText)
             logoView(size: 56)

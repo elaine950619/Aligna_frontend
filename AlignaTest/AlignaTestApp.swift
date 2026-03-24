@@ -97,14 +97,16 @@ struct RootRouter: View {
     var body: some View {
         Group {
             if !isReady {
-                ZStack {
-                    AppBackgroundView()
-                        .environmentObject(starManager)
-                        .environmentObject(themeManager)
-                        .ignoresSafeArea()
-                    ProgressView("Loading…")
-                }
+                LoadingView(
+                    onStartLoading: nil,
+                    onPersonalComplete: nil,
+                    fixedMessageIndex: 0,
+                    forceFullLoading: false
+                )
+                .environmentObject(starManager)
+                .environmentObject(themeManager)
                 .environmentObject(soundPlayer) // ✅ 注入，保证任意子层都能拿到
+                .ignoresSafeArea()
             } else if !isAuthenticated {
                 // 未登录 → 开场页
                 NavigationStack {
