@@ -204,6 +204,7 @@ struct LoadingView: View {
     @State private var stress: String? = nil
     @State private var sleep: String? = nil
     @State private var source: String? = nil
+    @State private var personalNotes: String = ""
 
     @State private var sunText: String = "—"
     @State private var moonText: String = "—"
@@ -424,7 +425,7 @@ struct LoadingView: View {
     }
 
     private var personalCheckIn: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 4) {
             compactRow(
                 title: "Mood",
                 options: [("sun.max.fill", "Joy"), ("flame.fill", "Anger"), ("cloud.rain.fill", "Grief"), ("leaf.fill", "Calm")],
@@ -445,6 +446,40 @@ struct LoadingView: View {
                 options: [("briefcase.fill", "Work"), ("person.2.fill", "People"), ("heart.fill", "Health"), ("dollarsign.circle.fill", "Money")],
                 selection: $source
             )
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Notes")
+                    .font(.custom("Merriweather-Bold", size: 13))
+                    .foregroundColor(themeManager.primaryText.opacity(0.9))
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                ZStack(alignment: .topLeading) {
+                    if personalNotes.isEmpty {
+                        Text("Tap to write…")
+                            .font(.custom("Merriweather-Regular", size: 11))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.85))
+                            .padding(.top, 5)
+                            .padding(.leading, 6)
+                            .allowsHitTesting(false)
+                    }
+
+                    TextEditor(text: $personalNotes)
+                        .font(.custom("Merriweather-Regular", size: 11))
+                        .foregroundColor(themeManager.primaryText)
+                        .scrollContentBackground(.hidden)
+                        .frame(maxWidth: .infinity, minHeight: 54, maxHeight: 66, alignment: .topLeading)
+                }
+                .padding(6)
+                .background(Color.white.opacity(0.02))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(themeManager.primaryText.opacity(0.22), lineWidth: 1)
+                )
+                .cornerRadius(8)
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+
             Button {
                 didInteractPersonal = true
                 isProcessingPersonal = true
@@ -461,10 +496,10 @@ struct LoadingView: View {
                 }
                 .font(.custom("Merriweather-Bold", size: 13))
                 .foregroundColor(themeManager.isNight ? Color.black : Color.white)
-                .padding(.vertical, 10)
-                .padding(.horizontal, 24)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 22)
                 .background(themeManager.primaryText)
-                .cornerRadius(13)
+                .cornerRadius(12)
             }
             .disabled(isProcessingPersonal)
             .padding(.top, 2)
@@ -479,11 +514,11 @@ struct LoadingView: View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 4)
         return VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(.custom("Merriweather-Bold", size: 15))
+                .font(.custom("Merriweather-Bold", size: 14))
                 .foregroundColor(themeManager.primaryText.opacity(0.9))
                 .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.bottom, 3)
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 4) {
+                .padding(.bottom, 2)
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 3) {
                 ForEach(options, id: \.1) { option in
                     Button {
                         didInteractPersonal = true
@@ -492,17 +527,17 @@ struct LoadingView: View {
                         }
                         selection.wrappedValue = option.1
                     } label: {
-                        VStack(spacing: 6) {
-                            iconView(option.0, size: 14)
+                        VStack(spacing: 4) {
+                            iconView(option.0, size: 13)
                                 .foregroundColor(themeManager.primaryText)
                             Text(option.1)
-                                .font(.custom("Merriweather-Bold", size: 10))
+                                .font(.custom("Merriweather-Bold", size: 9))
                                 .foregroundColor(themeManager.primaryText)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.7)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 7)
+                        .padding(.vertical, 6)
                         .background(selection.wrappedValue == option.1 ? themeManager.primaryText.opacity(0.14) : Color.white.opacity(0.02))
                         .overlay(
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -513,8 +548,8 @@ struct LoadingView: View {
                 }
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
     }
 
     private var cosmicIcons: [String] { ["sun.max.fill", "moon.stars.fill", "sparkles", "sparkle"] }

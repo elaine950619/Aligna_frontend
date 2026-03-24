@@ -366,27 +366,32 @@ struct MainView: View {
                                 isMantraExpanded.toggle()
                             }
                         } label: {
-                            Text(viewModel.dailyMantra)
-                                .font(
-                                    isMantraExpanded
-                                    ? AlignaType.expandedMantraBoldItalic()
-                                    : AlignaType.homeSubtitle()
-                                )
-                                .lineSpacing(isMantraExpanded ? 12 : AlignaType.descLineSpacing)
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(
-                                    isMantraExpanded
-                                    ? themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
-                                    : themeManager.descriptionText
-                                )
-                                .padding(.horizontal, isMantraExpanded ? geometry.size.width * 0.14 : geometry.size.width * 0.1)
-                                .padding(.top, isMantraExpanded ? geometry.size.height * 0.16 : 0)
-                                .lineLimit(isMantraExpanded ? nil : 2)     // ✅ 折叠：最多 1 行
-                                .truncationMode(.tail)                    // ✅ 超出：显示 "..."
-                                .fixedSize(horizontal: false, vertical: true)
-                                .frame(maxWidth: .infinity)
-                                .frame(maxHeight: isMantraExpanded ? .infinity : nil, alignment: isMantraExpanded ? .top : .center)
-                                .opacity(isMantraReady ? 1 : 0)
+                            Group {
+                                if isMantraExpanded {
+                                    Text(viewModel.dailyMantra)
+                                        .font(AlignaType.expandedMantraBoldItalic())
+                                        .lineSpacing(12)
+                                        .multilineTextAlignment(.center)
+                                        .foregroundColor(
+                                            themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
+                                        )
+                                        .padding(.horizontal, geometry.size.width * 0.14)
+                                        .padding(.top, geometry.size.height * 0.16)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                } else {
+                                    Text(viewModel.dailyMantra)
+                                        .font(AlignaType.homeSubtitle())
+                                        .lineSpacing(AlignaType.descLineSpacing)
+                                        .multilineTextAlignment(.center)
+                                        .foregroundColor(themeManager.descriptionText)
+                                        .padding(.horizontal, geometry.size.width * 0.1)
+                                        .lineLimit(2)
+                                        .truncationMode(.tail)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(maxHeight: isMantraExpanded ? .infinity : nil, alignment: isMantraExpanded ? .top : .center)
+                            .opacity(isMantraReady ? 1 : 0)
                         }
                         .buttonStyle(.plain)
                         .contentShape(Rectangle())
