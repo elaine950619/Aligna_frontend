@@ -1750,6 +1750,7 @@ struct ScentLinkSheet: View {
     let reasoningText: String
     let linkURLString: String?
     let candleURLString: String?
+    let noticeText: String?
     let themeManager: ThemeManager
 
     @Environment(\.openURL) private var openURL
@@ -1817,6 +1818,20 @@ struct ScentLinkSheet: View {
                             )
                         }
                         .foregroundColor(themeManager.primaryText)
+                    }
+
+                    if let notice = noticeText, !notice.isEmpty {
+                        (Text("Usage Note: ")
+                            .font(.custom("Merriweather-Bold", size: 12))
+                            .foregroundColor(Color(hex: "#B85A1B"))
+                        + Text(notice)
+                            .font(.custom("Merriweather-Regular", size: 12))
+                            .foregroundColor(themeManager.primaryText.opacity(0.85))
+                        )
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 8)
                     }
             }
         } footer: {
@@ -1892,6 +1907,7 @@ private struct ScentExtraContent: View {
                     reasoningText: reasoningStore.text(for: "Scent"),
                     linkURLString: item.link,
                     candleURLString: item.candle,
+                    noticeText: item.notice,
                     themeManager: themeManager
                 )
                 .presentationBackground(.clear)
@@ -1916,29 +1932,6 @@ private struct ScentExtraContent: View {
 //                .padding(16)
 //            }
 
-            if let notice = item.notice, !notice.isEmpty {
-                VStack(spacing: 8) {
-                    Text("Usage Note")
-                        .font(.custom("Merriweather-Regular", size: 15))
-                        .foregroundColor(themeManager.accent)
-                        .bold()
-
-                    Text(notice)
-                        .font(.custom("Merriweather-Light", size: 12))
-                        .foregroundColor(themeManager.foregroundColor)
-                        .lineSpacing(2)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(14)
-                .background(Color.black.opacity(0.20))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(themeManager.accent.opacity(0.22), lineWidth: 1)
-                )
-                .padding(.horizontal, 12)
-                .padding(.top, 8)
-            }
         }
     }
 }
