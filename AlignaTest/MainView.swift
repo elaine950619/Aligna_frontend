@@ -1013,9 +1013,15 @@ struct MainView: View {
         group.enter()
         ensureDailyCurrentPlaceSaved { group.leave() }
 
-        group.enter()
-        fetchAndSaveRecommendationIfNeeded()
-        waitUntilRecommendationsReady(timeout: 12) { group.leave() }
+        let today = todayString()
+        if hasRecentRecommendation {
+            group.enter()
+            loadTodayRecommendation(day: today, source: .cache, allowRemoteFallback: true) { group.leave() }
+        } else {
+            group.enter()
+            fetchAndSaveRecommendationIfNeeded()
+            waitUntilRecommendationsReady(timeout: 12) { group.leave() }
+        }
 
         group.notify(queue: .main) {
             // (If the doc doesn't exist yet, it'll become available after fetch/save.)
@@ -2030,15 +2036,27 @@ struct MainView: View {
     }
     
     
-    private func loadTodayRecommendation(day: String? = nil) {
+    private func loadTodayRecommendation(
+        day: String? = nil,
+        source: FirestoreSource = .default,
+        allowRemoteFallback: Bool = true,
+        completion: (() -> Void)? = nil
+    ) {
         guard let userId = Auth.auth().currentUser?.uid else {
             print("❌ 未登录，无法获取推荐")
+            completion?()
             return
         }
 
         let today = day ?? todayString()
         let db = Firestore.firestore()
         let fixedDocRef = todayDocRef(uid: userId, day: today)
+
+        func finish() {
+            DispatchQueue.main.async {
+                completion?()
+            }
+        }
 
         func applyDailyData(_ data: [String: Any]) {
             var recs: [String: String] = [:]
@@ -2137,21 +2155,40 @@ struct MainView: View {
                 self.markMantraReadyIfPossible()
 
                 print("✅ 成功加载今日推荐（固定 docId 优先）：\(recs), mantra=\(!mantraTrim.isEmpty), reasoning=\(!reasoningTrim.isEmpty), place=\(fetchedPlace)")
+                finish()
             }
         }
 
         // 1) ✅ 优先读取固定 docId：uid_yyyy-MM-dd
-        fixedDocRef.getDocument { snap, err in
+        fixedDocRef.getDocument(source: source) { snap, err in
             if let err = err {
+                if source == .cache && allowRemoteFallback {
+                    loadTodayRecommendation(day: today, source: .default, allowRemoteFallback: true, completion: completion)
+                    return
+                }
                 print("❌ 读取今日固定 docId 失败：\(err.localizedDescription)；使用本地默认内容")
                 DispatchQueue.main.async {
                     self.ensureDefaultsIfMissing()
+                    finish()
                 }
                 return
             }
 
             if let snap = snap, snap.exists, let data = snap.data() {
                 applyDailyData(data)
+                return
+            }
+
+            if source == .cache && allowRemoteFallback {
+                loadTodayRecommendation(day: today, source: .default, allowRemoteFallback: true, completion: completion)
+                return
+            }
+
+            guard allowRemoteFallback else {
+                DispatchQueue.main.async {
+                    self.ensureDefaultsIfMissing()
+                    finish()
+                }
                 return
             }
 
@@ -2164,6 +2201,7 @@ struct MainView: View {
                         print("❌ 回退查询今日推荐失败：\(error). 使用本地默认内容")
                         DispatchQueue.main.async {
                             self.ensureDefaultsIfMissing()
+                            finish()
                         }
                         return
                     }
@@ -2172,6 +2210,7 @@ struct MainView: View {
                         print("⚠️ 今日暂无推荐数据。使用本地默认内容")
                         DispatchQueue.main.async {
                             self.ensureDefaultsIfMissing()
+                            finish()
                         }
                         return
                     }
