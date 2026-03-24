@@ -94,6 +94,20 @@ struct RootRouter: View {
     }
 #endif
 
+    private func setRouteState(isAuthenticated: Bool? = nil, needsOnboarding: Bool? = nil, isReady: Bool? = nil) {
+        DispatchQueue.main.async {
+            if let value = isAuthenticated, self.isAuthenticated != value {
+                self.isAuthenticated = value
+            }
+            if let value = needsOnboarding, self.needsOnboarding != value {
+                self.needsOnboarding = value
+            }
+            if let value = isReady, self.isReady != value {
+                self.isReady = value
+            }
+        }
+    }
+
     var body: some View {
         Group {
             if !isReady {
@@ -147,8 +161,7 @@ struct RootRouter: View {
                 if UserDefaults.standard.bool(forKey: "didDeleteAccount") {
                     try? Auth.auth().signOut()
                     GIDSignIn.sharedInstance.signOut()
-                    self.isAuthenticated = false
-                    self.isReady = true
+                    setRouteState(isAuthenticated: false, isReady: true)
                     UserDefaults.standard.set(false, forKey: "didDeleteAccount")
                     UserDefaults.standard.set(false, forKey: "shouldOnboardAfterSignIn")
                     UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
@@ -163,18 +176,17 @@ struct RootRouter: View {
                 if let user, user.isEmailVerified == false {
                     try? Auth.auth().signOut()
                     GIDSignIn.sharedInstance.signOut()
-                    self.isAuthenticated = false
-                    self.isReady = true
+                    setRouteState(isAuthenticated: false, isReady: true)
                     print("Auth state -> unverified email, signed out")
                     return
                 }
 
-                self.isAuthenticated = (user != nil)
-                print("Auth state -> isAuthenticated=\(self.isAuthenticated)")
+                let nextIsAuthenticated = (user != nil)
+                setRouteState(isAuthenticated: nextIsAuthenticated)
+                print("Auth state -> isAuthenticated=\(nextIsAuthenticated)")
 
                 if user == nil {
-                    self.needsOnboarding = nil
-                    self.isReady = true
+                    setRouteState(needsOnboarding: nil, isReady: true)
                     // 🧹 关键：一旦变为“未登录”，清掉所有可能误触发 Onboarding 的本地标记
                     UserDefaults.standard.set(false, forKey: "shouldOnboardAfterSignIn")
                     UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
@@ -183,12 +195,9 @@ struct RootRouter: View {
                     UserDefaults.standard.set("",    forKey: "lastCurrentPlaceUpdate")
                     UserDefaults.standard.set("",    forKey: "todayFetchLock")
                 } else {
-                    self.isReady = false
+                    setRouteState(isReady: false)
                     determineRegistrationPathForCurrentUser { path in
-                        DispatchQueue.main.async {
-                            self.needsOnboarding = (path == .needsOnboarding)
-                            self.isReady = true
-                        }
+                        setRouteState(needsOnboarding: (path == .needsOnboarding), isReady: true)
                     }
                 }
             }
