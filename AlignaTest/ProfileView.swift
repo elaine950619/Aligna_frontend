@@ -1087,6 +1087,12 @@ private enum FSKeys {
     static let birthTime     = "birthTime"  // "h:mm a" 字符串
     static let birthPlace    = "birthPlace"
     static let currentPlace  = "currentPlace"
+
+    static let scentDislike  = "scent_dislike"
+    static let actPrefer     = "act_prefer"
+    static let colorDislike  = "color_dislike"
+    static let allergies     = "allergies"
+    static let musicDislike  = "music_dislike"
 }
 
 import SwiftUI
@@ -1337,6 +1343,7 @@ struct ProfileView: View {
                         VStack(alignment: .leading, spacing: 18) {
                             headerCard
                             personalInfoCard
+                            preferencesCard
                             timelineCard
                             notificationCard
                             themeCard
@@ -1715,6 +1722,24 @@ private extension ProfileView {
         .alignaCard()
     }
 
+    var preferencesCard: some View {
+        NavigationLink {
+            PreferencesView(
+                viewModel: viewModel,
+                userDocID: userDocID,
+                userCollection: userCollectionUsed
+            )
+            .environmentObject(starManager)
+            .environmentObject(themeManager)
+        } label: {
+            rowCard(
+                icon: "slider.horizontal.3",
+                title: "Preferences",
+                subtitle: "Update your scent, color, & more"
+            )
+        }
+    }
+
     var timelineCard: some View {
         NavigationLink {
             TimelineView()
@@ -1956,7 +1981,7 @@ private extension ProfileView {
         }
     }
 
-    func rowCard(icon: String, title: String, subtitle: String) -> some View {
+    func rowCard(icon: String, title: String, subtitle: String? = nil) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .foregroundColor(themeManager.accent)
@@ -1966,11 +1991,13 @@ private extension ProfileView {
                     .font(AlynnaTypography.font(.headline))
                     .foregroundColor(themeManager.primaryText)
 
-                Text(subtitle)
-                    .font(AlynnaTypography.font(.subheadline))
-                    .foregroundColor(themeManager.descriptionText)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                if let subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(AlynnaTypography.font(.subheadline))
+                        .foregroundColor(themeManager.descriptionText)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
 
             Spacer()
@@ -2716,6 +2743,24 @@ private extension ProfileView {
 
         self.birthPlace   = data[FSKeys.birthPlace] as? String ?? ""
         self.currentPlace = (data[FSKeys.currentPlace] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let raw = data[FSKeys.scentDislike] as? [String] {
+            viewModel.scent_dislike = Set(raw)
+        }
+        if let raw = data[FSKeys.colorDislike] as? [String] {
+            viewModel.color_dislike = Set(raw)
+        }
+        if let raw = data[FSKeys.allergies] as? [String] {
+            viewModel.allergies = Set(raw)
+        }
+        if let raw = data[FSKeys.musicDislike] as? [String] {
+            viewModel.music_dislike = Set(raw)
+        }
+        if let raw = data[FSKeys.actPrefer] as? [String] {
+            viewModel.act_prefer = Set(raw)
+        } else if let raw = data[FSKeys.actPrefer] as? String {
+            viewModel.act_prefer = raw.isEmpty ? [] : [raw]
+        }
 
         // --- 修正 currentPlace（保持你原逻辑） ---
         let needsFix: Bool = {
@@ -3604,7 +3649,7 @@ private extension ProfileView {
             viewModel.dailyMantra = ""
             viewModel.reasoningSummary = ""
             viewModel.scent_dislike = []
-            viewModel.act_prefer = ""
+            viewModel.act_prefer = []
             viewModel.color_dislike = []
             viewModel.allergies = []
             viewModel.music_dislike = []

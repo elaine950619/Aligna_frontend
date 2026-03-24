@@ -24,7 +24,7 @@ class OnboardingViewModel: ObservableObject {
     
     // ✅ 新增：Step3 的五个答案
     @Published var scent_dislike: Set<String> = []     // 多选
-    @Published var act_prefer: String = ""             // 单选，可清空
+    @Published var act_prefer: Set<String> = []        // 多选
     @Published var color_dislike: Set<String> = []     // 多选
     @Published var allergies: Set<String> = []         // 多选
     @Published var music_dislike: Set<String> = []     // 多选
@@ -846,8 +846,8 @@ struct OnboardingStep3: View {
                         preferenceSection(
                             "Activity preference?",
                             content: chips(options: actOptions,
-                                           isSelected: { viewModel.act_prefer == $0 },
-                                           toggle: { toggleSingle(&viewModel.act_prefer, $0) })
+                                           isSelected: { viewModel.act_prefer.contains($0) },
+                                           toggle: { toggleSet(&viewModel.act_prefer, $0) })
                         )
 
                         preferenceSection(
@@ -1320,7 +1320,12 @@ struct OnboardingStep3: View {
             "birthLng": viewModel.birthCoordinate?.longitude ?? 0,
             "currentLat": lat,
             "currentLng": lng,
-            "createdAt": Timestamp()
+            "createdAt": Timestamp(),
+            "scent_dislike": Array(viewModel.scent_dislike),
+            "act_prefer": Array(viewModel.act_prefer),
+            "color_dislike": Array(viewModel.color_dislike),
+            "allergies": Array(viewModel.allergies),
+            "music_dislike": Array(viewModel.music_dislike)
         ]
 
         data["birthday"] = Timestamp(date: viewModel.birth_date)
@@ -2408,7 +2413,7 @@ private struct OnboardingPreviewContainer<Content: View>: View {
 #Preview("Onboarding Step 3") {
     OnboardingPreviewContainer(configure: { viewModel in
         viewModel.scent_dislike = ["Floral", "Strong"]
-        viewModel.act_prefer = "Dynamic"
+        viewModel.act_prefer = ["Dynamic"]
         viewModel.color_dislike = ["Yellow"]
         viewModel.allergies = ["Seasonal"]
         viewModel.music_dislike = ["Heavy metal"]

@@ -14,8 +14,6 @@ struct PreferencesView: View {
     @State private var isSaving = false
     @State private var errorMessage: String?
 
-    private let panelBG = Color.white.opacity(0.08)
-    private let stroke  = Color.white.opacity(0.25)
 
     private let scentOptions  = ["Floral", "Strong", "Woody", "Citrus", "Spicy", "Other"]
     private let actOptions    = ["Static", "Dynamic", "No preference"]
@@ -32,7 +30,7 @@ struct PreferencesView: View {
                     .ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 12) {
                         headerCard
 
                         preferenceSection(
@@ -41,6 +39,8 @@ struct PreferencesView: View {
                                 options: scentOptions,
                                 isSelected: { viewModel.scent_dislike.contains($0) },
                                 toggle: { toggleSet(&viewModel.scent_dislike, $0) }
+
+
                             )
                         )
 
@@ -48,8 +48,8 @@ struct PreferencesView: View {
                             "Activity preference?",
                             content: chips(
                                 options: actOptions,
-                                isSelected: { viewModel.act_prefer == $0 },
-                                toggle: { toggleSingle(&viewModel.act_prefer, $0) }
+                                isSelected: { viewModel.act_prefer.contains($0) },
+                                toggle: { toggleSet(&viewModel.act_prefer, $0) }
                             )
                         )
 
@@ -84,7 +84,7 @@ struct PreferencesView: View {
                             Text(isSaving ? "Saving…" : "Save")
                                 .font(AlynnaTypography.font(.body))
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
+                                .padding(.vertical, 8)
                                 .background(themeManager.accent.opacity(0.16))
                                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
@@ -92,8 +92,8 @@ struct PreferencesView: View {
                         .foregroundColor(themeManager.accent)
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 16)
-                    .padding(.bottom, 36)
+                    .padding(.top, 0)
+                    .padding(.bottom, 20)
                 }
 
                 VStack {
@@ -133,34 +133,28 @@ struct PreferencesView: View {
     }
 
     private var headerCard: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Preferences")
-                .font(AlynnaTypography.font(.title3)).fontWeight(.semibold)
-                .foregroundColor(themeManager.primaryText)
-
-            Text("Update what feels right for you.")
-                .font(AlynnaTypography.font(.subheadline))
-                .foregroundColor(themeManager.descriptionText)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        Text("Preferences")
+            .font(TimelineType.title34GloockBlack())
+            .lineSpacing(TimelineType.title34LineSpacing)
+            .foregroundColor(themeManager.primaryText)
+            .kerning(0.5)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.top, 38)
+            .padding(.bottom, 28)
     }
 
     private func preferenceSection<Content: View>(_ title: String, content: Content) -> some View {
-        VStack(alignment: .center, spacing: 12) {
+        VStack(alignment: .center, spacing: 6) {
             Text(title)
                 .font(AlynnaTypography.font(.subheadline))
+                .fontWeight(.semibold)
                 .foregroundColor(themeManager.primaryText)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
             content
         }
-        .padding()
-        .background(panelBG)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(stroke, lineWidth: 1)
-        )
-        .cornerRadius(16)
+        .padding(10)
+        .alignaCard()
     }
 
     private func chips(
@@ -168,26 +162,30 @@ struct PreferencesView: View {
         isSelected: @escaping (String) -> Bool,
         toggle: @escaping (String) -> Void
     ) -> some View {
-        let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 3)
 
-        return LazyVGrid(columns: columns, spacing: 12) {
+        return LazyVGrid(columns: columns, spacing: 6) {
             ForEach(options, id: \.self) { opt in
                 Button {
                     toggle(opt)
                 } label: {
                     let selected = isSelected(opt)
                     Text(opt)
-                        .font(.custom("Merriweather-Regular", size: 14))
+                        .font(.custom("Merriweather-Regular", size: 12))
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                        .background(selected ? Color.white : Color.white.opacity(0.08))
-                        .foregroundColor(selected ? .black : .white)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(Color.white.opacity(selected ? 0.0 : 0.25), lineWidth: 1)
+                        .frame(height: 34)
+                        .background(
+                            selected
+                                ? themeManager.accent.opacity(0.22)
+                                : themeManager.panelFill
                         )
-                        .cornerRadius(14)
+                        .foregroundColor(themeManager.primaryText)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(themeManager.panelStrokeHi.opacity(selected ? 0.0 : 0.8), lineWidth: 1)
+                        )
+                        .cornerRadius(12)
                 }
                 .buttonStyle(.plain)
             }
@@ -197,10 +195,6 @@ struct PreferencesView: View {
 
     private func toggleSet(_ set: inout Set<String>, _ value: String) {
         if set.contains(value) { set.remove(value) } else { set.insert(value) }
-    }
-
-    private func toggleSingle(_ current: inout String, _ value: String) {
-        current = (current == value) ? "" : value
     }
 
     private func savePreferences() {
@@ -213,7 +207,7 @@ struct PreferencesView: View {
 
         let payload: [String: Any] = [
             "scent_dislike": Array(viewModel.scent_dislike),
-            "act_prefer": viewModel.act_prefer,
+            "act_prefer": Array(viewModel.act_prefer),
             "color_dislike": Array(viewModel.color_dislike),
             "allergies": Array(viewModel.allergies),
             "music_dislike": Array(viewModel.music_dislike),
@@ -228,3 +222,26 @@ struct PreferencesView: View {
         }
     }
 }
+
+
+#if DEBUG
+#Preview("Preferences") {
+    let themeManager = ThemeManager()
+    themeManager.selected = .day
+
+    let viewModel = OnboardingViewModel()
+    viewModel.scent_dislike = ["Floral", "Woody"]
+    viewModel.act_prefer = ["Dynamic"]
+    viewModel.color_dislike = ["Yellow"]
+    viewModel.allergies = ["Seasonal"]
+    viewModel.music_dislike = ["Electronic"]
+
+    return PreferencesView(
+        viewModel: viewModel,
+        userDocID: "preview",
+        userCollection: "users"
+    )
+    .environmentObject(StarAnimationManager())
+    .environmentObject(themeManager)
+}
+#endif
