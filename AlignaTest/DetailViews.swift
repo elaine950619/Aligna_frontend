@@ -1088,8 +1088,6 @@ private struct SoundExtraContent: View {
     // Reasoning sheet (image tap)
     @State private var showReasoning = false
 
-    // Player sheet (play button tap)
-    @State private var showPlayer = false
 
     // ✅ click hint (first 3 times)
     @AppStorage("aligna.sound.click.count") private var soundClickCount: Int = 0
@@ -1104,12 +1102,15 @@ private struct SoundExtraContent: View {
     private var playGlyphColor: Color {
         colorScheme == .dark ? Color(hex: "#E6D7C3") : themeManager.foregroundColor.opacity(0.9)
     }
+    private var isCurrentSoundPlaying: Bool {
+        soundPlayer.isPlaying && soundPlayer.currentSoundKey == documentName
+    }
 
     var body: some View {
         VStack(spacing: 24) {
 
             // ✅ Image tap = Reasoning
-            ZStack(alignment: .bottomTrailing) {
+            ZStack {
                 Image(documentName)
                     .renderingMode(.template)
                     .resizable()
@@ -1123,9 +1124,34 @@ private struct SoundExtraContent: View {
                         soundClickCount = min(soundClickCount + 1, 3)
                         showReasoning = true
                     }
+                    .overlay(alignment: .center) {
+                        Button {
+                            if isCurrentSoundPlaying {
+                                soundPlayer.pause()
+                            } else {
+                                soundPlayer.playSound(named: documentName)
+                                showReasoning = true
+                            }
+                        } label: {
+                            ZStack {
+                                Circle()
+                                    .fill(playRingFill)
+                                    .background(.ultraThinMaterial, in: Circle())
+                                    .overlay(Circle().stroke(playRingStroke, lineWidth: 2))
+                                    .frame(width: 56, height: 56)
 
-                ClickHint(isVisible: .constant(showSoundClickHint), label: "Click")
-                    .offset(x: 6, y: 6)
+                                Image(systemName: isCurrentSoundPlaying ? "pause.fill" : "play.fill")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(playGlyphColor)
+                            }
+                            .opacity(0.7)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .overlay(alignment: .bottomTrailing) {
+                        ClickHint(isVisible: .constant(showSoundClickHint), label: "Click")
+                            .offset(x: 6, y: 6)
+                    }
             }
             .sheet(isPresented: $showReasoning) {
                 ReasoningSheet(
@@ -1134,36 +1160,6 @@ private struct SoundExtraContent: View {
                     themeManager: themeManager
                 )
                 .presentationBackground(.clear)
-            }
-
-            // ✅ Play button tap = Player popup
-            Button {
-                soundPlayer.playSound(named: documentName)
-                showPlayer = true
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(playRingFill)
-                        .background(.ultraThinMaterial, in: Circle())
-                        .overlay(Circle().stroke(playRingStroke, lineWidth: 2))
-                        .frame(width: 56, height: 56)
-
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(playGlyphColor)
-                }
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 8)
-            .sheet(isPresented: $showPlayer) {
-                PlayerPopup(
-                    documentName: documentName,
-                    dismiss: { showPlayer = false }
-                )
-                .presentationBackground(.clear)
-                .presentationDetents([.fraction(0.6), .large])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(24)
             }
         }
     }
