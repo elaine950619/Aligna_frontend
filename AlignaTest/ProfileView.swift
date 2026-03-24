@@ -1616,93 +1616,103 @@ private extension ProfileView {
             .environmentObject(themeManager)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
+        .padding(.top, 16)
+        .padding(.bottom, 0)
     }
 
     var personalInfoCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Personal Information")
-                .font(AlynnaTypography.font(.title3)).fontWeight(.semibold)
-                .foregroundColor(themeManager.primaryText)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "person.text.rectangle")
+                    .foregroundColor(themeManager.accent)
 
-            VStack(spacing: 12) {
-                HStack(spacing: 12) {
-                    infoRow(
-                        title: "Birthday",
-                        value: hasLoadedProfileData ? Self.birthDateDisplayFormatter.string(from: birthday) : "—",
-                        editable: hasLoadedProfileData
-                    ) {
-                        guard hasLoadedProfileData else { return }
-                        birthdayDraft = birthday
-                        showBirthdaySheet = true
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .sheet(isPresented: $showBirthdaySheet) {
-                        pickerSheet(
-                            title: "Birthday",
-                            picker: AnyView(
-                                DatePicker("", selection: $birthdayDraft, displayedComponents: .date)
-                                    .datePickerStyle(.wheel)
-                                    .labelsHidden()
-                            ),
-                            onSave: {
-                                showBirthdaySheet = false
-                                saveBirthDateOnly(newDate: birthdayDraft) {
-                                    updateZodiacDisplay()
-                                }
-                            },
-                            onCancel: { showBirthdaySheet = false }
-                        )
-                    }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Personal Information")
+                        .font(AlynnaTypography.font(.headline))
+                        .foregroundColor(themeManager.primaryText)
 
-                    infoRow(
-                        title: "Birth Time",
-                        value: hasLoadedProfileData ? BirthTimeUtils.displayFormatter.string(from: birthTime).lowercased() : "—",
-                        editable: hasLoadedProfileData
-                    ) {
-                        guard hasLoadedProfileData else { return }
-                        birthTimeDraft = birthTime
-                        showBirthTimeSheet = true
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .sheet(isPresented: $showBirthTimeSheet) {
-                        pickerSheet(
-                            title: "Birth Time",
-                            picker: AnyView(
-                                DatePicker("", selection: $birthTimeDraft, displayedComponents: .hourAndMinute)
-                                    .datePickerStyle(.wheel)
-                                    .labelsHidden()
-                            ),
-                            onSave: {
-                                showBirthTimeSheet = false
-                                saveBirthTimeOnly(newTime: birthTimeDraft) {
-                                    updateZodiacDisplay()
-                                }
-                            },
-                            onCancel: { showBirthTimeSheet = false }
-                        )
-                    }
-                }
-
-                HStack(spacing: 12) {
-                    birthPlaceInfoRow
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .sheet(isPresented: $editingBirthPlace) {
-                        birthPlaceSheet
-                    }
-
-                    infoRowWithTrailingButton(
-                        title: "Current Place",
-                        value: currentPlace.isEmpty ? "—" : currentPlace,
-                        systemImage: "arrow.clockwise",
-                        onTap: { refreshCurrentPlace() }
-                    )
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Text("Birth details & places.")
+                        .font(AlynnaTypography.font(.subheadline))
+                        .foregroundColor(themeManager.descriptionText)
                 }
             }
-            .padding()
-            .alignaCard()
+
+            HStack(spacing: 12) {
+                infoRow(
+                    title: "Birthday",
+                    value: hasLoadedProfileData ? Self.birthDateDisplayFormatter.string(from: birthday) : "—",
+                    editable: hasLoadedProfileData
+                ) {
+                    guard hasLoadedProfileData else { return }
+                    birthdayDraft = birthday
+                    showBirthdaySheet = true
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .sheet(isPresented: $showBirthdaySheet) {
+                    pickerSheet(
+                        title: "Birthday",
+                        picker: AnyView(
+                            DatePicker("", selection: $birthdayDraft, displayedComponents: .date)
+                                .datePickerStyle(.wheel)
+                                .labelsHidden()
+                        ),
+                        onSave: {
+                            showBirthdaySheet = false
+                            saveBirthDateOnly(newDate: birthdayDraft) {
+                                updateZodiacDisplay()
+                            }
+                        },
+                        onCancel: { showBirthdaySheet = false }
+                    )
+                }
+
+                infoRow(
+                    title: "Birth Time",
+                    value: hasLoadedProfileData ? BirthTimeUtils.displayFormatter.string(from: birthTime).lowercased() : "—",
+                    editable: hasLoadedProfileData
+                ) {
+                    guard hasLoadedProfileData else { return }
+                    birthTimeDraft = birthTime
+                    showBirthTimeSheet = true
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .sheet(isPresented: $showBirthTimeSheet) {
+                    pickerSheet(
+                        title: "Birth Time",
+                        picker: AnyView(
+                            DatePicker("", selection: $birthTimeDraft, displayedComponents: .hourAndMinute)
+                                .datePickerStyle(.wheel)
+                                .labelsHidden()
+                        ),
+                        onSave: {
+                            showBirthTimeSheet = false
+                            saveBirthTimeOnly(newTime: birthTimeDraft) {
+                                updateZodiacDisplay()
+                            }
+                        },
+                        onCancel: { showBirthTimeSheet = false }
+                    )
+                }
+            }
+
+            HStack(spacing: 12) {
+                birthPlaceInfoRow
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .sheet(isPresented: $editingBirthPlace) {
+                    birthPlaceSheet
+                }
+
+                infoRowWithTrailingButton(
+                    title: "Current Place",
+                    value: currentPlace.isEmpty ? "—" : currentPlace,
+                    systemImage: "arrow.clockwise",
+                    onTap: { refreshCurrentPlace() }
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
+        .padding()
+        .alignaCard()
     }
 
     var timelineCard: some View {
@@ -1919,6 +1929,33 @@ private extension ProfileView {
 // MARK: - Reusable UI
 private extension ProfileView {
 
+    struct LoadingDots: View {
+        let color: Color
+
+        @State private var animate = false
+
+        var body: some View {
+            HStack(spacing: 3) {
+                ForEach(0..<3) { index in
+                    Circle()
+                        .fill(color)
+                        .frame(width: 4, height: 4)
+                        .scaleEffect(animate ? 1.0 : 0.6)
+                        .offset(y: animate ? -2.5 : 2.5)
+                        .opacity(animate ? 0.95 : 0.35)
+                        .animation(
+                            .easeInOut(duration: 0.6)
+                                .repeatForever(autoreverses: true)
+                                .delay(Double(index) * 0.15),
+                            value: animate
+                        )
+                }
+            }
+            .onAppear { animate = true }
+            .onDisappear { animate = false }
+        }
+    }
+
     func rowCard(icon: String, title: String, subtitle: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
@@ -1952,19 +1989,23 @@ private extension ProfileView {
         VStack(alignment: .leading, spacing: 4) {
             // 上面一行：标题
             Text(title)
-                .font(AlynnaTypography.font(.footnote))
+                .font(AlynnaTypography.font(.caption1))
                 .foregroundColor(themeManager.descriptionText)
 
             // 下面一行：内容 + 小笔 靠在一起
             HStack(spacing: 6) {
-                Text(value)
-                    .font(AlynnaTypography.font(.headline))
-                    .foregroundColor(themeManager.primaryText)
+                if value == "—" {
+                    LoadingDots(color: themeManager.primaryText.opacity(0.7))
+                } else {
+                    Text(value)
+                        .font(AlynnaTypography.font(.callout))
+                        .foregroundColor(themeManager.primaryText)
+                }
 
                 if editable {
                     Button(action: onEdit) {
                         Image(systemName: "pencil")
-                            .font(AlynnaTypography.font(.body))
+                            .font(AlynnaTypography.font(.footnote))
                             .fontWeight(.semibold)
                             .foregroundColor(themeManager.accent)
                     }
@@ -1974,7 +2015,7 @@ private extension ProfileView {
                 Spacer(minLength: 0)
             }
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 4)
     }
 
     func infoRowWithTrailingButton(
@@ -1986,18 +2027,22 @@ private extension ProfileView {
         VStack(alignment: .leading, spacing: 4) {
             // 上面一行：标题
             Text(title)
-                .font(AlynnaTypography.font(.footnote))
+                .font(AlynnaTypography.font(.caption1))
                 .foregroundColor(themeManager.descriptionText)
 
             // 下面一行：内容 + 按钮 靠在一起
             HStack(spacing: 6) {
-                Text(value)
-                    .font(AlynnaTypography.font(.headline))
-                    .foregroundColor(themeManager.primaryText)
+                if value == "—" {
+                    LoadingDots(color: themeManager.primaryText.opacity(0.7))
+                } else {
+                    Text(value)
+                        .font(AlynnaTypography.font(.callout))
+                        .foregroundColor(themeManager.primaryText)
+                }
 
                 Button(action: onTap) {
                     Image(systemName: systemImage)
-                        .font(AlynnaTypography.font(.body))
+                        .font(AlynnaTypography.font(.footnote))
                         .fontWeight(.semibold)
                         .foregroundColor(themeManager.accent)
                         .padding(.horizontal, 4)
@@ -2009,7 +2054,7 @@ private extension ProfileView {
                 Spacer(minLength: 0) // 可要可不要，留一点弹性空间
             }
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 4)
     }
 
     func infoRowEditableText(
@@ -2069,14 +2114,14 @@ private extension ProfileView {
     }
 
     var birthPlaceInfoRow: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Birth Place")
-                .font(AlynnaTypography.font(.footnote))
+                .font(AlynnaTypography.font(.caption1))
                 .foregroundColor(themeManager.descriptionText)
 
             birthPlaceDisplayContent
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 4)
     }
 
     var notificationTimeSheet: some View {
@@ -2190,20 +2235,20 @@ private extension ProfileView {
             }
 
             HStack(spacing: 10) {
-                Button(action: saveBirthPlaceSelection) {
-                    Text("Save")
-                        .font(AlynnaTypography.font(.body))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(themeManager.accent.opacity(0.16))
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
                 Button(action: cancelBirthPlaceEditing) {
                     Text("Close")
                         .font(AlynnaTypography.font(.body))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(themeManager.panelFill)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                Button(action: saveBirthPlaceSelection) {
+                    Text("Save")
+                        .font(AlynnaTypography.font(.body))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(themeManager.accent.opacity(0.16))
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
             }
@@ -2219,9 +2264,13 @@ private extension ProfileView {
 
     var birthPlaceDisplayContent: some View {
         HStack(spacing: 6) {
-            Text(birthPlace.isEmpty ? "—" : birthPlace)
-                .font(AlynnaTypography.font(.headline))
-                .foregroundColor(themeManager.primaryText)
+            if birthPlace.isEmpty {
+                LoadingDots(color: themeManager.primaryText.opacity(0.7))
+            } else {
+                Text(birthPlace)
+                    .font(AlynnaTypography.font(.callout))
+                    .foregroundColor(themeManager.primaryText)
+            }
 
             Button {
                 pendingBirthPlaceCoordinate = CLLocationCoordinate2D(latitude: birthLat, longitude: birthLng)
@@ -2229,7 +2278,7 @@ private extension ProfileView {
                 editingBirthPlace = true
             } label: {
                 Image(systemName: "pencil")
-                    .font(AlynnaTypography.font(.body))
+                    .font(AlynnaTypography.font(.footnote))
                     .fontWeight(.semibold)
                     .foregroundColor(themeManager.accent)
             }
