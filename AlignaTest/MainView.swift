@@ -149,6 +149,7 @@ struct MainView: View {
     @State private var isManualRefreshFlow = false
 
     @AppStorage("todayAutoRefetchDone") private var todayAutoRefetchDone: String = ""
+    @AppStorage("shouldShowBootLoading") private var shouldShowBootLoading: Bool = false
 
     @State private var autoRefetchScheduled = false
 
@@ -182,7 +183,6 @@ struct MainView: View {
         return age >= 0 && age < 24 * 60 * 60
     }
 
-    
     private let colorHexMapping: [String:String] = [
         "amber":"#FFBF00", "cream":"#FFFDD0", "forest_green":"#228B22",
         "ice_blue":"#ADD8E6", "indigo":"#4B0082", "rose":"#FF66CC",
@@ -1146,6 +1146,9 @@ struct MainView: View {
     private func attemptBootAdvance() {
         guard isBootDataReady, didCompletePersonalCheckIn else { return }
         withAnimation(.easeInOut) { bootPhase = .main }
+        if shouldShowBootLoading {
+            shouldShowBootLoading = false
+        }
     }
 
     private func handleManualRefreshTap() {
@@ -1248,6 +1251,10 @@ struct MainView: View {
                                     )
                                 }
                             }
+                        }
+
+                        if shouldShowBootLoading {
+                            bootPhase = .loading
                         }
 
                         if shouldCollapseMantraOnReturn {
@@ -1890,36 +1897,9 @@ struct MainView: View {
                 }
                 .buttonStyle(.plain)
             } else {
-                Button {
-                    print("⚠️ 无法进入 '\(title)'，推荐结果尚未加载")
-                } label: {
-                    VStack(spacing: 2) {
-                        Image(systemName: "questionmark.square.dashed")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: geometry.size.width * 0.16)
-                            .foregroundColor(themeManager.descriptionText.opacity(0.6))
-                        
-                        Text("Loading")
-                            .font(Font.custom("Merriweather-Regular", size: geometry.size.width * 0.033))
-                            .foregroundColor(themeManager.descriptionText)
-                        
-                        Text(title)
-                            .font(Font.custom("Merriweather-Bold", size: geometry.size.width * 0.05))
-                            .foregroundColor(themeManager.descriptionText.opacity(0.5))
-                    }
-                    .padding(.vertical, 8)
+                Color.clear
                     .frame(maxWidth: .infinity)
                     .frame(maxHeight: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(themeManager.panelFill.opacity(0.45))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(themeManager.panelStrokeHi.opacity(0.5), lineWidth: 1)
-                    )
-                }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .didDeleteAccount)) { _ in

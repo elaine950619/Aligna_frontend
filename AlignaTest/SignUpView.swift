@@ -22,6 +22,7 @@ struct SignUpView: View {
     @State private var verifyMessage = "We sent a verification email. Please verify and then continue."
     @State private var isVerifyingEmail = false
     @State private var navigateToOnboarding = false
+    @State private var showAuthOverlay = false
     @State private var navigateToLogin = false
     @State private var navigateToLoginOnDismiss = false
     @State private var currentNonce: String? = nil
@@ -119,6 +120,7 @@ struct SignUpView: View {
                                             guard !authBusy else { return }
                                             activeAuthAction = .google
                                             authBusy = true
+                                            showAuthOverlay = true
                                             hasCompletedOnboarding = false
                                             isLoggedIn = false
                                             shouldOnboardAfterSignIn = true
@@ -135,6 +137,7 @@ struct SignUpView: View {
                                                 onNewUserGoOnboarding: {
                                                     authBusy = false
                                                     activeAuthAction = nil
+                                                    showAuthOverlay = false
                                                     UserDefaults.standard.set("google.com", forKey: "lastAuthProvider")
                                                     if let user = Auth.auth().currentUser {
                                                         viewModel.userId = user.uid
@@ -145,6 +148,7 @@ struct SignUpView: View {
                                                 onExistingUserGoLogin: { msg in
                                                     authBusy = false
                                                     activeAuthAction = nil
+                                                    showAuthOverlay = false
                                                     UserDefaults.standard.set("google.com", forKey: "lastAuthProvider")
                                                     shouldOnboardAfterSignIn = false
                                                     infoMessage = msg
@@ -154,6 +158,7 @@ struct SignUpView: View {
                                                 onError: { message in
                                                     authBusy = false
                                                     activeAuthAction = nil
+                                                    showAuthOverlay = false
                                                     shouldOnboardAfterSignIn = false
                                                     alertMessage = message
                                                     showAlert = true
@@ -174,7 +179,7 @@ struct SignUpView: View {
                                                     .foregroundColor(.black)
                                                     .frame(width: 24, height: 24)
                                                 Text("Sign up with Google")
-                                                    .font(AlynnaTypography.font(.headline))
+                                                    .font(AlynnaTypography.font(.headline).weight(.semibold))
                                             }
                                             .foregroundColor(.black)
                                             .frame(maxWidth: .infinity)
@@ -202,6 +207,7 @@ struct SignUpView: View {
                                                 }
                                                 activeAuthAction = .apple
                                                 authBusy = true
+                                                showAuthOverlay = true
                                                 hasCompletedOnboarding = false
                                                 isLoggedIn = false
                                                 shouldOnboardAfterSignIn = true
@@ -213,6 +219,7 @@ struct SignUpView: View {
                                                         DispatchQueue.main.async {
                                                             authBusy = false
                                                             activeAuthAction = nil
+                                                            showAuthOverlay = false
                                                             UserDefaults.standard.set("apple.com", forKey: "lastAuthProvider")
                                                             if let user = Auth.auth().currentUser {
                                                                 viewModel.userId = user.uid
@@ -225,6 +232,7 @@ struct SignUpView: View {
                                                         DispatchQueue.main.async {
                                                             authBusy = false
                                                             activeAuthAction = nil
+                                                            showAuthOverlay = false
                                                             UserDefaults.standard.set("apple.com", forKey: "lastAuthProvider")
                                                             shouldOnboardAfterSignIn = false
                                                             infoMessage = msg
@@ -236,6 +244,7 @@ struct SignUpView: View {
                                                         DispatchQueue.main.async {
                                                             authBusy = false
                                                             activeAuthAction = nil
+                                                            showAuthOverlay = false
                                                             shouldOnboardAfterSignIn = false
                                                             alertMessage = message
                                                             showAlert = true
@@ -321,6 +330,7 @@ struct SignUpView: View {
                                     Button(action: {
                                         guard !authBusy else { return }
                                         activeAuthAction = .emailSignUp
+                                        showAuthOverlay = true
                                         registerWithEmailPassword()
                                     }) {
                                         HStack(spacing: 8) {
@@ -417,14 +427,16 @@ struct SignUpView: View {
                         .environmentObject(viewModel)
                 }
                 .overlay {
-                    if isVerifyingEmail {
+                    if isVerifyingEmail || showAuthOverlay {
                         ZStack {
                             Color.black.opacity(0.35)
                                 .ignoresSafeArea()
                             VStack(spacing: 12) {
                                 ProgressView()
                                     .progressViewStyle(.circular)
-                                Text("Checking verification…")
+                                    .tint(themeManager.fixedNightTextPrimary)
+                                    .scaleEffect(1.05)
+                                Text(showAuthOverlay ? "Signing up…" : "Checking verification…")
                                     .font(AlynnaTypography.font(.footnote))
                                     .foregroundColor(themeManager.fixedNightTextPrimary)
                             }
@@ -488,6 +500,7 @@ struct SignUpView: View {
 
     private func registerWithEmailPassword() {
         guard !email.isEmpty, !password.isEmpty else {
+            showAuthOverlay = false
             alertMessage = "Please fill in all fields."
             showAlert = true
             return
@@ -510,6 +523,7 @@ struct SignUpView: View {
                             if let signInError = signInError {
                                 authBusy = false
                                 activeAuthAction = nil
+                                showAuthOverlay = false
                                 alertMessage = signInError.localizedDescription
                                 showAlert = true
                                 return
@@ -518,6 +532,7 @@ struct SignUpView: View {
                             guard let user = result?.user else {
                                 authBusy = false
                                 activeAuthAction = nil
+                                showAuthOverlay = false
                                 alertMessage = "Sign in failed. Please try again."
                                 showAlert = true
                                 return
@@ -529,6 +544,7 @@ struct SignUpView: View {
                                 try? Auth.auth().signOut()
                                 authBusy = false
                                 activeAuthAction = nil
+                                showAuthOverlay = false
                                 verifyMessage = "We sent a verification email to \(email). Please verify, then tap 'I Verified' to continue."
                                 showVerifyAlert = true
                                 return
@@ -538,17 +554,20 @@ struct SignUpView: View {
                                 onSuccessToLogin: {
                                     authBusy = false
                                     activeAuthAction = nil
+                                    showAuthOverlay = false
                                     isLoggedIn = true
                                     dismiss()
                                 },
                                 onSuccessToOnboarding: {
                                     authBusy = false
                                     activeAuthAction = nil
+                                    showAuthOverlay = false
                                     navigateToOnboarding = true
                                 },
                                 onError: { message in
                                     authBusy = false
                                     activeAuthAction = nil
+                                    showAuthOverlay = false
                                     alertMessage = message
                                     showAlert = true
                                 }
@@ -558,6 +577,9 @@ struct SignUpView: View {
                     return
                 }
 
+                authBusy = false
+                activeAuthAction = nil
+                showAuthOverlay = false
                 alertMessage = error.localizedDescription
                 showAlert = true
                 return
@@ -572,6 +594,7 @@ struct SignUpView: View {
             DispatchQueue.main.async {
                 authBusy = false
                 activeAuthAction = nil
+                showAuthOverlay = false
                 verifyMessage = "We sent a verification email to \(email). Please verify, then tap 'I Verified' to continue."
                 showVerifyAlert = true
             }
@@ -590,6 +613,7 @@ struct SignUpView: View {
                     authBusy = false
                     isVerifyingEmail = false
                     if let error = error {
+                        showAuthOverlay = false
                         alertMessage = error.localizedDescription
                         showAlert = true
                         return
@@ -601,19 +625,23 @@ struct SignUpView: View {
                         UserDefaults.standard.set("password", forKey: "lastAuthProvider")
                         routeAuthenticatedUser(
                             onSuccessToLogin: {
+                                showAuthOverlay = false
                                 isLoggedIn = true
                                 dismiss()
                             },
                             onSuccessToOnboarding: {
+                                showAuthOverlay = false
                                 isLoggedIn = true
                                 navigateToOnboarding = true
                             },
                             onError: { message in
+                                showAuthOverlay = false
                                 alertMessage = message
                                 showAlert = true
                             }
                         )
                     } else {
+                        showAuthOverlay = false
                         alertMessage = "Email not verified yet. Please check your inbox, then try again."
                         showAlert = true
                     }

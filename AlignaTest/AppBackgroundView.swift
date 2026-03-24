@@ -754,8 +754,14 @@ struct AppBackgroundView: View {
 
                 // ===== 日间贴图 =====
                 if !effectiveIsNight {
-                    DayBackgroundLayer(size: geo.size)
-                        .frame(width: geo.size.width, height: geo.size.height)
+                    let fullSize = CGSize(
+                        width: geo.size.width + geo.safeAreaInsets.leading + geo.safeAreaInsets.trailing,
+                        height: geo.size.height + geo.safeAreaInsets.top + geo.safeAreaInsets.bottom
+                    )
+                    DayBackgroundLayer(size: fullSize)
+                        .frame(width: fullSize.width, height: fullSize.height)
+                        .offset(x: -geo.safeAreaInsets.leading, y: -geo.safeAreaInsets.top)
+                        .ignoresSafeArea()
                 }
 
                 // ===== 夜间星空 + 同心环 =====

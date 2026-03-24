@@ -20,6 +20,7 @@ struct LoginView: View {
     @State private var showInfoAlert = false
     @State private var infoMessage = ""
     @State private var dismissAfterInfo = false
+    @State private var showAuthOverlay = false
     @State private var currentNonce: String? = nil
     @State private var navigateToHome = false
     @State private var authBusy = false
@@ -114,21 +115,28 @@ struct LoginView: View {
                                 guard !authBusy else { return }
                                 activeAuthAction = .google
                                 authBusy = true
+                                showAuthOverlay = true
                                 handleGoogleLogin(
                                     viewModel: viewModel,
                                     onSuccessToLogin: {
                                         authBusy = false
                                         activeAuthAction = nil
+                                        showAuthOverlay = false
                                         UserDefaults.standard.set("google.com", forKey: "lastAuthProvider")
                                         if let user = Auth.auth().currentUser {
                                             viewModel.userId = user.uid
                                         }
                                         isLoggedIn = true
+                                        UserDefaults.standard.set(true, forKey: "shouldShowBootLoading")
+                                        UserDefaults.standard.set(true, forKey: "shouldShowBootLoading")
+                                        UserDefaults.standard.set(true, forKey: "shouldShowBootLoading")
+                                        UserDefaults.standard.set(true, forKey: "shouldShowBootLoading")
                                         navigateToHome = true
                                     },
                                     onSuccessToOnboarding: {
                                         authBusy = false
                                         activeAuthAction = nil
+                                        showAuthOverlay = false
                                         UserDefaults.standard.set("google.com", forKey: "lastAuthProvider")
                                         infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
                                         dismissAfterInfo = true
@@ -137,6 +145,7 @@ struct LoginView: View {
                                     onError: { message in
                                         authBusy = false
                                         activeAuthAction = nil
+                                        showAuthOverlay = false
                                         alertMessage = message
                                         showAlert = true
                                     }
@@ -183,12 +192,14 @@ struct LoginView: View {
                                     }
                                     activeAuthAction = .apple
                                     authBusy = true
+                                    showAuthOverlay = true
                                     handleAppleLogin(
                                         result: result,
                                         rawNonce: raw,
                                         onSuccessToLogin: {
                                             authBusy = false
                                             activeAuthAction = nil
+                                            showAuthOverlay = false
                                             UserDefaults.standard.set("apple.com", forKey: "lastAuthProvider")
                                             if let user = Auth.auth().currentUser {
                                                 viewModel.userId = user.uid
@@ -199,6 +210,7 @@ struct LoginView: View {
                                         onSuccessToOnboarding: {
                                             authBusy = false
                                             activeAuthAction = nil
+                                            showAuthOverlay = false
                                             UserDefaults.standard.set("apple.com", forKey: "lastAuthProvider")
                                             if let user = Auth.auth().currentUser {
                                                 viewModel.userId = user.uid
@@ -210,6 +222,7 @@ struct LoginView: View {
                                         onError: { message in
                                             authBusy = false
                                             activeAuthAction = nil
+                                            showAuthOverlay = false
                                             alertMessage = message
                                             showAlert = true
                                         }
@@ -299,6 +312,7 @@ struct LoginView: View {
                                 guard !authBusy else { return }
                                 if email.isEmpty {
                                     alertMessage = "Enter your email first."
+                                    showAuthOverlay = false
                                     showAlert = true
                                     return
                                 }
@@ -331,6 +345,7 @@ struct LoginView: View {
                             }
                             activeAuthAction = .emailLogin
                             authBusy = true
+                            showAuthOverlay = true
                             Auth.auth().signIn(withEmail: email, password: password) { _, error in
                                 authBusy = false
                                 activeAuthAction = nil
@@ -349,6 +364,7 @@ struct LoginView: View {
                                     } else {
                                         alertMessage = error.localizedDescription
                                     }
+                                    showAuthOverlay = false
                                     showAlert = true
                                     return
                                 }
@@ -356,6 +372,7 @@ struct LoginView: View {
                                 if let user = Auth.auth().currentUser, !user.isEmailVerified {
                                     user.sendEmailVerification(completion: nil)
                                     try? Auth.auth().signOut()
+                                    showAuthOverlay = false
                                     alertMessage = "Please verify your email before continuing. We just sent you a new verification email."
                                     showAlert = true
                                     return
@@ -366,11 +383,13 @@ struct LoginView: View {
                                     onSuccessToLogin: {
                                         authBusy = false
                                         activeAuthAction = nil
+                                        showAuthOverlay = false
                                         navigateToHome = true
                                     },
                                     onSuccessToOnboarding: {
                                         authBusy = false
                                         activeAuthAction = nil
+                                        showAuthOverlay = false
                                         if let user = Auth.auth().currentUser {
                                             viewModel.userId = user.uid
                                         }
@@ -396,6 +415,7 @@ struct LoginView: View {
                                 }
                                 Text(isActive(.emailLogin) ? "Signing in..." : "Log In")
                             }
+                            .font(AlynnaTypography.font(.headline).weight(.semibold))
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(themeManager.fixedNightTextPrimary)
@@ -471,6 +491,27 @@ struct LoginView: View {
             .onDisappear {
                 showIntro = false
                 unregisterKeyboardNotifications()
+            }
+            .overlay {
+                if showAuthOverlay {
+                    ZStack {
+                        Color.black.opacity(0.35)
+                            .ignoresSafeArea()
+                        VStack(spacing: 12) {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .tint(themeManager.fixedNightTextPrimary)
+                                .scaleEffect(1.05)
+                            Text("Logging in…")
+                                .font(AlynnaTypography.font(.footnote))
+                                .foregroundColor(themeManager.fixedNightTextPrimary)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                        .background(Color.black.opacity(0.6))
+                        .cornerRadius(14)
+                    }
+                }
             }
             .alert(isPresented: $showAlert) {
                 Alert(

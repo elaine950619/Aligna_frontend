@@ -67,6 +67,7 @@ struct RootRouter: View {
     @State private var isAuthenticated = (Auth.auth().currentUser?.isEmailVerified == true)
     @State private var needsOnboarding: Bool? = nil
     @State private var authStateListenerHandle: AuthStateDidChangeListenerHandle?
+    @AppStorage("shouldShowBootLoading") private var shouldShowBootLoading: Bool = false
     private let isPreviewMode: Bool
 
     init() {
@@ -100,6 +101,7 @@ struct RootRouter: View {
                     AppBackgroundView()
                         .environmentObject(starManager)
                         .environmentObject(themeManager)
+                        .ignoresSafeArea()
                     ProgressView("Loading…")
                 }
                 .environmentObject(soundPlayer) // ✅ 注入，保证任意子层都能拿到
@@ -126,7 +128,7 @@ struct RootRouter: View {
                 .environmentObject(reasoningStore)
                 .preferredColorScheme(themeManager.isNight ? .dark : .light)
             } else {
-                // 已登录 → 首页
+                // 已登录 → 首页（由 MainView 内部决定是否先走 Loading）
                 MainView()
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
