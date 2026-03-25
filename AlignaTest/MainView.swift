@@ -360,7 +360,7 @@ struct MainView: View {
 
                         // ✅ 只保留按钮本身（气泡放到全局 overlay）
                         Text("Daily Rhythm")
-                            .font(.custom("Merriweather-SemiBold", size: 38))
+                            .font(.custom("Merriweather-SemiBold", size: 34))
                             .lineSpacing(AlignaType.logoLineSpacing)
                             .foregroundColor(themeManager.primaryText)
                             .padding(.top, 20)
@@ -374,7 +374,7 @@ struct MainView: View {
 
                         Button {
                             guard isMantraReady else { return }
-                            withAnimation(.easeInOut(duration: 0.2)) {
+                            withAnimation(.easeInOut(duration: 0.45)) {
                                 isMantraExpanded.toggle()
                             }
                         } label: {
@@ -496,6 +496,8 @@ struct MainView: View {
                                 .disabled(colorDoc.isEmpty)
                             }
                             .padding(.top, 8)
+                            .transition(.opacity)
+                            .animation(.easeInOut(duration: 0.25), value: isMantraExpanded)
                         }
                         // ✅ 当 mantra 更新（新的一天/重新拉取）时，自动收起回 “...”
                         
@@ -508,30 +510,35 @@ struct MainView: View {
                             let availableGridHeight = max(0, totalH - mantraToGridGap - gridToFooterGap - footerHeight)
                             let gridHeight = min(availableGridHeight, totalH * 0.30)
 
-                            Spacer(minLength: mantraToGridGap)
+                            VStack(spacing: 0) {
+                                Spacer(minLength: mantraToGridGap)
 
-                            VStack(spacing: gridSpacing) {
-                                let columns = [
-                                    GridItem(.flexible(), spacing: gridSpacing, alignment: .center),
-                                    GridItem(.flexible(), spacing: gridSpacing, alignment: .center)
-                                ]
+                                VStack(spacing: gridSpacing) {
+                                    let columns = [
+                                        GridItem(.flexible(), spacing: gridSpacing, alignment: .center),
+                                        GridItem(.flexible(), spacing: gridSpacing, alignment: .center)
+                                    ]
 
-                                LazyVGrid(columns: columns,
-                                          spacing: gridSpacing) {
-                                    navItemView(title: "Place", geometry: geometry)
-                                    navItemView(title: "Gemstone", geometry: geometry)
-                                    navItemView(title: "Color", geometry: geometry)
-                                    navItemView(title: "Scent", geometry: geometry)
-                                    navItemView(title: "Activity", geometry: geometry)
-                                    navItemView(title: "Sound", geometry: geometry)
-                                    navItemView(title: "Career", geometry: geometry)
-                                    navItemView(title: "Relationship", geometry: geometry)
+                                    LazyVGrid(columns: columns,
+                                              spacing: gridSpacing) {
+                                        navItemView(title: "Place", geometry: geometry)
+                                        navItemView(title: "Gemstone", geometry: geometry)
+                                        navItemView(title: "Color", geometry: geometry)
+                                        navItemView(title: "Scent", geometry: geometry)
+                                        navItemView(title: "Activity", geometry: geometry)
+                                        navItemView(title: "Sound", geometry: geometry)
+                                        navItemView(title: "Career", geometry: geometry)
+                                        navItemView(title: "Relationship", geometry: geometry)
+                                    }
+                                    .frame(height: gridHeight)
+                                    .padding(.horizontal, geometry.size.width * 0.05)
                                 }
-                                .frame(height: gridHeight)
-                                .padding(.horizontal, geometry.size.width * 0.05)
-                            }
 
-                            Spacer(minLength: gridToFooterGap)
+                                Spacer(minLength: gridToFooterGap)
+                            }
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .animation(.easeInOut(duration: 0.55), value: isMantraExpanded)
+                            .animation(.easeInOut(duration: 0.6), value: isMantraExpanded)
                         }
                     }
                     .padding(.top, 16)
@@ -570,6 +577,7 @@ struct MainView: View {
                     .foregroundColor(themeManager.descriptionText.opacity(0.45))
                     .padding(.horizontal, 24)
                     .padding(.bottom, 8)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
             .overlay(alignment: .bottom) {
