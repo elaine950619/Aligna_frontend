@@ -222,9 +222,9 @@ struct DaySunView: View {
         ZStack {
             // Halo
             Circle()
-                .fill(Color.yellow.opacity(0.28))
-                .blur(radius: 18)
-                .scaleEffect(pulse ? 1.1 : 0.95)
+                .fill(Color.yellow.opacity(0.16))
+                .blur(radius: 20)
+                .scaleEffect(pulse ? 1.08 : 0.96)
 
             // Core
             Circle()
@@ -241,10 +241,10 @@ struct DaySunView: View {
                 )
                 .overlay(
                     Circle()
-                        .stroke(Color.yellow.opacity(0.6), lineWidth: 1.5)
+                        .stroke(Color.yellow.opacity(0.08), lineWidth: 0.8)
                 )
-                .shadow(color: Color.yellow.opacity(0.4),
-                        radius: 10, x: 0, y: 0)
+                .shadow(color: Color.yellow.opacity(0.22),
+                        radius: 8, x: 0, y: 0)
                 .scaleEffect(pulse ? 1.03 : 1.0)
         }
     }
