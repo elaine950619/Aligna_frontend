@@ -2524,12 +2524,20 @@ enum RecCategory: String, CaseIterable, Identifiable {
 
 struct RecommendationPagerView: View {
     let docsByCategory: [RecCategory: String]
-    @State var selected: RecCategory
-    
+    let selected: RecCategory
+
+    @State private var selectedIndex: Int = 1
+
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
-    
+
+    private var categories: [RecCategory] { RecCategory.allCases }
+    private var loopedCategories: [RecCategory] {
+        guard let first = categories.first, let last = categories.last else { return [] }
+        return [last] + categories + [first]
+    }
+
     var body: some View {
         ZStack {
             // Full-bleed background
@@ -2537,8 +2545,9 @@ struct RecommendationPagerView: View {
                 .environmentObject(starManager)
                 .ignoresSafeArea() // <- key line
 
-            TabView(selection: $selected) {
-                ForEach(RecCategory.allCases) { cat in
+            TabView(selection: $selectedIndex) {
+                ForEach(loopedCategories.indices, id: \.self) { idx in
+                    let cat = loopedCategories[idx]
                     Group {
                         if let doc = docsByCategory[cat], !doc.isEmpty {
                             pageView(for: cat, documentName: doc).id(doc)
@@ -2550,11 +2559,24 @@ struct RecommendationPagerView: View {
                             }
                         }
                     }
-                    .tag(cat)
+                    .tag(idx)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .automatic))
-            
+            .onAppear {
+                if let start = categories.firstIndex(of: selected) {
+                    selectedIndex = start + 1
+                }
+            }
+            .onChange(of: selectedIndex) { _, newValue in
+                let lastIndex = loopedCategories.count - 1
+                if newValue == 0 {
+                    withAnimation(.none) { selectedIndex = lastIndex - 1 }
+                } else if newValue == lastIndex {
+                    withAnimation(.none) { selectedIndex = 1 }
+                }
+            }
+
             CustomBackButton(
                 //                iconSize: 18,
                 ////                paddingSize: 8,
