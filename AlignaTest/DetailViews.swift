@@ -446,22 +446,23 @@ private struct GrowthWiggleModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .scaleEffect(grewIn ? 1.0 : 0.84)
+            .scaleEffect(grewIn ? 1.0 : 0.008)
+            .opacity(grewIn ? 1.0 : 0.0)
             .rotationEffect(wiggleActive ? (wigglePhase ? .degrees(1.6) : .degrees(-1.6)) : .degrees(0))
             .offset(x: wiggleActive ? (wigglePhase ? 1.6 : -1.6) : 0)
             .onAppear {
                 grewIn = false
                 wiggleActive = false
                 wigglePhase = false
-                withAnimation(.spring(response: 0.65, dampingFraction: 0.78)) {
+                withAnimation(.spring(response: 1.15, dampingFraction: 0.78, blendDuration: 0.2)) {
                     grewIn = true
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                     wiggleActive = true
                     withAnimation(.easeInOut(duration: 0.18).repeatCount(3, autoreverses: true)) {
                         wigglePhase.toggle()
                     }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
                         wiggleActive = false
                         wigglePhase = false
                     }
@@ -1130,7 +1131,7 @@ private struct SoundExtraContent: View {
 
     // Reasoning sheet (image tap)
     @State private var showReasoning = false
-
+    @State private var showPlayButton = false
 
     // ✅ click hint (first 3 times)
     @AppStorage("aligna.sound.click.count") private var soundClickCount: Int = 0
@@ -1168,6 +1169,15 @@ private struct SoundExtraContent: View {
                         soundClickCount = min(soundClickCount + 1, 3)
                         showReasoning = true
                     }
+                    .onAppear {
+                        showPlayButton = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                            showPlayButton = true
+                        }
+                    }
+                    .onDisappear {
+                        showPlayButton = false
+                    }
                     .overlay(alignment: .center) {
                         Button {
                             if isCurrentSoundPlaying {
@@ -1188,9 +1198,10 @@ private struct SoundExtraContent: View {
                                     .font(.system(size: 18, weight: .bold))
                                     .foregroundColor(playGlyphColor)
                             }
-                            .opacity(0.7)
+                            .opacity(showPlayButton ? 0.7 : 0.0)
                         }
                         .buttonStyle(.plain)
+                        .allowsHitTesting(showPlayButton)
                     }
                     .overlay(alignment: .bottomTrailing) {
                         ClickHint(isVisible: .constant(showSoundClickHint), label: "Click")
