@@ -541,7 +541,6 @@ struct OnboardingStep1: View {
     }
 }
 
-// MARK: - OnboardingStep2（顶部与 Step1/Step3 一致，日期/时间用弹出滚轮）
 // MARK: - OnboardingStep2（顶部与 Step1 一致 + 时间保存改为本地锚定）
 struct OnboardingStep2: View {
     @ObservedObject var viewModel: OnboardingViewModel
@@ -1039,10 +1038,6 @@ struct OnboardingStep3: View {
         if set.contains(value) { set.remove(value) } else { set.insert(value) }
     }
 
-    private func toggleSingle(_ current: inout String, _ value: String) {
-        current = (current == value) ? "" : value
-    }
-
     private var loadingOverlay: some View {
         ZStack {
             Color.black.opacity(0.55)
@@ -1146,46 +1141,7 @@ struct OnboardingStep3: View {
     }
 
     private func ensureAuthenticatedThenUpload() {
-        if Auth.auth().currentUser != nil {
-            uploadUserInfo()
-            return
-        }
-
-        let lastProvider = UserDefaults.standard.string(forKey: "lastAuthProvider")
-        switch lastProvider {
-        case "google.com":
-            attemptGoogleRestoreOrSignIn { success in
-                if success {
-                    uploadUserInfo()
-                } else {
-                    isLoading = false
-                    loadingStageIndex = 0
-                    showLongWaitHint = false
-                    loadingErrorMessage = "Please sign in with Google to finish onboarding."
-                }
-            }
-        case "apple.com":
-            presentInteractiveAppleSignIn { success in
-                if success {
-                    uploadUserInfo()
-                } else {
-                    isLoading = false
-                    loadingStageIndex = 0
-                    showLongWaitHint = false
-                    loadingErrorMessage = "Please sign in with Apple to finish onboarding."
-                }
-            }
-        case "password":
-            isLoading = false
-            loadingStageIndex = 0
-            showLongWaitHint = false
-            loadingErrorMessage = "Please sign in with email to finish onboarding."
-        default:
-            isLoading = false
-            loadingStageIndex = 0
-            showLongWaitHint = false
-            loadingErrorMessage = "Please sign in again to finish onboarding."
-        }
+        uploadUserInfo()
     }
 
     private func attemptGoogleRestoreOrSignIn(completion: @escaping (Bool) -> Void) {
@@ -1281,6 +1237,7 @@ struct OnboardingStep3: View {
             isLoading = false
             loadingStageIndex = 0
             showLongWaitHint = false
+            showLoadingOverlay = false
             return
         }
 
@@ -2422,13 +2379,4 @@ private struct OnboardingPreviewContainer<Content: View>: View {
     }
 }
 
-#Preview("Onboarding Final") {
-    OnboardingPreviewContainer(configure: { viewModel in
-        viewModel.nickname = "Luna"
-        viewModel.birthPlace = "Hangzhou"
-        viewModel.currentPlace = "San Francisco"
-    }) { viewModel in
-        OnboardingFinalStep(viewModel: viewModel)
-    }
-}
 #endif

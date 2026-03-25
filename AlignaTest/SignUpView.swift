@@ -143,7 +143,7 @@ struct SignUpView: View {
                                                         viewModel.userId = user.uid
                                                     }
                                                     shouldOnboardAfterSignIn = true
-                                                    navigateToOnboarding = true
+                                                    proceedToOnboarding()
                                                 },
                                                 onExistingUserGoLogin: { msg in
                                                     authBusy = false
@@ -225,7 +225,7 @@ struct SignUpView: View {
                                                                 viewModel.userId = user.uid
                                                             }
                                                             shouldOnboardAfterSignIn = true
-                                                            navigateToOnboarding = true
+                                                            proceedToOnboarding()
                                                         }
                                                     },
                                                     onExistingUserGoLogin: { msg in
@@ -462,6 +462,20 @@ struct SignUpView: View {
         }
     }
 
+    private func proceedToOnboarding() {
+        guard Auth.auth().currentUser != nil else {
+            authBusy = false
+            activeAuthAction = nil
+            showAuthOverlay = false
+            shouldOnboardAfterSignIn = false
+            alertMessage = "Session expired. Please sign in again."
+            showAlert = true
+            return
+        }
+        isLoggedIn = true
+        navigateToOnboarding = true
+    }
+
     private func registerKeyboardNotifications() {
         guard keyboardShowObserver == nil, keyboardHideObserver == nil else { return }
 
@@ -541,7 +555,6 @@ struct SignUpView: View {
 
                             if !user.isEmailVerified {
                                 user.sendEmailVerification(completion: nil)
-                                try? Auth.auth().signOut()
                                 authBusy = false
                                 activeAuthAction = nil
                                 showAuthOverlay = false
@@ -562,7 +575,7 @@ struct SignUpView: View {
                                     authBusy = false
                                     activeAuthAction = nil
                                     showAuthOverlay = false
-                                    navigateToOnboarding = true
+                                    proceedToOnboarding()
                                 },
                                 onError: { message in
                                     authBusy = false
@@ -589,8 +602,6 @@ struct SignUpView: View {
                 viewModel.userId = user.uid
             }
             result?.user.sendEmailVerification(completion: nil)
-            // Enforce verification: sign out until verified.
-            try? Auth.auth().signOut()
             DispatchQueue.main.async {
                 authBusy = false
                 activeAuthAction = nil
@@ -631,8 +642,7 @@ struct SignUpView: View {
                             },
                             onSuccessToOnboarding: {
                                 showAuthOverlay = false
-                                isLoggedIn = true
-                                navigateToOnboarding = true
+                                proceedToOnboarding()
                             },
                             onError: { message in
                                 showAuthOverlay = false
