@@ -416,7 +416,7 @@ struct SignUpView: View {
                     Text(verifyMessage)
                 }
                 .navigationDestination(isPresented: $navigateToOnboarding) {
-                    OnboardingStep1(viewModel: viewModel)
+                    OnboardingStep0(viewModel: viewModel)
                         .environmentObject(starManager)
                         .environmentObject(themeManager)
                 }

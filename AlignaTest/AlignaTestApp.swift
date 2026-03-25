@@ -135,7 +135,7 @@ struct RootRouter: View {
             } else if needsOnboarding == true {
                 // 已登录但资料不完整 → Onboarding
                 NavigationStack {
-                    OnboardingStep1(viewModel: onboardingViewModel)
+                    OnboardingStep0(viewModel: onboardingViewModel)
                 }
                 .environmentObject(starManager)
                 .environmentObject(themeManager)

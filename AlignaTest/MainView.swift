@@ -588,7 +588,13 @@ struct MainView: View {
                 }
             }
             .navigationDestination(for: RecCategory.self) { cat in
-                RecommendationPagerView(docsByCategory: makeDocsMap(), selected: cat)
+                RecommendationPagerView(
+                    docsByCategory: makeDocsMap(),
+                    selected: cat,
+                    onBack: {
+                        shouldCollapseMantraOnReturn = true
+                    }
+                )
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
                     .environmentObject(viewModel)
@@ -1303,7 +1309,7 @@ struct MainView: View {
                 NavigationStack {
                     if shouldOnboardAfterSignIn {
                         // 注册后正式进入引导：Step1
-                        OnboardingStep1(viewModel: viewModel)
+                        OnboardingStep0(viewModel: viewModel)
                             .environmentObject(starManager)
                             .environmentObject(themeManager)
                             .navigationBarBackButtonHidden(true)
@@ -2535,6 +2541,7 @@ enum RecCategory: String, CaseIterable, Identifiable {
 struct RecommendationPagerView: View {
     let docsByCategory: [RecCategory: String]
     let selected: RecCategory
+    let onBack: () -> Void
 
     @State private var selectedIndex: Int = 1
 
@@ -2594,10 +2601,11 @@ struct RecommendationPagerView: View {
                 //                iconColor: themeManager.primaryText,
                 ////                topPadding: 120,
                 //                horizontalPadding: 24
+                action: {
+                    onBack()
+                    dismiss()          // pop back to MainView
+                }
             )
-            .onTapGesture {
-                dismiss()          // pop back to FirstPageView
-            }
         }
         // Prevent the default nav bar blur from showing at the top
         .toolbarBackground(.hidden, for: .navigationBar)
@@ -2646,11 +2654,12 @@ struct CustomBackButton: View {
     var topPadding: CGFloat = 20
     var horizontalPadding: CGFloat = 20
     var showsBackground: Bool = false
+    var action: (() -> Void)? = nil
     
     var body: some View {
         VStack {
             HStack {
-                Button(action: { dismiss() }) {
+                Button(action: { action?() ?? dismiss() }) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: iconSize, weight: .semibold))
                         .foregroundColor(themeManager.primaryText)
