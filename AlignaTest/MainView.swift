@@ -139,6 +139,8 @@ struct MainView: View {
     @State private var isMantraExpanded: Bool = false
     @State private var showMantraSaveAlert: Bool = false
     @State private var showTodaySoundPlayer: Bool = false
+    @State private var isAutoDismissSoundPlayer = false
+    @State private var soundPlayerAutoDismissTask: Task<Void, Never>? = nil
     @State private var showNoSoundToast: Bool = false
     @State private var journalSpinAngle: Double = 0
     @State private var lastPrefetchedSoundKey: String = ""
@@ -273,6 +275,16 @@ struct MainView: View {
             withAnimation(.easeIn(duration: 0.2)) {
                 showNoSoundToast = false
             }
+        }
+    }
+
+    private func scheduleSoundPlayerAutoDismiss() {
+        isAutoDismissSoundPlayer = true
+        soundPlayerAutoDismissTask?.cancel()
+        soundPlayerAutoDismissTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard showTodaySoundPlayer, isAutoDismissSoundPlayer else { return }
+            showTodaySoundPlayer = false
         }
     }
 
@@ -422,6 +434,7 @@ struct MainView: View {
                                     } else {
                                         soundPlayer.playSound(named: todaySoundKey)
                                         showTodaySoundPlayer = true
+                                        scheduleSoundPlayerAutoDismiss()
                                     }
                                 } label: {
                                     Group {
@@ -446,7 +459,11 @@ struct MainView: View {
                                     .padding(.vertical, 6)
                                 }
                                 .buttonStyle(.plain)
-                                .sheet(isPresented: $showTodaySoundPlayer) {
+                                .sheet(isPresented: $showTodaySoundPlayer, onDismiss: {
+                                    isAutoDismissSoundPlayer = false
+                                    soundPlayerAutoDismissTask?.cancel()
+                                    soundPlayerAutoDismissTask = nil
+                                }) {
                                     PlayerPopup(
                                         documentName: todaySoundKey,
                                         dismiss: { showTodaySoundPlayer = false }

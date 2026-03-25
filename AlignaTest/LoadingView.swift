@@ -236,7 +236,8 @@ struct LoadingView: View {
     }
 
     private var shouldAutoSkipPersonal: Bool {
-        !didInteractPersonal
+        let hasNotes = !personalNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return !didInteractPersonal && !hasNotes
     }
 
     private var hasRecentRecommendation: Bool {
@@ -303,6 +304,12 @@ struct LoadingView: View {
                     autoSkipWorkItem?.cancel()
                     autoSkipTimer?.invalidate()
                     autoSkipSecondsRemaining = 0
+                }
+            }
+            .onChange(of: personalNotes, initial: false) { _, notes in
+                let hasNotes = !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                if hasNotes {
+                    didInteractPersonal = true
                 }
             }
             .preferredColorScheme(themeManager.preferredColorScheme)
