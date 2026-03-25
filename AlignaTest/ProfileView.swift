@@ -1735,7 +1735,7 @@ private extension ProfileView {
             rowCard(
                 icon: "slider.horizontal.3",
                 title: "Preferences",
-                subtitle: "Update your scent, color, & more"
+                subtitle: "Update your scent, color & more"
             )
         }
     }
