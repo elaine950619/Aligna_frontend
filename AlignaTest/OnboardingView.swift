@@ -188,32 +188,52 @@ import SwiftUI
 import MapKit
 
 struct AlignaTopHeader: View {
+    @EnvironmentObject var themeManager: ThemeManager
+
+    let minLength: CGFloat
+    var show: Binding<Bool>? = nil
+
+    @State private var localShow = false
+
+    private var activeShow: Binding<Bool> {
+        show ?? $localShow
+    }
+
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: minLength * 0.02) {
             if let _ = UIImage(named: "alignaSymbol") {
                 Image("alignaSymbol")
+                    .renderingMode(.template)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 64, height: 64)
-                    .foregroundColor(.white)
-                    .padding(.top, 6)
+                    .frame(width: minLength * 0.14)
+                    .foregroundColor(themeManager.onboardingPrimaryText.opacity(0.92))
             } else {
                 Image(systemName: "leaf.circle.fill")
+                    .renderingMode(.template)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 64, height: 64)
-                    .foregroundColor(.white)
-                    .padding(.top, 6)
+                    .frame(width: minLength * 0.14)
+                    .foregroundColor(themeManager.onboardingPrimaryText.opacity(0.92))
             }
-            Text("Alynna")
-                .font(Font.custom("Merriweather-Regular", size: 34))
-                .foregroundColor(.white)
+
+            AlignaHeading(
+                textColor: themeManager.onboardingPrimaryText,
+                show: activeShow,
+                fontSize: minLength * 0.12,
+                letterSpacing: minLength * 0.005
+            )
+        }
+        .onAppear {
+            guard show == nil else { return }
+            localShow = true
         }
     }
 }
 
 private struct OnboardingBackOverlay: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var themeManager: ThemeManager
 
     var body: some View {
         VStack {
@@ -223,7 +243,7 @@ private struct OnboardingBackOverlay: View {
                 } label: {
                     Image(systemName: "chevron.left")
                         .font(.title3.weight(.semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(themeManager.onboardingPrimaryText)
                         .padding(12)
                         .background(.ultraThinMaterial, in: Circle())
                 }
@@ -236,46 +256,116 @@ private struct OnboardingBackOverlay: View {
         }
     }
 }
-extension Text {
-    func onboardingTitleStyle() -> some View {
-        self
+private struct OnboardingTitleStyle: ViewModifier {
+    @EnvironmentObject var themeManager: ThemeManager
+
+    func body(content: Content) -> some View {
+        content
             .font(.custom("Merriweather-Bold", size: 20))
-            .foregroundColor(.white)
+            .foregroundColor(themeManager.onboardingPrimaryText)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
+    }
+}
+
+private struct OnboardingQuestionStyle: ViewModifier {
+    @EnvironmentObject var themeManager: ThemeManager
+
+    func body(content: Content) -> some View {
+        content
+            .font(.custom("Merriweather-Bold", size: 16))
+            .foregroundColor(themeManager.onboardingPrimaryText.opacity(0.92))
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+    }
+}
+
+private struct OnboardingCaptionStyle: ViewModifier {
+    @EnvironmentObject var themeManager: ThemeManager
+
+    func body(content: Content) -> some View {
+        content
+            .font(.custom("Merriweather-Regular", size: 13))
+            .foregroundColor(themeManager.onboardingSecondaryText.opacity(0.85))
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+    }
+}
+
+private struct OnboardingPrimaryButtonStyle: ViewModifier {
+    let isEnabled: Bool
+    @EnvironmentObject var themeManager: ThemeManager
+
+    private var buttonBackground: Color {
+        isEnabled ? themeManager.onboardingPrimaryText : themeManager.onboardingPrimaryText.opacity(0.4)
+    }
+
+    private var buttonForeground: Color {
+        themeManager.isNight ? .black : .white
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .font(AlynnaTypography.font(.headline).weight(.semibold))
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(buttonBackground)
+            .foregroundColor(isEnabled ? buttonForeground : buttonForeground.opacity(0.65))
+            .cornerRadius(14)
+    }
+}
+
+private struct OnboardingLabelStyle: ViewModifier {
+    @EnvironmentObject var themeManager: ThemeManager
+
+    func body(content: Content) -> some View {
+        content
+            .font(.custom("Merriweather-Regular", size: 13))
+            .foregroundColor(themeManager.onboardingSecondaryText.opacity(0.85))
+    }
+}
+
+extension ThemeManager {
+    var onboardingPrimaryText: Color {
+        isNight ? fixedNightTextPrimary : primaryText
+    }
+
+    var onboardingSecondaryText: Color {
+        isNight ? fixedNightTextSecondary : descriptionText
+    }
+
+    var onboardingTertiaryText: Color {
+        isNight ? fixedNightTextTertiary : descriptionText.opacity(0.85)
+    }
+
+    var onboardingPanelFill: Color {
+        onboardingSecondaryText.opacity(isNight ? 0.14 : 0.10)
+    }
+
+    var onboardingPanelStroke: Color {
+        onboardingSecondaryText.opacity(isNight ? 0.35 : 0.25)
+    }
+}
+
+extension Text {
+    func onboardingTitleStyle() -> some View {
+        modifier(OnboardingTitleStyle())
     }
 
     func onboardingQuestionStyle() -> some View {
-        self
-            .font(.custom("Merriweather-Bold", size: 16))
-            .foregroundColor(.white.opacity(0.92))
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
+        modifier(OnboardingQuestionStyle())
     }
 
     func onboardingCaptionStyle() -> some View {
-        self
-            .font(.custom("Merriweather-Regular", size: 13))
-            .foregroundColor(.white.opacity(0.75))
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
+        modifier(OnboardingCaptionStyle())
     }
 
     func onboardingPrimaryButtonStyle(isEnabled: Bool = true) -> some View {
-        self
-            .font(.custom("Merriweather-Bold", size: 17))
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(isEnabled ? Color.white : Color.white.opacity(0.1))
-            .foregroundColor(isEnabled ? .black : .white)
-            .cornerRadius(16)
-            .shadow(color: .white.opacity(isEnabled ? 0.15 : 0), radius: 8, x: 0, y: 4)
+        modifier(OnboardingPrimaryButtonStyle(isEnabled: isEnabled))
     }
 
     func onboardingLabelStyle() -> some View {
-        self
-            .font(.custom("Merriweather-Regular", size: 13))
-            .foregroundColor(.white.opacity(0.75))
+        modifier(OnboardingLabelStyle())
     }
 }
 
@@ -291,8 +381,8 @@ struct OnboardingStep0: View {
     @EnvironmentObject var starManager: StarAnimationManager
 
     @State private var showIntro = false
-    private let panelBG = Color.white.opacity(0.08)
-    private let stroke = Color.white.opacity(0.25)
+    private var panelBG: Color { themeManager.onboardingPanelFill }
+    private var stroke: Color { themeManager.onboardingPanelStroke }
 
     var body: some View {
         GeometryReader { geometry in
@@ -306,7 +396,7 @@ struct OnboardingStep0: View {
 
                 ScrollView {
                     VStack(spacing: minLength * 0.045) {
-                        AlignaTopHeader()
+                        AlignaTopHeader(minLength: minLength, show: $showIntro)
                             .staggered(0, show: $showIntro)
 
                         Text("Your Daily Rhythm")
@@ -316,6 +406,7 @@ struct OnboardingStep0: View {
 
                         Text("A personal guide shaped by Earth, sky, and body signals, tuned to each day and your current context.")
                             .onboardingCaptionStyle()
+                            .padding(.horizontal, 28)
                             .staggered(2, show: $showIntro)
 
                         VStack(spacing: 12) {
@@ -331,7 +422,7 @@ struct OnboardingStep0: View {
                                 .stroke(stroke, lineWidth: 1)
                         )
                         .cornerRadius(16)
-                        .padding(.horizontal)
+                        .padding(.horizontal, 26)
                         .staggered(3, show: $showIntro)
 
                         NavigationLink(
@@ -360,7 +451,7 @@ struct OnboardingStep0: View {
                 }
                 OnboardingBackOverlay()
             }
-            .preferredColorScheme(.dark)
+            .preferredColorScheme(themeManager.preferredColorScheme)
             .navigationBarBackButtonHidden(true)
             .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
@@ -374,6 +465,8 @@ struct OnboardingStep0: View {
     }
 
     private struct FeatureRow: View {
+        @EnvironmentObject var themeManager: ThemeManager
+
         let symbol: String
         let text: String
 
@@ -381,7 +474,7 @@ struct OnboardingStep0: View {
             HStack(alignment: .center, spacing: 10) {
                 Image(systemName: symbol)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.85))
+                    .foregroundColor(themeManager.accent)
                     .frame(width: 20)
 
                 Text(text)
@@ -402,8 +495,8 @@ struct OnboardingStep1: View {
     
     @State private var goOpening = false
 
-    private let panelBG = Color.white.opacity(0.08)
-    private let stroke   = Color.white.opacity(0.25)
+    private var panelBG: Color { themeManager.onboardingPanelFill }
+    private var stroke: Color { themeManager.onboardingPanelStroke }
 
     // 出生地搜索
     @State private var birthSearch = ""
@@ -430,7 +523,7 @@ struct OnboardingStep1: View {
                 ScrollView {
                     VStack(spacing: minLength * 0.045) {
                         // 顶部
-                        AlignaTopHeader()
+                        AlignaTopHeader(minLength: minLength)
 
                         Text("Tell us about yourself")
                             .onboardingTitleStyle()
@@ -452,7 +545,7 @@ struct OnboardingStep1: View {
                                                 .stroke(stroke, lineWidth: 1)
                                         )
                                         .cornerRadius(12)
-                                        .foregroundColor(.white)
+                                        .foregroundColor(themeManager.onboardingPrimaryText)
                                         .focused($step1Focus, equals: .nickname)
                                         .focusGlow(active: step1Focus == .nickname,
                                                    color: .white,
@@ -472,14 +565,15 @@ struct OnboardingStep1: View {
                                         Button {
                                             viewModel.gender = gender
                                         } label: {
+                                            let selected = viewModel.gender == gender
                                             Text(gender)
                                                 .frame(maxWidth: .infinity)
                                                 .padding()
-                                                .background(viewModel.gender == gender ? Color.white : panelBG)
-                                                .foregroundColor(viewModel.gender == gender ? .black : .white)
+                                                .background(selected ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.18 : 0.14) : panelBG)
+                                                .foregroundColor(selected ? themeManager.onboardingPrimaryText : themeManager.onboardingSecondaryText)
                                                 .overlay(
                                                     RoundedRectangle(cornerRadius: 10)
-                                                        .stroke(stroke, lineWidth: 1)
+                                                        .stroke(selected ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.55 : 0.35) : stroke, lineWidth: 1)
                                                 )
                                                 .cornerRadius(10)
                                         }
@@ -533,7 +627,7 @@ struct OnboardingStep1: View {
                                             .stroke(stroke, lineWidth: 1)
                                     )
                                     .cornerRadius(12)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(themeManager.onboardingPrimaryText)
                                     .focused($step1Focus, equals: .birth)
                                     .focusGlow(active: step1Focus == .birth,
                                                color: .white,
@@ -568,17 +662,17 @@ struct OnboardingStep1: View {
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text(result.name)
                                                 .font(.custom("Merriweather-Bold", size: 15))
-                                                .foregroundColor(.white)
+                                                .foregroundColor(themeManager.onboardingPrimaryText)
                                             Text(result.subtitle)
                                                 .font(.custom("Merriweather-Regular", size: 12))
-                                                .foregroundColor(.white.opacity(0.8))
+                                                .foregroundColor(themeManager.onboardingSecondaryText.opacity(0.9))
                                         }
                                         .padding(12)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .background(panelBG)
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 10)
-                                                .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                                                .stroke(stroke, lineWidth: 1)
                                         )
                                         .cornerRadius(10)
                                     }
@@ -613,7 +707,7 @@ struct OnboardingStep1: View {
                 }
                 OnboardingBackOverlay()
             }
-            .preferredColorScheme(.dark)
+            .preferredColorScheme(themeManager.preferredColorScheme)
             .navigationBarBackButtonHidden(true)
             .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
@@ -639,11 +733,11 @@ struct OnboardingStep1: View {
         }
         // only vertical padding so width won't expand beyond .frame(width:)
         .padding(.vertical, 10)
-        .background(viewModel.relationshipStatus == status ? Color.white : panelBG)
-        .foregroundColor(viewModel.relationshipStatus == status ? .black : .white)
+        .background(viewModel.relationshipStatus == status ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.18 : 0.14) : panelBG)
+        .foregroundColor(viewModel.relationshipStatus == status ? themeManager.onboardingPrimaryText : themeManager.onboardingSecondaryText)
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(stroke, lineWidth: 1)
+                .stroke(viewModel.relationshipStatus == status ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.55 : 0.35) : stroke, lineWidth: 1)
         )
         .cornerRadius(10)
     }
@@ -683,8 +777,8 @@ struct OnboardingStep2: View {
     @State private var tempBirthDate: Date = Date()
     @State private var tempBirthTime: Date = Date()
 
-    private let panelBG = Color.white.opacity(0.08)
-    private let stroke  = Color.white.opacity(0.25)
+    private var panelBG: Color { themeManager.onboardingPanelFill }
+    private var stroke: Color { themeManager.onboardingPanelStroke }
 
     // 生日范围（1900 ~ 今天）
     private var dateRange: ClosedRange<Date> {
@@ -707,7 +801,7 @@ struct OnboardingStep2: View {
 
                 ScrollView {
                     VStack(spacing: minLength * 0.045) {
-                        AlignaTopHeader()
+                        AlignaTopHeader(minLength: minLength)
 
                         Text("When were you born?")
                             .onboardingTitleStyle()
@@ -723,10 +817,10 @@ struct OnboardingStep2: View {
                             } label: {
                                 HStack {
                                     Text(viewModel.birth_date.formatted(.dateTime.year().month(.wide).day()))
-                                        .foregroundColor(.white)
+                                        .foregroundColor(themeManager.onboardingPrimaryText)
                                     Spacer()
                                     Image(systemName: "chevron.down")
-                                        .foregroundColor(.white.opacity(0.8))
+                                        .foregroundColor(themeManager.onboardingSecondaryText.opacity(0.9))
                                 }
                                 .padding()
                                 .background(panelBG)
@@ -746,10 +840,10 @@ struct OnboardingStep2: View {
                             } label: {
                                 HStack {
                                     Text(viewModel.birth_time.formatted(date: .omitted, time: .shortened))
-                                        .foregroundColor(.white)
+                                        .foregroundColor(themeManager.onboardingPrimaryText)
                                     Spacer()
                                     Image(systemName: "chevron.down")
-                                        .foregroundColor(.white.opacity(0.8))
+                                        .foregroundColor(themeManager.onboardingSecondaryText.opacity(0.9))
                                 }
                                 .padding()
                                 .background(panelBG)
@@ -849,7 +943,7 @@ struct OnboardingStep2: View {
                 Spacer()
                 Button("Done", action: done)
                     .font(.custom("Merriweather-Bold", size: 16))
-                    .foregroundColor(.white)
+                    .foregroundColor(themeManager.onboardingPrimaryText)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 6)
                     .background(Color.white.opacity(0.14))
@@ -862,8 +956,8 @@ struct OnboardingStep2: View {
                 .datePickerStyle(.wheel)
                 .labelsHidden()
                 .environment(\.colorScheme, .dark)
-                .tint(.white)
-                .foregroundColor(.white)
+                .tint(themeManager.accent)
+                .foregroundColor(themeManager.onboardingPrimaryText)
                 .padding(.bottom, 18)
         }
     }
@@ -901,8 +995,8 @@ struct OnboardingStep3: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
 
-    private let panelBG = Color.white.opacity(0.08)
-    private let stroke = Color.white.opacity(0.25)
+    private var panelBG: Color { themeManager.onboardingPanelFill }
+    private var stroke: Color { themeManager.onboardingPanelStroke }
 
     private let scentOptions  = ["Floral", "Strong", "Woody", "Citrus", "Spicy", "Other"]
     private let actOptions    = ["Static", "Dynamic", "No preference"]
@@ -952,7 +1046,7 @@ struct OnboardingStep3: View {
                         Color.clear
                             .frame(height: geometry.safeAreaInsets.top + 8)
 
-                        AlignaTopHeader()
+                        AlignaTopHeader(minLength: minLength)
 
                         Text("Your preferences")
                             .onboardingTitleStyle()
@@ -1007,12 +1101,7 @@ struct OnboardingStep3: View {
                                 ensureAuthenticatedThenUpload()
                             } label: {
                                 Text(hasAnySelection ? "Continue" : "Skip for now")
-                                    .font(.custom("Merriweather-Bold", size: 16))
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 12)
-                                    .background(Color.white)
-                                    .foregroundColor(.black)
-                                    .cornerRadius(16)
+                                    .onboardingPrimaryButtonStyle(isEnabled: !isLoading)
                             }
                             .disabled(isLoading)
                             .padding(.horizontal, 0)
@@ -1031,7 +1120,7 @@ struct OnboardingStep3: View {
                 loadingOverlay
             }
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(themeManager.preferredColorScheme)
         .onAppear {
             didAttemptReverseGeocode = false
             locationMessage = "Requesting location permission..."
@@ -1121,11 +1210,11 @@ struct OnboardingStep3: View {
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
-                        .background(selected ? Color.white : Color.white.opacity(0.08))
-                        .foregroundColor(selected ? .black : .white)
+                        .background(selected ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.18 : 0.14) : panelBG)
+                        .foregroundColor(selected ? themeManager.onboardingPrimaryText : themeManager.onboardingSecondaryText)
                         .overlay(
                             RoundedRectangle(cornerRadius: 14)
-                                .stroke(Color.white.opacity(selected ? 0.0 : 0.25), lineWidth: 1)
+                                .stroke(selected ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.55 : 0.35) : stroke, lineWidth: 1)
                         )
                         .cornerRadius(14)
                 }
@@ -1147,19 +1236,19 @@ struct OnboardingStep3: View {
             VStack(spacing: 14) {
                 Text("Preparing your profile…")
                     .font(.custom("Merriweather-Bold", size: 17))
-                    .foregroundColor(.white)
+                    .foregroundColor(themeManager.onboardingPrimaryText)
 
                 if isLoading {
                     ProgressView()
                         .progressViewStyle(.circular)
-                        .tint(.white)
+                        .tint(themeManager.accent)
                         .scaleEffect(0.9)
                 }
 
                 if let error = loadingErrorMessage {
                     Text(error)
                         .font(AlynnaTypography.font(.footnote))
-                        .foregroundColor(.white.opacity(0.75))
+                        .foregroundColor(themeManager.onboardingSecondaryText.opacity(0.85))
                         .multilineTextAlignment(.center)
 
                     HStack(spacing: 12) {
@@ -1168,7 +1257,7 @@ struct OnboardingStep3: View {
                             loadingErrorMessage = nil
                         }
                         .font(.custom("Merriweather-Bold", size: 14))
-                        .foregroundColor(.white)
+                        .foregroundColor(themeManager.onboardingPrimaryText)
                         .padding(.vertical, 8)
                         .padding(.horizontal, 14)
                         .background(Color.white.opacity(0.12))
@@ -1182,7 +1271,7 @@ struct OnboardingStep3: View {
                             ensureAuthenticatedThenUpload()
                         }
                         .font(.custom("Merriweather-Bold", size: 14))
-                        .foregroundColor(.white)
+                        .foregroundColor(themeManager.onboardingPrimaryText)
                         .padding(.vertical, 8)
                         .padding(.horizontal, 14)
                         .background(Color.white.opacity(0.2))
@@ -1191,16 +1280,16 @@ struct OnboardingStep3: View {
                 } else {
                     Text("This may take around a minute.")
                         .font(AlynnaTypography.font(.footnote))
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(themeManager.onboardingSecondaryText.opacity(0.75))
 
                     Text(loadingStageText)
                         .font(AlynnaTypography.font(.footnote))
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(themeManager.onboardingSecondaryText.opacity(0.75))
 
                     if showLongWaitHint {
                         Text("Still working—hang tight.")
                             .font(AlynnaTypography.font(.footnote))
-                            .foregroundColor(.white.opacity(0.7))
+                            .foregroundColor(themeManager.onboardingSecondaryText.opacity(0.75))
                     }
                 }
             }
@@ -1210,7 +1299,7 @@ struct OnboardingStep3: View {
             .cornerRadius(16)
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    .stroke(themeManager.onboardingPanelStroke.opacity(0.7), lineWidth: 1)
             )
             .frame(maxWidth: 320)
         }
@@ -1738,8 +1827,8 @@ struct OnboardingFinalStep: View {
 
     // 入场动画
     @State private var showIntro = false
-    private let panelBG = Color.white.opacity(0.08)
-    private let stroke = Color.white.opacity(0.25)
+    private var panelBG: Color { themeManager.onboardingPanelFill }
+    private var stroke: Color { themeManager.onboardingPanelStroke }
 
     var body: some View {
         GeometryReader { geo in
@@ -1755,7 +1844,7 @@ struct OnboardingFinalStep: View {
                         Color.clear
                             .frame(height: geo.safeAreaInsets.top + 7)
 
-                        AlignaTopHeader()
+                        AlignaTopHeader(minLength: minL)
 
                         Text("Confirm your information")
                             .onboardingTitleStyle()
@@ -1807,7 +1896,7 @@ struct OnboardingFinalStep: View {
                                                 .scaleEffect(0.8)
                                             Text("Preparing your profile…")
                                                 .font(.custom("Merriweather-Bold", size: 17))
-                                                .foregroundColor(.black)
+                                                .foregroundColor(themeManager.onboardingPrimaryText)
                                         }
                                     }
                                 }
@@ -1851,7 +1940,7 @@ struct OnboardingFinalStep: View {
                 }
                 OnboardingBackOverlay()
             }
-            .preferredColorScheme(.dark)
+            .preferredColorScheme(themeManager.preferredColorScheme)
             .onAppear {
                 starManager.animateStar = true
                 showIntro = false
@@ -1930,14 +2019,14 @@ struct OnboardingFinalStep: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.custom("Merriweather-Regular", size: 11))
-                .foregroundColor(.white.opacity(0.72))
+                .foregroundColor(themeManager.onboardingSecondaryText.opacity(0.8))
                 .tracking(0.6)
                 .textCase(.uppercase)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(value)
                 .font(.custom("Merriweather-Bold", size: 17))
-                .foregroundColor(.white)
+                .foregroundColor(themeManager.onboardingPrimaryText)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
