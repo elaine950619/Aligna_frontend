@@ -1772,7 +1772,7 @@ private struct ColorExtraContent: View {
             if let hex = hex {
                 ZStack(alignment: .bottomTrailing) {
                     BreathingCircle(color: Color(hex: hex), diameter: 230, duration: 4)
-                        .padding(.top, 32)
+                        .padding(.top, 20)
                         .contentShape(Rectangle())
                         .onTapGesture {
                             colorClickCount = min(colorClickCount + 1, 3)

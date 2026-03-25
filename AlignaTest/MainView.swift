@@ -1949,6 +1949,8 @@ struct MainView: View {
                             .frame(width: geometry.size.width * 0.16)  // slightly smaller to balance text
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                             .shadow(radius: 1.5)
+                            .scaleEffect(isMantraExpanded ? 0.78 : 1)
+                            .animation(.spring(response: 0.5, dampingFraction: 0.82, blendDuration: 0.2), value: isMantraExpanded)
                         
                         // 推荐名称（小字体，紧贴图标）
                         Text(recommendationTitles[title] ?? "")
