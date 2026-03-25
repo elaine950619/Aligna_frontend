@@ -61,7 +61,7 @@ struct FrontPageView: View {
                                 .environmentObject(themeManager)
                                 .environmentObject(viewModel)) {
                                     Text("Sign Up")
-                                        .font(AlynnaTypography.font(.headline))
+                                        .font(AlynnaTypography.font(.headline).weight(.semibold))
                                         .frame(maxWidth: .infinity)
                                         .padding()
                                         .background(themeManager.fixedNightTextPrimary)
@@ -75,7 +75,7 @@ struct FrontPageView: View {
                                 .environmentObject(themeManager)
                                 .environmentObject(viewModel)) {
                                     Text("Log In")
-                                        .font(AlynnaTypography.font(.headline))
+                                        .font(AlynnaTypography.font(.headline).weight(.semibold))
                                         .frame(maxWidth: .infinity)
                                         .padding()
                                         .background(Color.white.opacity(0.1))

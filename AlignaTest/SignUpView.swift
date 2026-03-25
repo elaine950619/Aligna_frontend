@@ -342,7 +342,7 @@ struct SignUpView: View {
                                             }
                                             Text(isActive(.emailSignUp) ? "Creating..." : "Create Account")
                                         }
-                                        .font(AlynnaTypography.font(.headline))
+                                        .font(AlynnaTypography.font(.headline).weight(.semibold))
                                         .padding()
                                         .frame(maxWidth: .infinity)
                                         .background(themeManager.fixedNightTextPrimary)

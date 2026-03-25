@@ -165,7 +165,7 @@ struct LoginView: View {
                                         .foregroundColor(.black)
                                         .frame(width: 24, height: 24)
                                     Text("Sign in with Google")
-                                        .font(AlynnaTypography.font(.headline))
+                                        .font(AlynnaTypography.font(.headline).weight(.semibold))
                                 }
                                 .foregroundColor(.black)
                                 .frame(maxWidth: .infinity)
@@ -437,7 +437,7 @@ struct LoginView: View {
                                     .environmentObject(viewModel)
                             ) {
                                 Text("Create An Account")
-                                    .font(AlynnaTypography.font(.footnote))
+                                    .font(AlynnaTypography.font(.footnote).weight(.semibold))
                                     .foregroundColor(themeManager.fixedNightTextPrimary)
                                     .underline()
                             }

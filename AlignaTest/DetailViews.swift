@@ -439,6 +439,48 @@ extension View {
     }
 }
 
+private struct GrowthWiggleModifier: ViewModifier {
+    @State private var grewIn = false
+    @State private var wiggleActive = false
+    @State private var wigglePhase = false
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(grewIn ? 1.0 : 0.84)
+            .rotationEffect(wiggleActive ? (wigglePhase ? .degrees(1.6) : .degrees(-1.6)) : .degrees(0))
+            .offset(x: wiggleActive ? (wigglePhase ? 1.6 : -1.6) : 0)
+            .onAppear {
+                grewIn = false
+                wiggleActive = false
+                wigglePhase = false
+                withAnimation(.spring(response: 0.65, dampingFraction: 0.78)) {
+                    grewIn = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                    wiggleActive = true
+                    withAnimation(.easeInOut(duration: 0.18).repeatCount(3, autoreverses: true)) {
+                        wigglePhase.toggle()
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
+                        wiggleActive = false
+                        wigglePhase = false
+                    }
+                }
+            }
+            .onDisappear {
+                grewIn = false
+                wiggleActive = false
+                wigglePhase = false
+            }
+    }
+}
+
+extension View {
+    func growthWiggle() -> some View {
+        modifier(GrowthWiggleModifier())
+    }
+}
+
 struct ClickableHeroImage: View {
     @EnvironmentObject var themeManager: ThemeManager
 
@@ -466,6 +508,7 @@ struct ClickableHeroImage: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .foregroundColor(themeManager.foregroundColor)
                 .breathingIcon()
+                .growthWiggle()
                 .contentShape(Rectangle())
                 .onTapGesture {
                     clickCount = min(clickCount + 1, 3)
@@ -1119,6 +1162,7 @@ private struct SoundExtraContent: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .foregroundColor(themeManager.foregroundColor)
                     .breathingIcon()
+                    .growthWiggle()
                     .contentShape(Rectangle())
                     .onTapGesture {
                         soundClickCount = min(soundClickCount + 1, 3)
@@ -1584,6 +1628,7 @@ private struct GemstoneExtraContent: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .foregroundColor(themeManager.foregroundColor)
                     .breathingIcon()
+                    .growthWiggle()
                     .contentShape(Rectangle())
                     .onTapGesture {
                         gemClickCount = min(gemClickCount + 1, 3)
@@ -1888,6 +1933,7 @@ private struct ScentExtraContent: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .foregroundColor(themeManager.foregroundColor)
                     .breathingIcon()
+                    .growthWiggle()
                     .contentShape(Rectangle())
                     .onTapGesture {
                         scentClickCount = min(scentClickCount + 1, 3)
