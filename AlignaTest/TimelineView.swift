@@ -565,8 +565,6 @@ struct TimelineView: View {
                                     .italic()
                                     .multilineTextAlignment(.leading)
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                    .lineLimit(2)
-                                    .truncationMode(.tail)
                                     .foregroundColor(
                                         themeManager.isNight
                                         ? themeManager.primaryText.opacity(0.9)
