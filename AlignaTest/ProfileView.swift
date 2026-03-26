@@ -1105,9 +1105,9 @@ enum ThemePreference: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .light: return "Light"
-        case .dark:  return "Dark"
-        case .auto:  return "System"
+        case .light: return "Dawn"
+        case .dark:  return "Dust"
+        case .auto:  return "Adaptive"
         }
     }
     var icon: String  {

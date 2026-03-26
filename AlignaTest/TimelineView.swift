@@ -320,7 +320,6 @@ struct TimelineView: View {
         let today = Calendar.current.startOfDay(for: Date())
         let day = Calendar.current.startOfDay(for: date)
         if day > today { return false }
-        if day == today { return true }
         let key = DateFormatter.appDayKey.string(from: day)
         return validDayKeys.contains(key)
     }
@@ -338,10 +337,45 @@ struct TimelineView: View {
             .whereField("createdAt", isGreaterThanOrEqualTo: startKey)
             .whereField("createdAt", isLessThanOrEqualTo: endKey)
             .getDocuments { snap, _ in
-                let keys = snap?.documents.compactMap { $0.data()["createdAt"] as? String } ?? []
-                DispatchQueue.main.async {
-                    validDayKeys = Set(keys)
+                let keys = snap?.documents.compactMap { doc -> String? in
+                    if let s = doc.data()["createdAt"] as? String {
+                        return s
+                    }
+                    if let ts = doc.data()["createdAt"] as? Timestamp {
+                        return DateFormatter.appDayKey.string(from: ts.dateValue())
+                    }
+                    return nil
+                } ?? []
+
+                if !keys.isEmpty {
+                    DispatchQueue.main.async {
+                        validDayKeys = Set(keys)
+                    }
+                    return
                 }
+
+                // Fallback for mixed types: fetch by uid only, then filter in-memory by month.
+                Firestore.firestore().collection("daily_recommendation")
+                    .whereField("uid", isEqualTo: uid)
+                    .getDocuments { fallbackSnap, _ in
+                        let fallbackKeys = fallbackSnap?.documents.compactMap { doc -> String? in
+                            if let s = doc.data()["createdAt"] as? String {
+                                return s
+                            }
+                            if let ts = doc.data()["createdAt"] as? Timestamp {
+                                return DateFormatter.appDayKey.string(from: ts.dateValue())
+                            }
+                            return nil
+                        } ?? []
+
+                        let filtered = fallbackKeys.filter { key in
+                            key >= startKey && key <= endKey
+                        }
+
+                        DispatchQueue.main.async {
+                            validDayKeys = Set(filtered)
+                        }
+                    }
             }
     }
 
@@ -430,6 +464,7 @@ struct TimelineView: View {
                         .shadow(color: .black.opacity(themeManager.isNight ? 0.12 : 0.10), radius: 10, y: 6)
                         .cornerRadius(20)
                         .onAppear {
+                            fetchValidDates(for: selectedDate)
                             loadTimelineContent(for: selectedDate)
                         }
                         .onChange(of: selectedDate) {

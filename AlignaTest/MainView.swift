@@ -137,6 +137,7 @@ struct MainView: View {
     @State private var isFetchingToday: Bool = false
     
     @State private var isMantraExpanded: Bool = false
+    @State private var showGridItems: Bool = false
     @State private var showMantraSaveAlert: Bool = false
     @State private var showTodaySoundPlayer: Bool = false
     @State private var isAutoDismissSoundPlayer = false
@@ -522,16 +523,22 @@ struct MainView: View {
                                         GridItem(.flexible(), spacing: gridSpacing, alignment: .center)
                                     ]
 
+                                    let gridItems = [
+                                        "Place",
+                                        "Gemstone",
+                                        "Color",
+                                        "Scent",
+                                        "Activity",
+                                        "Sound",
+                                        "Career",
+                                        "Relationship"
+                                    ]
+
                                     LazyVGrid(columns: columns,
                                               spacing: gridSpacing) {
-                                        navItemView(title: "Place", geometry: geometry)
-                                        navItemView(title: "Gemstone", geometry: geometry)
-                                        navItemView(title: "Color", geometry: geometry)
-                                        navItemView(title: "Scent", geometry: geometry)
-                                        navItemView(title: "Activity", geometry: geometry)
-                                        navItemView(title: "Sound", geometry: geometry)
-                                        navItemView(title: "Career", geometry: geometry)
-                                        navItemView(title: "Relationship", geometry: geometry)
+                                        ForEach(Array(gridItems.enumerated()), id: \.offset) { index, title in
+                                            navItemView(title: title, geometry: geometry, index: index)
+                                        }
                                     }
                                     .frame(height: gridHeight)
                                     .padding(.horizontal, geometry.size.width * 0.05)
@@ -1281,6 +1288,15 @@ struct MainView: View {
         }
     }
 
+    private func triggerGridIconAnimation() {
+        showGridItems = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            withAnimation(.easeOut(duration: 0.35)) {
+                showGridItems = true
+            }
+        }
+    }
+
     var body: some View {
         Group {
             switch bootPhase {
@@ -1381,11 +1397,22 @@ struct MainView: View {
                             )
                         }
                     }
+                    .onChange(of: isMantraExpanded) { _, expanded in
+                        if expanded {
+                            showGridItems = false
+                        } else {
+                            triggerGridIconAnimation()
+                        }
+                    }
                     .onChange(of: viewModel.recommendations) { _, newValue in
                         let key = (newValue["Sound"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard !key.isEmpty, key != lastPrefetchedSoundKey else { return }
-                        lastPrefetchedSoundKey = key
-                        soundPlayer.prefetch(named: key)
+                        if !key.isEmpty, key != lastPrefetchedSoundKey {
+                            lastPrefetchedSoundKey = key
+                            soundPlayer.prefetch(named: key)
+                        }
+                        if !isMantraExpanded {
+                            triggerGridIconAnimation()
+                        }
                     }
                     .onChange(of: shouldExpandMantraFromNotification) { _, newValue in
                         guard newValue else { return }
@@ -1946,7 +1973,7 @@ struct MainView: View {
     
     
     
-    private func navItemView(title: String, geometry: GeometryProxy) -> some View {
+    private func navItemView(title: String, geometry: GeometryProxy, index: Int) -> some View {
         let documentName = viewModel.recommendations[title] ?? ""
         let startCat = RecCategory(rawValue: title) // "Place" -> .Place
         return Group {
@@ -1964,6 +1991,7 @@ struct MainView: View {
                             .shadow(radius: 1.5)
                             .scaleEffect(isMantraExpanded ? 0.78 : 1)
                             .animation(.spring(response: 0.5, dampingFraction: 0.82, blendDuration: 0.2), value: isMantraExpanded)
+                            .staggered(index, show: $showGridItems, baseDelay: 0.07)
                         
                         // 推荐名称（小字体，紧贴图标）
                         Text(recommendationTitles[title] ?? "")
