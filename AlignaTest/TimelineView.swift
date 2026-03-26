@@ -394,7 +394,8 @@ struct TimelineView: View {
     
     var body: some View {
         NavigationStack {
-            ZStack {
+            GeometryReader { geometry in
+                ZStack {
                 AppBackgroundView()
                     .ignoresSafeArea()
         
@@ -532,9 +533,10 @@ struct TimelineView: View {
                             .padding(.horizontal, 16)
                         }
                     }
-                    .frame(maxWidth: .infinity)
+                    .frame(width: geometry.size.width, alignment: .top)
                     .padding(.top)
                 }
+            }
             }
             .toolbar(.hidden, for: .navigationBar)
         }
