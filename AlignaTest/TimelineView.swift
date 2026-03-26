@@ -22,13 +22,11 @@ struct NoDataMessage: View {
                 .foregroundColor(themeManager.accent)
 
             Text("No data available for this day")
-                .font(TimelineType.cardTitle18MerriweatherBlack())
-                .lineSpacing(TimelineType.cardTitle18LineSpacing)
+                .font(AlynnaTypography.font(.headline))
                 .foregroundColor(themeManager.primaryText)
 
             Text(DateFormatter.appLong.string(from: date))
-                .font(TimelineType.cardBody14MerriweatherRegular())
-                .lineSpacing(TimelineType.cardBody14LineSpacing)
+                .font(AlynnaTypography.font(.subheadline))
                 .foregroundColor(themeManager.descriptionText)
         }
         .padding(.vertical, 18)
@@ -150,7 +148,7 @@ struct SuggestionRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .center, spacing: 10) {
             // Give the icon its own vertical lane so it visually spans title + subtitle.
             Group {
                 if !iconName.isEmpty, UIImage(named: iconName) != nil {
@@ -171,32 +169,29 @@ struct SuggestionRow: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
                     Text(item.title)
-                        .font(TimelineType.cardTitle18MerriweatherBlack())
-                        .lineSpacing(TimelineType.cardTitle18LineSpacing)
+                        .font(AlynnaTypography.font(.headline))
                         .foregroundColor(themeManager.primaryText)
                         .lineLimit(1)
 
                     Spacer(minLength: 12)
 
                     Text(item.category)
-                        .font(TimelineType.tag14MerriweatherLight())
-                        .lineSpacing(TimelineType.tag14LineSpacing)
+                        .font(AlynnaTypography.font(.caption1))
                         .tracking(0.7)
                         .foregroundColor(themeManager.descriptionText.opacity(0.9))
                 }
 
                 if !item.description.isEmpty {
                     Text(item.description)
-                        .font(TimelineType.cardBody14MerriweatherRegular())
-                        .lineSpacing(TimelineType.cardBody14LineSpacing)
+                        .font(AlynnaTypography.font(.subheadline))
                         .foregroundColor(themeManager.descriptionText)
                         .lineLimit(1)
                 }
             }
         }
         // Card container to match the React “soft panel”
-        .padding(.vertical, 12)
-        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 10)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(
@@ -424,8 +419,22 @@ struct TimelineView: View {
 
         return AttributedString(attributed)
     }
-    
-    
+
+    private func sectionHeader(title: String, systemName: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: systemName)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(themeManager.accent)
+
+            Text(title)
+                .font(AlynnaTypography.font(.headline))
+                .fontWeight(.semibold)
+                .foregroundColor(themeManager.primaryText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+    }
+
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
@@ -439,16 +448,16 @@ struct TimelineView: View {
                                             .padding(.bottom, 4)
                                             .foregroundColor(themeManager.foregroundColor)
                     
-                    VStack(spacing: 18) {
+                    VStack(spacing: 12) {
                         CalendarView(
                             selectedDate: $selectedDate,
                             accentColor: themeManager.accent,
                             isDateEnabled: { isDateSelectable($0) },
                             onMonthChange: { fetchValidDates(for: $0) }
                         )
-                        .padding(8)
+                        .padding(6)
                         .background(
-                            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
                                 .fill(themeManager.panelFill)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -462,7 +471,7 @@ struct TimelineView: View {
                                 )
                         )
                         .shadow(color: .black.opacity(themeManager.isNight ? 0.12 : 0.10), radius: 10, y: 6)
-                        .cornerRadius(20)
+                        .cornerRadius(18)
                         .onAppear {
                             fetchValidDates(for: selectedDate)
                             loadTimelineContent(for: selectedDate)
@@ -472,101 +481,132 @@ struct TimelineView: View {
                         }
 
                         .padding(.horizontal, 16)
-                        
-                        Group {
-                            Text(indentedMantra)
-                                .italic()
-                                .multilineTextAlignment(.leading)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 24)
-                                // use existing theme colors (no new palette)
-                                .foregroundColor(
-                                    dailyVM.mantra.isEmpty
-                                    ? themeManager.descriptionText.opacity(0.9)       // placeholder = muted
-                                    : (themeManager.isNight
-                                        ? themeManager.primaryText.opacity(0.9)       // night = bright cream
-                                        : themeManager.primaryText.opacity(0.8))      // light = warm brown, softened
-                                )
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Rectangle()
+                                .fill(themeManager.descriptionText.opacity(0.2))
+                                .frame(height: 1)
+
+                            Text(DateFormatter.appLong.string(from: selectedDate))
+                                .font(AlynnaTypography.font(.caption1))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.85))
                         }
-                        .id(selectedDate)
+                        .padding(.horizontal, 16)
                         
-                        // --- Journal panel at bottom ---
+                        sectionHeader(title: "Journal", systemName: "book.closed")
+
                         NavigationLink {
                             JournalView(date: selectedDate)
                                 .environmentObject(themeManager)
                                 .environmentObject(starManager)
                                 .environmentObject(viewModel)
                         } label: {
-                            VStack(alignment: .leading, spacing: 10) {
-                                HStack {
-                                    Image(systemName: "book.closed")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(themeManager.accent)
+                            HStack(alignment: .center, spacing: 10) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack(alignment: .firstTextBaseline, spacing: 12) {
+                                        Text("Last entry")
+                                            .font(AlynnaTypography.font(.headline))
+                                            .foregroundColor(themeManager.primaryText)
+                                            .lineLimit(1)
 
-                                    Text("Journal")
-                                        .font(TimelineType.cardTitle18MerriweatherBlack())
-                                        .lineSpacing(TimelineType.cardTitle18LineSpacing)
-                                        .foregroundColor(themeManager.primaryText)
+                                        Spacer(minLength: 12)
 
-                                    Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(themeManager.descriptionText.opacity(0.8))
+                                    }
 
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(themeManager.descriptionText.opacity(0.8))
-                                }
-
-                                if isLoadingJournal {
-                                    Text("Loading…")
-                                        .font(TimelineType.cardBody14MerriweatherRegular())
-                                        .lineSpacing(TimelineType.cardBody14LineSpacing)
-                                        .foregroundColor(themeManager.descriptionText)
-                                } else if journalText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                    Text("Tap to write your daily check-in…")
-                                        .font(TimelineType.cardBody14MerriweatherRegular())
-                                        .lineSpacing(TimelineType.cardBody14LineSpacing)
-                                        .foregroundColor(themeManager.descriptionText)
-                                } else {
-                                    Text(journalText)
-                                        .font(TimelineType.cardBody14MerriweatherRegular())
-                                        .lineSpacing(TimelineType.cardBody14LineSpacing)
-                                        .foregroundColor(themeManager.descriptionText)
-                                        .lineLimit(2)
+                                    if isLoadingJournal {
+                                        Text("Loading…")
+                                            .font(AlynnaTypography.font(.subheadline))
+                                            .foregroundColor(themeManager.descriptionText)
+                                    } else if journalText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                        Text("No entry yet.")
+                                            .font(AlynnaTypography.font(.subheadline))
+                                            .foregroundColor(themeManager.descriptionText)
+                                    } else {
+                                        Text(journalText)
+                                            .font(AlynnaTypography.font(.subheadline))
+                                            .foregroundColor(themeManager.descriptionText)
+                                            .lineLimit(2)
+                                            .truncationMode(.tail)
+                                    }
                                 }
                             }
-                            .padding(.vertical, 14)
-                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 10)
                             .background(
-                                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                    .fill(themeManager.panelFill)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                            .stroke(themeManager.panelStrokeHi.opacity(0.9), lineWidth: 1)
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .fill(
+                                        themeManager.isNight
+                                        ? Color.white.opacity(0.06)
+                                        : Color.black.opacity(0.06)
                                     )
                             )
-                            .shadow(color: .black.opacity(themeManager.isNight ? 0.12 : 0.10), radius: 10, y: 6)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                            )
+                            .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 6)
                         }
                         .buttonStyle(.plain)
                         .padding(.horizontal, 16)
-                        .padding(.bottom, 20)
-                        
+
+                        sectionHeader(title: "Mantra", systemName: "quote.bubble")
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            if dailyVM.mantra.isEmpty {
+                                Text("No mantra for this day.")
+                                    .font(AlynnaTypography.font(.subheadline))
+                                    .foregroundColor(themeManager.descriptionText)
+                            } else {
+                                Text(indentedMantra)
+                                    .font(AlynnaTypography.font(.body))
+                                    .italic()
+                                    .multilineTextAlignment(.leading)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .lineLimit(2)
+                                    .truncationMode(.tail)
+                                    .foregroundColor(
+                                        themeManager.isNight
+                                        ? themeManager.primaryText.opacity(0.9)
+                                        : themeManager.primaryText.opacity(0.8)
+                                    )
+                            }
+                        }
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(themeManager.panelFill.opacity(0.75))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                        .stroke(themeManager.panelStrokeHi.opacity(0.5), lineWidth: 1)
+                                )
+                        )
+                        .padding(.horizontal, 16)
+
+                        sectionHeader(title: "Rhythm", systemName: "waveform")
+
                         // Build an ordered list of items for the categories you care about
                         let dayItems: [SuggestionItem] = allCategories.compactMap { cat in
                             dailyVM.items.first(where: { $0.category == cat })
                         }
 
-                        // If there are NO items (and optionally no mantra), show the message
-                        if dayItems.isEmpty /* && dailyVM.mantra.isEmpty */ {
-                            NoDataMessage(date: selectedDate)
-                                .environmentObject(themeManager)
-                        } else {
-                            // Show only the items that exist — no placeholders
-                            LazyVGrid(columns: [GridItem(.flexible())], spacing: 12) {
-                                ForEach(dayItems, id: \.id) { item in
-                                    SuggestionRow(item: item)
+                        Group {
+                            if dayItems.isEmpty {
+                                NoDataMessage(date: selectedDate)
+                                    .environmentObject(themeManager)
+                            } else {
+                                LazyVGrid(columns: [GridItem(.flexible())], spacing: 8) {
+                                    ForEach(dayItems, id: \.id) { item in
+                                        SuggestionRow(item: item)
+                                    }
                                 }
+                                .padding(.horizontal, 16)
                             }
-                            .padding(.horizontal, 16)
                         }
+                        .id(selectedDate)
                     }
                     .frame(width: geometry.size.width, alignment: .top)
                     .padding(.top)

@@ -113,7 +113,7 @@ struct DayCell: View {
                     ZStack {
                         // gold moon stays as-is
                         Image(systemName: moonSymbol(for: phase))
-                            .font(.system(size: 20))
+                            .font(.system(size: 18))
                             .foregroundStyle(
                                 LinearGradient(colors: [.yellow.opacity(0.95), .orange.opacity(0.9)],
                                                startPoint: .topLeading, endPoint: .bottomTrailing)
@@ -122,7 +122,7 @@ struct DayCell: View {
                         // selection ring uses your accent
                         Circle()
                             .stroke(isSelected ? accent : .clear, lineWidth: 2)
-                            .frame(width: 32, height: 32)
+                            .frame(width: 28, height: 28)
                     }
 
                     // day label uses your theme primary text
@@ -132,20 +132,20 @@ struct DayCell: View {
                         .foregroundColor(themeManager.primaryText.opacity(0.9))
 
                 }
-                .frame(width: 40)
+                .frame(width: 34)
                 .opacity(isEnabled ? 1.0 : 0.35)
             }
             .buttonStyle(.plain)
             .disabled(!isEnabled)
         } else {
             VStack(spacing: 6) {
-                Color.clear.frame(width: 36, height: 36)
+                Color.clear.frame(width: 30, height: 30)
                 Text(" ")
                     .font(TimelineType.date14MerriweatherRegular())
                     .lineSpacing(TimelineType.date14LineSpacing)
 
             }
-            .frame(width: 44)
+            .frame(width: 34)
         }
     }
 }
@@ -162,17 +162,17 @@ struct CalendarView: View {
 
     @State private var displayMonth: Date = Date()
     private let calendar = Calendar.current
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 6) {
             // Header
             HStack {
                 Button { prevMonth() } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(themeManager.foregroundColor)          // ← was white
-                        .padding(8)
+                        .padding(6)
                 }
                 Spacer()
                 Text(monthTitle)
@@ -185,7 +185,7 @@ struct CalendarView: View {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(themeManager.foregroundColor)          // ← was white
-                        .padding(8)
+                        .padding(6)
                         .background(Circle().fill(Color.white.opacity(0.06)))
                 }
             }
@@ -197,7 +197,7 @@ struct CalendarView: View {
                         .font(TimelineType.date14MerriweatherRegular())
                         .lineSpacing(TimelineType.date14LineSpacing)
                         .foregroundColor(themeManager.foregroundColor.opacity(0.9)) // ✅ match brown labels
-                        .frame(width: 40, alignment: .center) // ✅ same as DayCell width
+                        .frame(width: 34, alignment: .center) // ✅ same as DayCell width
                 }
             }
 
