@@ -596,6 +596,10 @@ struct MainView: View {
                     selected: cat,
                     onBack: {
                         shouldCollapseMantraOnReturn = true
+                        mainNavigationPath = NavigationPath()
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isMantraExpanded = false
+                        }
                     }
                 )
                     .environmentObject(starManager)
