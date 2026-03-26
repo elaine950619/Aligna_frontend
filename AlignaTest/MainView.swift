@@ -410,6 +410,7 @@ struct MainView: View {
                         .allowsHitTesting(isMantraReady)
                         
                         if isMantraExpanded {
+                            let actionButtonSize: CGFloat = 32
                             HStack(spacing: 12) {
                                 Button {
                                     presentMantraShareSheet()
@@ -417,8 +418,8 @@ struct MainView: View {
                                     Image(systemName: "square.and.arrow.up")
                                         .font(AlynnaTypography.font(.footnote))
                                         .foregroundColor(themeManager.primaryText)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 6)
+                                        .frame(width: actionButtonSize, height: actionButtonSize)
+                                        .contentShape(Rectangle())
                                 }
                                 .alert("Share failed", isPresented: $showMantraSaveAlert) {
                                     Button("OK", role: .cancel) { }
@@ -455,8 +456,8 @@ struct MainView: View {
                                                 )
                                         }
                                     }
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 6)
+                                    .frame(width: actionButtonSize, height: actionButtonSize)
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                                 .sheet(isPresented: $showTodaySoundPlayer, onDismiss: {
@@ -481,16 +482,18 @@ struct MainView: View {
                                         mainNavigationPath.append(RecCategory.Color)
                                     }
                                 } label: {
-                                    RoundedRectangle(cornerRadius: 2)
-                                        .fill(Color(hex: colorHex))
-                                        .frame(width: 14, height: 14)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 5)
-                                                .stroke(Color.white.opacity(0.25), lineWidth: 1)
-                                        )
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 6)
-                                        .opacity(colorDoc.isEmpty ? 0.4 : 1)
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 2)
+                                            .fill(Color(hex: colorHex))
+                                            .frame(width: 14, height: 14)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 5)
+                                                    .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                                            )
+                                    }
+                                    .frame(width: actionButtonSize, height: actionButtonSize)
+                                    .contentShape(Rectangle())
+                                    .opacity(colorDoc.isEmpty ? 0.4 : 1)
                                 }
                                 .buttonStyle(.plain)
                                 .disabled(colorDoc.isEmpty)
