@@ -323,11 +323,10 @@ struct ProfileLoginView: View {
                     HStack {
                         Button(action: { dismiss() }) {
                             Image(systemName: "chevron.left")
-                                .font(AlynnaTypography.font(.title3))
-                                .padding()
-                                .background(panelBG)
-                                .clipShape(Circle())
+                                .font(AlynnaTypography.font(.title2))
                                 .foregroundColor(themeManager.fixedNightTextPrimary)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
                         }
                         .padding(.leading, geometry.size.width * 0.05)
                         .padding(.top, geometry.size.height * 0.05)
@@ -1369,8 +1368,6 @@ struct ProfileView: View {
                                 Image(systemName: "chevron.left")
                                     .font(.title3.weight(.semibold))
                                     .foregroundColor(themeManager.primaryText)
-                                    .padding(12)
-                                    .background(.ultraThinMaterial, in: Circle())
                             }
                             Spacer()
                         }

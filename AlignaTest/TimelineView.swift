@@ -75,8 +75,10 @@ private struct TimelineHeader: View {
                 HStack {
                     Button(action: onBack) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: iconSize, weight: .semibold))
+                            .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(themeManager.foregroundColor)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
 //                            .padding(paddingSize)
     //                        .background(backgroundColor)
                             .clipShape(Circle())

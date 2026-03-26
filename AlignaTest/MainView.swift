@@ -2701,7 +2701,8 @@ struct CustomBackButton: View {
                         .padding(showsBackground ? 12 : 0)
                         .background(showsBackground ? Color.white.opacity(0.10) : Color.clear)
                         .clipShape(Circle())
-                        .contentShape(Circle())
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 Spacer()
             }

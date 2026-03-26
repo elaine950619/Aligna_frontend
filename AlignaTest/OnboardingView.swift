@@ -242,10 +242,10 @@ private struct OnboardingBackOverlay: View {
                     dismiss()
                 } label: {
                     Image(systemName: "chevron.left")
-                        .font(.title3.weight(.semibold))
+                        .font(.title2.weight(.semibold))
                         .foregroundColor(themeManager.onboardingPrimaryText)
-                        .padding(12)
-                        .background(.ultraThinMaterial, in: Circle())
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 Spacer()
             }
