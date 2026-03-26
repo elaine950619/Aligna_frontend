@@ -19,6 +19,7 @@ struct JournalView: View {
     @State private var keyboardHeight: CGFloat = 0
     @State private var keyboardShowObserver: NSObjectProtocol?
     @State private var keyboardHideObserver: NSObjectProtocol?
+    @State private var showNotesEditor: Bool = false
     private enum StorageMode { case recommendation(String), standaloneUser }
     @State private var storageMode: StorageMode? = nil
     private let allowStandaloneIfNoRec = true
@@ -90,23 +91,25 @@ struct JournalView: View {
 
                     sectionTitle("Notes")
                     sectionCard {
-                        ZStack(alignment: .topLeading) {
-                            if text.isEmpty {
-                                Text("Tap to write…")
-                                    .foregroundStyle(themeManager.descriptionText.opacity(0.85))
-                                    .padding(.top, 1)
-                                    .padding(.horizontal, 1)
-                                    .allowsHitTesting(false)
+                        Button {
+                            showNotesEditor = true
+                        } label: {
+                            ZStack(alignment: .topLeading) {
+                                if text.isEmpty {
+                                    Text("Tap to edit notes")
+                                        .foregroundStyle(themeManager.descriptionText.opacity(0.85))
+                                        .padding(.top, 1)
+                                        .padding(.horizontal, 1)
+                                } else {
+                                    Text(text)
+                                        .foregroundColor(themeManager.descriptionText.opacity(0.85))
+                                        .font(.system(.body, design: .rounded))
+                                        .multilineTextAlignment(.leading)
+                                }
                             }
-                            TextEditor(text: $text)
-                                .scrollContentBackground(.hidden)
-                                .frame(maxWidth: .infinity, minHeight: 140, maxHeight: .infinity, alignment: .topLeading)
-                                .padding(1)
-                                .foregroundColor(themeManager.descriptionText.opacity(0.85))
-                                .tint(themeManager.accent)
-                                .font(.system(.body, design: .rounded))
-                                .layoutPriority(1)
+                            .frame(maxWidth: .infinity, minHeight: 140, alignment: .topLeading)
                         }
+                        .buttonStyle(.plain)
                         .frame(maxWidth: .infinity)
                     }
                 }
@@ -184,6 +187,13 @@ struct JournalView: View {
             }
         } message: {
             Text("This will clear the current text. It won’t delete anything saved previously.")
+        }
+        .sheet(isPresented: $showNotesEditor) {
+            NotesEditorSheet(initialText: text) { updatedText in
+                text = updatedText
+            }
+            .environmentObject(starManager)
+            .environmentObject(themeManager)
         }
         .onAppear {
             loadEntry()
@@ -486,6 +496,81 @@ struct JournalView: View {
                     }
                     c.resume()
                 }
+            }
+        }
+    }
+}
+
+private struct NotesEditorSheet: View {
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    @Environment(\.dismiss) private var dismiss
+
+    let initialText: String
+    let onSave: (String) -> Void
+
+    @State private var draft: String
+    @FocusState private var isEditorFocused: Bool
+
+    init(initialText: String, onSave: @escaping (String) -> Void) {
+        self.initialText = initialText
+        self.onSave = onSave
+        _draft = State(initialValue: initialText)
+    }
+
+    var body: some View {
+        ZStack {
+            (themeManager.isNight ? Color.black.opacity(0.6) : Color.white.opacity(0.6))
+                .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                HStack {
+                    Button("Close") { dismiss() }
+                        .font(.custom("Merriweather-Regular", size: 16))
+
+                    Spacer()
+
+                    Button("Save") {
+                        onSave(draft)
+                        dismiss()
+                    }
+                    .font(.custom("Merriweather-Bold", size: 16))
+                }
+                .foregroundColor(themeManager.accent)
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+
+                Text("Notes")
+                    .font(.custom("Merriweather-Bold", size: 22))
+                    .foregroundColor(themeManager.primaryText)
+
+                TextEditor(text: $draft)
+                    .focused($isEditorFocused)
+                    .scrollContentBackground(.hidden)
+                    .padding(12)
+                    .foregroundColor(themeManager.primaryText.opacity(0.92))
+                    .tint(themeManager.accent)
+                    .font(.system(.body, design: .rounded))
+                    .background(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(themeManager.panelFill)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .stroke(themeManager.panelStrokeHi.opacity(0.9), lineWidth: 1)
+                            )
+                    )
+                    .padding(.horizontal, 20)
+
+                Spacer(minLength: 12)
+            }
+        }
+        .preferredColorScheme(themeManager.preferredColorScheme)
+        .presentationDetents([.fraction(0.8), .large])
+        .presentationDragIndicator(.hidden)
+        .presentationBackground(.clear)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                isEditorFocused = true
             }
         }
     }

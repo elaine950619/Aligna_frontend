@@ -143,6 +143,80 @@ func parseBirthDateString(_ s: String) -> Date? {
     return ISO8601Calendar.date(from: s) ?? DF_YMD.date(from: s) ?? DF_YMD_SLASH.date(from: s)
 }
 
+private struct LoadingNotesEditorSheet: View {
+    @EnvironmentObject var starManager: StarAnimationManager
+    @EnvironmentObject var themeManager: ThemeManager
+    @Environment(\.dismiss) private var dismiss
+
+    let initialText: String
+    let onSave: (String) -> Void
+
+    @State private var draft: String
+    @FocusState private var isEditorFocused: Bool
+
+    init(initialText: String, onSave: @escaping (String) -> Void) {
+        self.initialText = initialText
+        self.onSave = onSave
+        _draft = State(initialValue: initialText)
+    }
+
+    var body: some View {
+        ZStack {
+            (themeManager.isNight ? Color.black.opacity(0.6) : Color.white.opacity(0.6))
+                .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                HStack {
+                    Button("Close") { dismiss() }
+                        .font(.custom("Merriweather-Regular", size: 16))
+
+                    Spacer()
+
+                    Button("Save") {
+                        onSave(draft)
+                        dismiss()
+                    }
+                    .font(.custom("Merriweather-Bold", size: 16))
+                }
+                .foregroundColor(themeManager.accent)
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+
+                Text("Notes")
+                    .font(.custom("Merriweather-Bold", size: 22))
+                    .foregroundColor(themeManager.primaryText)
+
+                TextEditor(text: $draft)
+                    .focused($isEditorFocused)
+                    .scrollContentBackground(.hidden)
+                    .padding(12)
+                    .foregroundColor(themeManager.primaryText.opacity(0.92))
+                    .tint(themeManager.accent)
+                    .font(.system(.body, design: .rounded))
+                    .background(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(themeManager.panelFill)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .stroke(themeManager.panelStrokeHi.opacity(0.9), lineWidth: 1)
+                            )
+                    )
+                    .padding(.horizontal, 20)
+
+                Spacer(minLength: 12)
+            }
+        }
+        .preferredColorScheme(themeManager.preferredColorScheme)
+        .presentationDetents([.fraction(0.8), .large])
+        .presentationDragIndicator(.hidden)
+        .presentationBackground(.clear)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                isEditorFocused = true
+            }
+        }
+    }
+}
 
 
 // Subtle text shimmer like your React “brand-title animate-text-shimmer”
@@ -205,6 +279,7 @@ struct LoadingView: View {
     @State private var sleep: String? = nil
     @State private var source: String? = nil
     @State private var personalNotes: String = ""
+    @State private var showPersonalNotesEditor = false
 
     @State private var sunText: String = "—"
     @State private var moonText: String = "—"
@@ -313,6 +388,13 @@ struct LoadingView: View {
                 }
             }
             .preferredColorScheme(themeManager.preferredColorScheme)
+            .sheet(isPresented: $showPersonalNotesEditor) {
+                LoadingNotesEditorSheet(initialText: personalNotes) { updatedText in
+                    personalNotes = updatedText
+                }
+                .environmentObject(starManager)
+                .environmentObject(themeManager)
+            }
         }
     }
 
@@ -460,22 +542,29 @@ struct LoadingView: View {
                     .foregroundColor(themeManager.primaryText.opacity(0.9))
                     .frame(maxWidth: .infinity, alignment: .center)
 
-                ZStack(alignment: .topLeading) {
-                    if personalNotes.isEmpty {
-                        Text("Tap to write…")
-                            .font(.custom("Merriweather-Regular", size: 11))
-                            .foregroundColor(themeManager.descriptionText.opacity(0.85))
-                            .padding(.top, 5)
-                            .padding(.leading, 6)
-                            .allowsHitTesting(false)
+                Button {
+                    didInteractPersonal = true
+                    showPersonalNotesEditor = true
+                } label: {
+                    ZStack(alignment: .topLeading) {
+                        if personalNotes.isEmpty {
+                            Text("Tap to edit notes")
+                                .font(.custom("Merriweather-Regular", size: 11))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.85))
+                                .padding(.top, 5)
+                                .padding(.leading, 6)
+                        } else {
+                            Text(personalNotes)
+                                .font(.custom("Merriweather-Regular", size: 11))
+                                .foregroundColor(themeManager.primaryText)
+                                .multilineTextAlignment(.leading)
+                                .padding(.top, 2)
+                                .padding(.leading, 2)
+                        }
                     }
-
-                    TextEditor(text: $personalNotes)
-                        .font(.custom("Merriweather-Regular", size: 11))
-                        .foregroundColor(themeManager.primaryText)
-                        .scrollContentBackground(.hidden)
-                        .frame(maxWidth: .infinity, minHeight: 54, maxHeight: 66, alignment: .topLeading)
+                    .frame(maxWidth: .infinity, minHeight: 54, maxHeight: 66, alignment: .topLeading)
                 }
+                .buttonStyle(.plain)
                 .padding(6)
                 .background(Color.white.opacity(0.02))
                 .overlay(
