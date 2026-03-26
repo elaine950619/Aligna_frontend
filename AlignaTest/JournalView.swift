@@ -41,7 +41,7 @@ struct JournalView: View {
             let keyboardInset = max(0, keyboardHeight - geometry.safeAreaInsets.bottom)
 
             ZStack {
-            AppBackgroundView()
+            AppBackgroundView(nightMotion: .animated)
                 .environmentObject(starManager)
                 .environmentObject(themeManager)
                 .ignoresSafeArea()

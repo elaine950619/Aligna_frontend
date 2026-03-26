@@ -294,7 +294,7 @@ struct MainView: View {
         NavigationStack(path: $mainNavigationPath) {
             ZStack {
                 // ✅ Full-screen background, not constrained by inner GeometryReader
-                AppBackgroundView()
+                AppBackgroundView(nightMotion: .animated, nightAnimationSpeed: 7.0)
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
                     .ignoresSafeArea()
@@ -2593,7 +2593,7 @@ struct RecommendationPagerView: View {
     var body: some View {
         ZStack {
             // Full-bleed background
-            AppBackgroundView()
+            AppBackgroundView(nightMotion: .animated, nightAnimationSpeed: 7.0)
                 .environmentObject(starManager)
                 .ignoresSafeArea() // <- key line
 

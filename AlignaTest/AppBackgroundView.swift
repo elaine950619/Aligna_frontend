@@ -3,34 +3,42 @@ import SwiftUI
 // MARK: - 装饰同心环
 struct DecorativeRings: View {
     let isAnimated: Bool
+    let speedMultiplier: Double
 
     @State private var outerAngle: Double = 0
     @State private var middleAngle: Double = 0
     @State private var innerAngle: Double = 0
+    @State private var pulse = false
 
     var body: some View {
         ZStack {
-            Circle().stroke(Color(hex: "#D4A574").opacity(0.15), lineWidth: 1)
+            Circle()
+                .stroke(Color(hex: "#D4A574").opacity(pulse ? 0.04 : 0.14), lineWidth: 1)
                 .frame(width: 300, height: 300)
                 .rotationEffect(.degrees(isAnimated ? outerAngle : 0))
+                .scaleEffect(pulse ? 1.12 : 0.96)
                 .animation(
-                    isAnimated ? .linear(duration: 60).repeatForever(autoreverses: false) : nil,
+                    isAnimated ? .linear(duration: 50 * speedMultiplier).repeatForever(autoreverses: false) : nil,
                     value: outerAngle
                 )
 
-            Circle().stroke(Color(hex: "#D4A574").opacity(0.10), lineWidth: 1)
+            Circle()
+                .stroke(Color(hex: "#D4A574").opacity(pulse ? 0.03 : 0.11), lineWidth: 1)
                 .frame(width: 260, height: 260)
                 .rotationEffect(.degrees(isAnimated ? middleAngle : 0))
+                .scaleEffect(pulse ? 1.10 : 0.98)
                 .animation(
-                    isAnimated ? .linear(duration: 45).repeatForever(autoreverses: false) : nil,
+                    isAnimated ? .linear(duration: 38 * speedMultiplier).repeatForever(autoreverses: false) : nil,
                     value: middleAngle
                 )
 
-            Circle().stroke(Color(hex: "#D4A574").opacity(0.08), lineWidth: 1)
+            Circle()
+                .stroke(Color(hex: "#D4A574").opacity(pulse ? 0.02 : 0.09), lineWidth: 1)
                 .frame(width: 220, height: 220)
                 .rotationEffect(.degrees(isAnimated ? innerAngle : 0))
+                .scaleEffect(pulse ? 1.08 : 0.99)
                 .animation(
-                    isAnimated ? .linear(duration: 30).repeatForever(autoreverses: false) : nil,
+                    isAnimated ? .linear(duration: 26 * speedMultiplier).repeatForever(autoreverses: false) : nil,
                     value: innerAngle
                 )
         }
@@ -39,6 +47,9 @@ struct DecorativeRings: View {
             outerAngle = 360
             middleAngle = -360
             innerAngle = 360
+            withAnimation(.easeInOut(duration: 5 * speedMultiplier).repeatForever(autoreverses: true)) {
+                pulse = true
+            }
         }
     }
 }
@@ -48,8 +59,10 @@ private struct NightStarView: View {
     let size: CGFloat
     let index: Int
     let isAnimated: Bool
+    let speedMultiplier: Double
 
     @State private var twinkling = false
+    @State private var drifting = false
 
     private var baseOpacity: Double {
         0.34 + min(max((size - 1.8) / 2.8, 0), 1) * 0.18
@@ -72,11 +85,21 @@ private struct NightStarView: View {
     }
 
     private var duration: Double {
-        1.5 + Double(index % 5) * 0.35
+        (1.5 + Double(index % 5) * 0.35) * speedMultiplier
     }
 
     private var delay: Double {
         Double(index % 7) * 0.18
+    }
+
+    private var driftOffset: CGSize {
+        let dx = CGFloat((index % 5) - 2) * 1.8
+        let dy = CGFloat((index % 7) - 3) * 1.6
+        return CGSize(width: dx, height: dy)
+    }
+
+    private var driftDuration: Double {
+        (6.0 + Double(index % 6) * 1.1) * speedMultiplier
     }
 
     var body: some View {
@@ -85,6 +108,7 @@ private struct NightStarView: View {
             .frame(width: size, height: size)
             .scaleEffect(isAnimated ? (twinkling ? maxScale : minScale) : 1)
             .position(position)
+            .offset(isAnimated ? (drifting ? driftOffset : CGSize(width: -driftOffset.width, height: -driftOffset.height)) : .zero)
             .animation(
                 isAnimated
                     ? .easeInOut(duration: duration)
@@ -93,9 +117,18 @@ private struct NightStarView: View {
                     : nil,
                 value: twinkling
             )
+            .animation(
+                isAnimated
+                    ? .easeInOut(duration: driftDuration)
+                        .repeatForever(autoreverses: true)
+                        .delay(delay * 0.6)
+                    : nil,
+                value: drifting
+            )
             .onAppear {
                 guard isAnimated else { return }
                 twinkling = true
+                drifting = true
             }
     }
 }
@@ -715,6 +748,7 @@ struct AppBackgroundView: View {
     enum NightMotion { case staticBackground, animated }
     var mode: Mode = .auto
     var nightMotion: NightMotion = .staticBackground
+    var nightAnimationSpeed: Double = 1.0
 
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
@@ -741,11 +775,22 @@ struct AppBackgroundView: View {
                 if effectiveIsNight {
                     LinearGradient(
                         gradient: Gradient(stops: [
-                            .init(color: Color(hex: "#1a1a2e"), location: 0.00),
-                            .init(color: Color(hex: "#16213e"), location: 0.50),
-                            .init(color: Color(hex: "#0f3460"), location: 1.00),
+                            .init(color: Color(hex: "#151424"), location: 0.00),
+                            .init(color: Color(hex: "#121a33"), location: 0.45),
+                            .init(color: Color(hex: "#0b2344"), location: 1.00),
                         ]),
                         startPoint: .top, endPoint: .bottom
+                    )
+                    .ignoresSafeArea()
+
+                    RadialGradient(
+                        gradient: Gradient(colors: [
+                            Color.white.opacity(0.06),
+                            Color.clear
+                        ]),
+                        center: .top,
+                        startRadius: 0,
+                        endRadius: geo.size.height * 0.6
                     )
                     .ignoresSafeArea()
                 } else {
@@ -778,14 +823,29 @@ struct AppBackgroundView: View {
                             position: star.position,
                             size: star.size,
                             index: index,
-                            isAnimated: nightMotion == .animated
+                            isAnimated: nightMotion == .animated,
+                            speedMultiplier: max(0.6, nightAnimationSpeed)
                         )
                     }
 
-                    DecorativeRings(isAnimated: nightMotion == .animated)
+                    DecorativeRings(
+                        isAnimated: nightMotion == .animated,
+                        speedMultiplier: max(0.6, nightAnimationSpeed)
+                    )
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                         .offset(y: -geo.size.height * 0.06)
                         .allowsHitTesting(false)
+
+                    RadialGradient(
+                        gradient: Gradient(colors: [
+                            Color.clear,
+                            Color.black.opacity(0.35)
+                        ]),
+                        center: .center,
+                        startRadius: geo.size.width * 0.2,
+                        endRadius: geo.size.width * 0.9
+                    )
+                    .ignoresSafeArea()
                 }
             }
             // let the whole background match the GeometryReader’s size
