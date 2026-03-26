@@ -258,6 +258,7 @@ struct DayBackgroundLayer: View {
             ) {
                 sunPulse = true
             }
+
         }
         .frame(width: width, height: height, alignment: .center)
         .clipped()
