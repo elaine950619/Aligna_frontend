@@ -152,10 +152,10 @@ struct DayBackgroundLayer: View {
             // === Main vertical beige gradient (React gradient) ===
             LinearGradient(
                 colors: [
-                    Color(hex: "#F4E9D3"),
-                    Color(hex: "#F7EFDC"),
-                    Color(hex: "#FAF3E6"),
-                    Color(hex: "#FCF5E9")
+                    Color(hex: "#F6EEDD"),
+                    Color(hex: "#F8F1E4"),
+                    Color(hex: "#FBF6EE"),
+                    Color(hex: "#FDF9F3")
                 ],
                 startPoint: .top,
                 endPoint: .bottom
@@ -165,7 +165,7 @@ struct DayBackgroundLayer: View {
             // === Soft global radial glow ===
             RadialGradient(
                 gradient: Gradient(colors: [
-                    Color(hex: "#F4D69D").opacity(0.08),
+                    Color(hex: "#F4D69D").opacity(0.06),
                     .clear
                 ]),
                 center: .center,
@@ -174,13 +174,18 @@ struct DayBackgroundLayer: View {
             )
             .ignoresSafeArea()
 
+            DayGrainLayer(size: CGSize(width: width, height: height))
+                .blendMode(.softLight)
+                .opacity(0.35)
+                .allowsHitTesting(false)
+
             // === Ambient blobs (same idea as React) ===
             // top ~15%, left ~20%
             Circle()
                 .fill(
                     RadialGradient(
                         gradient: Gradient(colors: [
-                            Color(hex: "#FFDF9C").opacity(0.14),
+                            Color(hex: "#FFDF9C").opacity(0.12),
                             .clear
                         ]),
                         center: .center,
@@ -199,7 +204,7 @@ struct DayBackgroundLayer: View {
                 .fill(
                     RadialGradient(
                         gradient: Gradient(colors: [
-                            Color(hex: "#FFEBBE").opacity(0.10),
+                            Color(hex: "#FFEBBE").opacity(0.08),
                             .clear
                         ]),
                         center: .center,
@@ -231,6 +236,20 @@ struct DayBackgroundLayer: View {
                 DaySVGMountainsView()
                     .frame(height: height * 0.22)
             }
+
+            VStack {
+                Spacer()
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.32),
+                        Color.white.opacity(0.0)
+                    ],
+                    startPoint: .bottom,
+                    endPoint: .top
+                )
+                .frame(height: height * 0.18)
+                .blendMode(.softLight)
+            }
         }
         .onAppear {
             withAnimation(
@@ -245,6 +264,32 @@ struct DayBackgroundLayer: View {
     }
 }
 
+private struct DayGrainLayer: View {
+    let size: CGSize
+
+    var body: some View {
+        Canvas { context, canvasSize in
+            let count = 140
+            for index in 0..<count {
+                let x = unit(Double(index) * 12.9898) * canvasSize.width
+                let y = unit(Double(index) * 78.233) * canvasSize.height
+                let r = 0.6 + unit(Double(index) * 45.164) * 0.9
+                let rect = CGRect(x: x, y: y, width: r, height: r)
+                context.fill(
+                    Path(ellipseIn: rect),
+                    with: .color(Color.white.opacity(0.08))
+                )
+            }
+        }
+        .frame(width: size.width, height: size.height)
+        .allowsHitTesting(false)
+    }
+
+    private func unit(_ seed: Double) -> Double {
+        let value = abs(sin(seed) * 43758.5453)
+        return value - floor(value)
+    }
+}
 
 
 // MARK: - Sun
@@ -253,11 +298,17 @@ struct DaySunView: View {
 
     var body: some View {
         ZStack {
+            // Outer glow
+            Circle()
+                .fill(Color(hex: "#FFE6A6").opacity(0.12))
+                .blur(radius: 30)
+                .scaleEffect(pulse ? 1.18 : 1.05)
+
             // Halo
             Circle()
-                .fill(Color.yellow.opacity(0.16))
+                .fill(Color.yellow.opacity(0.14))
                 .blur(radius: 20)
-                .scaleEffect(pulse ? 1.08 : 0.96)
+                .scaleEffect(pulse ? 1.06 : 0.96)
 
             // Core
             Circle()
@@ -382,216 +433,73 @@ struct SVGMountainLayer: Shape {
             path.addLine(to: CGPoint(x: sx(0), y: sy(200)))
 
         case .mid:
-            // M0,200 L0,170 Q60,150 120,165 Q180,180 240,160
-            // Q300,140 360,155 Q380,160 400,150 L400,200 Z
+            // M0,200 L0,150 Q60,120 120,135 Q180,150 240,130 Q300,110 360,135 Q380,145 400,140 L400,200 Z
             path.move(to: CGPoint(x: sx(0), y: sy(200)))
-            path.addLine(to: CGPoint(x: sx(0), y: sy(170)))
+            path.addLine(to: CGPoint(x: sx(0), y: sy(150)))
             path.addQuadCurve(
-                to: CGPoint(x: sx(120), y: sy(165)),
-                control: CGPoint(x: sx(60), y: sy(150))
+                to: CGPoint(x: sx(120), y: sy(135)),
+                control: CGPoint(x: sx(60), y: sy(120))
             )
             path.addQuadCurve(
-                to: CGPoint(x: sx(240), y: sy(160)),
-                control: CGPoint(x: sx(180), y: sy(180))
+                to: CGPoint(x: sx(240), y: sy(130)),
+                control: CGPoint(x: sx(180), y: sy(150))
             )
             path.addQuadCurve(
-                to: CGPoint(x: sx(360), y: sy(155)),
-                control: CGPoint(x: sx(300), y: sy(140))
+                to: CGPoint(x: sx(360), y: sy(135)),
+                control: CGPoint(x: sx(300), y: sy(110))
             )
             path.addQuadCurve(
-                to: CGPoint(x: sx(400), y: sy(150)),
-                control: CGPoint(x: sx(380), y: sy(160))
+                to: CGPoint(x: sx(400), y: sy(140)),
+                control: CGPoint(x: sx(380), y: sy(145))
             )
             path.addLine(to: CGPoint(x: sx(400), y: sy(200)))
             path.addLine(to: CGPoint(x: sx(0), y: sy(200)))
 
         case .front:
-            // M0,200 L0,180 Q30,165 60,175 Q90,185 120,175
-            // Q150,165 180,170 Q210,175 240,180
-            // Q270,185 300,180 Q330,175 360,180 Q380,182 400,185 L400,200 Z
+            // M0,200 L0,165 Q80,145 160,160 Q240,175 320,155 Q360,145 400,150 L400,200 Z
             path.move(to: CGPoint(x: sx(0), y: sy(200)))
-            path.addLine(to: CGPoint(x: sx(0), y: sy(180)))
-
+            path.addLine(to: CGPoint(x: sx(0), y: sy(165)))
             path.addQuadCurve(
-                to: CGPoint(x: sx(60), y: sy(175)),
-                control: CGPoint(x: sx(30), y: sy(165))
+                to: CGPoint(x: sx(160), y: sy(160)),
+                control: CGPoint(x: sx(80), y: sy(145))
             )
             path.addQuadCurve(
-                to: CGPoint(x: sx(120), y: sy(175)),
-                control: CGPoint(x: sx(90), y: sy(185))
+                to: CGPoint(x: sx(320), y: sy(155)),
+                control: CGPoint(x: sx(240), y: sy(175))
             )
             path.addQuadCurve(
-                to: CGPoint(x: sx(180), y: sy(170)),
-                control: CGPoint(x: sx(150), y: sy(165))
+                to: CGPoint(x: sx(400), y: sy(150)),
+                control: CGPoint(x: sx(360), y: sy(145))
             )
-            path.addQuadCurve(
-                to: CGPoint(x: sx(240), y: sy(180)),
-                control: CGPoint(x: sx(210), y: sy(175))
-            )
-            path.addQuadCurve(
-                to: CGPoint(x: sx(300), y: sy(180)),
-                control: CGPoint(x: sx(270), y: sy(185))
-            )
-            path.addQuadCurve(
-                to: CGPoint(x: sx(360), y: sy(180)),
-                control: CGPoint(x: sx(330), y: sy(175))
-            )
-            path.addQuadCurve(
-                to: CGPoint(x: sx(400), y: sy(185)),
-                control: CGPoint(x: sx(380), y: sy(182))
-            )
-
             path.addLine(to: CGPoint(x: sx(400), y: sy(200)))
             path.addLine(to: CGPoint(x: sx(0), y: sy(200)))
 
         case .strip:
-            // M0,200 L0,190 Q50,185 100,188 Q150,191 200,189
-            // Q250,187 300,189 Q350,191 400,190 L400,200 Z
+            // M0,200 L0,185 Q100,175 200,185 Q300,195 400,190 L400,200 Z
             path.move(to: CGPoint(x: sx(0), y: sy(200)))
-            path.addLine(to: CGPoint(x: sx(0), y: sy(190)))
-
+            path.addLine(to: CGPoint(x: sx(0), y: sy(185)))
             path.addQuadCurve(
-                to: CGPoint(x: sx(100), y: sy(188)),
-                control: CGPoint(x: sx(50), y: sy(185))
-            )
-            path.addQuadCurve(
-                to: CGPoint(x: sx(200), y: sy(189)),
-                control: CGPoint(x: sx(150), y: sy(191))
-            )
-            path.addQuadCurve(
-                to: CGPoint(x: sx(300), y: sy(189)),
-                control: CGPoint(x: sx(250), y: sy(187))
+                to: CGPoint(x: sx(200), y: sy(185)),
+                control: CGPoint(x: sx(100), y: sy(175))
             )
             path.addQuadCurve(
                 to: CGPoint(x: sx(400), y: sy(190)),
-                control: CGPoint(x: sx(350), y: sy(191))
+                control: CGPoint(x: sx(300), y: sy(195))
             )
-
             path.addLine(to: CGPoint(x: sx(400), y: sy(200)))
             path.addLine(to: CGPoint(x: sx(0), y: sy(200)))
         }
 
-        path.closeSubpath()
         return path
     }
 }
-
-struct DayMountainShape: Shape {
-    /// curveHeight controls how tall the hills are relative to view height
-    var curveHeight: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-
-        // Start at bottom-left
-        path.move(to: CGPoint(x: 0, y: rect.height))
-
-        let yBase = rect.height * (1 - curveHeight)
-
-        // Simple wavy hill using two curves across the width
-        path.addCurve(
-            to: CGPoint(x: rect.width * 0.5, y: yBase + 20),
-            control1: CGPoint(x: rect.width * 0.15, y: yBase - 10),
-            control2: CGPoint(x: rect.width * 0.35, y: yBase + 30)
-        )
-
-        path.addCurve(
-            to: CGPoint(x: rect.width, y: yBase + 10),
-            control1: CGPoint(x: rect.width * 0.65, y: yBase - 20),
-            control2: CGPoint(x: rect.width * 0.85, y: yBase + 25)
-        )
-
-        // Close bottom
-        path.addLine(to: CGPoint(x: rect.width, y: rect.height))
-        path.addLine(to: CGPoint(x: 0, y: rect.height))
-        path.closeSubpath()
-
-        return path
-    }
-}
-
-struct FourPointStarShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        let cx = rect.midX
-        let cy = rect.midY
-        let r  = min(rect.width, rect.height) / 2
-
-        // Outer + inner radii (tweak these to change “leafiness”)
-        let outerR = r
-        let innerR = r * 0.38
-
-        func point(angleDeg: CGFloat, radius: CGFloat) -> CGPoint {
-            let rad = angleDeg * .pi / 180
-            // y is inverted in screen coords, so subtract sin
-            return CGPoint(
-                x: cx + cos(rad) * radius,
-                y: cy - sin(rad) * radius
-            )
-        }
-
-        var p = Path()
-
-        // Start at top outer
-        p.move(to: point(angleDeg: 90, radius: outerR))
-
-        // Go around clockwise:
-        // top → (top-right inner) → right → (bottom-right inner) → bottom → etc.
-        p.addLine(to: point(angleDeg: 45, radius: innerR))
-        p.addLine(to: point(angleDeg: 0,  radius: outerR))
-        p.addLine(to: point(angleDeg: 315, radius: innerR))
-        p.addLine(to: point(angleDeg: 270, radius: outerR))
-        p.addLine(to: point(angleDeg: 225, radius: innerR))
-        p.addLine(to: point(angleDeg: 180, radius: outerR))
-        p.addLine(to: point(angleDeg: 135, radius: innerR))
-
-        p.closeSubpath()
-        return p
-    }
-}
-
-
-
-struct CrossShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        let cx = rect.midX
-        let cy = rect.midY
-        let r  = min(rect.width, rect.height) / 2
-
-        var p = Path()
-        // vertical
-        p.move(to: CGPoint(x: cx, y: cy - r))
-        p.addLine(to: CGPoint(x: cx, y: cy + r))
-        // horizontal
-        p.move(to: CGPoint(x: cx - r, y: cy))
-        p.addLine(to: CGPoint(x: cx + r, y: cy))
-        return p
-    }
-}
-
-struct AlignaDiamondStar: Shape {
-    func path(in rect: CGRect) -> Path {
-        let cx = rect.midX
-        let cy = rect.midY
-        let r  = min(rect.width, rect.height) / 2
-
-        // long vertical diamond, narrow sides (tweak 0.18 if you want thinner/thicker)
-        let side = r * 0.18
-
-        var p = Path()
-        p.move(to: CGPoint(x: cx,        y: cy - r))     // top
-        p.addLine(to: CGPoint(x: cx + side, y: cy))      // right
-        p.addLine(to: CGPoint(x: cx,        y: cy + r))  // bottom
-        p.addLine(to: CGPoint(x: cx - side, y: cy))      // left
-        p.closeSubpath()
-        return p
-    }
-}
-
-// MARK: - Daytime decorative stars
-
 
 struct DayStar: Identifiable {
-    enum ShapeKind { case fourPoint, cross }
+    enum ShapeKind {
+        case fourPoint
+        case cross
+    }
+
     let id = UUID()
     let position: CGPoint
     let size: CGFloat
@@ -603,23 +511,69 @@ struct DayStar: Identifiable {
     let pulseDuration: Double
 }
 
-struct AnimatedDayStar: View {
+// 4-point star shape (like a sparkle)
+struct FourPointStarShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let w = rect.width
+        let h = rect.height
+        let midX = w / 2
+        let midY = h / 2
+        let innerRadius = min(w, h) * 0.2
+        let outerRadius = min(w, h) * 0.5
+
+        var path = Path()
+        // Top
+        path.move(to: CGPoint(x: midX, y: midY - outerRadius))
+        path.addLine(to: CGPoint(x: midX + innerRadius, y: midY - innerRadius))
+        // Right
+        path.addLine(to: CGPoint(x: midX + outerRadius, y: midY))
+        path.addLine(to: CGPoint(x: midX + innerRadius, y: midY + innerRadius))
+        // Bottom
+        path.addLine(to: CGPoint(x: midX, y: midY + outerRadius))
+        path.addLine(to: CGPoint(x: midX - innerRadius, y: midY + innerRadius))
+        // Left
+        path.addLine(to: CGPoint(x: midX - outerRadius, y: midY))
+        path.addLine(to: CGPoint(x: midX - innerRadius, y: midY - innerRadius))
+        path.closeSubpath()
+
+        return path
+    }
+}
+
+// 4-line cross (like a simple line star)
+struct CrossShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let w = rect.width
+        let h = rect.height
+        let midX = w / 2
+        let midY = h / 2
+
+        var path = Path()
+        // vertical
+        path.move(to: CGPoint(x: midX, y: 0))
+        path.addLine(to: CGPoint(x: midX, y: h))
+        // horizontal
+        path.move(to: CGPoint(x: 0, y: midY))
+        path.addLine(to: CGPoint(x: w, y: midY))
+
+        return path
+    }
+}
+
+// MARK: - Animated star view (for day theme)
+private struct AnimatedDayStar: View {
     let star: DayStar
 
     @State private var spin = false
     @State private var pulse = false
 
     var body: some View {
-        let base: AnyView = {
+        let base = {
             switch star.shape {
             case .fourPoint:
                 return AnyView(
                     FourPointStarShape()
-                        .fill(star.fillColor.opacity(0.75))
-                        .overlay(
-                            FourPointStarShape()
-                                .stroke(star.fillColor.opacity(0.95), lineWidth: 1)
-                        )
+                        .fill(star.fillColor.opacity(0.88))
                 )
             case .cross:
                 return AnyView(
@@ -691,13 +645,13 @@ struct DayStarField: View {
 
         // warm, sun-like palette
         let fills: [Color] = [
-            Color(hex: "#FFF4B3").opacity(0.50),
-            Color(hex: "#FFD700"),
-            Color(hex: "#F4D69D").opacity(0.60)
+            Color(hex: "#FFF4B3").opacity(0.38),
+            Color(hex: "#FFD700").opacity(0.45),
+            Color(hex: "#F4D69D").opacity(0.44)
         ]
         let strokes: [Color] = [
-            Color(hex: "#D4A574").opacity(0.60),
-            Color(hex: "#C8925F").opacity(0.60)
+            Color(hex: "#D4A574").opacity(0.45),
+            Color(hex: "#C8925F").opacity(0.42)
         ]
 
         func makeRandomStar() {
@@ -727,7 +681,7 @@ struct DayStarField: View {
             )
         }
 
-        let starCount = 22
+        let starCount = 16
         for _ in 0..<starCount {
             makeRandomStar()
         }
@@ -886,10 +840,10 @@ private struct AppBackgroundPreviewContainer: View {
     }
 }
 
-#Preview("Background Day") {
+#Preview("Day Background") {
     AppBackgroundPreviewContainer(mode: .day)
 }
 
-#Preview("Background Night") {
+#Preview("Night Background") {
     AppBackgroundPreviewContainer(mode: .night)
 }
