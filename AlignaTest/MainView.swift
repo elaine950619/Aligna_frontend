@@ -134,6 +134,7 @@ struct MainView: View {
     @AppStorage("lastManualRefreshTimestamp") private var lastManualRefreshTimestamp: Double = 0
     @AppStorage("shouldExpandMantraOnBoot") private var shouldExpandMantraOnBoot: Bool = false
     @AppStorage("shouldExpandMantraFromNotification") private var shouldExpandMantraFromNotification: Bool = false
+    @AppStorage("mantraExpandHapticDay") private var mantraExpandHapticDay: String = ""
     @State private var isFetchingToday: Bool = false
     
     @State private var isMantraExpanded: Bool = false
@@ -1288,6 +1289,23 @@ struct MainView: View {
         }
     }
 
+    private func triggerMantraExpansionHapticIfNeeded() {
+        guard bootPhase == .main, isMantraReady else { return }
+        let today = todayString()
+        guard mantraExpandHapticDay != today else { return }
+        mantraExpandHapticDay = today
+
+        let light = UIImpactFeedbackGenerator(style: .light)
+        light.prepare()
+        light.impactOccurred()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            let soft = UIImpactFeedbackGenerator(style: .soft)
+            soft.prepare()
+            soft.impactOccurred()
+        }
+    }
+
     private func triggerGridIconAnimation() {
         showGridItems = false
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
@@ -1400,6 +1418,7 @@ struct MainView: View {
                     .onChange(of: isMantraExpanded) { _, expanded in
                         if expanded {
                             showGridItems = false
+                            triggerMantraExpansionHapticIfNeeded()
                         } else {
                             triggerGridIconAnimation()
                         }
