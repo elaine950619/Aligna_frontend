@@ -463,8 +463,10 @@ struct LoadingView: View {
                 .foregroundColor(themeManager.primaryText)
             logoView(size: 56)
                 .scaleEffect(initialPulse ? 1.0 : 0.96)
-                .opacity(initialPulse ? 1.0 : 0.0)
+                .opacity((initialPulse ? 1.0 : 0.0) * (iconVisible ? 1.0 : 0.35))
+                .offset(x: iconShakePhase * 2, y: iconShakePhase * -1)
                 .animation(.easeOut(duration: 0.6), value: initialPulse)
+                .animation(.easeInOut(duration: 0.35), value: iconVisible)
             initialSubtitleText
                 .foregroundColor(themeManager.descriptionText.opacity(0.85))
                 .multilineTextAlignment(.center)
