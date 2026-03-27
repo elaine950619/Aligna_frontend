@@ -1368,6 +1368,8 @@ struct ProfileView: View {
                                 Image(systemName: "chevron.left")
                                     .font(.title3.weight(.semibold))
                                     .foregroundColor(themeManager.primaryText)
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
                             }
                             Spacer()
                         }
