@@ -1668,14 +1668,19 @@ struct MainView: View {
                 // If today's doc exists but has no reasoning, regenerate to backfill reasoning.
                 // This fixes the case where you deleted/recreated a doc while backend didn't
                 // provide mapping, or an older writer created the doc without reasoning.
-                let hasReasoning = (data["reasoning"] != nil) || (data["mapping"] != nil)
-                if hasReasoning {
+                // Also regenerate when isDefault == true: the fallback doc also writes a
+                // reasoning map, so without this check a failed API call would permanently
+                // block regeneration on every subsequent boot.
+                let isDefault = (data["isDefault"] as? Bool) == true
+                let hasRealReasoning = !isDefault && ((data["reasoning"] != nil) || (data["mapping"] != nil))
+                if hasRealReasoning {
                     print("📌 今日已有推荐（docId 命中），不重复生成")
                     lastRecommendationDate = today
                     loadTodayRecommendation(day: today)
                     return
                 } else {
-                    print("⚠️ 今日 doc 存在但缺少 reasoning/mapping，将触发重拉以补全")
+                    let reason = isDefault ? "isDefault=true，触发重拉覆盖默认值" : "缺少 reasoning/mapping，将触发重拉以补全"
+                    print("⚠️ 今日 doc 存在但需要重拉：\(reason)")
                     // fall through to generation path below
                 }
             }
