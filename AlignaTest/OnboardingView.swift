@@ -902,7 +902,7 @@ struct OnboardingStep2: View {
                 .presentationDetents([.fraction(0.45), .medium])
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(28)
-                .presentationBackground(.ultraThinMaterial)
+                .presentationBackground(themeManager.onboardingPanelFill)
             }
             // 时间滚轮（关键：保存时用 makeLocalDate 固定到本地时区的参考日，防止后续显示漂移）
             .sheet(isPresented: $showTimePickerSheet) {
@@ -924,7 +924,7 @@ struct OnboardingStep2: View {
                 .presentationDetents([.fraction(0.35), .medium])
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(28)
-                .presentationBackground(.ultraThinMaterial)
+                .presentationBackground(themeManager.onboardingPanelFill)
             }
         }
         // === 彻底隐藏系统导航条 & 返回按钮，去掉顶部白条 ===
@@ -955,7 +955,7 @@ struct OnboardingStep2: View {
             content()
                 .datePickerStyle(.wheel)
                 .labelsHidden()
-                .environment(\.colorScheme, .dark)
+                .environment(\.colorScheme, themeManager.isNight ? .dark : .light)
                 .tint(themeManager.accent)
                 .foregroundColor(themeManager.onboardingPrimaryText)
                 .padding(.bottom, 18)
