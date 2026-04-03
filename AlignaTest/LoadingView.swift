@@ -6,6 +6,7 @@ import Combine
 import WidgetKit
 import FirebaseAuth
 import FirebaseFirestore
+import UIKit
 
 enum BootPhase {
     case loading
@@ -288,6 +289,7 @@ struct LoadingView: View {
     @State private var risingText: String = "—"
     @State private var locationText: String = "Your Current Location"
     @State private var conditionText: String = "Cloud · Wind · Rain"
+    @State private var placeDensityText: String = "Water — · Green — · Built —"
 
     init(
         onStartLoading: (() -> Void)? = nil,
@@ -423,14 +425,14 @@ struct LoadingView: View {
 
             case .cosmic:
                 stageHeader(title: "Reading the cosmos",
-                            subtitle: cosmicSubtitleText,
+                            subtitle: cosmicSubtitleView,
                             iconName: cosmicIcons[cosmicEmojiIndex],
                             topPadding: 0)
                     .frame(height: headerHeight + contentHeight, alignment: .top)
 
             case .place:
                 stageHeader(title: "Reading your place",
-                            subtitle: placeSubtitleText,
+                            subtitle: placeSubtitleView,
                             iconName: placeIcons[placeEmojiIndex],
                             topPadding: 0)
                     .frame(height: headerHeight + contentHeight, alignment: .top)
@@ -450,7 +452,7 @@ struct LoadingView: View {
         }
     }
 
-    private func stageHeader(title: String, subtitle: Text, iconName: String, topPadding: CGFloat) -> some View {
+    private func stageHeader<Subtitle: View>(title: String, subtitle: Subtitle, iconName: String, topPadding: CGFloat) -> some View {
         VStack(spacing: 20) {
             Text(title)
                 .font(.custom("Merriweather-Bold", size: 20))
@@ -460,8 +462,6 @@ struct LoadingView: View {
                 .offset(x: iconShakePhase * 2, y: iconShakePhase * -1)
                 .animation(.easeInOut(duration: 0.35), value: iconVisible)
             subtitle
-                .foregroundColor(themeManager.descriptionText.opacity(0.85))
-                .multilineTextAlignment(.center)
             if stage == .cosmic || stage == .place {
                 loadingDots
             }
@@ -681,7 +681,7 @@ struct LoadingView: View {
         }
     }
 
-    private var cosmicSubtitleText: Text {
+    private var cosmicSubtitleView: some View {
         func clean(_ value: String) -> String? {
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty || trimmed == "—" { return nil }
@@ -693,31 +693,46 @@ struct LoadingView: View {
         let rising = clean(risingText)
         let phaseName = moonPhaseLabel(for: Date()).trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let parts: [String] = [
-            sun.map { "Sun in \($0)" },
-            moon.map { "Moon in \($0)" },
-            rising.map { "Rising in \($0)" }
-        ].compactMap { $0 }
+        let sunLine = sun.map { "Sun in \($0)" } ?? "Sun in —"
+        let moonLine = moon.map { "Moon in \($0)" } ?? "Moon in —"
+        let risingLine = rising.map { "Rising in \($0)" } ?? "Rising in —"
+        let phaseLine = phaseName.isEmpty ? "Moon phase —" : "Moon phase \(phaseName)"
 
-        if !parts.isEmpty {
-            let base = "I see your \(parts.joined(separator: ", "))."
-            let tail = phaseName.isEmpty ? "" : " The moon is in \(phaseName)."
-            return Text(base + tail).font(AlignaType.helperSmall())
+        return VStack(spacing: 6) {
+            Text(sunLine)
+            Text(moonLine)
+            Text(risingLine)
+            Text(phaseLine)
         }
-
-        let base = "I’m syncing your chart…"
-        let tail = phaseName.isEmpty ? "" : " The moon is in \(phaseName)."
-        return Text(base + tail).font(AlignaType.helperSmall())
+        .font(AlignaType.helperSmall())
+        .foregroundColor(themeManager.descriptionText.opacity(0.85))
+        .multilineTextAlignment(.center)
     }
 
-    private var placeSubtitleText: Text {
-        Text(placeSubtitle).font(AlignaType.helperSmall())
+    private var placeSubtitleView: some View {
+        let location = locationText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let condition = conditionText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let density = placeDensityText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let locationLine = location.isEmpty || location == "Your Current Location" ? "I’m sensing your place…" : "I’m sensing \(location)."
+        let conditionLine = condition.isEmpty || condition == "Cloud · Wind · Rain" ? "Sampling the air…" : condition
+        let densityLine = density.isEmpty ? "Water — · Green — · Built —" : density
+
+        return VStack(spacing: 6) {
+            Text(locationLine)
+            Text(conditionLine)
+            Text(densityLine)
+        }
+        .font(AlignaType.helperSmall())
+        .foregroundColor(themeManager.descriptionText.opacity(0.85))
+        .multilineTextAlignment(.center)
     }
 
     private var personalSubtitleText: Text {
         let text = isProcessingPersonal ? "Logged for today." : "Tap what feels true right now."
         return Text(text)
             .font(AlignaType.helperSmall())
+            .foregroundColor(themeManager.descriptionText.opacity(0.85))
     }
 
     private var initialSubtitleText: Text {
@@ -734,15 +749,28 @@ struct LoadingView: View {
 
         let location = clean(locationText)
         let condition = clean(conditionText)
+        let density = clean(placeDensityText)
 
+        if let location, let condition, let density {
+            return "I’m sensing \(location).\n\(condition)\n\(density)"
+        }
         if let location, let condition {
-            return "I’m sensing \(location). The air feels like \(condition)."
+            return "I’m sensing \(location).\n\(condition)"
+        }
+        if let location, let density {
+            return "I’m sensing \(location).\n\(density)"
+        }
+        if let condition, let density {
+            return "\(condition)\n\(density)"
         }
         if let location {
             return "I’m sensing \(location)."
         }
         if let condition {
-            return "The air feels like \(condition)."
+            return condition
+        }
+        if let density {
+            return density
         }
         return "I’m locating your place…\nI’m sampling today’s air…"
     }
@@ -994,9 +1022,193 @@ struct LoadingView: View {
                   let pressure = current["surface_pressure"] as? Double else { return }
             let description = placeWeatherDescription(for: code)
             let directionText = windDirectionText(for: windDirection)
-            let text = "\(description) · \(Int(temp.rounded()))°F · Wind \(Int(wind.rounded())) mph \(directionText) · Humidity \(Int(humidity.rounded()))% · Pressure \(Int(pressure.rounded())) hPa"
+            let windText = "Wind dir \(directionText) · \(Int(wind.rounded())) mph"
+            let humidityText = "Humidity \(Int(humidity.rounded()))%"
+            let pressureText = "Pressure \(Int(pressure.rounded())) hPa"
+            let text = "\(description) · \(Int(temp.rounded()))°F\n\(windText)\n\(humidityText) · \(pressureText)"
             DispatchQueue.main.async { conditionText = text }
         }.resume()
+
+        // Land cover density (approx) via WorldCover WMS RGB sampling
+        fetchLandCoverDensity(for: coord)
+    }
+
+    private enum LandCoverCategory {
+        case water
+        case green
+        case built
+        case other
+    }
+
+    private struct LandCoverColor {
+        let r: Int
+        let g: Int
+        let b: Int
+        let category: LandCoverCategory
+    }
+
+    private func fetchLandCoverDensity(for coord: CLLocationCoordinate2D) {
+        Task {
+            let text = await computeLandCoverDensity(for: coord)
+            DispatchQueue.main.async { placeDensityText = text }
+        }
+    }
+
+    private func computeLandCoverDensity(for coord: CLLocationCoordinate2D) async -> String {
+        let samples = sampleGridCoordinates(center: coord, radiusMeters: 500, gridCount: 5)
+        var waterCount = 0
+        var greenCount = 0
+        var builtCount = 0
+        var totalCount = 0
+
+        await withTaskGroup(of: LandCoverCategory?.self) { group in
+            for sample in samples {
+                group.addTask {
+                    await fetchLandCoverClass(at: sample)
+                }
+            }
+
+            for await result in group {
+                guard let category = result else { continue }
+                totalCount += 1
+                switch category {
+                case .water:
+                    waterCount += 1
+                case .green:
+                    greenCount += 1
+                case .built:
+                    builtCount += 1
+                case .other:
+                    break
+                }
+            }
+        }
+
+        guard totalCount > 0 else { return "Water — · Green — · Built —" }
+
+        let waterPct = Int((Double(waterCount) / Double(totalCount) * 100).rounded())
+        let greenPct = Int((Double(greenCount) / Double(totalCount) * 100).rounded())
+        let builtPct = Int((Double(builtCount) / Double(totalCount) * 100).rounded())
+
+        return "Water \(waterPct)% · Green \(greenPct)% · Built \(builtPct)%"
+    }
+
+    private func sampleGridCoordinates(
+        center: CLLocationCoordinate2D,
+        radiusMeters: Double,
+        gridCount: Int
+    ) -> [CLLocationCoordinate2D] {
+        let offsets = Array(0..<gridCount).map { idx -> Double in
+            let step = radiusMeters / Double(gridCount - 1)
+            return (-radiusMeters) + Double(idx) * step
+        }
+
+        let latScale = 1.0 / 111_320.0
+        let lonScale = 1.0 / (111_320.0 * max(0.1, cos(center.latitude * .pi / 180)))
+
+        var points: [CLLocationCoordinate2D] = []
+        for dy in offsets {
+            for dx in offsets {
+                let lat = center.latitude + dy * latScale
+                let lon = center.longitude + dx * lonScale
+                points.append(CLLocationCoordinate2D(latitude: lat, longitude: lon))
+            }
+        }
+        return points
+    }
+
+    private func fetchLandCoverClass(at coord: CLLocationCoordinate2D) async -> LandCoverCategory? {
+        let zoom = 14
+        guard let tile = tileInfo(for: coord, zoom: zoom) else { return nil }
+
+        var components = URLComponents(string: "https://services.terrascope.be/wmts/v2")
+        components?.queryItems = [
+            URLQueryItem(name: "layer", value: "WORLDCOVER_2020_MAP"),
+            URLQueryItem(name: "style", value: ""),
+            URLQueryItem(name: "tilematrixset", value: "EPSG:3857"),
+            URLQueryItem(name: "Service", value: "WMTS"),
+            URLQueryItem(name: "Request", value: "GetTile"),
+            URLQueryItem(name: "Version", value: "1.0.0"),
+            URLQueryItem(name: "Format", value: "image/png"),
+            URLQueryItem(name: "TileMatrix", value: "EPSG:3857:\(zoom)"),
+            URLQueryItem(name: "TileCol", value: "\(tile.x)"),
+            URLQueryItem(name: "TileRow", value: "\(tile.y)"),
+        ]
+
+        guard let url = components?.url else { return nil }
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            guard let rgb = rgbFromImageData(data, x: tile.pixelX, y: tile.pixelY) else { return nil }
+            return categoryForRGB(rgb)
+        } catch {
+            return nil
+        }
+    }
+
+    private struct TileInfo {
+        let x: Int
+        let y: Int
+        let pixelX: Int
+        let pixelY: Int
+    }
+
+    private func tileInfo(for coord: CLLocationCoordinate2D, zoom: Int) -> TileInfo? {
+        let lat = min(max(coord.latitude, -85.05112878), 85.05112878)
+        let lon = coord.longitude
+        let n = pow(2.0, Double(zoom))
+
+        let xFloat = (lon + 180.0) / 360.0 * n
+        let latRad = lat * .pi / 180.0
+        let yFloat = (1.0 - log(tan(latRad) + 1.0 / cos(latRad)) / .pi) / 2.0 * n
+
+        let xTile = Int(floor(xFloat))
+        let yTile = Int(floor(yFloat))
+        guard xTile >= 0, yTile >= 0 else { return nil }
+
+        let pixelX = Int(((xFloat - floor(xFloat)) * 256.0).rounded())
+        let pixelY = Int(((yFloat - floor(yFloat)) * 256.0).rounded())
+
+        return TileInfo(x: xTile, y: yTile, pixelX: min(max(pixelX, 0), 255), pixelY: min(max(pixelY, 0), 255))
+    }
+
+    private func rgbFromImageData(_ data: Data, x: Int, y: Int) -> (Int, Int, Int)? {
+        guard let image = UIImage(data: data)?.cgImage else { return nil }
+        guard let dataProvider = image.dataProvider,
+              let providerData = dataProvider.data else { return nil }
+        let bytes = CFDataGetBytePtr(providerData)
+        let bytesPerPixel = 4
+        let bytesPerRow = image.bytesPerRow
+        let offset = y * bytesPerRow + x * bytesPerPixel
+        guard offset + 2 < CFDataGetLength(providerData) else { return nil }
+        return (Int(bytes?[offset] ?? 0), Int(bytes?[offset + 1] ?? 0), Int(bytes?[offset + 2] ?? 0))
+    }
+
+    private func categoryForRGB(_ rgb: (Int, Int, Int)) -> LandCoverCategory {
+        let legend: [LandCoverColor] = [
+            LandCoverColor(r: 0, g: 100, b: 200, category: .water),      // 80 Permanent water bodies
+            LandCoverColor(r: 0, g: 100, b: 0, category: .green),         // 10 Tree cover
+            LandCoverColor(r: 255, g: 187, b: 34, category: .green),      // 20 Shrubland
+            LandCoverColor(r: 255, g: 255, b: 76, category: .green),      // 30 Grassland
+            LandCoverColor(r: 240, g: 150, b: 255, category: .green),     // 40 Cropland
+            LandCoverColor(r: 0, g: 150, b: 160, category: .green),       // 90 Herbaceous wetland
+            LandCoverColor(r: 0, g: 207, b: 117, category: .green),       // 95 Mangroves
+            LandCoverColor(r: 250, g: 0, b: 0, category: .built)          // 50 Built-up
+        ]
+
+        var bestDistance = Int.max
+        var bestCategory: LandCoverCategory = .other
+        for color in legend {
+            let dr = rgb.0 - color.r
+            let dg = rgb.1 - color.g
+            let db = rgb.2 - color.b
+            let dist = dr * dr + dg * dg + db * db
+            if dist < bestDistance {
+                bestDistance = dist
+                bestCategory = color.category
+            }
+        }
+
+        return bestDistance <= 900 ? bestCategory : .other
     }
 
     private func placeWeatherDescription(for code: Int) -> String {
