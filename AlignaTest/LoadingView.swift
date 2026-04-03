@@ -979,7 +979,7 @@ struct LoadingView: View {
         // Weather via Open-Meteo (no API key)
         let urlStr = "https://api.open-meteo.com/v1/forecast"
             + "?latitude=\(coord.latitude)&longitude=\(coord.longitude)"
-            + "&current=temperature_2m,weathercode,wind_speed_10m,relative_humidity_2m"
+            + "&current=temperature_2m,weathercode,wind_speed_10m,relative_humidity_2m,wind_direction_10m,surface_pressure"
             + "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto"
         guard let url = URL(string: urlStr) else { return }
         URLSession.shared.dataTask(with: url) { data, _, _ in
@@ -989,9 +989,12 @@ struct LoadingView: View {
                   let code = current["weathercode"] as? Int,
                   let temp = current["temperature_2m"] as? Double,
                   let wind = current["wind_speed_10m"] as? Double,
-                  let humidity = current["relative_humidity_2m"] as? Double else { return }
+                  let humidity = current["relative_humidity_2m"] as? Double,
+                  let windDirection = current["wind_direction_10m"] as? Double,
+                  let pressure = current["surface_pressure"] as? Double else { return }
             let description = placeWeatherDescription(for: code)
-            let text = "\(description) · \(Int(temp.rounded()))°F · Wind \(Int(wind.rounded())) mph · Humidity \(Int(humidity.rounded()))%"
+            let directionText = windDirectionText(for: windDirection)
+            let text = "\(description) · \(Int(temp.rounded()))°F · Wind \(Int(wind.rounded())) mph \(directionText) · Humidity \(Int(humidity.rounded()))% · Pressure \(Int(pressure.rounded())) hPa"
             DispatchQueue.main.async { conditionText = text }
         }.resume()
     }
@@ -1008,6 +1011,17 @@ struct LoadingView: View {
         case 95:      return "Thunderstorm"
         default:      return "Mixed conditions"
         }
+    }
+
+    private func windDirectionText(for degrees: Double) -> String {
+        let directions = [
+            "N", "NNE", "NE", "ENE",
+            "E", "ESE", "SE", "SSE",
+            "S", "SSW", "SW", "WSW",
+            "W", "WNW", "NW", "NNW"
+        ]
+        let index = Int((degrees + 11.25) / 22.5) % directions.count
+        return directions[index]
     }
 
     private func completePersonal() {
