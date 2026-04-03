@@ -1342,7 +1342,8 @@ struct MainView: View {
                         didCompletePersonalCheckIn = true
                         attemptBootAdvance()
                     },
-                    forceFullLoading: isManualRefreshFlow
+                    forceFullLoading: isManualRefreshFlow,
+                    locationManager: locationManager
                 )
                 .ignoresSafeArea()
                         

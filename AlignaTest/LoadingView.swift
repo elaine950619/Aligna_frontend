@@ -252,8 +252,10 @@ struct LoadingView: View {
 
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
+    @ObservedObject var locationManager: LocationManager
 
     @State private var didStartLoading = false
+    @State private var didFetchPlaceSignals = false
     @State private var stage: LoadingStage = .initial
     @State private var initialPulse = false
 
@@ -284,19 +286,21 @@ struct LoadingView: View {
     @State private var sunText: String = "—"
     @State private var moonText: String = "—"
     @State private var risingText: String = "—"
-    var locationText: String = "Your Current Location"
-    var conditionText: String = "Cloud · Wind · Rain"
+    @State private var locationText: String = "Your Current Location"
+    @State private var conditionText: String = "Cloud · Wind · Rain"
 
     init(
         onStartLoading: (() -> Void)? = nil,
         onPersonalComplete: ((Bool) -> Void)? = nil,
         fixedMessageIndex: Int? = nil,
-        forceFullLoading: Bool = false
+        forceFullLoading: Bool = false,
+        locationManager: LocationManager = LocationManager()
     ) {
         self.onStartLoading = onStartLoading
         self.onPersonalComplete = onPersonalComplete
         self.fixedMessageIndex = fixedMessageIndex
         self.forceFullLoading = forceFullLoading
+        _locationManager = ObservedObject(wrappedValue: locationManager)
     }
 
     fileprivate enum LoadingStage: Int {
@@ -366,6 +370,13 @@ struct LoadingView: View {
                 startDotTimer()
                 startIconFadeTimer()
                 fetchChartDataFromFirestore()
+                // Seed place/weather immediately if location is already known;
+                // otherwise ask for it so .onReceive fires when it arrives.
+                if let coord = locationManager.currentLocation {
+                    fetchPlaceAndWeather(for: coord)
+                } else {
+                    locationManager.requestLocation()
+                }
             }
             .onChange(of: stage, initial: false) { _, newStage in
                 startIconShake()
@@ -386,6 +397,9 @@ struct LoadingView: View {
                 if hasNotes {
                     didInteractPersonal = true
                 }
+            }
+            .onReceive(locationManager.$currentLocation.compactMap { $0 }) { coord in
+                fetchPlaceAndWeather(for: coord)
             }
             .preferredColorScheme(themeManager.preferredColorScheme)
             .sheet(isPresented: $showPersonalNotesEditor) {
@@ -750,7 +764,7 @@ struct LoadingView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.7) {
             if stage == .cosmic { stage = .place }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5.9) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 7.5) {
             if stage == .place { stage = .personal }
         }
     }
@@ -949,6 +963,48 @@ struct LoadingView: View {
             return "Skip in \(autoSkipSecondsRemaining)s"
         }
         return "Continue"
+    }
+
+    private func fetchPlaceAndWeather(for coord: CLLocationCoordinate2D) {
+        guard !didFetchPlaceSignals else { return }
+        didFetchPlaceSignals = true
+
+        // Reverse geocode
+        getAddressFromCoordinate(coord) { name in
+            if let name {
+                DispatchQueue.main.async { locationText = name }
+            }
+        }
+
+        // Weather via Open-Meteo (no API key)
+        let urlStr = "https://api.open-meteo.com/v1/forecast"
+            + "?latitude=\(coord.latitude)&longitude=\(coord.longitude)"
+            + "&current=temperature_2m,weathercode&temperature_unit=fahrenheit&timezone=auto"
+        guard let url = URL(string: urlStr) else { return }
+        URLSession.shared.dataTask(with: url) { data, _, _ in
+            guard let data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let current = json["current"] as? [String: Any],
+                  let code = current["weathercode"] as? Int,
+                  let temp = current["temperature_2m"] as? Double else { return }
+            let description = placeWeatherDescription(for: code)
+            let text = "\(description) · \(Int(temp.rounded()))°F"
+            DispatchQueue.main.async { conditionText = text }
+        }.resume()
+    }
+
+    private func placeWeatherDescription(for code: Int) -> String {
+        switch code {
+        case 0:       return "Clear sky"
+        case 1, 2, 3: return "Partly cloudy"
+        case 45, 48:  return "Foggy"
+        case 51, 53, 55: return "Drizzle"
+        case 61, 63, 65: return "Rain"
+        case 71, 73, 75: return "Snow"
+        case 80, 81, 82: return "Showers"
+        case 95:      return "Thunderstorm"
+        default:      return "Mixed conditions"
+        }
     }
 
     private func completePersonal() {
