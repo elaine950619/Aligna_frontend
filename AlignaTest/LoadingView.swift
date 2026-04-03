@@ -701,12 +701,12 @@ struct LoadingView: View {
 
         if !parts.isEmpty {
             let base = "I see your \(parts.joined(separator: ", "))."
-            let tail = phaseName.isEmpty ? "" : "\nThe moon is in \(phaseName)."
+            let tail = phaseName.isEmpty ? "" : " The moon is in \(phaseName)."
             return Text(base + tail).font(AlignaType.helperSmall())
         }
 
         let base = "I’m syncing your chart…"
-        let tail = phaseName.isEmpty ? "" : "\nThe moon is in \(phaseName)."
+        let tail = phaseName.isEmpty ? "" : " The moon is in \(phaseName)."
         return Text(base + tail).font(AlignaType.helperSmall())
     }
 
@@ -979,16 +979,19 @@ struct LoadingView: View {
         // Weather via Open-Meteo (no API key)
         let urlStr = "https://api.open-meteo.com/v1/forecast"
             + "?latitude=\(coord.latitude)&longitude=\(coord.longitude)"
-            + "&current=temperature_2m,weathercode&temperature_unit=fahrenheit&timezone=auto"
+            + "&current=temperature_2m,weathercode,wind_speed_10m,relative_humidity_2m"
+            + "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto"
         guard let url = URL(string: urlStr) else { return }
         URLSession.shared.dataTask(with: url) { data, _, _ in
             guard let data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let current = json["current"] as? [String: Any],
                   let code = current["weathercode"] as? Int,
-                  let temp = current["temperature_2m"] as? Double else { return }
+                  let temp = current["temperature_2m"] as? Double,
+                  let wind = current["wind_speed_10m"] as? Double,
+                  let humidity = current["relative_humidity_2m"] as? Double else { return }
             let description = placeWeatherDescription(for: code)
-            let text = "\(description) · \(Int(temp.rounded()))°F"
+            let text = "\(description) · \(Int(temp.rounded()))°F · Wind \(Int(wind.rounded())) mph · Humidity \(Int(humidity.rounded()))%"
             DispatchQueue.main.async { conditionText = text }
         }.resume()
     }
