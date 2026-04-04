@@ -1232,6 +1232,10 @@ struct ProfileView: View {
     @State private var showBirthTimeSheet = false
     @State private var birthdayDraft = Date()
     @State private var birthTimeDraft = Date()
+    @State private var showGenderSheet = false
+    @State private var showRelationshipSheet = false
+    @State private var genderDraft: String = ""
+    @State private var relationshipDraft: String = ""
 
     // 主题偏好
     @AppStorage("themePreference") private var themePreferenceRaw: String = ThemePreference.auto.rawValue
@@ -1715,6 +1719,68 @@ private extension ProfileView {
                     onTap: { refreshCurrentPlace() }
                 )
                 .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            HStack(spacing: 12) {
+                infoRow(
+                    title: "Gender",
+                    value: viewModel.gender.isEmpty ? "—" : viewModel.gender,
+                    editable: hasLoadedProfileData
+                ) {
+                    guard hasLoadedProfileData else { return }
+                    genderDraft = viewModel.gender.isEmpty ? "Male" : viewModel.gender
+                    showGenderSheet = true
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .sheet(isPresented: $showGenderSheet) {
+                    pickerSheet(
+                        title: "Gender",
+                        picker: AnyView(
+                            optionPicker(
+                                options: ["Male", "Female", "Other"],
+                                selection: $genderDraft
+                            )
+                        ),
+                        onSave: {
+                            showGenderSheet = false
+                            let trimmed = genderDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard !trimmed.isEmpty else { return }
+                            viewModel.gender = trimmed
+                            saveField("gender", value: trimmed) { }
+                        },
+                        onCancel: { showGenderSheet = false }
+                    )
+                }
+
+                infoRow(
+                    title: "Relationship",
+                    value: viewModel.relationshipStatus.isEmpty ? "—" : viewModel.relationshipStatus,
+                    editable: hasLoadedProfileData
+                ) {
+                    guard hasLoadedProfileData else { return }
+                    relationshipDraft = viewModel.relationshipStatus.isEmpty ? "Single" : viewModel.relationshipStatus
+                    showRelationshipSheet = true
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .sheet(isPresented: $showRelationshipSheet) {
+                    pickerSheet(
+                        title: "Relationship",
+                        picker: AnyView(
+                            optionPicker(
+                                options: ["Single", "In a relationship", "Other"],
+                                selection: $relationshipDraft
+                            )
+                        ),
+                        onSave: {
+                            showRelationshipSheet = false
+                            let trimmed = relationshipDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard !trimmed.isEmpty else { return }
+                            viewModel.relationshipStatus = trimmed
+                            saveField("relationshipStatus", value: trimmed) { }
+                        },
+                        onCancel: { showRelationshipSheet = false }
+                    )
+                }
             }
         }
         .padding()
@@ -2460,6 +2526,40 @@ private extension ProfileView {
         .presentationBackground(.ultraThinMaterial)
     }
 
+    @ViewBuilder
+    func optionPicker(options: [String], selection: Binding<String>) -> some View {
+        VStack(spacing: 10) {
+            ForEach(options, id: \.self) { option in
+                let isSelected = selection.wrappedValue == option
+                Button {
+                    selection.wrappedValue = option
+                } label: {
+                    HStack(spacing: 8) {
+                        Text(option)
+                            .font(AlynnaTypography.font(.body))
+                        Spacer()
+                        if isSelected {
+                            Image(systemName: "checkmark")
+                                .font(AlynnaTypography.font(.footnote))
+                        }
+                    }
+                    .foregroundColor(isSelected ? themeManager.accent : themeManager.primaryText)
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(isSelected ? themeManager.accent.opacity(0.18) : themeManager.panelFill)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(isSelected ? themeManager.accent : themeManager.panelStrokeLo, lineWidth: 1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     // ✅ 下面这些不是 UI 字体相关，不需要改动
     final class OneShotLocationFetcher: NSObject, CLLocationManagerDelegate {
         private let manager = CLLocationManager()
@@ -2627,6 +2727,8 @@ private extension ProfileView {
         birthTime = BirthTimeUtils.makeLocalTimeDate(hour: 7, minute: 42)
         birthPlace = "Hangzhou, China"
         currentPlace = "San Francisco, CA"
+        viewModel.gender = "Female"
+        viewModel.relationshipStatus = "Single"
         chartSunSign = "Pisces"
         chartMoonSign = "Libra"
         chartAscSign = "Gemini"
@@ -2742,6 +2844,8 @@ private extension ProfileView {
 
         self.birthPlace   = data[FSKeys.birthPlace] as? String ?? ""
         self.currentPlace = (data[FSKeys.currentPlace] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        self.viewModel.gender = data["gender"] as? String ?? ""
+        self.viewModel.relationshipStatus = data["relationshipStatus"] as? String ?? ""
 
         if let raw = data[FSKeys.scentDislike] as? [String] {
             viewModel.scent_dislike = Set(raw)
