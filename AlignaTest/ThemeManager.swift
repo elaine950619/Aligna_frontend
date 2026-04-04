@@ -212,6 +212,9 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
     private static func isNight(at date: Date, coordinate: CLLocationCoordinate2D?) -> Bool {
         if let coordinate,
            let events = solarEvents(for: date, coordinate: coordinate) {
+            if events.sunrise >= events.sunset {
+                return isNightByClock()
+            }
             return date < events.sunrise || date >= events.sunset
         }
         return isNightByClock()
@@ -227,24 +230,25 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
         for date: Date,
         coordinate: CLLocationCoordinate2D
     ) -> (sunrise: Date, sunset: Date)? {
-        guard let sunriseUTC = solarTimeUTC(for: date, coordinate: coordinate, isSunrise: true),
-              let sunsetUTC = solarTimeUTC(for: date, coordinate: coordinate, isSunrise: false) else {
+        guard let sunriseLocal = solarTimeLocal(for: date, coordinate: coordinate, isSunrise: true),
+              let sunsetLocal = solarTimeLocal(for: date, coordinate: coordinate, isSunrise: false) else {
             return nil
         }
-        return (sunriseUTC, sunsetUTC)
+        return (sunriseLocal, sunsetLocal)
     }
 
-    private static func solarTimeUTC(
+    private static func solarTimeLocal(
         for date: Date,
         coordinate: CLLocationCoordinate2D,
         isSunrise: Bool
     ) -> Date? {
         let zenith = 90.833
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+        calendar.timeZone = .current
 
         let dayOfYear = calendar.ordinality(of: .day, in: .year, for: date) ?? 1
-        let longitudeHour = coordinate.longitude / 15.0
+        // NOAA formula expects west longitudes as positive hours.
+        let longitudeHour = (-coordinate.longitude) / 15.0
         let approx = Double(dayOfYear) + ((isSunrise ? 6.0 : 18.0) - longitudeHour) / 24.0
 
         let meanAnomaly = (0.9856 * approx) - 3.289
@@ -280,8 +284,11 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
         let localMeanTime = localHour + rightAscension - (0.06571 * approx) - 6.622
         let utcHour = normalizedHours(localMeanTime - longitudeHour)
 
+        let timeZoneOffset = Double(TimeZone.current.secondsFromGMT(for: date)) / 3600.0
+        let localTimeHour = normalizedHours(utcHour + timeZoneOffset)
+
         let startOfDay = calendar.startOfDay(for: date)
-        return startOfDay.addingTimeInterval(utcHour * 3600.0)
+        return startOfDay.addingTimeInterval(localTimeHour * 3600.0)
     }
 
     private static func normalizedDegrees(_ value: Double) -> Double {
