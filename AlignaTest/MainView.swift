@@ -628,15 +628,24 @@ struct MainView: View {
 
 
     private func persistWidgetSnapshotFromViewModel() {
-//        // 你已有：viewModel.dailyMantra, recommendationTitles["Color"/"Place"/"Gemstone"/"Scent"]
-//        let snap = AlignaWidgetSnapshot(
-//            mantra: viewModel.dailyMantra.isEmpty ? "Find your flow." : viewModel.dailyMantra,
-//            colorTitle: recommendationTitles["Color"] ?? "Color",
-//            placeTitle: recommendationTitles["Place"] ?? "Place",
-//            gemstoneTitle: recommendationTitles["Gemstone"] ?? "Gemstone",
-//            scentTitle: recommendationTitles["Scent"] ?? "Scent"
-//        )
-//        AlignaWidgetStore.save(snap) // ↩︎ 写入 App Group + 刷新 Widget
+        let mantra = viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !mantra.isEmpty else { return }
+
+        func title(for key: String) -> String {
+            let value = recommendationTitles[key] ?? viewModel.recommendations[key] ?? key
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? key : trimmed
+        }
+
+        let snap = AlynnaWidgetSnapshot(
+            mantra: mantra,
+            colorTitle: title(for: "Color"),
+            colorHex: todayColorHex(),
+            placeTitle: title(for: "Place"),
+            gemstoneTitle: title(for: "Gemstone"),
+            scentTitle: title(for: "Scent")
+        )
+        AlynnaWidgetStore.save(snap)
     }
 
     private func updateLastRecommendationStampIfReady(mantra: String, recs: [String: String]) {
@@ -647,6 +656,7 @@ struct MainView: View {
         }
         lastRecommendationTimestamp = Date().timeIntervalSince1970
         lastRecommendationHasFullSet = true
+        persistWidgetSnapshotFromViewModel()
     }
 
     private func makeReasoningSummary(from reasoning: [String: String]) -> String {
@@ -1475,6 +1485,7 @@ struct MainView: View {
                 if let data = snapshot?.data(), let title = data["title"] as? String {
                     DispatchQueue.main.async {
                         self.recommendationTitles[canon] = title // 以规范写法作键
+                        self.persistWidgetSnapshotFromViewModel()
                     }
                 } else {
                     print("⚠️ \(canon)/\(documentName) 无 title 字段或文档不存在")

@@ -5,28 +5,33 @@ import SwiftUI
 #endif
 
 // 1) 你的 App Group ID（务必改成自己的）
-public enum AlignaAppGroup {
-    public static let id = "group.martinyuan.AlignaTest"
+public enum AlynnaAppGroup {
+    public static let id = "group.martinyuan.AlynnaTest"
 }
 
 // 2) Widget 需要的最小数据
-public struct AlignaWidgetSnapshot: Codable, Hashable {
+public struct AlynnaWidgetSnapshot: Codable, Hashable {
     public var savedAt: Date
     public var mantra: String
 
     // 四个底部条目（仅标题文字即可；图标在 Widget 侧用 SF Symbols 或同名 Asset）
     public var colorTitle: String
+    public var colorHex: String?
     public var placeTitle: String
     public var gemstoneTitle: String
     public var scentTitle: String
 
     public init(mantra: String,
-                colorTitle: String, placeTitle: String,
-                gemstoneTitle: String, scentTitle: String,
+                colorTitle: String,
+                colorHex: String? = nil,
+                placeTitle: String,
+                gemstoneTitle: String,
+                scentTitle: String,
                 savedAt: Date = Date()) {
         self.savedAt = savedAt
         self.mantra = mantra
         self.colorTitle = colorTitle
+        self.colorHex = colorHex
         self.placeTitle = placeTitle
         self.gemstoneTitle = gemstoneTitle
         self.scentTitle = scentTitle
@@ -34,23 +39,23 @@ public struct AlignaWidgetSnapshot: Codable, Hashable {
 }
 
 // 3) 读写工具
-private let kSnapshotKey = "aligna.widget.snapshot"
+private let kSnapshotKey = "alynna.widget.snapshot"
 
-public enum AlignaWidgetStore {
-    public static func save(_ snap: AlignaWidgetSnapshot) {
-        guard let ud = UserDefaults(suiteName: AlignaAppGroup.id) else { return }
+public enum AlynnaWidgetStore {
+    public static func save(_ snap: AlynnaWidgetSnapshot) {
+        guard let ud = UserDefaults(suiteName: AlynnaAppGroup.id) else { return }
         if let data = try? JSONEncoder().encode(snap) {
             ud.set(data, forKey: kSnapshotKey)
             ud.synchronize()
         }
-        // 通知所有 Aligna 的 widget 刷新
+        // 通知所有 Alynna 的 widget 刷新
         WidgetCenter.shared.reloadAllTimelines()
     }
 
-    public static func load() -> AlignaWidgetSnapshot? {
-        guard let ud = UserDefaults(suiteName: AlignaAppGroup.id),
+    public static func load() -> AlynnaWidgetSnapshot? {
+        guard let ud = UserDefaults(suiteName: AlynnaAppGroup.id),
               let data = ud.data(forKey: kSnapshotKey),
-              let snap = try? JSONDecoder().decode(AlignaWidgetSnapshot.self, from: data) else {
+              let snap = try? JSONDecoder().decode(AlynnaWidgetSnapshot.self, from: data) else {
             return nil
         }
         return snap
@@ -81,10 +86,11 @@ public func moonPhaseLabel(for date: Date = Date()) -> String {
     }
 }
 #if DEBUG
-private struct AlignaWidgetSharedPreviewCard: View {
-    let snapshot = AlignaWidgetSnapshot(
+private struct AlynnaWidgetSharedPreviewCard: View {
+    let snapshot = AlynnaWidgetSnapshot(
         mantra: "Breathe. Align. Begin again.",
         colorTitle: "Amber",
+        colorHex: "#FFBF00",
         placeTitle: "Botanical Garden",
         gemstoneTitle: "Amethyst",
         scentTitle: "Bergamot"
@@ -111,7 +117,7 @@ private struct AlignaWidgetSharedPreviewCard: View {
             }
             .font(.body)
 
-            Text("App Group: \(AlignaAppGroup.id)")
+            Text("App Group: \(AlynnaAppGroup.id)")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
@@ -123,7 +129,7 @@ private struct AlignaWidgetSharedPreviewCard: View {
 }
 
 #Preview("Widget Shared") {
-    AlignaWidgetSharedPreviewCard()
+    AlynnaWidgetSharedPreviewCard()
 }
 #endif
 
