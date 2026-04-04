@@ -1208,6 +1208,8 @@ struct ProfileView: View {
     @State private var birthTime: Date = Date()
     @State private var birthPlace: String = ""
     @State private var currentPlace: String = ""
+    @State private var gender: String = ""
+    @State private var relationshipStatus: String = ""
     
     // Birth location & timezone & raw input (for exact display)
     @State private var birthLat: Double = 0
@@ -1724,11 +1726,11 @@ private extension ProfileView {
             HStack(spacing: 12) {
                 infoRow(
                     title: "Gender",
-                    value: viewModel.gender.isEmpty ? "—" : viewModel.gender,
+                    value: gender.isEmpty ? "—" : gender,
                     editable: hasLoadedProfileData
                 ) {
                     guard hasLoadedProfileData else { return }
-                    genderDraft = viewModel.gender.isEmpty ? "Male" : viewModel.gender
+                    genderDraft = gender.isEmpty ? "Male" : gender
                     showGenderSheet = true
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1745,6 +1747,7 @@ private extension ProfileView {
                             showGenderSheet = false
                             let trimmed = genderDraft.trimmingCharacters(in: .whitespacesAndNewlines)
                             guard !trimmed.isEmpty else { return }
+                            gender = trimmed
                             viewModel.gender = trimmed
                             saveField("gender", value: trimmed) { }
                         },
@@ -1754,11 +1757,11 @@ private extension ProfileView {
 
                 infoRow(
                     title: "Relationship",
-                    value: viewModel.relationshipStatus.isEmpty ? "—" : viewModel.relationshipStatus,
+                    value: relationshipStatus.isEmpty ? "—" : relationshipStatus,
                     editable: hasLoadedProfileData
                 ) {
                     guard hasLoadedProfileData else { return }
-                    relationshipDraft = viewModel.relationshipStatus.isEmpty ? "Single" : viewModel.relationshipStatus
+                    relationshipDraft = relationshipStatus.isEmpty ? "Single" : relationshipStatus
                     showRelationshipSheet = true
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1775,6 +1778,7 @@ private extension ProfileView {
                             showRelationshipSheet = false
                             let trimmed = relationshipDraft.trimmingCharacters(in: .whitespacesAndNewlines)
                             guard !trimmed.isEmpty else { return }
+                            relationshipStatus = trimmed
                             viewModel.relationshipStatus = trimmed
                             saveField("relationshipStatus", value: trimmed) { }
                         },
@@ -2727,8 +2731,10 @@ private extension ProfileView {
         birthTime = BirthTimeUtils.makeLocalTimeDate(hour: 7, minute: 42)
         birthPlace = "Hangzhou, China"
         currentPlace = "San Francisco, CA"
-        viewModel.gender = "Female"
-        viewModel.relationshipStatus = "Single"
+        gender = "Female"
+        relationshipStatus = "Single"
+        viewModel.gender = gender
+        viewModel.relationshipStatus = relationshipStatus
         chartSunSign = "Pisces"
         chartMoonSign = "Libra"
         chartAscSign = "Gemini"
@@ -2844,8 +2850,10 @@ private extension ProfileView {
 
         self.birthPlace   = data[FSKeys.birthPlace] as? String ?? ""
         self.currentPlace = (data[FSKeys.currentPlace] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        self.viewModel.gender = data["gender"] as? String ?? ""
-        self.viewModel.relationshipStatus = data["relationshipStatus"] as? String ?? ""
+        self.gender = data["gender"] as? String ?? ""
+        self.relationshipStatus = data["relationshipStatus"] as? String ?? ""
+        self.viewModel.gender = self.gender
+        self.viewModel.relationshipStatus = self.relationshipStatus
 
         if let raw = data[FSKeys.scentDislike] as? [String] {
             viewModel.scent_dislike = Set(raw)
@@ -3733,6 +3741,8 @@ private extension ProfileView {
             birthTime = Date()
             birthPlace = ""
             currentPlace = ""
+            gender = ""
+            relationshipStatus = ""
 
             birthLat = 0
             birthLng = 0
