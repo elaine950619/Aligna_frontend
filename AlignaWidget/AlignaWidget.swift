@@ -13,7 +13,7 @@ struct AlynnaProvider: TimelineProvider {
         AlynnaEntry(
             date: Date(),
             snapshot: AlynnaWidgetSnapshot(
-                mantra: "Embrace the flow of change.",
+                mantra: "Today is not about perfection. It is about noticing small moments, honoring how I feel, and allowing myself to move forward with patience and care",
                 colorTitle: "Vitality Pink",
                 colorHex: "#FF66CC",
                 placeTitle: "Window seat at a café",
@@ -48,77 +48,109 @@ struct AlynnaWidgetEntryView: View {
     var body: some View {
         let backgroundHex = entry.snapshot.colorHex?.trimmingCharacters(in: .whitespacesAndNewlines)
         let resolvedBackgroundHex = (backgroundHex?.isEmpty == false) ? backgroundHex! : "#151515"
-        let backgroundColor = Color(hex: resolvedBackgroundHex)
-        let primaryTextColor = contrastTextColor(for: resolvedBackgroundHex)
-        let secondaryTextColor = primaryTextColor.opacity(0.9)
-        let iconColor = primaryTextColor.opacity(0.88)
+        let textColor = Color(hex: "#F7F3EC")
+        let trimmedMantra = entry.snapshot.mantra.trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayMantra = trimmedMantra.isEmpty
+            ? "Today is not about perfection. It is about noticing small moments."
+            : trimmedMantra
 
-        return ZStack {
-            VStack(alignment: .leading, spacing: 8) {
-
-                // 顶部行：左-ALYNNA / 右-月相
-                HStack(alignment: .firstTextBaseline) {
-                    Text("ALYNNA")
-                        .font(.caption2.weight(.semibold))
-                        .kerning(1.0)
-                        .foregroundColor(secondaryTextColor)
-
-                    Spacer()
-
-                    Text(moonPhaseLabel(for: entry.date))
-                        .font(.caption2)
-                        .foregroundColor(secondaryTextColor)
+        return GeometryReader { geometry in
+            VStack {
+                ViewThatFits(in: .vertical) {
+                    mantraText(displayMantra, size: min(geometry.size.width, geometry.size.height) * 0.15)
+                    mantraText(displayMantra, size: min(geometry.size.width, geometry.size.height) * 0.135)
+                    mantraText(displayMantra, size: min(geometry.size.width, geometry.size.height) * 0.12)
                 }
+                .foregroundColor(textColor)
+                .multilineTextAlignment(.center)
+                .lineLimit(nil)
+                .minimumScaleFactor(0.6)
+                .shadow(color: Color.black.opacity(0.12), radius: 2, x: 0, y: 1)
+                .frame(
+                    maxWidth: .infinity,
+                    maxHeight: geometry.size.height * 0.66,
+                    alignment: .center
+                )
+                .fixedSize(horizontal: false, vertical: true)
+                .layoutPriority(1)
 
-                // 中部 Daily Mantra（最多 3 行）
-                Text("“\(entry.snapshot.mantra)”")
-                    .font(.system(size: 14, weight: .semibold, design: .serif))
-                    .foregroundColor(primaryTextColor)
-                    .lineLimit(3)
-                    .minimumScaleFactor(0.85)
-                    .padding(.top, 2)
-                    .padding(.bottom, 2)
-
-                Spacer(minLength: 2)
-
-                // 底部四项：Color / Place / Gemstone / Scent
-                HStack(spacing: 10) {
-                    Item(icon: "paintpalette", text: entry.snapshot.colorTitle, iconColor: iconColor, textColor: secondaryTextColor)
-                    Item(icon: "mappin.and.ellipse", text: entry.snapshot.placeTitle, iconColor: iconColor, textColor: secondaryTextColor)
-                }
-                HStack(spacing: 10) {
-                    Item(icon: "diamond", text: entry.snapshot.gemstoneTitle, iconColor: iconColor, textColor: secondaryTextColor)
-                    Item(icon: "wind", text: entry.snapshot.scentTitle, iconColor: iconColor, textColor: secondaryTextColor)
-                }
+                Spacer(minLength: geometry.size.height * 0.34)
             }
-            .padding(14)
+            .padding(16)
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .containerBackground(for: .widget) {
-            backgroundColor
+            WidgetBackground(hex: resolvedBackgroundHex)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        // 点击整个 widget 打开 App（可加深链到某页）
         .widgetURL(URL(string: "Alynna://open"))
-    }
-
-    // 小条目
-    @ViewBuilder
-    private func Item(icon: String, text: String, iconColor: Color, textColor: Color) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.caption)
-                .foregroundColor(iconColor)
-            Text(text)
-                .font(.caption)
-                .lineLimit(1)
-                .foregroundColor(textColor)
-                .minimumScaleFactor(0.7)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-private func contrastTextColor(for hex: String) -> Color {
-    return Color.isLightHex(hex) ? .black : .white
+private func mantraText(_ text: String, size: CGFloat) -> some View {
+    Text(text)
+        .font(.system(size: size, weight: .semibold, design: .serif))
+}
+
+private struct WidgetBackground: View {
+    let hex: String
+
+    var body: some View {
+        GeometryReader { geometry in
+            let top = Color.adjusted(from: hex, darken: 0.12, desaturate: 0.12) ?? Color(hex: hex)
+            let bottom = Color.adjusted(from: hex, darken: 0.22, desaturate: 0.16) ?? Color(hex: hex)
+            let base = Color.adjusted(from: hex, darken: 0.18, desaturate: 0.14) ?? Color(hex: hex)
+
+            ZStack {
+                base
+                LinearGradient(colors: [top, bottom], startPoint: .top, endPoint: .bottom)
+                RadialGradient(
+                    gradient: Gradient(colors: [Color.white.opacity(0.06), Color.clear]),
+                    center: .topLeading,
+                    startRadius: 0,
+                    endRadius: min(geometry.size.width, geometry.size.height) * 0.8
+                )
+                RadialGradient(
+                    gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.22)]),
+                    center: .center,
+                    startRadius: min(geometry.size.width, geometry.size.height) * 0.25,
+                    endRadius: max(geometry.size.width, geometry.size.height) * 0.9
+                )
+
+                WidgetGrainLayer(size: geometry.size)
+                    .blendMode(.softLight)
+                    .opacity(0.05)
+            }
+            .ignoresSafeArea()
+        }
+    }
+}
+
+private struct WidgetGrainLayer: View {
+    let size: CGSize
+
+    var body: some View {
+        Canvas { context, canvasSize in
+            let count = 120
+            for index in 0..<count {
+                let x = unit(Double(index) * 12.9898) * canvasSize.width
+                let y = unit(Double(index) * 78.233) * canvasSize.height
+                let r = 0.5 + unit(Double(index) * 45.164) * 0.8
+                let rect = CGRect(x: x, y: y, width: r, height: r)
+                context.fill(
+                    Path(ellipseIn: rect),
+                    with: .color(Color.white.opacity(0.09))
+                )
+            }
+        }
+        .frame(width: size.width, height: size.height)
+        .allowsHitTesting(false)
+    }
+
+    private func unit(_ seed: Double) -> Double {
+        let value = abs(sin(seed) * 43758.5453)
+        return value - floor(value)
+    }
 }
 
 // MARK: - 入口
@@ -130,7 +162,7 @@ struct AlynnaWidget: Widget {
         }
         .configurationDisplayName("Alynna Daily")
         .description("Daily mantra with color, place, gemstone and scent.")
-        .supportedFamilies([.systemMedium]) // 你这版要“长方形”，即中号
+        .supportedFamilies([.systemMedium])
     }
 }
 
@@ -179,6 +211,22 @@ extension Color {
         return luminance > 0.6
     }
 
+    static func adjusted(from hex: String, darken: Double, desaturate: Double) -> Color? {
+        guard let rgb = rgbComponents(from: hex) else { return nil }
+        let avg = (rgb.r + rgb.g + rgb.b) / 3.0
+
+        let desatR = rgb.r * (1 - desaturate) + avg * desaturate
+        let desatG = rgb.g * (1 - desaturate) + avg * desaturate
+        let desatB = rgb.b * (1 - desaturate) + avg * desaturate
+
+        let darkenFactor = max(0.0, min(1.0, 1.0 - darken))
+        let r = clamp(desatR * darkenFactor)
+        let g = clamp(desatG * darkenFactor)
+        let b = clamp(desatB * darkenFactor)
+
+        return Color(.sRGB, red: r, green: g, blue: b, opacity: 1.0)
+    }
+
     private static func rgbComponents(from hex: String) -> (r: Double, g: Double, b: Double)? {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
@@ -207,5 +255,9 @@ extension Color {
 
     private static func linearized(_ c: Double) -> Double {
         return (c <= 0.03928) ? (c / 12.92) : pow((c + 0.055) / 1.055, 2.4)
+    }
+
+    private static func clamp(_ value: Double) -> Double {
+        min(1.0, max(0.0, value))
     }
 }
