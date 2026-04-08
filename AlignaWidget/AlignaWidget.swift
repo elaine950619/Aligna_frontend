@@ -242,7 +242,7 @@ struct AlynnaWidgetEntryView: View {
 
                 if !footerItems.isEmpty {
                     let lineColor = secondaryTextColor
-                    let topFooterItems = footerItems.filter { ["Place", "Weather"].contains($0.label) }
+                    let topFooterItems = footerItems.filter { ["Environment", "Weather"].contains($0.label) }
                     let bottomFooterItems = footerItems.filter { ["Air", "Wind", "Humidity", "Pressure"].contains($0.label) }
 
                     VStack(alignment: .leading, spacing: minSide * 0.012) {
@@ -564,7 +564,7 @@ private func widgetFooterItems(weather: String, weatherDetail: String, environme
 
     var items: [WidgetFooterItem] = []
     if !environmentText.isEmpty {
-        items.append(WidgetFooterItem(label: "Place", text: environmentText))
+        items.append(WidgetFooterItem(label: "Environment", text: environmentText))
     }
     if !weatherText.isEmpty {
         items.append(WidgetFooterItem(label: "Weather", text: titleCase(weatherText)))
