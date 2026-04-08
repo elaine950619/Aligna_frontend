@@ -10,8 +10,6 @@
 		54C65B742E6E115C00A41F9A /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 54C65B732E6E115C00A41F9A /* WidgetKit.framework */; };
 		54C65B762E6E115C00A41F9A /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 54C65B752E6E115C00A41F9A /* SwiftUI.framework */; };
 		54C65B852E6E115E00A41F9A /* AlignaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 54C65B712E6E115C00A41F9A /* AlignaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		54C65B8D2E6E128A00A41F9A /* AlignaWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54C65B8C2E6E127B00A41F9A /* AlignaWidgetShared.swift */; };
-		54C65B902E6E129B00A41F9A /* AlignaWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54C65B8C2E6E127B00A41F9A /* AlignaWidgetShared.swift */; };
 		54C65B912E6E12AD00A41F9A /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DE2DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf */; };
 		54C65B922E6E12AD00A41F9A /* PlayfairDisplay-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */; };
 		54C65B932E6E12AD00A41F9A /* Inter-VariableFont_opsz,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DA2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf */; };
@@ -128,7 +126,6 @@
 		54C65B732E6E115C00A41F9A /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		54C65B752E6E115C00A41F9A /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		54C65B8B2E6E125600A41F9A /* AlignaWidgetExtensionRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AlignaWidgetExtensionRelease.entitlements; sourceTree = "<group>"; };
-		54C65B8C2E6E127B00A41F9A /* AlignaWidgetShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignaWidgetShared.swift; sourceTree = "<group>"; };
 		54DE58B02DC29A91008BE4B8 /* AlignaTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AlignaTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		54DE58BD2DC29A93008BE4B8 /* AlignaTestTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AlignaTestTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		54DE58C72DC29A93008BE4B8 /* AlignaTestUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AlignaTestUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -279,7 +276,6 @@
 			isa = PBXGroup;
 			children = (
 				54A057762F6853920066EEC8 /* AlignaWidgetExtension.entitlements */,
-				54C65B8C2E6E127B00A41F9A /* AlignaWidgetShared.swift */,
 				54C65B8B2E6E125600A41F9A /* AlignaWidgetExtensionRelease.entitlements */,
 				54DE58B22DC29A91008BE4B8 /* AlignaTest */,
 				54DE58C02DC29A93008BE4B8 /* AlignaTestTests */,
@@ -577,7 +573,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				54C65B902E6E129B00A41F9A /* AlignaWidgetShared.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -585,7 +580,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				54C65B8D2E6E128A00A41F9A /* AlignaWidgetShared.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -11,6 +11,7 @@ import AVFoundation
 @preconcurrency import FirebaseFirestore
 import FirebaseStorage
 import FirebaseAuth
+import WidgetKit
 
 struct RecommendationItem: Codable {
     var name: String
@@ -633,6 +634,8 @@ struct VinylRecord: View {
 
 @MainActor
 final class SoundPlayer: ObservableObject {
+    static let shared = SoundPlayer()
+
     @Published var isPlaying: Bool = false
     @Published var isLoading: Bool = false
     @Published var currentSoundKey: String? = nil
@@ -643,6 +646,8 @@ final class SoundPlayer: ObservableObject {
 
     private var downloadTask: StorageDownloadTask?
     private var prefetchTask: StorageDownloadTask?
+    private var widgetRotationOffsetDegrees: Double = 0
+    private var widgetRotationStartedAt: Date?
 
     /// 你在 Firebase Storage 里存音频的文件夹：sounds/<documentName>.<ext>
     private let storageFolder = "sounds"
@@ -652,6 +657,7 @@ final class SoundPlayer: ObservableObject {
     init() {
         configureAudioSession()
         ensureCacheFolderExists()
+        syncWidgetPlaybackState()
     }
 
     private func configureAudioSession() {
@@ -687,7 +693,10 @@ final class SoundPlayer: ObservableObject {
 
     func pause() {
         player?.pause()
+        widgetRotationOffsetDegrees = currentWidgetRotationDegrees()
+        widgetRotationStartedAt = nil
         isPlaying = false
+        syncWidgetPlaybackState()
     }
 
     func stop() {
@@ -700,6 +709,9 @@ final class SoundPlayer: ObservableObject {
         isPlaying = false
         isLoading = false
         currentSoundKey = nil
+        widgetRotationOffsetDegrees = 0
+        widgetRotationStartedAt = nil
+        syncWidgetPlaybackState()
     }
 
     // MARK: - Core
@@ -711,6 +723,19 @@ final class SoundPlayer: ObservableObject {
         let normalized = normalizeKey(rawKey)
         let key = normalized.key
         let exts = normalized.extensions
+
+        if currentSoundKey == rawKey, let player, !isPlaying {
+            player.play()
+            isLoading = false
+            isPlaying = true
+            widgetRotationStartedAt = Date()
+            syncWidgetPlaybackState()
+            return
+        }
+
+        if currentSoundKey == rawKey, isPlaying {
+            return
+        }
 
         // 切换音频时，先停止当前播放 & 取消下载
         if currentSoundKey != rawKey {
@@ -733,6 +758,7 @@ final class SoundPlayer: ObservableObject {
             isLoading = false
             isPlaying = false
             lastErrorMessage = "Failed to load sound: \(error.localizedDescription)"
+            syncWidgetPlaybackState()
             print("❌ Firebase audio download error: \(error)")
         }
     }
@@ -764,12 +790,40 @@ final class SoundPlayer: ObservableObject {
 
             isLoading = false
             isPlaying = true
+            widgetRotationStartedAt = Date()
+            syncWidgetPlaybackState()
         } catch {
             isLoading = false
             isPlaying = false
             lastErrorMessage = "AVAudioPlayer error: \(error.localizedDescription)"
+            syncWidgetPlaybackState()
             print("❌ AVAudioPlayer error: \(error)")
         }
+    }
+
+    private func syncWidgetPlaybackState() {
+        guard let defaults = UserDefaults(suiteName: "group.martinyuan.AlynnaTest") else { return }
+        defaults.set(currentSoundKey ?? "", forKey: "widgetCurrentSoundKey")
+        defaults.set(isPlaying, forKey: "widgetCurrentSoundIsPlaying")
+        defaults.set(widgetRotationOffsetDegrees, forKey: "widgetRotationOffsetDegrees")
+        defaults.set(widgetRotationStartedAt?.timeIntervalSince1970 ?? 0, forKey: "widgetRotationStartedAt")
+        defaults.synchronize()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    private func currentWidgetRotationDegrees(at date: Date = Date()) -> Double {
+        guard isPlaying, let startedAt = widgetRotationStartedAt else {
+            return normalizedDegrees(widgetRotationOffsetDegrees)
+        }
+
+        let elapsed = date.timeIntervalSince(startedAt)
+        let degreesPerSecond = 90.0
+        return normalizedDegrees(widgetRotationOffsetDegrees + elapsed * degreesPerSecond)
+    }
+
+    private func normalizedDegrees(_ value: Double) -> Double {
+        let remainder = value.truncatingRemainder(dividingBy: 360)
+        return remainder >= 0 ? remainder : remainder + 360
     }
 
     // MARK: - Cache

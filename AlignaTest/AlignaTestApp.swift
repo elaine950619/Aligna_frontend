@@ -8,6 +8,33 @@ import UIKit
 import GoogleSignIn
 import AVFoundation
 import UserNotifications
+import AppIntents
+import WidgetKit
+
+struct ToggleWidgetSoundIntent: AudioPlaybackIntent {
+    static var title: LocalizedStringResource = "Toggle Widget Sound"
+
+    @Parameter(title: "Sound Key")
+    var soundKey: String
+
+    init() { }
+
+    init(soundKey: String) {
+        self.soundKey = soundKey
+    }
+
+    func perform() async throws -> some IntentResult {
+        let trimmedKey = soundKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedKey.isEmpty else { return .result() }
+
+        await MainActor.run {
+            SoundPlayer.shared.togglePlay(named: trimmedKey)
+        }
+
+        WidgetCenter.shared.reloadAllTimelines()
+        return .result()
+    }
+}
 
 // MARK: - AppDelegate（Firebase + Google 回调）
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
@@ -59,7 +86,7 @@ struct RootRouter: View {
     @StateObject private var starManager = StarAnimationManager()
     @StateObject private var themeManager = ThemeManager()
     @StateObject private var onboardingViewModel = OnboardingViewModel()
-    @StateObject private var soundPlayer = SoundPlayer()        // ✅ 新增：全局音频播放器
+    @StateObject private var soundPlayer = SoundPlayer.shared
     @StateObject private var reasoningStore = DailyReasoningStore()
 
     // 路由状态

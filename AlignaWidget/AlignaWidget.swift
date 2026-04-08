@@ -1,5 +1,80 @@
+import Foundation
 import WidgetKit
 import SwiftUI
+import AppIntents
+import UIKit
+
+struct AlynnaWidgetSnapshot: Codable, Hashable {
+    var savedAt: Date
+    var mantra: String
+    var locationName: String
+    var sunSign: String
+    var moonSign: String
+    var risingSign: String
+    var weatherSummary: String
+    var weatherDetailSummary: String
+    var environmentSummary: String
+    var soundKey: String
+    var soundTitle: String
+    var colorTitle: String
+    var colorHex: String?
+    var placeTitle: String
+    var gemstoneTitle: String
+    var scentTitle: String
+
+    init(
+        mantra: String,
+        locationName: String = "",
+        sunSign: String = "",
+        moonSign: String = "",
+        risingSign: String = "",
+        weatherSummary: String = "",
+        weatherDetailSummary: String = "",
+        environmentSummary: String = "",
+        soundKey: String = "",
+        soundTitle: String = "",
+        colorTitle: String,
+        colorHex: String? = nil,
+        placeTitle: String,
+        gemstoneTitle: String,
+        scentTitle: String,
+        savedAt: Date = Date()
+    ) {
+        self.savedAt = savedAt
+        self.mantra = mantra
+        self.locationName = locationName
+        self.sunSign = sunSign
+        self.moonSign = moonSign
+        self.risingSign = risingSign
+        self.weatherSummary = weatherSummary
+        self.weatherDetailSummary = weatherDetailSummary
+        self.environmentSummary = environmentSummary
+        self.soundKey = soundKey
+        self.soundTitle = soundTitle
+        self.colorTitle = colorTitle
+        self.colorHex = colorHex
+        self.placeTitle = placeTitle
+        self.gemstoneTitle = gemstoneTitle
+        self.scentTitle = scentTitle
+    }
+}
+
+private let widgetSnapshotKey = "alynna.widget.snapshot"
+private let widgetAppGroupID = "group.martinyuan.AlynnaTest"
+
+enum AlynnaWidgetStore {
+    static func load() -> AlynnaWidgetSnapshot? {
+        guard
+            let defaults = UserDefaults(suiteName: widgetAppGroupID),
+            let data = defaults.data(forKey: widgetSnapshotKey),
+            let snapshot = try? JSONDecoder().decode(AlynnaWidgetSnapshot.self, from: data)
+        else {
+            return nil
+        }
+
+        return snapshot
+    }
+}
 
 // MARK: - Timeline Entry
 struct AlynnaEntry: TimelineEntry {
@@ -14,6 +89,15 @@ struct AlynnaProvider: TimelineProvider {
             date: Date(),
             snapshot: AlynnaWidgetSnapshot(
                 mantra: "Today is not about perfection. It is about noticing small moments, honoring how I feel, and allowing myself to move forward with patience and care",
+                locationName: "Brooklyn",
+                sunSign: "Virgo",
+                moonSign: "Pisces",
+                risingSign: "Libra",
+                weatherSummary: "Cool, rainy",
+                weatherDetailSummary: "Wind 8 Mph · Humidity 63%",
+                environmentSummary: "Mostly green with quiet urban edges",
+                soundKey: "ocean_waves",
+                soundTitle: "Ocean Waves",
                 colorTitle: "Vitality Pink",
                 colorHex: "#FF66CC",
                 placeTitle: "Window seat at a café",
@@ -41,6 +125,46 @@ struct AlynnaProvider: TimelineProvider {
     }
 }
 
+struct ToggleWidgetSoundIntent: AudioPlaybackIntent {
+    static var title: LocalizedStringResource = "Toggle Widget Sound"
+
+    @Parameter(title: "Sound Key")
+    var soundKey: String
+
+    init() { }
+
+    init(soundKey: String) {
+        self.soundKey = soundKey
+    }
+
+    func perform() async throws -> some IntentResult {
+        let trimmedKey = soundKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard
+            !trimmedKey.isEmpty,
+            let defaults = UserDefaults(suiteName: widgetAppGroupID)
+        else {
+            return .result()
+        }
+
+        let currentSoundKey = defaults.string(forKey: "widgetCurrentSoundKey") ?? ""
+        let isPlaying = defaults.bool(forKey: "widgetCurrentSoundIsPlaying")
+        let nextIsPlaying: Bool
+
+        if currentSoundKey == trimmedKey, isPlaying {
+            nextIsPlaying = false
+        } else {
+            nextIsPlaying = true
+        }
+
+        defaults.set(trimmedKey, forKey: "widgetCurrentSoundKey")
+        defaults.set(nextIsPlaying, forKey: "widgetCurrentSoundIsPlaying")
+        defaults.synchronize()
+
+        WidgetCenter.shared.reloadAllTimelines()
+        return .result()
+    }
+}
+
 // MARK: - UI
 struct AlynnaWidgetEntryView: View {
     var entry: AlynnaProvider.Entry
@@ -49,34 +173,82 @@ struct AlynnaWidgetEntryView: View {
         let backgroundHex = entry.snapshot.colorHex?.trimmingCharacters(in: .whitespacesAndNewlines)
         let resolvedBackgroundHex = (backgroundHex?.isEmpty == false) ? backgroundHex! : "#151515"
         let textColor = Color(hex: "#F7F3EC")
-        let trimmedMantra = entry.snapshot.mantra.trimmingCharacters(in: .whitespacesAndNewlines)
-        let displayMantra = trimmedMantra.isEmpty
-            ? "Today is not about perfection. It is about noticing small moments."
-            : trimmedMantra
+        let secondaryTextColor = textColor.opacity(0.74)
+        let displayMantra = widgetMantra(entry.snapshot.mantra)
+        let topLine = widgetHeaderLine(date: entry.snapshot.savedAt, location: entry.snapshot.locationName)
+        let phaseText = moonPhaseLabel(for: entry.snapshot.savedAt)
+        let footerItems = widgetFooterItems(
+            weather: entry.snapshot.weatherSummary,
+            weatherDetail: entry.snapshot.weatherDetailSummary,
+            environment: entry.snapshot.environmentSummary
+        )
+        let audioState = WidgetAudioState.load()
+        let isSoundPlaying = audioState.isPlaying && audioState.currentSoundKey == entry.snapshot.soundKey
+        let soundSymbol = soundSymbolName(for: entry.snapshot.soundKey, title: entry.snapshot.soundTitle)
+        let soundArtworkName = soundArtworkAssetName(for: entry.snapshot.soundKey, title: entry.snapshot.soundTitle)
 
         return GeometryReader { geometry in
-            VStack {
-                ViewThatFits(in: .vertical) {
-                    mantraText(displayMantra, size: min(geometry.size.width, geometry.size.height) * 0.15)
-                    mantraText(displayMantra, size: min(geometry.size.width, geometry.size.height) * 0.135)
-                    mantraText(displayMantra, size: min(geometry.size.width, geometry.size.height) * 0.12)
+            let minSide = min(geometry.size.width, geometry.size.height)
+
+            VStack(alignment: .leading, spacing: minSide * 0.024) {
+                HStack(alignment: .firstTextBaseline, spacing: minSide * 0.03) {
+                    Text(topLine)
+                        .font(.custom("Merriweather-Bold", size: minSide * 0.072))
+                        .foregroundStyle(secondaryTextColor)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+
+                    Spacer(minLength: minSide * 0.02)
+
+                    zodiacHeader(
+                        sun: entry.snapshot.sunSign,
+                        moon: entry.snapshot.moonSign,
+                        rising: entry.snapshot.risingSign,
+                        phase: phaseText,
+                        color: secondaryTextColor,
+                        size: minSide
+                    )
+                }
+
+                Spacer(minLength: minSide * 0.004)
+
+                HStack(alignment: .center, spacing: minSide * 0.042) {
+                    soundOrbControl(
+                        size: minSide * 0.48,
+                        soundKey: entry.snapshot.soundKey,
+                        soundTitle: entry.snapshot.soundTitle,
+                        artworkName: soundArtworkName,
+                        symbolName: soundSymbol,
+                        isPlaying: isSoundPlaying
+                    )
+
+                    ViewThatFits(in: .vertical) {
+                        mantraText(displayMantra, size: minSide * 0.14)
+                        mantraText(displayMantra, size: minSide * 0.132)
+                        mantraText(displayMantra, size: minSide * 0.124)
+                    }
                 }
                 .foregroundColor(textColor)
-                .multilineTextAlignment(.center)
-                .lineLimit(nil)
-                .minimumScaleFactor(0.6)
-                .shadow(color: Color.black.opacity(0.12), radius: 2, x: 0, y: 1)
-                .frame(
-                    maxWidth: .infinity,
-                    maxHeight: geometry.size.height * 0.66,
-                    alignment: .center
-                )
-                .fixedSize(horizontal: false, vertical: true)
                 .layoutPriority(1)
+                .background {
+                    WidgetContentGlow()
+                        .padding(.horizontal, -minSide * 0.03)
+                        .padding(.vertical, -minSide * 0.02)
+                }
 
-                Spacer(minLength: geometry.size.height * 0.34)
+                Spacer(minLength: minSide * 0.01)
+
+                if !footerItems.isEmpty {
+                    ViewThatFits(in: .horizontal) {
+                        footerSegments(footerItems, color: secondaryTextColor, size: minSide)
+                        footerSegments(Array(footerItems.prefix(3)), color: secondaryTextColor, size: minSide)
+                        footerSegments(Array(footerItems.prefix(2)), color: secondaryTextColor, size: minSide)
+                    }
+                    .padding(.top, 1)
+                }
             }
-            .padding(16)
+            .padding(.horizontal, minSide * 0.082)
+            .padding(.vertical, minSide * 0.066)
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .containerBackground(for: .widget) {
@@ -87,9 +259,495 @@ struct AlynnaWidgetEntryView: View {
     }
 }
 
+private struct WidgetFooterItem: Hashable {
+    let label: String
+    let text: String
+}
+
 private func mantraText(_ text: String, size: CGFloat) -> some View {
     Text(text)
-        .font(.system(size: size, weight: .semibold, design: .serif))
+        .font(.custom("CormorantGaramond-SemiBold", size: size))
+        .multilineTextAlignment(.leading)
+        .lineLimit(3)
+        .minimumScaleFactor(0.8)
+        .lineSpacing(size * 0.1)
+        .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+}
+
+private struct WidgetAudioState {
+    let currentSoundKey: String
+    let isPlaying: Bool
+
+    static func load() -> WidgetAudioState {
+        let defaults = UserDefaults(suiteName: widgetAppGroupID)
+        return WidgetAudioState(
+            currentSoundKey: defaults?.string(forKey: "widgetCurrentSoundKey") ?? "",
+            isPlaying: defaults?.bool(forKey: "widgetCurrentSoundIsPlaying") ?? false
+        )
+    }
+}
+
+@ViewBuilder
+private func soundOrbControl(
+    size: CGFloat,
+    soundKey: String,
+    soundTitle: String,
+    artworkName: String?,
+    symbolName: String,
+    isPlaying: Bool
+) -> some View {
+    let trimmedKey = soundKey.trimmingCharacters(in: .whitespacesAndNewlines)
+    let orb = SoundOrbView(size: size, artworkName: artworkName, symbolName: symbolName, isPlaying: isPlaying)
+
+    if trimmedKey.isEmpty {
+        orb.opacity(0.68)
+    } else {
+        Button(intent: ToggleWidgetSoundIntent(soundKey: trimmedKey)) {
+            orb
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isPlaying ? "Pause \(soundTitle)" : "Play \(soundTitle)")
+    }
+}
+
+private struct SoundOrbView: View {
+    let size: CGFloat
+    let artworkName: String?
+    let symbolName: String
+    let isPlaying: Bool
+
+    var body: some View {
+        ZStack {
+            rotatingSymbol
+
+            Circle()
+                .fill(Color(hex: "#F7F3EC").opacity(isPlaying ? 0.19 : 0.15))
+                .frame(width: size * 0.32, height: size * 0.32)
+                .overlay(
+                    Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: size * 0.14, weight: .bold))
+                        .foregroundStyle(Color(hex: "#F7F3EC").opacity(0.98))
+                )
+                .scaleEffect(isPlaying ? 0.96 : 1.0)
+                .shadow(color: Color.black.opacity(0.24), radius: 10, x: 0, y: 4)
+                .animation(.easeInOut(duration: 0.18), value: isPlaying)
+        }
+        .frame(width: size, height: size)
+    }
+
+    private var rotatingSymbol: some View {
+        Group {
+            if let artworkName, UIImage(named: artworkName) != nil {
+                Image(artworkName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size, height: size)
+                    .clipShape(Circle())
+            } else {
+                Image(systemName: symbolName)
+                    .font(.system(size: size * 0.56, weight: .semibold))
+                    .foregroundStyle(Color(hex: "#F7F3EC").opacity(0.97))
+            }
+        }
+        .shadow(color: Color.black.opacity(0.22), radius: 5, x: 0, y: 1)
+    }
+}
+
+private struct WidgetContentGlow: View {
+    var body: some View {
+        ZStack {
+            RadialGradient(
+                gradient: Gradient(colors: [Color.white.opacity(0.05), Color.clear]),
+                center: .leading,
+                startRadius: 0,
+                endRadius: 140
+            )
+            RadialGradient(
+                gradient: Gradient(colors: [Color.white.opacity(0.035), Color.clear]),
+                center: .center,
+                startRadius: 0,
+                endRadius: 220
+            )
+        }
+        .blur(radius: 10)
+        .allowsHitTesting(false)
+    }
+}
+
+private func widgetMantra(_ raw: String) -> String {
+    let cleaned = raw
+        .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+
+    guard !cleaned.isEmpty else {
+        return "Today is not about perfection. It is about noticing small moments."
+    }
+
+    let sentences = cleaned
+        .split(whereSeparator: { [".", "!", "?"].contains($0) })
+        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+
+    if let first = sentences.first, first.count <= 84 {
+        return first + "."
+    }
+
+    let words = cleaned.split(separator: " ")
+    if words.count <= 13, cleaned.count <= 84 {
+        return cleaned
+    }
+
+    let shortened = words.prefix(13).joined(separator: " ")
+    return shortened + "…"
+}
+
+private func soundArtworkAssetName(for key: String, title: String) -> String? {
+    let candidates = [
+        key.trimmingCharacters(in: .whitespacesAndNewlines),
+        title
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+            .replacingOccurrences(of: " ", with: "_")
+    ].filter { !$0.isEmpty }
+
+    for candidate in candidates where UIImage(named: candidate) != nil {
+        return candidate
+    }
+
+    return nil
+}
+
+private func soundSymbolName(for key: String, title: String) -> String {
+    let source = "\(key) \(title)".lowercased()
+    if source.contains("ocean") || source.contains("wave") || source.contains("water") {
+        return "water.waves"
+    }
+    if source.contains("rain") || source.contains("storm") {
+        return "cloud.rain"
+    }
+    if source.contains("wind") || source.contains("breeze") {
+        return "wind"
+    }
+    if source.contains("forest") || source.contains("bird") || source.contains("leaf") {
+        return "leaf"
+    }
+    if source.contains("fire") || source.contains("candle") {
+        return "flame"
+    }
+    if source.contains("night") || source.contains("moon") {
+        return "moon.stars"
+    }
+    return "waveform"
+}
+
+@ViewBuilder
+private func zodiacHeader(
+    sun: String,
+    moon: String,
+    rising: String,
+    phase: String,
+    color: Color,
+    size: CGFloat
+) -> some View {
+    let items = [
+        ("sun.max.fill", cleanHeaderValue(sun)),
+        ("moon.fill", cleanHeaderValue(moon)),
+        ("arrow.up.right", cleanHeaderValue(rising)),
+        (moonPhaseSymbol(for: phase), cleanHeaderValue(compactMoonPhase(phase)))
+    ].filter { !$0.1.isEmpty }
+
+    if !items.isEmpty {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: size * 0.02) {
+                ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                    if index > 0 {
+                        Circle()
+                            .fill(color.opacity(0.5))
+                            .frame(width: 2.5, height: 2.5)
+                    }
+                    headerSegment(symbol: item.0, text: item.1, color: color, size: size)
+                }
+            }
+            HStack(spacing: size * 0.016) {
+                ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                    if index > 0 {
+                        Circle()
+                            .fill(color.opacity(0.5))
+                            .frame(width: 2, height: 2)
+                    }
+                    headerSegment(symbol: item.0, text: String(item.1.prefix(3)), color: color, size: size * 0.96)
+                }
+            }
+        }
+    }
+}
+
+private func headerSegment(symbol: String, text: String, color: Color, size: CGFloat) -> some View {
+    HStack(spacing: size * 0.009) {
+        Image(systemName: symbol)
+            .font(.system(size: size * 0.038, weight: .semibold))
+        Text(text)
+            .lineLimit(1)
+    }
+    .font(.custom("Merriweather-Regular", size: size * 0.05))
+    .foregroundStyle(color)
+}
+
+@ViewBuilder
+private func footerSegments(_ items: [WidgetFooterItem], color: Color, size: CGFloat) -> some View {
+    HStack(spacing: size * 0.018) {
+        ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+            if index > 0 {
+                Circle()
+                    .fill(color.opacity(0.45))
+                    .frame(width: 2.5, height: 2.5)
+            }
+
+            (
+                Text("\(item.label) ")
+                    .font(.custom("Merriweather-Bold", size: size * 0.064))
+                +
+                Text(item.text)
+                    .font(.custom("Merriweather-Light", size: size * 0.066))
+            )
+            .lineLimit(1)
+        }
+    }
+    .foregroundStyle(color)
+    .minimumScaleFactor(0.82)
+    .truncationMode(.tail)
+}
+
+private func widgetFooterItems(weather: String, weatherDetail: String, environment: String) -> [WidgetFooterItem] {
+    let weatherBits = compactWeatherDetails(weatherDetail)
+    let environmentText = readableEnvironment(environment)
+
+    var items: [WidgetFooterItem] = []
+    if let windText = weatherBits.wind, !windText.isEmpty {
+        items.append(WidgetFooterItem(label: "Wind", text: windText))
+    } else {
+        let weatherText = compactWeather(weather)
+        if !weatherText.isEmpty {
+            items.append(WidgetFooterItem(label: "Weather", text: titleCase(weatherText)))
+        }
+    }
+    if let humidityText = weatherBits.humidity, !humidityText.isEmpty {
+        items.append(WidgetFooterItem(label: "Humidity", text: humidityText))
+    }
+    if !environmentText.isEmpty {
+        items.append(WidgetFooterItem(label: "Env", text: environmentText))
+    }
+    return items
+}
+
+private func compactMoonPhase(_ raw: String) -> String {
+    let phase = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    switch phase {
+    case "Waxing Crescent": return "Waxing crescent"
+    case "Waxing Gibbous": return "Waxing gibbous"
+    case "Waning Gibbous": return "Waning gibbous"
+    case "Waning Crescent": return "Waning crescent"
+    default: return phase
+    }
+}
+
+private func moonPhaseSymbol(for phase: String) -> String {
+    switch phase.trimmingCharacters(in: .whitespacesAndNewlines) {
+    case "New Moon": return "moonphase.new.moon"
+    case "Waxing Crescent": return "moonphase.waxing.crescent"
+    case "First Quarter": return "moonphase.first.quarter"
+    case "Waxing Gibbous": return "moonphase.waxing.gibbous"
+    case "Full Moon": return "moonphase.full.moon"
+    case "Waning Gibbous": return "moonphase.waning.gibbous"
+    case "Third Quarter": return "moonphase.last.quarter"
+    case "Waning Crescent": return "moonphase.waning.crescent"
+    default: return "moon.fill"
+    }
+}
+
+private func compactWeather(_ raw: String) -> String {
+    let text = raw
+        .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        .replacingOccurrences(of: "air, ", with: "")
+        .replacingOccurrences(of: "Mostly ", with: "")
+        .replacingOccurrences(of: "mostly ", with: "")
+        .replacingOccurrences(of: "Light ", with: "Light ")
+
+    if text.count <= 22 {
+        return text
+    }
+
+    let parts = text
+        .components(separatedBy: ",")
+        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+
+    if let first = parts.first, first.count <= 22 {
+        return first
+    }
+
+    let words = text.split(separator: " ").prefix(3)
+    return words.joined(separator: " ")
+}
+
+private func compactWeatherDetails(_ raw: String) -> (wind: String?, humidity: String?) {
+    let clean = raw.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !clean.isEmpty else { return (nil, nil) }
+
+    let parts = clean
+        .components(separatedBy: "·")
+        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    let wind = parts.first(where: { $0.localizedCaseInsensitiveContains("wind") })?
+        .replacingOccurrences(of: "Wind ", with: "")
+        .replacingOccurrences(of: "Mph", with: "mph")
+    let humidity = parts.first(where: { $0.localizedCaseInsensitiveContains("humidity") })?
+        .replacingOccurrences(of: "Humidity ", with: "")
+    return (wind, humidity)
+}
+
+private func compactEnvironment(_ raw: String, tighter: Bool = false) -> String {
+    var text = raw
+        .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        .replacingOccurrences(of: "Mostly ", with: "")
+        .replacingOccurrences(of: "mostly ", with: "")
+        .replacingOccurrences(of: "with quiet ", with: "")
+        .replacingOccurrences(of: "with ", with: "")
+        .replacingOccurrences(of: "urban edges", with: "urban edges")
+        .replacingOccurrences(of: "quiet urban edges", with: "urban edges")
+        .replacingOccurrences(of: "touched by ", with: "")
+
+    if tighter {
+        text = text
+            .replacingOccurrences(of: "green", with: "green")
+            .replacingOccurrences(of: " and ", with: " · ")
+    }
+
+    if text.count <= (tighter ? 18 : 26) {
+        return text
+    }
+
+    if text.localizedCaseInsensitiveContains("green") && text.localizedCaseInsensitiveContains("urban") {
+        return tighter ? "Green · urban" : "Green with urban edges"
+    }
+
+    if text.localizedCaseInsensitiveContains("water") && text.localizedCaseInsensitiveContains("city") {
+        return tighter ? "Water · city" : "Water with city edges"
+    }
+
+    let words = text.split(separator: " ").prefix(tighter ? 3 : 4)
+    return words.joined(separator: " ")
+}
+
+private func environmentSymbol(for text: String) -> String {
+    let lowered = text.lowercased()
+    if lowered.contains("green") { return "leaf.fill" }
+    if lowered.contains("water") { return "water.waves" }
+    if lowered.contains("urban") || lowered.contains("city") { return "building.2.fill" }
+    return "map.fill"
+}
+
+private func weatherSymbol(for text: String) -> String {
+    let lowered = text.lowercased()
+    if lowered.contains("rain") || lowered.contains("storm") { return "cloud.rain.fill" }
+    if lowered.contains("mist") || lowered.contains("fog") { return "cloud.fog.fill" }
+    if lowered.contains("cloud") { return "cloud.fill" }
+    if lowered.contains("clear") { return "sun.max.fill" }
+    return "cloud.sun.fill"
+}
+
+private func readableEnvironment(_ raw: String) -> String {
+    let lowered = raw.lowercased()
+    if lowered.contains("green") && lowered.contains("urban") {
+        return "Green / Urban"
+    }
+    if lowered.contains("water") && lowered.contains("city") {
+        return "Water / City"
+    }
+    if lowered.contains("green") && lowered.contains("water") {
+        return "Green / Water"
+    }
+    if lowered.contains("green") {
+        return "Mostly Green"
+    }
+    if lowered.contains("urban") || lowered.contains("city") {
+        return "Mostly Urban"
+    }
+    let compact = compactEnvironment(raw, tighter: true)
+    return titleCase(compact)
+}
+
+private func cleanHeaderValue(_ raw: String) -> String {
+    raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        .replacingOccurrences(of: "—", with: "")
+}
+
+private func titleCase(_ raw: String) -> String {
+    raw
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        .split(separator: " ")
+        .map { word in
+            let lower = word.lowercased()
+            return lower.prefix(1).uppercased() + lower.dropFirst()
+        }
+        .joined(separator: " ")
+}
+
+private func widgetHeaderLine(date: Date, location: String) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.dateFormat = "EEE, MMM d"
+
+    let dateText = formatter.string(from: date)
+    let trimmedLocation = location.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedLocation.isEmpty else {
+        return dateText
+    }
+
+    return "\(dateText) at \(trimmedLocation)"
+}
+
+private func moonPhaseLabel(for date: Date = Date()) -> String {
+    let synodicMonth = 29.53058867
+    var components = DateComponents()
+    components.calendar = Calendar(identifier: .gregorian)
+    components.timeZone = TimeZone(secondsFromGMT: 0)
+    components.year = 2000
+    components.month = 1
+    components.day = 6
+    components.hour = 18
+    components.minute = 14
+
+    guard let anchorDate = components.date else {
+        return "New Moon"
+    }
+
+    let days = date.timeIntervalSince(anchorDate) / 86400
+    let phase = days - floor(days / synodicMonth) * synodicMonth
+
+    switch phase {
+    case 0..<1.84566:
+        return "New Moon"
+    case 1.84566..<5.53699:
+        return "Waxing Crescent"
+    case 5.53699..<9.22831:
+        return "First Quarter"
+    case 9.22831..<12.91963:
+        return "Waxing Gibbous"
+    case 12.91963..<16.61096:
+        return "Full Moon"
+    case 16.61096..<20.30228:
+        return "Waning Gibbous"
+    case 20.30228..<23.99361:
+        return "Third Quarter"
+    case 23.99361..<27.68493:
+        return "Waning Crescent"
+    default:
+        return "New Moon"
+    }
 }
 
 private struct WidgetBackground: View {
@@ -173,7 +831,12 @@ struct AlynnaWidget_Previews: PreviewProvider {
             entry: AlynnaEntry(
                 date: Date(),
                 snapshot: AlynnaWidgetSnapshot(
-                    mantra: "Embrace the flow of change.",
+                    mantra: "Today is not about perfection. It is about noticing small moments, honoring how I feel, and allowing myself to move forward with patience and care.",
+                    locationName: "Brooklyn",
+                    weatherSummary: "Cool, rainy",
+                    environmentSummary: "Mostly green with quiet urban edges",
+                    soundKey: "ocean_waves",
+                    soundTitle: "Ocean Waves",
                     colorTitle: "Vitality Pink",
                     colorHex: "#FF66CC",
                     placeTitle: "Window seat at a café",

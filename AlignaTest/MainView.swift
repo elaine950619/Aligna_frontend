@@ -6,6 +6,78 @@ import Combine
 import WidgetKit
 import UIKit
 
+enum AlynnaAppGroup {
+    static let id = "group.martinyuan.AlynnaTest"
+}
+
+struct AlynnaWidgetSnapshot: Codable, Hashable {
+    var savedAt: Date
+    var mantra: String
+    var locationName: String
+    var sunSign: String
+    var moonSign: String
+    var risingSign: String
+    var weatherSummary: String
+    var weatherDetailSummary: String
+    var environmentSummary: String
+    var soundKey: String
+    var soundTitle: String
+    var colorTitle: String
+    var colorHex: String?
+    var placeTitle: String
+    var gemstoneTitle: String
+    var scentTitle: String
+
+    init(
+        mantra: String,
+        locationName: String = "",
+        sunSign: String = "",
+        moonSign: String = "",
+        risingSign: String = "",
+        weatherSummary: String = "",
+        weatherDetailSummary: String = "",
+        environmentSummary: String = "",
+        soundKey: String = "",
+        soundTitle: String = "",
+        colorTitle: String,
+        colorHex: String? = nil,
+        placeTitle: String,
+        gemstoneTitle: String,
+        scentTitle: String,
+        savedAt: Date = Date()
+    ) {
+        self.savedAt = savedAt
+        self.mantra = mantra
+        self.locationName = locationName
+        self.sunSign = sunSign
+        self.moonSign = moonSign
+        self.risingSign = risingSign
+        self.weatherSummary = weatherSummary
+        self.weatherDetailSummary = weatherDetailSummary
+        self.environmentSummary = environmentSummary
+        self.soundKey = soundKey
+        self.soundTitle = soundTitle
+        self.colorTitle = colorTitle
+        self.colorHex = colorHex
+        self.placeTitle = placeTitle
+        self.gemstoneTitle = gemstoneTitle
+        self.scentTitle = scentTitle
+    }
+}
+
+private let widgetSnapshotKey = "alynna.widget.snapshot"
+
+enum AlynnaWidgetStore {
+    static func save(_ snapshot: AlynnaWidgetSnapshot) {
+        guard let defaults = UserDefaults(suiteName: AlynnaAppGroup.id) else { return }
+        guard let data = try? JSONEncoder().encode(snapshot) else { return }
+
+        defaults.set(data, forKey: widgetSnapshotKey)
+        defaults.synchronize()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+}
+
 func getAddressFromCoordinate(
     _ coordinate: CLLocationCoordinate2D,
     preferredLocale: Locale = Locale(identifier: "en_US"),
@@ -135,6 +207,13 @@ struct MainView: View {
     @AppStorage("shouldExpandMantraOnBoot") private var shouldExpandMantraOnBoot: Bool = false
     @AppStorage("shouldExpandMantraFromNotification") private var shouldExpandMantraFromNotification: Bool = false
     @AppStorage("mantraExpandHapticDay") private var mantraExpandHapticDay: String = ""
+    @AppStorage("widgetLocationName") private var widgetLocationName: String = ""
+    @AppStorage("widgetSunSign") private var widgetSunSign: String = ""
+    @AppStorage("widgetMoonSign") private var widgetMoonSign: String = ""
+    @AppStorage("widgetRisingSign") private var widgetRisingSign: String = ""
+    @AppStorage("widgetWeatherSummary") private var widgetWeatherSummary: String = ""
+    @AppStorage("widgetWeatherDetailSummary") private var widgetWeatherDetailSummary: String = ""
+    @AppStorage("widgetEnvironmentSummary") private var widgetEnvironmentSummary: String = ""
     @State private var isFetchingToday: Bool = false
     
     @State private var isMantraExpanded: Bool = false
@@ -639,6 +718,15 @@ struct MainView: View {
 
         let snap = AlynnaWidgetSnapshot(
             mantra: mantra,
+            locationName: resolvedWidgetLocation(),
+            sunSign: widgetSunSign.trimmingCharacters(in: .whitespacesAndNewlines),
+            moonSign: widgetMoonSign.trimmingCharacters(in: .whitespacesAndNewlines),
+            risingSign: widgetRisingSign.trimmingCharacters(in: .whitespacesAndNewlines),
+            weatherSummary: widgetWeatherSummary.trimmingCharacters(in: .whitespacesAndNewlines),
+            weatherDetailSummary: widgetWeatherDetailSummary.trimmingCharacters(in: .whitespacesAndNewlines),
+            environmentSummary: widgetEnvironmentSummary.trimmingCharacters(in: .whitespacesAndNewlines),
+            soundKey: soundKey(for: "Sound"),
+            soundTitle: title(for: "Sound"),
             colorTitle: title(for: "Color"),
             colorHex: todayColorHex(),
             placeTitle: title(for: "Place"),
@@ -646,6 +734,29 @@ struct MainView: View {
             scentTitle: title(for: "Scent")
         )
         AlynnaWidgetStore.save(snap)
+    }
+
+    private func soundKey(for key: String) -> String {
+        viewModel.recommendations[key]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+
+    private func resolvedWidgetLocation() -> String {
+        let location = widgetLocationName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !location.isEmpty, location != "Your Current Location" {
+            return location
+        }
+
+        let recommendationPlace = lastRecommendationPlace.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !recommendationPlace.isEmpty {
+            return recommendationPlace
+        }
+
+        let currentPlace = viewModel.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !currentPlace.isEmpty {
+            return currentPlace
+        }
+
+        return ""
     }
 
     private func updateLastRecommendationStampIfReady(mantra: String, recs: [String: String]) {
@@ -2757,4 +2868,3 @@ struct CustomBackButton: View {
 import FirebaseFirestore
 import FirebaseAuth
 import MapKit
-

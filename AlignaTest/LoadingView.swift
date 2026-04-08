@@ -8,6 +8,46 @@ import FirebaseAuth
 import FirebaseFirestore
 import UIKit
 
+func moonPhaseLabel(for date: Date = Date()) -> String {
+    let synodicMonth = 29.53058867
+    var components = DateComponents()
+    components.calendar = Calendar(identifier: .gregorian)
+    components.timeZone = TimeZone(secondsFromGMT: 0)
+    components.year = 2000
+    components.month = 1
+    components.day = 6
+    components.hour = 18
+    components.minute = 14
+
+    guard let anchorDate = components.date else {
+        return "New Moon"
+    }
+
+    let days = date.timeIntervalSince(anchorDate) / 86400
+    let phase = days - floor(days / synodicMonth) * synodicMonth
+
+    switch phase {
+    case 0..<1.84566:
+        return "New Moon"
+    case 1.84566..<5.53699:
+        return "Waxing Crescent"
+    case 5.53699..<9.22831:
+        return "First Quarter"
+    case 9.22831..<12.91963:
+        return "Waxing Gibbous"
+    case 12.91963..<16.61096:
+        return "Full Moon"
+    case 16.61096..<20.30228:
+        return "Waning Gibbous"
+    case 20.30228..<23.99361:
+        return "Third Quarter"
+    case 23.99361..<27.68493:
+        return "Waning Crescent"
+    default:
+        return "New Moon"
+    }
+}
+
 enum BootPhase {
     case loading
     case onboarding   // ← 新增：需要走新手引导
@@ -290,6 +330,13 @@ struct LoadingView: View {
     @State private var locationText: String = "Your Current Location"
     @State private var conditionText: String = "Cloud · Wind · Rain"
     @State private var placeDensityText: String = "Water — · Green — · Built —"
+    @AppStorage("widgetLocationName") private var widgetLocationName: String = ""
+    @AppStorage("widgetSunSign") private var widgetSunSign: String = ""
+    @AppStorage("widgetMoonSign") private var widgetMoonSign: String = ""
+    @AppStorage("widgetRisingSign") private var widgetRisingSign: String = ""
+    @AppStorage("widgetWeatherSummary") private var widgetWeatherSummary: String = ""
+    @AppStorage("widgetWeatherDetailSummary") private var widgetWeatherDetailSummary: String = ""
+    @AppStorage("widgetEnvironmentSummary") private var widgetEnvironmentSummary: String = ""
 
     init(
         onStartLoading: (() -> Void)? = nil,
@@ -852,6 +899,9 @@ struct LoadingView: View {
                 if !sun.isEmpty { sunText = sun }
                 if !moon.isEmpty { moonText = moon }
                 if !rising.isEmpty { risingText = rising }
+                widgetSunSign = sun
+                widgetMoonSign = moon
+                widgetRisingSign = rising
             }
         }
     }
@@ -1000,7 +1050,10 @@ struct LoadingView: View {
         // Reverse geocode
         getAddressFromCoordinate(coord) { name in
             if let name {
-                DispatchQueue.main.async { locationText = name }
+                DispatchQueue.main.async {
+                    locationText = name
+                    widgetLocationName = name
+                }
             }
         }
 
@@ -1026,7 +1079,20 @@ struct LoadingView: View {
             let humidityText = "Humidity \(Int(humidity.rounded()))%"
             let pressureText = "Pressure \(Int(pressure.rounded())) hPa"
             let text = "\(description) · \(Int(temp.rounded()))°F\n\(windText)\n\(humidityText) · \(pressureText)"
-            DispatchQueue.main.async { conditionText = text }
+            let widgetSummary = compactWeatherSummary(
+                description: description,
+                temperature: temp,
+                windSpeed: wind
+            )
+            let widgetDetailSummary = compactWeatherDetailSummary(
+                windSpeed: wind,
+                humidity: humidity
+            )
+            DispatchQueue.main.async {
+                conditionText = text
+                widgetWeatherSummary = widgetSummary
+                widgetWeatherDetailSummary = widgetDetailSummary
+            }
         }.resume()
 
         // Land cover density (approx) via WorldCover WMS RGB sampling
@@ -1050,7 +1116,11 @@ struct LoadingView: View {
     private func fetchLandCoverDensity(for coord: CLLocationCoordinate2D) {
         Task {
             let text = await computeLandCoverDensity(for: coord)
-            DispatchQueue.main.async { placeDensityText = text }
+            let widgetSummary = compactEnvironmentSummary(from: text)
+            DispatchQueue.main.async {
+                placeDensityText = text
+                widgetEnvironmentSummary = widgetSummary
+            }
         }
     }
 
@@ -1091,6 +1161,114 @@ struct LoadingView: View {
         let builtPct = Int((Double(builtCount) / Double(totalCount) * 100).rounded())
 
         return "Water \(waterPct)% · Green \(greenPct)% · Built \(builtPct)%"
+    }
+
+    private func compactWeatherSummary(
+        description: String,
+        temperature: Double,
+        windSpeed: Double
+    ) -> String {
+        let tempTone: String
+        switch temperature {
+        case ..<45:
+            tempTone = "Cold"
+        case ..<60:
+            tempTone = "Cool"
+        case ..<75:
+            tempTone = "Mild"
+        case ..<86:
+            tempTone = "Warm"
+        default:
+            tempTone = "Hot"
+        }
+
+        let lowered = description.lowercased()
+        let skyTone: String
+        if lowered.contains("thunder") {
+            skyTone = "stormy"
+        } else if lowered.contains("snow") {
+            skyTone = "snowy"
+        } else if lowered.contains("rain") || lowered.contains("drizzle") || lowered.contains("shower") {
+            skyTone = "rainy"
+        } else if lowered.contains("fog") || lowered.contains("mist") {
+            skyTone = "misty"
+        } else if lowered.contains("cloud") || lowered.contains("overcast") {
+            skyTone = "cloudy"
+        } else {
+            skyTone = "clear"
+        }
+
+        if windSpeed >= 18 {
+            return "\(tempTone) and windy"
+        }
+        return "\(tempTone), \(skyTone)"
+    }
+
+    private func compactWeatherDetailSummary(
+        windSpeed: Double,
+        humidity: Double
+    ) -> String {
+        "Wind \(Int(windSpeed.rounded())) Mph · Humidity \(Int(humidity.rounded()))%"
+    }
+
+    private func compactEnvironmentSummary(from density: String) -> String {
+        let pattern = #"Water\s+(\d+)%\s+·\s+Green\s+(\d+)%\s+·\s+Built\s+(\d+)%"#
+        guard
+            let regex = try? NSRegularExpression(pattern: pattern),
+            let match = regex.firstMatch(
+                in: density,
+                range: NSRange(density.startIndex..., in: density)
+            ),
+            match.numberOfRanges == 4,
+            let waterRange = Range(match.range(at: 1), in: density),
+            let greenRange = Range(match.range(at: 2), in: density),
+            let builtRange = Range(match.range(at: 3), in: density),
+            let water = Int(density[waterRange]),
+            let green = Int(density[greenRange]),
+            let built = Int(density[builtRange])
+        else {
+            return "Sensing your surroundings"
+        }
+
+        if green >= max(water, built) + 15 {
+            if water >= 25 {
+                return "Mostly green, touched by water"
+            }
+            if built >= 25 {
+                return "Mostly green with quiet urban edges"
+            }
+            return "Mostly green and softly grounded"
+        }
+
+        if built >= max(green, water) + 15 {
+            if green >= 20 {
+                return "Mostly built with pockets of green"
+            }
+            if water >= 20 {
+                return "Mostly built, edged by water"
+            }
+            return "Mostly built and city-held"
+        }
+
+        if water >= max(green, built) + 15 {
+            if green >= 20 {
+                return "Water-led, softened by green"
+            }
+            if built >= 20 {
+                return "Water-led with urban edges"
+            }
+            return "Mostly water and open space"
+        }
+
+        if green >= 30 && built >= 30 {
+            return "Balanced between green and city"
+        }
+
+        if green >= 25 && water >= 20 {
+            return "Balanced between green and water"
+        }
+
+        return "Mixed surroundings, gently balanced"
     }
 
     private func sampleGridCoordinates(
