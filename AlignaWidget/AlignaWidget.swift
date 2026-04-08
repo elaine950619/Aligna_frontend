@@ -177,10 +177,12 @@ struct AlynnaWidgetEntryView: View {
         let displayMantra = widgetMantra(entry.snapshot.mantra)
         let topLine = widgetHeaderLine(date: entry.snapshot.savedAt, location: entry.snapshot.locationName)
         let phaseText = moonPhaseLabel(for: entry.snapshot.savedAt)
+        let airQualityText = widgetAirQualityText()
         let footerItems = widgetFooterItems(
             weather: entry.snapshot.weatherSummary,
             weatherDetail: entry.snapshot.weatherDetailSummary,
-            environment: entry.snapshot.environmentSummary
+            environment: entry.snapshot.environmentSummary,
+            airQuality: airQualityText
         )
         let audioState = WidgetAudioState.load()
         let isSoundPlaying = audioState.isPlaying && audioState.currentSoundKey == entry.snapshot.soundKey
@@ -239,12 +241,36 @@ struct AlynnaWidgetEntryView: View {
                 Spacer(minLength: minSide * 0.01)
 
                 if !footerItems.isEmpty {
-                    ViewThatFits(in: .horizontal) {
-                        footerSegments(footerItems, color: secondaryTextColor, size: minSide)
-                        footerSegments(Array(footerItems.prefix(3)), color: secondaryTextColor, size: minSide)
-                        footerSegments(Array(footerItems.prefix(2)), color: secondaryTextColor, size: minSide)
+                    let lineColor = secondaryTextColor
+                    let topFooterItems = footerItems.filter { ["Place", "Weather"].contains($0.label) }
+                    let bottomFooterItems = footerItems.filter { ["Air", "Wind", "Humidity", "Pressure"].contains($0.label) }
+
+                    VStack(alignment: .leading, spacing: minSide * 0.012) {
+                        if !topFooterItems.isEmpty {
+                            ViewThatFits(in: .horizontal) {
+                                footerSegments(topFooterItems, color: lineColor, size: minSide, scale: 0.92)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                footerSegments(topFooterItems, color: lineColor, size: minSide, scale: 0.84)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                footerSegments(Array(topFooterItems.prefix(1)), color: lineColor, size: minSide, scale: 1.0)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+
+                        if !bottomFooterItems.isEmpty {
+                            ViewThatFits(in: .horizontal) {
+                                footerSegments(bottomFooterItems, color: lineColor, size: minSide, scale: 0.9)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                footerSegments(bottomFooterItems, color: lineColor, size: minSide, scale: 0.82)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                footerSegments(Array(bottomFooterItems.prefix(3)), color: lineColor, size: minSide, scale: 0.9)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                footerSegments(Array(bottomFooterItems.prefix(2)), color: lineColor, size: minSide, scale: 1.0)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
                     }
-                    .padding(.top, 1)
+                    .padding(.top, minSide * 0.006)
                 }
             }
             .padding(.horizontal, minSide * 0.082)
@@ -272,6 +298,11 @@ private func mantraText(_ text: String, size: CGFloat) -> some View {
         .minimumScaleFactor(0.8)
         .lineSpacing(size * 0.1)
         .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+}
+
+private func widgetAirQualityText() -> String {
+    let defaults = UserDefaults(suiteName: widgetAppGroupID)
+    return defaults?.string(forKey: "widgetAirQualityText") ?? ""
 }
 
 private struct WidgetAudioState {
@@ -494,21 +525,24 @@ private func headerSegment(symbol: String, text: String, color: Color, size: CGF
 }
 
 @ViewBuilder
-private func footerSegments(_ items: [WidgetFooterItem], color: Color, size: CGFloat) -> some View {
-    HStack(spacing: size * 0.018) {
+private func footerSegments(_ items: [WidgetFooterItem], color: Color, size: CGFloat, scale: CGFloat) -> some View {
+    let labelSize = size * 0.064 * scale
+    let valueSize = size * 0.066 * scale
+
+    return HStack(spacing: size * 0.018 * scale) {
         ForEach(Array(items.enumerated()), id: \.offset) { index, item in
             if index > 0 {
                 Circle()
                     .fill(color.opacity(0.45))
-                    .frame(width: 2.5, height: 2.5)
+                    .frame(width: 2.2 * scale, height: 2.2 * scale)
             }
 
             (
                 Text("\(item.label) ")
-                    .font(.custom("Merriweather-Bold", size: size * 0.064))
+                    .font(.custom("Merriweather-Bold", size: labelSize))
                 +
                 Text(item.text)
-                    .font(.custom("Merriweather-Light", size: size * 0.066))
+                    .font(.custom("Merriweather-Light", size: valueSize))
             )
             .lineLimit(1)
         }
@@ -518,14 +552,25 @@ private func footerSegments(_ items: [WidgetFooterItem], color: Color, size: CGF
     .truncationMode(.tail)
 }
 
-private func widgetFooterItems(weather: String, weatherDetail: String, environment: String) -> [WidgetFooterItem] {
+private func widgetFooterItems(weather: String, weatherDetail: String, environment: String, airQuality: String) -> [WidgetFooterItem] {
     let weatherBits = compactWeatherDetails(weatherDetail)
     let weatherText = compactWeather(weather)
     let environmentText = readableEnvironment(environment)
+    let airText = airQualityFeeling(
+        airQuality
+            .replacingOccurrences(of: "Air Quality:", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    )
 
     var items: [WidgetFooterItem] = []
+    if !environmentText.isEmpty {
+        items.append(WidgetFooterItem(label: "Place", text: environmentText))
+    }
     if !weatherText.isEmpty {
         items.append(WidgetFooterItem(label: "Weather", text: titleCase(weatherText)))
+    }
+    if !airText.isEmpty {
+        items.append(WidgetFooterItem(label: "Air", text: airText))
     }
     if let windText = weatherBits.wind, !windText.isEmpty {
         items.append(WidgetFooterItem(label: "Wind", text: windText))
@@ -533,10 +578,25 @@ private func widgetFooterItems(weather: String, weatherDetail: String, environme
     if let humidityText = weatherBits.humidity, !humidityText.isEmpty {
         items.append(WidgetFooterItem(label: "Humidity", text: humidityText))
     }
-    if !environmentText.isEmpty {
-        items.append(WidgetFooterItem(label: "Env", text: environmentText))
+    if let pressureText = weatherBits.pressure, !pressureText.isEmpty {
+        items.append(WidgetFooterItem(label: "Pressure", text: pressureText))
     }
     return items
+}
+
+private func airQualityFeeling(_ raw: String) -> String {
+    let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return "" }
+
+    let lowered = trimmed.lowercased()
+    if lowered.contains("good") { return "Clean" }
+    if lowered.contains("moderate") { return "Fair" }
+    if lowered.contains("sensitive") { return "Sensitive" }
+    if lowered.contains("very unhealthy") { return "Very Poor" }
+    if lowered.contains("unhealthy") { return "Poor" }
+    if lowered.contains("hazardous") { return "Severe" }
+
+    return titleCase(trimmed)
 }
 
 private func compactMoonPhase(_ raw: String) -> String {
@@ -590,21 +650,62 @@ private func compactWeather(_ raw: String) -> String {
     return words.joined(separator: " ")
 }
 
-private func compactWeatherDetails(_ raw: String) -> (wind: String?, humidity: String?) {
+private func compactWeatherDetails(_ raw: String) -> (wind: String?, humidity: String?, pressure: String?) {
     let clean = raw.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
         .trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !clean.isEmpty else { return (nil, nil) }
+    guard !clean.isEmpty else { return (nil, nil, nil) }
 
     let parts = clean
         .components(separatedBy: "·")
         .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
 
-    let wind = parts.first(where: { $0.localizedCaseInsensitiveContains("wind") })?
+    let windRaw = parts.first(where: { $0.localizedCaseInsensitiveContains("wind") })?
         .replacingOccurrences(of: "Wind ", with: "")
         .replacingOccurrences(of: "Mph", with: "mph")
-    let humidity = parts.first(where: { $0.localizedCaseInsensitiveContains("humidity") })?
+    let humidityRaw = parts.first(where: { $0.localizedCaseInsensitiveContains("humidity") })?
         .replacingOccurrences(of: "Humidity ", with: "")
-    return (wind, humidity)
+    let pressureRaw = parts.first(where: { $0.localizedCaseInsensitiveContains("pressure") })?
+        .replacingOccurrences(of: "Pressure ", with: "")
+
+    let wind = windRaw.flatMap { raw in
+        if let value = Double(raw.filter { $0.isNumber || $0 == "." }) {
+            switch value {
+            case ..<3: return "Calm"
+            case ..<8: return "Light"
+            case ..<15: return "Breezy"
+            case ..<22: return "Windy"
+            case ..<30: return "Blustery"
+            default: return "Gusty"
+            }
+        }
+        return raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    let humidity = humidityRaw.flatMap { raw in
+        if let value = Double(raw.filter { $0.isNumber || $0 == "." }) {
+            switch value {
+            case ..<30: return "Dry"
+            case ..<45: return "Comfortable"
+            case ..<60: return "Balanced"
+            case ..<75: return "Humid"
+            default: return "Muggy"
+            }
+        }
+        return raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    let pressure = pressureRaw.flatMap { raw in
+        if let value = Double(raw.filter { $0.isNumber || $0 == "." }) {
+            switch value {
+            case ..<1005: return "Heavy"
+            case ..<1019: return "Balanced"
+            default: return "Crisp"
+            }
+        }
+        return raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    return (wind, humidity, pressure)
 }
 
 private func compactEnvironment(_ raw: String, tighter: Bool = false) -> String {

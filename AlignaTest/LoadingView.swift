@@ -329,8 +329,11 @@ struct LoadingView: View {
     @State private var risingText: String = "—"
     @State private var locationText: String = "Your Current Location"
     @State private var conditionText: String = "Cloud · Wind · Rain"
+    @State private var airQualityText: String = "Air quality —"
     @State private var placeDensityText: String = "Water — · Green — · Built —"
     @AppStorage("widgetLocationName") private var widgetLocationName: String = ""
+    @AppStorage("widgetAirQualityText", store: UserDefaults(suiteName: AlynnaAppGroup.id))
+    private var widgetAirQualityText: String = ""
     @AppStorage("widgetSunSign") private var widgetSunSign: String = ""
     @AppStorage("widgetMoonSign") private var widgetMoonSign: String = ""
     @AppStorage("widgetRisingSign") private var widgetRisingSign: String = ""
@@ -759,15 +762,18 @@ struct LoadingView: View {
     private var placeSubtitleView: some View {
         let location = locationText.trimmingCharacters(in: .whitespacesAndNewlines)
         let condition = conditionText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let airQuality = airQualityText.trimmingCharacters(in: .whitespacesAndNewlines)
         let density = placeDensityText.trimmingCharacters(in: .whitespacesAndNewlines)
 
         let locationLine = location.isEmpty || location == "Your Current Location" ? "I’m sensing your place…" : "I’m sensing \(location)."
         let conditionLine = condition.isEmpty || condition == "Cloud · Wind · Rain" ? "Sampling the air…" : condition
+        let airQualityLine = airQuality.isEmpty || airQuality == "Air quality —" ? "Measuring air quality…" : airQuality
         let densityLine = density.isEmpty ? "Water — · Green — · Built —" : density
 
         return VStack(spacing: 6) {
             Text(locationLine)
             Text(conditionLine)
+            Text(airQualityLine)
             Text(densityLine)
         }
         .font(AlignaType.helperSmall())
@@ -796,25 +802,35 @@ struct LoadingView: View {
 
         let location = clean(locationText)
         let condition = clean(conditionText)
+        let airQuality = clean(airQualityText)
         let density = clean(placeDensityText)
 
+        if let location, let condition, let airQuality, let density {
+            return "I’m sensing \(location).\n\(condition)\n\(airQuality)\n\(density)"
+        }
+        if let location, let condition, let airQuality {
+            return "I’m sensing \(location).\n\(condition)\n\(airQuality)"
+        }
         if let location, let condition, let density {
             return "I’m sensing \(location).\n\(condition)\n\(density)"
         }
-        if let location, let condition {
-            return "I’m sensing \(location).\n\(condition)"
+        if let location, let airQuality {
+            return "I’m sensing \(location).\n\(airQuality)"
         }
-        if let location, let density {
-            return "I’m sensing \(location).\n\(density)"
+        if let condition, let airQuality {
+            return "\(condition)\n\(airQuality)"
         }
-        if let condition, let density {
-            return "\(condition)\n\(density)"
+        if let airQuality, let density {
+            return "\(airQuality)\n\(density)"
         }
         if let location {
             return "I’m sensing \(location)."
         }
         if let condition {
             return condition
+        }
+        if let airQuality {
+            return airQuality
         }
         if let density {
             return density
@@ -1086,7 +1102,8 @@ struct LoadingView: View {
             )
             let widgetDetailSummary = compactWeatherDetailSummary(
                 windSpeed: wind,
-                humidity: humidity
+                humidity: humidity,
+                pressure: pressure
             )
             DispatchQueue.main.async {
                 conditionText = text
@@ -1094,6 +1111,9 @@ struct LoadingView: View {
                 widgetWeatherDetailSummary = widgetDetailSummary
             }
         }.resume()
+
+        // Air quality via Open-Meteo (AQI + PM2.5)
+        fetchAirQuality(for: coord)
 
         // Land cover density (approx) via WorldCover WMS RGB sampling
         fetchLandCoverDensity(for: coord)
@@ -1111,6 +1131,62 @@ struct LoadingView: View {
         let g: Int
         let b: Int
         let category: LandCoverCategory
+    }
+
+    private func fetchAirQuality(for coord: CLLocationCoordinate2D) {
+        let urlStr = "https://air-quality-api.open-meteo.com/v1/air-quality"
+            + "?latitude=\(coord.latitude)&longitude=\(coord.longitude)"
+            + "&current=us_aqi,pm2_5&timezone=auto"
+        guard let url = URL(string: urlStr) else { return }
+        URLSession.shared.dataTask(with: url) { data, _, _ in
+            guard let data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let current = json["current"] as? [String: Any] else { return }
+
+            let aqiValue = current["us_aqi"] as? Double
+            let pmValue = current["pm2_5"] as? Double
+
+            let aqiInt = aqiValue.map { Int($0.rounded()) }
+            let aqiText = aqiInt.map { "AQI \($0)" }
+            let pmText = pmValue.map { "PM2.5 \(Int($0.rounded()))" }
+
+            let combined: String
+            if let aqiText, let pmText {
+                combined = "Air quality \(aqiText) · \(pmText)"
+            } else if let aqiText {
+                combined = "Air quality \(aqiText)"
+            } else if let pmText {
+                combined = "Air quality \(pmText)"
+            } else {
+                return
+            }
+
+            let readable: String
+            if let aqi = aqiInt {
+                let label = airQualityLabel(for: aqi)
+                readable = "Air Quality: \(label)"
+            } else if let pmText {
+                readable = "Air Quality: \(pmText)"
+            } else {
+                readable = combined
+            }
+
+            DispatchQueue.main.async {
+                airQualityText = combined
+                widgetAirQualityText = readable
+            }
+        }.resume()
+    }
+
+    private func airQualityLabel(for aqi: Int) -> String {
+        switch aqi {
+        case ..<51: return "Good"
+        case 51..<101: return "Moderate"
+        case 101..<151: return "Unhealthy for Sensitive"
+        case 151..<201: return "Unhealthy"
+        case 201..<301: return "Very Unhealthy"
+        default: return "Hazardous"
+        }
     }
 
     private func fetchLandCoverDensity(for coord: CLLocationCoordinate2D) {
@@ -1206,9 +1282,50 @@ struct LoadingView: View {
 
     private func compactWeatherDetailSummary(
         windSpeed: Double,
-        humidity: Double
+        humidity: Double,
+        pressure: Double
     ) -> String {
-        "Wind \(Int(windSpeed.rounded())) Mph · Humidity \(Int(humidity.rounded()))%"
+        let windLabel: String
+        switch windSpeed {
+        case ..<3:
+            windLabel = "Calm"
+        case ..<8:
+            windLabel = "Light"
+        case ..<15:
+            windLabel = "Breezy"
+        case ..<22:
+            windLabel = "Windy"
+        case ..<30:
+            windLabel = "Blustery"
+        default:
+            windLabel = "Gusty"
+        }
+
+        let humidityLabel: String
+        switch humidity {
+        case ..<30:
+            humidityLabel = "Dry"
+        case ..<45:
+            humidityLabel = "Comfortable"
+        case ..<60:
+            humidityLabel = "Balanced"
+        case ..<75:
+            humidityLabel = "Humid"
+        default:
+            humidityLabel = "Muggy"
+        }
+
+        let pressureLabel: String
+        switch pressure {
+        case ..<1005:
+            pressureLabel = "Heavy"
+        case ..<1019:
+            pressureLabel = "Balanced"
+        default:
+            pressureLabel = "Crisp"
+        }
+
+        return "Wind \(windLabel) · Humidity \(humidityLabel) · Pressure \(pressureLabel)"
     }
 
     private func compactEnvironmentSummary(from density: String) -> String {
