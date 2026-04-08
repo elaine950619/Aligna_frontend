@@ -520,16 +520,15 @@ private func footerSegments(_ items: [WidgetFooterItem], color: Color, size: CGF
 
 private func widgetFooterItems(weather: String, weatherDetail: String, environment: String) -> [WidgetFooterItem] {
     let weatherBits = compactWeatherDetails(weatherDetail)
+    let weatherText = compactWeather(weather)
     let environmentText = readableEnvironment(environment)
 
     var items: [WidgetFooterItem] = []
+    if !weatherText.isEmpty {
+        items.append(WidgetFooterItem(label: "Weather", text: titleCase(weatherText)))
+    }
     if let windText = weatherBits.wind, !windText.isEmpty {
         items.append(WidgetFooterItem(label: "Wind", text: windText))
-    } else {
-        let weatherText = compactWeather(weather)
-        if !weatherText.isEmpty {
-            items.append(WidgetFooterItem(label: "Weather", text: titleCase(weatherText)))
-        }
     }
     if let humidityText = weatherBits.humidity, !humidityText.isEmpty {
         items.append(WidgetFooterItem(label: "Humidity", text: humidityText))
