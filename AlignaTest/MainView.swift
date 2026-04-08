@@ -244,9 +244,17 @@ struct MainView: View {
     @State private var didCompletePersonalCheckIn = false
     @State private var pendingMantraExpansion = false
     @State private var isMantraReady = false
+    @State private var isGenerationInProgress = false
+    @State private var isUsingPreviousResult = false
+    @State private var showGenerationToast = false
+    @State private var generationToastMessage = ""
+    @State private var showGenerationStrongHint = false
+    @State private var isDefaultRecommendation = false
+    @State private var pendingGenerationToast = false
 
     @AppStorage("watchdogDay") private var watchdogDay: String = ""
     @AppStorage("todayAutoRefetchAttempts") private var todayAutoRefetchAttempts: Int = 0
+    @AppStorage("mantraGenerationHapticDay") private var mantraGenerationHapticDay: String = ""
 
     // NEW: 多次重试的配置
     private let maxRefetchAttempts = 3
@@ -276,6 +284,22 @@ struct MainView: View {
         "teal":"#008080"
     ]
 
+    init(
+        previewExpanded: Bool = false,
+        previewShowGeneration: Bool = false,
+        previewToastMessage: String? = nil,
+        previewShowStrongHint: Bool = false,
+        previewUsingPreviousResult: Bool = false
+    ) {
+        _isMantraExpanded = State(initialValue: previewExpanded)
+        _isMantraReady = State(initialValue: previewExpanded)
+        _isGenerationInProgress = State(initialValue: previewShowGeneration)
+        _showGenerationToast = State(initialValue: previewToastMessage != nil)
+        _generationToastMessage = State(initialValue: previewToastMessage ?? "")
+        _showGenerationStrongHint = State(initialValue: previewShowStrongHint)
+        _isUsingPreviousResult = State(initialValue: previewUsingPreviousResult)
+    }
+
     private func todayColorHex() -> String? {
         let key = viewModel.recommendations["Color"]?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
         return colorHexMapping[key]
@@ -284,8 +308,10 @@ struct MainView: View {
     private func ensureDefaultsIfMissing() {
         // If nothing loaded yet, supply local demo content
         if viewModel.recommendations.isEmpty {
-            viewModel.recommendations = DesignRecs.docs
-            viewModel.dailyMantra = viewModel.dailyMantra.isEmpty ? DesignRecs.mantra : viewModel.dailyMantra
+            if !isGenerationInProgress {
+                viewModel.recommendations = DesignRecs.docs
+                viewModel.dailyMantra = viewModel.dailyMantra.isEmpty ? DesignRecs.mantra : viewModel.dailyMantra
+            }
         }
         if viewModel.dailyMantra.isEmpty, !cachedDailyMantra.isEmpty {
             viewModel.dailyMantra = cachedDailyMantra
@@ -345,6 +371,37 @@ struct MainView: View {
         )
         .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 6)
         .accessibilityLabel("No sound recommendation")
+    }
+
+    private var generationStatusText: String? {
+        guard isGenerationInProgress else { return nil }
+        if isUsingPreviousResult {
+            return "Showing previous result. Generating today’s mantra and rhythm."
+        }
+        return showGenerationStrongHint
+            ? "Still generating today’s mantra and rhythm."
+            : "Generating today’s mantra and rhythm."
+    }
+
+    private var generationToastView: some View {
+        let isSuccess = generationToastMessage.localizedCaseInsensitiveContains("new")
+        let iconName = isSuccess ? "sparkles" : "hourglass"
+        return HStack(spacing: 8) {
+            Image(systemName: iconName)
+                .font(.system(size: 13, weight: .semibold))
+            Text(generationToastMessage)
+                .font(.custom("Merriweather-Regular", size: 13))
+        }
+        .foregroundColor(themeManager.primaryText.opacity(0.95))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(
+            Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 8)
+        .transition(.scale.combined(with: .opacity))
+        .accessibilityLabel(Text(generationToastMessage))
     }
 
     private func showNoSoundToastIfNeeded() {
@@ -491,6 +548,24 @@ struct MainView: View {
                         .allowsHitTesting(isMantraReady)
                         
                         if isMantraExpanded {
+                            if let generationStatusText {
+                                HStack(spacing: 8) {
+                                    ProgressView()
+                                        .progressViewStyle(.circular)
+                                        .tint(themeManager.descriptionText.opacity(0.75))
+                                        .scaleEffect(0.8)
+
+                                    Text(generationStatusText)
+                                        .font(AlignaType.helperSmall())
+                                        .lineSpacing(AlignaType.small14LineSpacing)
+                                        .foregroundColor(themeManager.descriptionText.opacity(0.75))
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(.horizontal, geometry.size.width * 0.12)
+                                .padding(.top, 10)
+                                .transition(.opacity)
+                            }
+
                             let actionButtonSize: CGFloat = 32
                             HStack(spacing: 12) {
                                 Button {
@@ -759,7 +834,32 @@ struct MainView: View {
         return ""
     }
 
-    private func updateLastRecommendationStampIfReady(mantra: String, recs: [String: String]) {
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.setLocalizedDateFormatFromTemplate("MMMd")
+        return formatter
+    }()
+
+    private func timeText(for date: Date) -> String {
+        Self.timeFormatter.string(from: date)
+    }
+
+    private var lastRecommendationTimeText: String? {
+        guard lastRecommendationTimestamp > 0 else { return nil }
+        let date = Date(timeIntervalSince1970: lastRecommendationTimestamp)
+        return timeText(for: date)
+    }
+
+    private func updateLastRecommendationStampIfReady(
+        mantra: String,
+        recs: [String: String],
+        isDefault: Bool
+    ) {
+        if isDefault {
+            lastRecommendationHasFullSet = false
+            return
+        }
         let trimmed = mantra.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, recs.count >= 8 else {
             lastRecommendationHasFullSet = false
@@ -1191,8 +1291,9 @@ struct MainView: View {
             loadTodayRecommendation(day: today, source: .cache, allowRemoteFallback: true) { group.leave() }
         } else {
             group.enter()
+            beginGenerationFlow()
             fetchAndSaveRecommendationIfNeeded()
-            waitUntilRecommendationsReady(timeout: 12) { group.leave() }
+            waitUntilRecommendationsReady(timeout: 30, softTimeout: 12) { group.leave() }
         }
 
         group.notify(queue: .main) {
@@ -1332,14 +1433,34 @@ struct MainView: View {
 
 
     /// Polls viewModel.recommendations until non-empty (or timeout)
-    private func waitUntilRecommendationsReady(timeout: TimeInterval = 12, poll: TimeInterval = 0.2, onReady: @escaping () -> Void) {
+    private func waitUntilRecommendationsReady(
+        timeout: TimeInterval = 30,
+        poll: TimeInterval = 0.2,
+        softTimeout: TimeInterval = 12,
+        onReady: @escaping () -> Void
+    ) {
         let start = Date()
+        var didShowStrongHint = false
         func check() {
             if !viewModel.recommendations.isEmpty {
                 onReady()
                 return
             }
-            if Date().timeIntervalSince(start) > timeout {
+            let elapsed = Date().timeIntervalSince(start)
+            if !didShowStrongHint, elapsed > softTimeout {
+                didShowStrongHint = true
+                if isGenerationInProgress {
+                    showGenerationStrongHint = true
+                    showCenterToast("Generating today’s mantra and rhythm", duration: 2.6, includeTime: false)
+                }
+            }
+            if elapsed > timeout {
+                if viewModel.recommendations.isEmpty {
+                    isGenerationInProgress = false
+                    isUsingPreviousResult = false
+                    showGenerationStrongHint = false
+                    ensureDefaultsIfMissing()
+                }
                 // Timeout: still move on (you can choose to stay on loading if you prefer)
                 onReady()
                 return
@@ -1424,6 +1545,58 @@ struct MainView: View {
             let soft = UIImpactFeedbackGenerator(style: .soft)
             soft.prepare()
             soft.impactOccurred()
+        }
+    }
+
+    private func beginGenerationFlow() {
+        isGenerationInProgress = true
+        showGenerationStrongHint = false
+        isDefaultRecommendation = false
+        let hasContent = !viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !viewModel.recommendations.isEmpty
+            || lastRecommendationHasFullSet
+        isUsingPreviousResult = hasContent
+    }
+
+    private func completeGenerationIfNeeded(isDefault: Bool) {
+        guard isGenerationInProgress else { return }
+        isGenerationInProgress = false
+        isUsingPreviousResult = false
+        showGenerationStrongHint = false
+        if !isDefault {
+            if bootPhase == .main {
+                triggerGenerationHapticIfNeeded()
+                showCenterToast("Updated for today", duration: 2.2, includeTime: false)
+            } else {
+                pendingGenerationToast = true
+            }
+        }
+    }
+
+    private func triggerGenerationHapticIfNeeded() {
+        let today = todayString()
+        guard mantraGenerationHapticDay != today else { return }
+        mantraGenerationHapticDay = today
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.prepare()
+        generator.impactOccurred()
+    }
+
+    private func showCenterToast(_ message: String, duration: TimeInterval, includeTime: Bool = true) {
+        DispatchQueue.main.async {
+            if includeTime {
+                generationToastMessage = "\(message) • \(timeText(for: Date()))"
+            } else {
+                generationToastMessage = message
+            }
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.88, blendDuration: 0.1)) {
+                showGenerationToast = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    showGenerationToast = false
+                }
+            }
         }
     }
 
@@ -1657,6 +1830,7 @@ struct MainView: View {
             return
         }
 
+        beginGenerationFlow()
         todayFetchLock = today
         isFetchingToday = true
 
@@ -2016,8 +2190,8 @@ struct MainView: View {
                         viewModel.dailyMantra = mantra
                         lastRecommendationDate = today
                         viewModel.reasoningSummary = reasoning
-                        updateLastRecommendationStampIfReady(mantra: mantra, recs: normalized)
-
+                        updateLastRecommendationStampIfReady(mantra: mantra, recs: normalized, isDefault: false)
+                        completeGenerationIfNeeded(isDefault: false)
 
                         // ✅ 先用一个“可用的地点”占位（立即显示），随后用反地理编码精确覆盖
                         let guessedPlace = viewModel.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2202,6 +2376,14 @@ struct MainView: View {
             if shouldExpandMantraOnBoot {
                 shouldExpandMantraOnBoot = false
             }
+            if pendingGenerationToast {
+                pendingGenerationToast = false
+                triggerGenerationHapticIfNeeded()
+                showCenterToast("Updated for today", duration: 2.2, includeTime: false)
+            }
+            if showGenerationStrongHint && isGenerationInProgress {
+                showCenterToast("Generating today’s mantra and rhythm", duration: 2.6, includeTime: false)
+            }
         }
     }
 
@@ -2286,6 +2468,7 @@ struct MainView: View {
 
             let fetchedPlace = (data["generatedPlace"] as? String ?? "")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
+            let isDefault = (data["isDefault"] as? Bool) == true
 
             if let rawReasoning = data["reasoning"] as? [String: Any] {
                 for (key, value) in rawReasoning {
@@ -2354,7 +2537,9 @@ struct MainView: View {
                 }
 
                 let resolvedMantra = mantraTrim.isEmpty ? self.viewModel.dailyMantra : fetchedMantra
-                self.updateLastRecommendationStampIfReady(mantra: resolvedMantra, recs: recs)
+                self.isDefaultRecommendation = isDefault
+                self.updateLastRecommendationStampIfReady(mantra: resolvedMantra, recs: recs, isDefault: isDefault)
+                self.completeGenerationIfNeeded(isDefault: isDefault)
 
                 let reasoningTrim = fetchedReasoning.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !reasoningTrim.isEmpty {
@@ -2674,6 +2859,7 @@ private struct FirstPagePreviewContainer: View {
     @StateObject private var themeManager: ThemeManager
     @StateObject private var viewModel: OnboardingViewModel
     @StateObject private var reasoningStore = DailyReasoningStore()
+    @StateObject private var soundPlayer = SoundPlayer.shared
 
     init() {
         let themeManager = ThemeManager()
@@ -2700,6 +2886,7 @@ private struct FirstPagePreviewContainer: View {
             .environmentObject(starManager)
             .environmentObject(themeManager)
             .environmentObject(viewModel)
+            .environmentObject(soundPlayer)
             .environmentObject(reasoningStore)
             .preferredColorScheme(themeManager.preferredColorScheme)
     }
@@ -2861,8 +3048,41 @@ struct CustomBackButton: View {
 }
 
 
+#if DEBUG
+#Preview("Main Expanded") {
+    let defaults = UserDefaults.standard
+    defaults.set(Date().timeIntervalSince1970 - 3600, forKey: "lastRecommendationTimestamp")
+    defaults.set(true, forKey: "lastRecommendationHasFullSet")
 
+    let starManager = StarAnimationManager()
+    let themeManager = ThemeManager()
+    let viewModel = OnboardingViewModel()
+    viewModel.dailyMantra = "Take a steady breath and follow the quiet momentum."
+    viewModel.recommendations = DesignRecs.docs
 
+    let soundPlayer = SoundPlayer()
+    let reasoningStore = DailyReasoningStore()
+
+    let formatter = DateFormatter()
+    formatter.locale = .current
+    formatter.timeStyle = .short
+    formatter.dateStyle = .none
+    let nowText = formatter.string(from: Date())
+
+    return MainView(
+        previewExpanded: true,
+        previewShowGeneration: true,
+        previewToastMessage: "Updated",
+        previewShowStrongHint: false,
+        previewUsingPreviousResult: true
+    )
+    .environmentObject(starManager)
+    .environmentObject(themeManager)
+    .environmentObject(viewModel)
+    .environmentObject(soundPlayer)
+    .environmentObject(reasoningStore)
+}
+#endif
 
 // 替换你文件中现有的 OnboardingViewModel
 import FirebaseFirestore
