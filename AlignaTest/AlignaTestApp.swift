@@ -11,6 +11,75 @@ import UserNotifications
 import AppIntents
 import WidgetKit
 
+private let widgetSnapshotStorageKey = "alynna.widget.snapshot"
+
+enum SessionCacheManager {
+    private static let lastActiveUserIDKey = "lastActiveUserID"
+
+    private static let sharedPresentationKeys: [String] = [
+        "lastRecommendationDate",
+        "lastRecommendationPlace",
+        "lastRecommendationTimestamp",
+        "lastRecommendationHasFullSet",
+        "lastManualRefreshTimestamp",
+        "lastCurrentPlaceUpdate",
+        "todayFetchLock",
+        "cachedDailyMantra",
+        "shouldExpandMantraOnBoot",
+        "shouldExpandMantraFromNotification",
+        "mantraExpandHapticDay",
+        "widgetLocationName",
+        "widgetSunSign",
+        "widgetMoonSign",
+        "widgetRisingSign",
+        "widgetWeatherSummary",
+        "widgetWeatherDetailSummary",
+        "widgetEnvironmentSummary"
+    ]
+
+    private static let sharedAppGroupKeys: [String] = [
+        widgetSnapshotStorageKey,
+        "widgetAirQualityText",
+        "widgetCurrentSoundKey",
+        "widgetCurrentSoundIsPlaying",
+        "widgetLocationName",
+        "widgetSunSign",
+        "widgetMoonSign",
+        "widgetRisingSign",
+        "widgetWeatherSummary",
+        "widgetWeatherDetailSummary",
+        "widgetEnvironmentSummary"
+    ]
+
+    static func handleAuthChange(currentUserID: String?) {
+        let defaults = UserDefaults.standard
+        let nextUserID = currentUserID?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let previousUserID = defaults.string(forKey: lastActiveUserIDKey) ?? ""
+
+        if previousUserID != nextUserID {
+            clearSharedPresentationCache()
+        }
+
+        if nextUserID.isEmpty {
+            defaults.removeObject(forKey: lastActiveUserIDKey)
+        } else {
+            defaults.set(nextUserID, forKey: lastActiveUserIDKey)
+        }
+    }
+
+    static func clearSharedPresentationCache() {
+        let defaults = UserDefaults.standard
+        sharedPresentationKeys.forEach { defaults.removeObject(forKey: $0) }
+
+        if let sharedDefaults = UserDefaults(suiteName: AlynnaAppGroup.id) {
+            sharedAppGroupKeys.forEach { sharedDefaults.removeObject(forKey: $0) }
+            sharedDefaults.synchronize()
+        }
+
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+}
+
 struct ToggleWidgetSoundIntent: AudioPlaybackIntent {
     static var title: LocalizedStringResource = "Toggle Widget Sound"
 
@@ -186,6 +255,8 @@ struct RootRouter: View {
             guard !isPreviewMode else { return }
             // 监听登录态变化（冷启动、第三方登录回调后都会触发）
             authStateListenerHandle = Auth.auth().addStateDidChangeListener { _, user in
+                SessionCacheManager.handleAuthChange(currentUserID: user?.uid)
+
                 if UserDefaults.standard.bool(forKey: "didDeleteAccount") {
                     try? Auth.auth().signOut()
                     GIDSignIn.sharedInstance.signOut()

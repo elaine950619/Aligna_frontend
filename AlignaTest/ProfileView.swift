@@ -700,6 +700,7 @@ private func clearLocalAuthFlags() {
     UserDefaults.standard.set("",    forKey: "lastRecommendationDate")
     UserDefaults.standard.set("",    forKey: "lastCurrentPlaceUpdate")
     UserDefaults.standard.set("",    forKey: "todayFetchLock")
+    SessionCacheManager.handleAuthChange(currentUserID: nil)
 }
 
 extension Notification.Name {
