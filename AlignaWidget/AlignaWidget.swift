@@ -192,15 +192,15 @@ struct AlynnaWidgetEntryView: View {
         return GeometryReader { geometry in
             let minSide = min(geometry.size.width, geometry.size.height)
 
-            VStack(alignment: .leading, spacing: minSide * 0.024) {
-                HStack(alignment: .firstTextBaseline, spacing: minSide * 0.03) {
+            VStack(alignment: .leading, spacing: minSide * 0.02) {
+                HStack(alignment: .firstTextBaseline, spacing: minSide * 0.024) {
                     Text(topLine)
-                        .font(.custom("Merriweather-Bold", size: minSide * 0.072))
+                        .font(.custom("Merriweather-Bold", size: minSide * 0.076))
                         .foregroundStyle(secondaryTextColor)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
 
-                    Spacer(minLength: minSide * 0.02)
+                    Spacer(minLength: minSide * 0.014)
 
                     zodiacHeader(
                         sun: entry.snapshot.sunSign,
@@ -212,11 +212,11 @@ struct AlynnaWidgetEntryView: View {
                     )
                 }
 
-                Spacer(minLength: minSide * 0.004)
+                Spacer(minLength: minSide * 0.002)
 
-                HStack(alignment: .center, spacing: minSide * 0.042) {
+                HStack(alignment: .center, spacing: minSide * 0.034) {
                     soundOrbControl(
-                        size: minSide * 0.48,
+                        size: minSide * 0.52,
                         soundKey: entry.snapshot.soundKey,
                         soundTitle: entry.snapshot.soundTitle,
                         artworkName: soundArtworkName,
@@ -225,9 +225,9 @@ struct AlynnaWidgetEntryView: View {
                     )
 
                     ViewThatFits(in: .vertical) {
-                        mantraText(displayMantra, size: minSide * 0.14)
-                        mantraText(displayMantra, size: minSide * 0.132)
-                        mantraText(displayMantra, size: minSide * 0.124)
+                        mantraText(displayMantra, size: minSide * 0.143)
+                        mantraText(displayMantra, size: minSide * 0.135)
+                        mantraText(displayMantra, size: minSide * 0.127)
                     }
                 }
                 .foregroundColor(textColor)
@@ -238,14 +238,14 @@ struct AlynnaWidgetEntryView: View {
                         .padding(.vertical, -minSide * 0.02)
                 }
 
-                Spacer(minLength: minSide * 0.01)
+                Spacer(minLength: minSide * 0.006)
 
                 if !footerItems.isEmpty {
                     let lineColor = secondaryTextColor
                     let topFooterItems = footerItems.filter { ["Environment", "Weather"].contains($0.label) }
                     let bottomFooterItems = footerItems.filter { ["Air", "Wind", "Humidity", "Pressure"].contains($0.label) }
 
-                    VStack(alignment: .leading, spacing: minSide * 0.012) {
+                    VStack(alignment: .leading, spacing: minSide * 0.01) {
                         if !topFooterItems.isEmpty {
                             ViewThatFits(in: .horizontal) {
                                 footerSegments(topFooterItems, color: lineColor, size: minSide, scale: 0.92)
@@ -270,11 +270,11 @@ struct AlynnaWidgetEntryView: View {
                             }
                         }
                     }
-                    .padding(.top, minSide * 0.006)
+                    .padding(.top, minSide * 0.004)
                 }
             }
-            .padding(.horizontal, minSide * 0.082)
-            .padding(.vertical, minSide * 0.066)
+            .padding(.horizontal, minSide * 0.076)
+            .padding(.vertical, minSide * 0.058)
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .containerBackground(for: .widget) {
@@ -296,7 +296,7 @@ private func mantraText(_ text: String, size: CGFloat) -> some View {
         .multilineTextAlignment(.leading)
         .lineLimit(3)
         .minimumScaleFactor(0.8)
-        .lineSpacing(size * 0.1)
+        .lineSpacing(size * 0.085)
         .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
 }
 
@@ -520,16 +520,16 @@ private func headerSegment(symbol: String, text: String, color: Color, size: CGF
         Text(text)
             .lineLimit(1)
     }
-    .font(.custom("Merriweather-Regular", size: size * 0.05))
+    .font(.custom("Merriweather-Regular", size: size * 0.053))
     .foregroundStyle(color)
 }
 
 @ViewBuilder
 private func footerSegments(_ items: [WidgetFooterItem], color: Color, size: CGFloat, scale: CGFloat) -> some View {
-    let labelSize = size * 0.064 * scale
-    let valueSize = size * 0.066 * scale
+    let labelSize = size * 0.066 * scale
+    let valueSize = size * 0.068 * scale
 
-    HStack(spacing: size * 0.018 * scale) {
+    HStack(spacing: size * 0.015 * scale) {
         ForEach(Array(items.enumerated()), id: \.offset) { index, item in
             if index > 0 {
                 Circle()
