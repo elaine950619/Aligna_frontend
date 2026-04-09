@@ -251,6 +251,7 @@ struct MainView: View {
     @State private var showGenerationStrongHint = false
     @State private var isDefaultRecommendation = false
     @State private var pendingGenerationToast = false
+    @State private var showReasoningSheet = false
 
     @AppStorage("watchdogDay") private var watchdogDay: String = ""
     @AppStorage("todayAutoRefetchAttempts") private var todayAutoRefetchAttempts: Int = 0
@@ -381,6 +382,20 @@ struct MainView: View {
         return showGenerationStrongHint
             ? "Still generating today’s mantra and rhythm."
             : "Generating today’s mantra and rhythm."
+    }
+
+    private var infoIconButton: some View {
+        Button {
+            showReasoningSheet = true
+        } label: {
+            Image(systemName: "info.circle")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(themeManager.primaryText)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Why this mantra")
+        .disabled(viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        .opacity(viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.35 : 1)
     }
 
     private var generationToastView: some View {
@@ -518,25 +533,33 @@ struct MainView: View {
                         } label: {
                             Group {
                                 if isMantraExpanded {
-                                    Text(viewModel.dailyMantra)
-                                        .font(AlignaType.expandedMantraBoldItalic())
-                                        .lineSpacing(12)
-                                        .multilineTextAlignment(.center)
-                                        .foregroundColor(
-                                            themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
-                                        )
-                                        .padding(.horizontal, geometry.size.width * 0.14)
-                                        .padding(.top, geometry.size.height * 0.16)
-                                        .fixedSize(horizontal: false, vertical: true)
+                                    HStack(alignment: .lastTextBaseline, spacing: 6) {
+                                        Text(viewModel.dailyMantra)
+                                            .font(AlignaType.expandedMantraBoldItalic())
+                                            .lineSpacing(12)
+                                            .multilineTextAlignment(.center)
+                                            .foregroundColor(
+                                                themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
+                                            )
+                                            .fixedSize(horizontal: false, vertical: true)
+
+                                        infoIconButton
+                                    }
+                                    .padding(.horizontal, geometry.size.width * 0.14)
+                                    .padding(.top, geometry.size.height * 0.16)
                                 } else {
-                                    Text(viewModel.dailyMantra)
-                                        .font(AlignaType.homeSubtitle())
-                                        .lineSpacing(AlignaType.descLineSpacing)
-                                        .multilineTextAlignment(.center)
-                                        .foregroundColor(themeManager.descriptionText)
-                                        .padding(.horizontal, geometry.size.width * 0.1)
-                                        .lineLimit(2)
-                                        .truncationMode(.tail)
+                                    HStack(alignment: .lastTextBaseline, spacing: 6) {
+                                        Text(viewModel.dailyMantra)
+                                            .font(AlignaType.homeSubtitle())
+                                            .lineSpacing(AlignaType.descLineSpacing)
+                                            .multilineTextAlignment(.center)
+                                            .foregroundColor(themeManager.descriptionText)
+                                            .lineLimit(2)
+                                            .truncationMode(.tail)
+
+                                        infoIconButton
+                                    }
+                                    .padding(.horizontal, geometry.size.width * 0.1)
                                 }
                             }
                             .frame(maxWidth: .infinity)
@@ -639,11 +662,11 @@ struct MainView: View {
                                     }
                                 } label: {
                                     ZStack {
-                                        RoundedRectangle(cornerRadius: 2)
+                                        RoundedRectangle(cornerRadius: 4)
                                             .fill(Color(hex: colorHex))
-                                            .frame(width: 14, height: 14)
+                                            .frame(width: 18, height: 18)
                                             .overlay(
-                                                RoundedRectangle(cornerRadius: 5)
+                                                RoundedRectangle(cornerRadius: 6)
                                                     .stroke(Color.white.opacity(0.25), lineWidth: 1)
                                             )
                                     }
@@ -752,6 +775,12 @@ struct MainView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
+            .sheet(isPresented: $showReasoningSheet) {
+                ReasoningSummarySheet(text: viewModel.reasoningSummary)
+                    .presentationDetents([.fraction(0.4), .large])
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(24)
+            }
             .navigationDestination(for: RecCategory.self) { cat in
                 RecommendationPagerView(
                     docsByCategory: makeDocsMap(),
@@ -832,6 +861,30 @@ struct MainView: View {
         }
 
         return ""
+    }
+
+    private struct ReasoningSummarySheet: View {
+        @EnvironmentObject var themeManager: ThemeManager
+        let text: String
+
+        var body: some View {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Why This Mantra for You Today?")
+                        .font(.custom("Merriweather-Bold", size: 18))
+                        .foregroundColor(themeManager.primaryText)
+
+                    Text(text)
+                        .font(.custom("Merriweather-Regular", size: 15))
+                        .lineSpacing(6)
+                        .foregroundColor(themeManager.descriptionText)
+                        .multilineTextAlignment(.leading)
+                }
+                .padding(24)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(themeManager.panelFill.opacity(0.6))
+        }
     }
 
     private static let timeFormatter: DateFormatter = {
@@ -2163,12 +2216,22 @@ struct MainView: View {
                         return nil
                     }()
 
+                    let reasoningSummaryText = reasoningSummary?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                    if reasoningSummaryText.isEmpty {
+                        print("❌ FastAPI 返回缺少 reasoning_summary")
+                        saveDefaultDailyRecommendationToCalendar(
+                            userId: userId,
+                            today: today,
+                            docRef: docRef,
+                            reason: "missing_reasoning_summary"
+                        )
+                        return
+                    }
+
                     print("🧠 FastAPI rawReasoning count:", rawReasoning.count, "keys:", rawReasoning.keys.sorted())
 
 
-                    let reasoning = (parsed["reasoning_summary"] as? String)
-                        ?? (parsed["reasoningSummary"] as? String)
-                        ?? ""
+                    let reasoning = reasoningSummaryText
 
                     DispatchQueue.main.async {
                         // ✅ 把后端 recommendations 的 key 统一成规范写法
@@ -2225,9 +2288,6 @@ struct MainView: View {
                             print("⚠️ Backend did not provide reasoning/mapping; not writing placeholder reasoning.")
                         }
 
-                        if let reasoningSummary, !reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            recommendationData["reasoning_summary"] = reasoningSummary
-                        }
                         recommendationData["reasoning_summary"] = reasoning
 
 
@@ -2542,17 +2602,13 @@ struct MainView: View {
                 self.completeGenerationIfNeeded(isDefault: isDefault)
 
                 let reasoningTrim = fetchedReasoning.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !reasoningTrim.isEmpty {
-                    self.viewModel.reasoningSummary = fetchedReasoning
-                } else {
-                    let fallback = makeReasoningSummary(from: reasoningMap)
-                    if !fallback.isEmpty {
-                        self.viewModel.reasoningSummary = fallback
-                        print("⚠️ Firestore 今日文档没有 reasoning_summary 或为空（docId=\(userId)_\(today)），已从 reasoning 生成")
-                    } else {
-                        print("⚠️ Firestore 今日文档没有 reasoning_summary 或为空（docId=\(userId)_\(today)）")
-                    }
+                guard !reasoningTrim.isEmpty else {
+                    print("⚠️ Firestore 今日文档没有 reasoning_summary 或为空（docId=\(userId)_\(today)），触发重拉")
+                    forceRefetchDailyIfNotLocked()
+                    finish()
+                    return
                 }
+                self.viewModel.reasoningSummary = fetchedReasoning
 
                 self.ensureDefaultsIfMissing()
                 self.fetchAllRecommendationTitles()
