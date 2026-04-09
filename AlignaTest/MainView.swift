@@ -533,33 +533,25 @@ struct MainView: View {
                         } label: {
                             Group {
                                 if isMantraExpanded {
-                                    HStack(alignment: .lastTextBaseline, spacing: 6) {
-                                        Text(viewModel.dailyMantra)
-                                            .font(AlignaType.expandedMantraBoldItalic())
-                                            .lineSpacing(12)
-                                            .multilineTextAlignment(.center)
-                                            .foregroundColor(
-                                                themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
-                                            )
-                                            .fixedSize(horizontal: false, vertical: true)
-
-                                        infoIconButton
-                                    }
-                                    .padding(.horizontal, geometry.size.width * 0.14)
-                                    .padding(.top, geometry.size.height * 0.16)
+                                    Text(viewModel.dailyMantra)
+                                        .font(AlignaType.expandedMantraBoldItalic())
+                                        .lineSpacing(12)
+                                        .multilineTextAlignment(.center)
+                                        .foregroundColor(
+                                            themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
+                                        )
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .padding(.horizontal, geometry.size.width * 0.14)
+                                        .padding(.top, geometry.size.height * 0.16)
                                 } else {
-                                    HStack(alignment: .lastTextBaseline, spacing: 6) {
-                                        Text(viewModel.dailyMantra)
-                                            .font(AlignaType.homeSubtitle())
-                                            .lineSpacing(AlignaType.descLineSpacing)
-                                            .multilineTextAlignment(.center)
-                                            .foregroundColor(themeManager.descriptionText)
-                                            .lineLimit(2)
-                                            .truncationMode(.tail)
-
-                                        infoIconButton
-                                    }
-                                    .padding(.horizontal, geometry.size.width * 0.1)
+                                    Text(viewModel.dailyMantra)
+                                        .font(AlignaType.homeSubtitle())
+                                        .lineSpacing(AlignaType.descLineSpacing)
+                                        .multilineTextAlignment(.center)
+                                        .foregroundColor(themeManager.descriptionText)
+                                        .lineLimit(2)
+                                        .truncationMode(.tail)
+                                        .padding(.horizontal, geometry.size.width * 0.1)
                                 }
                             }
                             .frame(maxWidth: .infinity)
@@ -591,6 +583,10 @@ struct MainView: View {
 
                             let actionButtonSize: CGFloat = 32
                             HStack(spacing: 12) {
+                                infoIconButton
+                                    .frame(width: actionButtonSize, height: actionButtonSize)
+                                    .contentShape(Rectangle())
+
                                 Button {
                                     presentMantraShareSheet()
                                 } label: {
