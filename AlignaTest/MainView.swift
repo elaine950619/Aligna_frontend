@@ -740,7 +740,7 @@ struct MainView: View {
                             soundPlayer.prefetch(named: todaySoundKey)
                         }
                     }
-                    .onChange(of: viewModel.dailyMantra) { _ in
+                    .onChange(of: viewModel.dailyMantra) {
                         if bootPhase == .main {
                             markMantraReadyIfPossible()
                         }
@@ -1835,18 +1835,19 @@ struct MainView: View {
         autoRefetchScheduled = true
 
         func scheduleNext(after: TimeInterval) {
-            // 已经有数据就不用继续重试了
+            // 只有拿到非默认结果才停止自动重试
             let mantraReady = !viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             let recsReady   = !viewModel.recommendations.isEmpty
-            if mantraReady && recsReady { return }
+            if mantraReady && recsReady && !isDefaultRecommendation { return }
 
             // 达到上限就停
             if todayAutoRefetchAttempts >= maxRefetchAttempts { return }
 
             DispatchQueue.main.asyncAfter(deadline: .now() + after) {
-                // 进入具体一次尝试：再次判断是否已经就绪
+                // 进入具体一次尝试：再次判断是否已经拿到非默认结果
                 let readyNow = !viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                             && !viewModel.recommendations.isEmpty
+                            && !isDefaultRecommendation
                 guard !readyNow else { return }
 
                 // 触发一次强制重拉
@@ -2612,6 +2613,11 @@ struct MainView: View {
                 self.updateLastRecommendationStampIfReady(mantra: resolvedMantra, recs: recs, isDefault: isDefault)
                 self.completeGenerationIfNeeded(isDefault: isDefault)
 
+                if isDefault {
+                    print("⚠️ 今日文档仍是默认推荐（docId=\(userId)_\(today)），继续触发重拉")
+                    forceRefetchDailyIfNotLocked()
+                }
+
                 let reasoningTrim = fetchedReasoning.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !reasoningTrim.isEmpty else {
                     print("⚠️ Firestore 今日文档没有 reasoning_summary 或为空（docId=\(userId)_\(today)），触发重拉")
@@ -3129,12 +3135,6 @@ struct CustomBackButton: View {
 
     let soundPlayer = SoundPlayer()
     let reasoningStore = DailyReasoningStore()
-
-    let formatter = DateFormatter()
-    formatter.locale = .current
-    formatter.timeStyle = .short
-    formatter.dateStyle = .none
-    let nowText = formatter.string(from: Date())
 
     return MainView(
         previewExpanded: true,

@@ -411,7 +411,7 @@ private func widgetMantra(_ raw: String) -> String {
         .trimmingCharacters(in: .whitespacesAndNewlines)
 
     guard !cleaned.isEmpty else {
-        return "Today is not about perfection. It is about noticing small moments."
+        return "Today is not about perfection. It is about noticing small moments, honoring how I feel, and allowing myself to move forward with patience and care."
     }
 
     let sentences = cleaned
@@ -529,7 +529,7 @@ private func footerSegments(_ items: [WidgetFooterItem], color: Color, size: CGF
     let labelSize = size * 0.064 * scale
     let valueSize = size * 0.066 * scale
 
-    return HStack(spacing: size * 0.018 * scale) {
+    HStack(spacing: size * 0.018 * scale) {
         ForEach(Array(items.enumerated()), id: \.offset) { index, item in
             if index > 0 {
                 Circle()

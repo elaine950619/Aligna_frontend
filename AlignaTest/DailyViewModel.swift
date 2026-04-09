@@ -47,7 +47,7 @@ final class DailyViewModel: ObservableObject {
         "Relationship": "breathe_sync",
     ]
 
-    private static let fallbackMantra = "Find your flow."
+    private static let fallbackMantra = "Today is not about perfection. It is about noticing small moments, honoring how I feel, and allowing myself to move forward with patience and care."
 
     func load(for date: Date) {
         DispatchQueue.main.async {
