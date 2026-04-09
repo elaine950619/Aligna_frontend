@@ -306,6 +306,8 @@ private struct OnboardingCaptionStyle: ViewModifier {
     }
 }
 
+private let onboardingPrivacyNote = "We securely save your gender, relationship status, birth date, and birth time only to calculate your zodiac and birth chart details."
+
 private struct OnboardingPrimaryButtonStyle: ViewModifier {
     let isEnabled: Bool
     @EnvironmentObject var themeManager: ThemeManager
@@ -600,15 +602,12 @@ struct OnboardingStep1: View {
                                 Text("Status")
                                     .onboardingQuestionStyle()
 
-                                // ✅ Fix: avoid overflow by NOT adding horizontal padding outside the fixed width frame
                                 GeometryReader { geo in
                                     let total = geo.size.width
                                     let spacing: CGFloat = 10
                                     let available = total - spacing * 2
-
-                                    // left/right a bit narrower, middle wider
                                     let sideW = available * 0.25
-                                    let midW  = available - sideW * 2
+                                    let midW = available - sideW * 2
 
                                     HStack(spacing: spacing) {
                                         statusButton("Single")
@@ -695,6 +694,13 @@ struct OnboardingStep1: View {
                         }
                         .padding(.horizontal)
 
+                        Text(onboardingPrivacyNote)
+                            .onboardingCaptionStyle()
+                            .padding(.horizontal, 28)
+                            .padding(.top, 2)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
                         // Continue
                         NavigationLink(
                             destination: OnboardingStep2(viewModel: viewModel)
@@ -704,7 +710,7 @@ struct OnboardingStep1: View {
                                 .onboardingPrimaryButtonStyle(isEnabled: isFormComplete)
                         }
                         .padding(.horizontal)
-                        .padding(.top, 10)
+                        .padding(.top, 2)
                         .disabled(!isFormComplete)
                         .padding(.bottom, 24)
                     }
@@ -735,6 +741,7 @@ struct OnboardingStep1: View {
         !viewModel.relationshipStatus.isEmpty &&
         !viewModel.birthPlace.isEmpty
     }
+
     @ViewBuilder
     private func statusButton(_ status: String) -> some View {
         Button {
@@ -745,7 +752,6 @@ struct OnboardingStep1: View {
                 .minimumScaleFactor(0.95)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        // only vertical padding so width won't expand beyond .frame(width:)
         .padding(.vertical, 10)
         .background(viewModel.relationshipStatus == status ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.18 : 0.14) : panelBG)
         .foregroundColor(viewModel.relationshipStatus == status ? themeManager.onboardingPrimaryText : themeManager.onboardingSecondaryText)
@@ -867,6 +873,13 @@ struct OnboardingStep2: View {
                         }
                         .padding(.horizontal)
 
+                        Text(onboardingPrivacyNote)
+                            .onboardingCaptionStyle()
+                            .padding(.horizontal, 28)
+                            .padding(.top, 2)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
                         NavigationLink(
                             destination: OnboardingStep3(viewModel: viewModel)
                         ) {
@@ -874,7 +887,7 @@ struct OnboardingStep2: View {
                                 .onboardingPrimaryButtonStyle()
                         }
                         .padding(.horizontal)
-                        .padding(.top, 10)
+                        .padding(.top, 2)
                         .padding(.bottom, 24)
                     }
                 }
