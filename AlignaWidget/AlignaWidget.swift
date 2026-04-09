@@ -31,6 +31,8 @@ struct AlynnaWidgetSnapshot: Codable, Hashable {
     var careerTitle: String
     var relationshipKey: String
     var relationshipTitle: String
+    var categoryReasoning: [String: String]
+    var reasoningSummary: String
 
     init(
         mantra: String,
@@ -58,6 +60,8 @@ struct AlynnaWidgetSnapshot: Codable, Hashable {
         careerTitle: String = "",
         relationshipKey: String = "",
         relationshipTitle: String = "",
+        categoryReasoning: [String: String] = [:],
+        reasoningSummary: String = "",
         savedAt: Date = Date()
     ) {
         self.savedAt = savedAt
@@ -86,6 +90,8 @@ struct AlynnaWidgetSnapshot: Codable, Hashable {
         self.careerTitle = careerTitle
         self.relationshipKey = relationshipKey
         self.relationshipTitle = relationshipTitle
+        self.categoryReasoning = categoryReasoning
+        self.reasoningSummary = reasoningSummary
     }
 }
 
@@ -134,7 +140,9 @@ private func widgetThumbnailImage(named name: String, maxPixelDimension: CGFloat
 
 private let widgetSnapshotKey = "alynna.widget.snapshot"
 private let widgetAppGroupID = "group.martinyuan.AlynnaTest"
-private let widgetSmallCategoryOverrideKey = "widgetSmallCategoryOverride"
+private let widgetSmallCategoryOverrideKeyPrefix = "widgetSmallCategoryOverride."
+private let widgetSmallShowsBackKeyPrefix = "widgetSmallShowsBack."
+private let widgetMediumShowsBackKey = "widgetMediumShowsBack"
 
 enum AlynnaWidgetStore {
     static func load() -> AlynnaWidgetSnapshot? {
@@ -151,21 +159,57 @@ enum AlynnaWidgetStore {
 }
 
 enum AlynnaSmallCategoryStore {
-    static func load(defaultCategory: WidgetRecommendationCategory) -> WidgetRecommendationCategory {
+    static func load(baseCategory: WidgetRecommendationCategory) -> WidgetRecommendationCategory {
         guard
             let defaults = UserDefaults(suiteName: widgetAppGroupID),
-            let rawValue = defaults.string(forKey: widgetSmallCategoryOverrideKey),
+            let rawValue = defaults.string(forKey: key(for: baseCategory)),
             let storedCategory = WidgetRecommendationCategory(rawValue: rawValue)
         else {
-            return defaultCategory
+            return baseCategory
         }
 
         return storedCategory
     }
 
-    static func save(_ category: WidgetRecommendationCategory) {
+    static func save(_ category: WidgetRecommendationCategory, baseCategory: WidgetRecommendationCategory) {
         guard let defaults = UserDefaults(suiteName: widgetAppGroupID) else { return }
-        defaults.set(category.rawValue, forKey: widgetSmallCategoryOverrideKey)
+        defaults.set(category.rawValue, forKey: key(for: baseCategory))
+    }
+
+    private static func key(for baseCategory: WidgetRecommendationCategory) -> String {
+        widgetSmallCategoryOverrideKeyPrefix + baseCategory.storageKeySuffix
+    }
+}
+
+enum AlynnaSmallFaceStore {
+    static func load(baseCategory: WidgetRecommendationCategory) -> Bool {
+        guard let defaults = UserDefaults(suiteName: widgetAppGroupID) else { return false }
+        return defaults.bool(forKey: key(for: baseCategory))
+    }
+
+    static func save(_ showsBack: Bool, baseCategory: WidgetRecommendationCategory) {
+        guard let defaults = UserDefaults(suiteName: widgetAppGroupID) else { return }
+        defaults.set(showsBack, forKey: key(for: baseCategory))
+    }
+
+    static func toggle(baseCategory: WidgetRecommendationCategory) {
+        save(!load(baseCategory: baseCategory), baseCategory: baseCategory)
+    }
+
+    private static func key(for baseCategory: WidgetRecommendationCategory) -> String {
+        widgetSmallShowsBackKeyPrefix + baseCategory.storageKeySuffix
+    }
+}
+
+enum AlynnaMediumFaceStore {
+    static func load() -> Bool {
+        guard let defaults = UserDefaults(suiteName: widgetAppGroupID) else { return false }
+        return defaults.bool(forKey: widgetMediumShowsBackKey)
+    }
+
+    static func toggle() {
+        guard let defaults = UserDefaults(suiteName: widgetAppGroupID) else { return }
+        defaults.set(!defaults.bool(forKey: widgetMediumShowsBackKey), forKey: widgetMediumShowsBackKey)
     }
 }
 
@@ -173,6 +217,7 @@ enum AlynnaSmallCategoryStore {
 struct AlynnaEntry: TimelineEntry {
     let date: Date
     let snapshot: AlynnaWidgetSnapshot
+    let showsBack: Bool
 }
 
 enum WidgetRecommendationCategory: String, AppEnum, CaseIterable {
@@ -197,6 +242,10 @@ enum WidgetRecommendationCategory: String, AppEnum, CaseIterable {
         .career: "Career",
         .relationship: "Relationship"
     ]
+
+    var storageKeySuffix: String {
+        rawValue.lowercased()
+    }
 }
 
 struct SelectRecommendationCategoryIntent: WidgetConfigurationIntent {
@@ -219,24 +268,61 @@ struct CycleSmallRecommendationCategoryIntent: AppIntent {
     @Parameter(title: "Current Category")
     var currentCategory: WidgetRecommendationCategory
 
+    @Parameter(title: "Base Category")
+    var baseCategory: WidgetRecommendationCategory
+
     init() { }
 
-    init(currentCategory: WidgetRecommendationCategory) {
+    init(currentCategory: WidgetRecommendationCategory, baseCategory: WidgetRecommendationCategory) {
         self.currentCategory = currentCategory
+        self.baseCategory = baseCategory
     }
 
     func perform() async throws -> some IntentResult {
         let allCategories = WidgetRecommendationCategory.allCases
         guard let currentIndex = allCategories.firstIndex(of: currentCategory) else {
-            AlynnaSmallCategoryStore.save(.gemstone)
+            AlynnaSmallCategoryStore.save(baseCategory, baseCategory: baseCategory)
+            AlynnaSmallFaceStore.save(false, baseCategory: baseCategory)
             WidgetCenter.shared.reloadTimelines(ofKind: "AlynnaRecommendationWidget")
             return .result()
         }
 
         let nextIndex = allCategories.index(after: currentIndex)
         let nextCategory = nextIndex == allCategories.endIndex ? allCategories[allCategories.startIndex] : allCategories[nextIndex]
-        AlynnaSmallCategoryStore.save(nextCategory)
+        AlynnaSmallCategoryStore.save(nextCategory, baseCategory: baseCategory)
+        AlynnaSmallFaceStore.save(false, baseCategory: baseCategory)
         WidgetCenter.shared.reloadTimelines(ofKind: "AlynnaRecommendationWidget")
+        return .result()
+    }
+}
+
+struct ToggleSmallRecommendationFaceIntent: AppIntent {
+    static var title: LocalizedStringResource = "Toggle Recommendation Details"
+
+    @Parameter(title: "Base Category")
+    var baseCategory: WidgetRecommendationCategory
+
+    init() { }
+
+    init(baseCategory: WidgetRecommendationCategory) {
+        self.baseCategory = baseCategory
+    }
+
+    func perform() async throws -> some IntentResult {
+        AlynnaSmallFaceStore.toggle(baseCategory: baseCategory)
+        WidgetCenter.shared.reloadTimelines(ofKind: "AlynnaRecommendationWidget")
+        return .result()
+    }
+}
+
+struct ToggleMediumRecommendationFaceIntent: AppIntent {
+    static var title: LocalizedStringResource = "Toggle Daily Insight"
+
+    init() { }
+
+    func perform() async throws -> some IntentResult {
+        AlynnaMediumFaceStore.toggle()
+        WidgetCenter.shared.reloadTimelines(ofKind: "AlynnaMediumWidget")
         return .result()
     }
 }
@@ -271,14 +357,16 @@ struct AlynnaProvider: TimelineProvider {
                 careerKey: "clear_channel",
                 careerTitle: "Clear Channel",
                 relationshipKey: "breathe_sync",
-                relationshipTitle: "Breathe Sync"
-            )
+                relationshipTitle: "Breathe Sync",
+                reasoningSummary: "Today asks for steadiness over perfection. Your recommendations point toward quieter rituals, clearer pacing, and choices that keep your nervous system supported."
+            ),
+            showsBack: false
         )
     }
 
     func getSnapshot(in context: Context, completion: @escaping (AlynnaEntry) -> Void) {
         let snap = AlynnaWidgetStore.load() ?? placeholder(in: context).snapshot
-        completion(AlynnaEntry(date: Date(), snapshot: snap))
+        completion(AlynnaEntry(date: Date(), snapshot: snap, showsBack: AlynnaMediumFaceStore.load()))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<AlynnaEntry>) -> Void) {
@@ -289,7 +377,7 @@ struct AlynnaProvider: TimelineProvider {
         let next = Calendar.current.date(from: comps) ?? Date().addingTimeInterval(3600*24)
         let refresh = Calendar.current.date(byAdding: .minute, value: 5, to: next) ?? next
 
-        let entry = AlynnaEntry(date: Date(), snapshot: snap)
+        let entry = AlynnaEntry(date: Date(), snapshot: snap, showsBack: AlynnaMediumFaceStore.load())
         completion(Timeline(entries: [entry], policy: .after(refresh)))
     }
 }
@@ -297,7 +385,9 @@ struct AlynnaProvider: TimelineProvider {
 struct AlynnaSmallEntry: TimelineEntry {
     let date: Date
     let snapshot: AlynnaWidgetSnapshot
+    let baseCategory: WidgetRecommendationCategory
     let category: WidgetRecommendationCategory
+    let showsBack: Bool
 }
 
 struct AlynnaSmallProvider: AppIntentTimelineProvider {
@@ -307,27 +397,37 @@ struct AlynnaSmallProvider: AppIntentTimelineProvider {
         AlynnaSmallEntry(
             date: Date(),
             snapshot: AlynnaProvider().placeholder(in: context).snapshot,
-            category: .gemstone
+            baseCategory: .gemstone,
+            category: .gemstone,
+            showsBack: false
         )
     }
 
     func snapshot(for configuration: SelectRecommendationCategoryIntent, in context: Context) async -> AlynnaSmallEntry {
-        let resolvedCategory = AlynnaSmallCategoryStore.load(defaultCategory: configuration.category)
+        let resolvedCategory = AlynnaSmallCategoryStore.load(baseCategory: configuration.category)
         return AlynnaSmallEntry(
             date: Date(),
             snapshot: AlynnaWidgetStore.load() ?? AlynnaProvider().placeholder(in: context).snapshot,
-            category: resolvedCategory
+            baseCategory: configuration.category,
+            category: resolvedCategory,
+            showsBack: AlynnaSmallFaceStore.load(baseCategory: configuration.category)
         )
     }
 
     func timeline(for configuration: SelectRecommendationCategoryIntent, in context: Context) async -> Timeline<AlynnaSmallEntry> {
         let snapshot = AlynnaWidgetStore.load() ?? AlynnaProvider().placeholder(in: context).snapshot
-        let resolvedCategory = AlynnaSmallCategoryStore.load(defaultCategory: configuration.category)
+        let resolvedCategory = AlynnaSmallCategoryStore.load(baseCategory: configuration.category)
         var comps = Calendar.current.dateComponents([.year, .month, .day], from: Date())
         comps.day = (comps.day ?? 0) + 1
         let next = Calendar.current.date(from: comps) ?? Date().addingTimeInterval(3600 * 24)
         let refresh = Calendar.current.date(byAdding: .minute, value: 5, to: next) ?? next
-        let entry = AlynnaSmallEntry(date: Date(), snapshot: snapshot, category: resolvedCategory)
+        let entry = AlynnaSmallEntry(
+            date: Date(),
+            snapshot: snapshot,
+            baseCategory: configuration.category,
+            category: resolvedCategory,
+            showsBack: AlynnaSmallFaceStore.load(baseCategory: configuration.category)
+        )
         return Timeline(entries: [entry], policy: .after(refresh))
     }
 }
@@ -395,6 +495,9 @@ struct AlynnaWidgetEntryView: View {
         let isSoundPlaying = audioState.isPlaying && audioState.currentSoundKey == entry.snapshot.soundKey
         let soundSymbol = soundSymbolName(for: entry.snapshot.soundKey, title: entry.snapshot.soundTitle)
         let soundArtworkName = soundArtworkAssetName(for: entry.snapshot.soundKey, title: entry.snapshot.soundTitle)
+        let reasoningSummary = entry.snapshot.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? "Today asks for steadiness over perfection. Let the recommendations support slower pacing, clearer choices, and a calmer nervous system."
+            : entry.snapshot.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines)
 
         return GeometryReader { geometry in
             let minSide = min(geometry.size.width, geometry.size.height)
@@ -421,63 +524,93 @@ struct AlynnaWidgetEntryView: View {
 
                 Spacer(minLength: minSide * 0.002)
 
-                HStack(alignment: .center, spacing: minSide * 0.034) {
-                    soundOrbControl(
-                        size: minSide * 0.52,
-                        soundKey: entry.snapshot.soundKey,
-                        soundTitle: entry.snapshot.soundTitle,
-                        artworkName: soundArtworkName,
-                        symbolName: soundSymbol,
-                        isPlaying: isSoundPlaying
-                    )
+                if entry.showsBack {
+                    Button(intent: ToggleMediumRecommendationFaceIntent()) {
+                        VStack(alignment: .leading, spacing: minSide * 0.03) {
+                            Spacer(minLength: minSide * 0.02)
 
-                    ViewThatFits(in: .vertical) {
-                        mantraText(displayMantra, size: minSide * 0.143)
-                        mantraText(displayMantra, size: minSide * 0.135)
-                        mantraText(displayMantra, size: minSide * 0.127)
+                            (
+                                Text("Why this fits today? ")
+                                    .font(.custom("Merriweather-Bold", size: minSide * 0.088))
+                                +
+                                Text(reasoningSummary)
+                                    .font(.custom("Merriweather-Regular", size: minSide * 0.088))
+                            )
+                                .foregroundStyle(textColor)
+                                .multilineTextAlignment(.leading)
+                                .lineLimit(6)
+                                .minimumScaleFactor(0.82)
+                                .lineSpacing(minSide * 0.02)
+
+                            Spacer(minLength: minSide * 0.018)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .contentShape(Rectangle())
                     }
-                }
-                .foregroundColor(textColor)
-                .layoutPriority(1)
-                .background {
-                    WidgetContentGlow()
-                        .padding(.horizontal, -minSide * 0.03)
-                        .padding(.vertical, -minSide * 0.02)
-                }
+                    .buttonStyle(.plain)
+                } else {
+                    HStack(alignment: .center, spacing: minSide * 0.034) {
+                        soundOrbControl(
+                            size: minSide * 0.52,
+                            soundKey: entry.snapshot.soundKey,
+                            soundTitle: entry.snapshot.soundTitle,
+                            artworkName: soundArtworkName,
+                            symbolName: soundSymbol,
+                            isPlaying: isSoundPlaying
+                        )
 
-                Spacer(minLength: minSide * 0.006)
-
-                if !footerItems.isEmpty {
-                    let lineColor = secondaryTextColor
-                    let topFooterItems = footerItems.filter { ["Environment", "Weather"].contains($0.label) }
-                    let bottomFooterItems = footerItems.filter { ["Air", "Wind", "Humidity", "Pressure"].contains($0.label) }
-
-                    VStack(alignment: .leading, spacing: minSide * 0.01) {
-                        if !topFooterItems.isEmpty {
-                            ViewThatFits(in: .horizontal) {
-                                footerSegments(topFooterItems, color: lineColor, size: minSide, scale: 0.92)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                footerSegments(topFooterItems, color: lineColor, size: minSide, scale: 0.84)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                footerSegments(Array(topFooterItems.prefix(1)), color: lineColor, size: minSide, scale: 1.0)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                        Button(intent: ToggleMediumRecommendationFaceIntent()) {
+                            ViewThatFits(in: .vertical) {
+                                mantraText(displayMantra, size: minSide * 0.143)
+                                mantraText(displayMantra, size: minSide * 0.135)
+                                mantraText(displayMantra, size: minSide * 0.127)
                             }
                         }
+                        .buttonStyle(.plain)
+                        .contentShape(Rectangle())
+                    }
+                    .foregroundColor(textColor)
+                    .layoutPriority(1)
+                    .background {
+                        WidgetContentGlow()
+                            .padding(.horizontal, -minSide * 0.03)
+                            .padding(.vertical, -minSide * 0.02)
+                    }
 
-                        if !bottomFooterItems.isEmpty {
-                            ViewThatFits(in: .horizontal) {
-                                footerSegments(bottomFooterItems, color: lineColor, size: minSide, scale: 0.9)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                footerSegments(bottomFooterItems, color: lineColor, size: minSide, scale: 0.82)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                footerSegments(Array(bottomFooterItems.prefix(3)), color: lineColor, size: minSide, scale: 0.9)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                footerSegments(Array(bottomFooterItems.prefix(2)), color: lineColor, size: minSide, scale: 1.0)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Spacer(minLength: minSide * 0.006)
+
+                    if !footerItems.isEmpty {
+                        let lineColor = secondaryTextColor
+                        let topFooterItems = footerItems.filter { ["Environment", "Weather"].contains($0.label) }
+                        let bottomFooterItems = footerItems.filter { ["Air", "Wind", "Humidity", "Pressure"].contains($0.label) }
+
+                        VStack(alignment: .leading, spacing: minSide * 0.01) {
+                            if !topFooterItems.isEmpty {
+                                ViewThatFits(in: .horizontal) {
+                                    footerSegments(topFooterItems, color: lineColor, size: minSide, scale: 0.92)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    footerSegments(topFooterItems, color: lineColor, size: minSide, scale: 0.84)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    footerSegments(Array(topFooterItems.prefix(1)), color: lineColor, size: minSide, scale: 1.0)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                            }
+
+                            if !bottomFooterItems.isEmpty {
+                                ViewThatFits(in: .horizontal) {
+                                    footerSegments(bottomFooterItems, color: lineColor, size: minSide, scale: 0.9)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    footerSegments(bottomFooterItems, color: lineColor, size: minSide, scale: 0.82)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    footerSegments(Array(bottomFooterItems.prefix(3)), color: lineColor, size: minSide, scale: 0.9)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    footerSegments(Array(bottomFooterItems.prefix(2)), color: lineColor, size: minSide, scale: 1.0)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
                             }
                         }
+                        .padding(.top, minSide * 0.004)
                     }
-                    .padding(.top, minSide * 0.004)
                 }
             }
             .padding(.horizontal, minSide * 0.076)
@@ -488,7 +621,6 @@ struct AlynnaWidgetEntryView: View {
             WidgetBackground(hex: resolvedBackgroundHex)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .widgetURL(URL(string: "Alynna://open"))
     }
 }
 
@@ -498,6 +630,35 @@ private struct SmallRecommendationContent {
     let imageName: String?
     let symbolName: String?
     let usesColorSwatch: Bool
+}
+
+private func smallRecommendationExplanation(
+    category: WidgetRecommendationCategory,
+    snapshot: AlynnaWidgetSnapshot
+) -> String {
+    let explanation = snapshot.categoryReasoning[category.rawValue]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    if !explanation.isEmpty {
+        return explanation
+    }
+
+    switch category {
+    case .place:
+        return "This place was chosen to help you feel grounded and calm today."
+    case .color:
+        return "This color supports balance and clarity based on your current day's tone."
+    case .gemstone:
+        return "This gemstone was selected to encourage intuition and emotional steadiness."
+    case .scent:
+        return "This scent aims to relax your nervous system and reduce overstimulation."
+    case .sound:
+        return "This sound is meant to create a steady background for focus or rest."
+    case .activity:
+        return "This activity supports gentle reflection and mental reset."
+    case .career:
+        return "This career cue emphasizes thoughtful decisions over impulsive action."
+    case .relationship:
+        return "This relationship cue encourages softer communication and connection."
+    }
 }
 
 private func smallRecommendationContent(
@@ -537,65 +698,106 @@ struct AlynnaSmallWidgetEntryView: View {
         let topLabelText = usesDarkText ? Color.black.opacity(0.58) : Color(hex: "#F7F3EC").opacity(0.7)
         let bottomTitleText = usesDarkText ? Color.black.opacity(0.92) : Color(hex: "#F7F3EC").opacity(0.98)
         let title = content.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? content.categoryLabel : content.title
+        let explanation = smallRecommendationExplanation(category: entry.category, snapshot: entry.snapshot)
         let activeDotIndex = min(WidgetRecommendationCategory.allCases.firstIndex(of: entry.category) ?? 0, 7) / 2
 
         GeometryReader { geometry in
             let minSide = min(geometry.size.width, geometry.size.height)
 
             VStack(spacing: 0) {
-                Text("Today's \(content.categoryLabel)")
-                    .font(.custom("Merriweather-Bold", size: minSide * 0.072))
-                    .foregroundStyle(topLabelText)
-                    .lineLimit(1)
-                .padding(.top, minSide * 0.08)
-                .padding(.horizontal, minSide * 0.06)
+                if entry.showsBack {
+                    Button(intent: ToggleSmallRecommendationFaceIntent(baseCategory: entry.baseCategory)) {
+                        VStack(spacing: minSide * 0.05) {
+                            Spacer(minLength: minSide * 0.1)
 
-                Spacer(minLength: minSide * 0.015)
+                            Text(title)
+                                .font(.custom("Merriweather-Black", size: minSide * 0.092))
+                                .foregroundStyle(primaryText.opacity(0.92))
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.72)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, minSide * 0.08)
 
-                ZStack {
-                    if content.usesColorSwatch {
-                        Circle()
-                            .fill(Color(hex: resolvedBackgroundHex))
-                            .padding(minSide * 0.04)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white.opacity(0.42), lineWidth: 1)
-                                    .padding(minSide * 0.04)
-                            )
-                    } else if let imageName = content.imageName, !imageName.isEmpty {
-                        WidgetAssetImage(name: imageName)
-                            .foregroundColor(primaryText)
-                            .padding(minSide * 0.04)
-                    } else if let symbolName = content.symbolName {
-                        Image(systemName: symbolName)
-                            .font(.system(size: minSide * 0.82, weight: .semibold))
-                            .foregroundStyle(primaryText)
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.horizontal, minSide * 0.01)
+                            Text(explanation)
+                                .font(.custom("Merriweather-Regular", size: minSide * 0.078))
+                                .foregroundStyle(bottomTitleText)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(6)
+                                .minimumScaleFactor(0.82)
+                                .lineSpacing(minSide * 0.018)
+                                .padding(.horizontal, minSide * 0.08)
 
-                Spacer(minLength: minSide * 0.012)
-
-                Text(title)
-                    .font(.custom("Merriweather-Black", size: minSide * 0.096))
-                    .foregroundStyle(bottomTitleText)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
-                    .shadow(color: Color.black.opacity(usesDarkText ? 0.08 : 0.22), radius: 2, x: 0, y: 1)
-
-                Button(intent: CycleSmallRecommendationCategoryIntent(currentCategory: entry.category)) {
-                    HStack(spacing: minSide * 0.018) {
-                        ForEach(0..<4, id: \.self) { index in
-                            Circle()
-                                .fill(index == activeDotIndex ? bottomTitleText : topLabelText.opacity(0.38))
-                                .frame(width: minSide * 0.03, height: minSide * 0.03)
+                            Spacer(minLength: minSide * 0.12)
                         }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                } else {
+                    Button(intent: ToggleSmallRecommendationFaceIntent(baseCategory: entry.baseCategory)) {
+                        VStack(spacing: 0) {
+                            Text("Today's \(content.categoryLabel)")
+                                .font(.custom("Merriweather-Bold", size: minSide * 0.072))
+                                .foregroundStyle(topLabelText)
+                                .lineLimit(1)
+                                .padding(.top, minSide * 0.08)
+                                .padding(.horizontal, minSide * 0.06)
+
+                            Spacer(minLength: minSide * 0.015)
+
+                            ZStack {
+                                if content.usesColorSwatch {
+                                    Circle()
+                                        .fill(Color(hex: resolvedBackgroundHex))
+                                        .padding(minSide * 0.04)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.white.opacity(0.42), lineWidth: 1)
+                                                .padding(minSide * 0.04)
+                                        )
+                                } else if let imageName = content.imageName, !imageName.isEmpty {
+                                    WidgetAssetImage(name: imageName)
+                                        .foregroundColor(primaryText)
+                                        .padding(minSide * 0.04)
+                                } else if let symbolName = content.symbolName {
+                                    Image(systemName: symbolName)
+                                        .font(.system(size: minSide * 0.9, weight: .semibold))
+                                        .foregroundStyle(primaryText)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .padding(.horizontal, minSide * 0.01)
+
+                            Spacer(minLength: minSide * 0.012)
+
+                            Text(title)
+                                .font(.custom("Merriweather-Black", size: minSide * 0.096))
+                                .foregroundStyle(bottomTitleText)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.72)
+                                .shadow(color: Color.black.opacity(usesDarkText ? 0.08 : 0.22), radius: 2, x: 0, y: 1)
+
+                            Button(intent: CycleSmallRecommendationCategoryIntent(currentCategory: entry.category, baseCategory: entry.baseCategory)) {
+                                HStack(spacing: minSide * 0.018) {
+                                    ForEach(0..<4, id: \.self) { index in
+                                        Circle()
+                                            .fill(index == activeDotIndex ? bottomTitleText : topLabelText.opacity(0.38))
+                                            .frame(width: minSide * 0.03, height: minSide * 0.03)
+                                    }
+                                }
+                                .padding(.horizontal, minSide * 0.05)
+                                .padding(.vertical, minSide * 0.028)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.top, minSide * 0.06)
+                            .padding(.bottom, minSide * 0.07)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                .padding(.top, minSide * 0.03)
-                .padding(.bottom, minSide * 0.07)
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
@@ -603,7 +805,6 @@ struct AlynnaSmallWidgetEntryView: View {
             WidgetBackground(hex: resolvedBackgroundHex)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .widgetURL(widgetDeepLink(for: entry.category))
     }
 }
 
@@ -1296,23 +1497,47 @@ struct AlynnaWidget_Previews: PreviewProvider {
         careerKey: "clear_channel",
         careerTitle: "Clear Channel",
         relationshipKey: "breathe_sync",
-        relationshipTitle: "Breathe in Sync"
+        relationshipTitle: "Breathe in Sync",
+        categoryReasoning: [
+            "Place": "A quieter place helps you process the day without extra noise.",
+            "Gemstone": "This gemstone reinforces steadiness and emotional protection.",
+            "Color": "This tone supports a clearer and more balanced mood.",
+            "Scent": "This scent is meant to soften overstimulation and restore ease.",
+            "Activity": "This activity invites a small reset instead of pushing harder.",
+            "Sound": "This sound supports a steadier rhythm for focus and rest.",
+            "Career": "This cue favors thoughtful pacing over reactive decisions.",
+            "Relationship": "This cue encourages gentler communication and connection."
+        ],
+        reasoningSummary: "Today asks for steadiness over perfection. Your recommendations point toward quieter rituals, clearer pacing, and choices that keep your nervous system supported."
     )
 
     static var previews: some View {
         AlynnaWidgetEntryView(
             entry: AlynnaEntry(
                 date: Date(),
-                snapshot: previewSnapshot
+                snapshot: previewSnapshot,
+                showsBack: false
             )
         )
+        .previewContext(WidgetPreviewContext(family: .systemMedium))
+
+        AlynnaWidgetEntryView(
+            entry: AlynnaEntry(
+                date: Date(),
+                snapshot: previewSnapshot,
+                showsBack: true
+            )
+        )
+        .previewDisplayName("Medium Back")
         .previewContext(WidgetPreviewContext(family: .systemMedium))
 
         AlynnaSmallWidgetEntryView(
             entry: AlynnaSmallEntry(
                 date: Date(),
                 snapshot: previewSnapshot,
-                category: .gemstone
+                baseCategory: .gemstone,
+                category: .gemstone,
+                showsBack: false
             )
         )
         .previewDisplayName("Small Gemstone")
@@ -1322,7 +1547,9 @@ struct AlynnaWidget_Previews: PreviewProvider {
             entry: AlynnaSmallEntry(
                 date: Date(),
                 snapshot: previewSnapshot,
-                category: .place
+                baseCategory: .place,
+                category: .place,
+                showsBack: false
             )
         )
         .previewDisplayName("Small Place")
@@ -1332,7 +1559,9 @@ struct AlynnaWidget_Previews: PreviewProvider {
             entry: AlynnaSmallEntry(
                 date: Date(),
                 snapshot: previewSnapshot,
-                category: .color
+                baseCategory: .color,
+                category: .color,
+                showsBack: false
             )
         )
         .previewDisplayName("Small Color")
@@ -1342,7 +1571,9 @@ struct AlynnaWidget_Previews: PreviewProvider {
             entry: AlynnaSmallEntry(
                 date: Date(),
                 snapshot: previewSnapshot,
-                category: .scent
+                baseCategory: .scent,
+                category: .scent,
+                showsBack: false
             )
         )
         .previewDisplayName("Small Scent")
@@ -1352,7 +1583,9 @@ struct AlynnaWidget_Previews: PreviewProvider {
             entry: AlynnaSmallEntry(
                 date: Date(),
                 snapshot: previewSnapshot,
-                category: .activity
+                baseCategory: .activity,
+                category: .activity,
+                showsBack: false
             )
         )
         .previewDisplayName("Small Activity")
@@ -1362,7 +1595,9 @@ struct AlynnaWidget_Previews: PreviewProvider {
             entry: AlynnaSmallEntry(
                 date: Date(),
                 snapshot: previewSnapshot,
-                category: .sound
+                baseCategory: .sound,
+                category: .sound,
+                showsBack: false
             )
         )
         .previewDisplayName("Small Sound")
@@ -1372,7 +1607,9 @@ struct AlynnaWidget_Previews: PreviewProvider {
             entry: AlynnaSmallEntry(
                 date: Date(),
                 snapshot: previewSnapshot,
-                category: .career
+                baseCategory: .career,
+                category: .career,
+                showsBack: false
             )
         )
         .previewDisplayName("Small Career")
@@ -1382,7 +1619,9 @@ struct AlynnaWidget_Previews: PreviewProvider {
             entry: AlynnaSmallEntry(
                 date: Date(),
                 snapshot: previewSnapshot,
-                category: .relationship
+                baseCategory: .relationship,
+                category: .relationship,
+                showsBack: false
             )
         )
         .previewDisplayName("Small Relationship")

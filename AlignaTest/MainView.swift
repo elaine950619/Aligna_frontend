@@ -37,6 +37,8 @@ struct AlynnaWidgetSnapshot: Codable, Hashable {
     var careerTitle: String
     var relationshipKey: String
     var relationshipTitle: String
+    var categoryReasoning: [String: String]
+    var reasoningSummary: String
 
     init(
         mantra: String,
@@ -64,6 +66,8 @@ struct AlynnaWidgetSnapshot: Codable, Hashable {
         careerTitle: String = "",
         relationshipKey: String = "",
         relationshipTitle: String = "",
+        categoryReasoning: [String: String] = [:],
+        reasoningSummary: String = "",
         savedAt: Date = Date()
     ) {
         self.savedAt = savedAt
@@ -92,6 +96,8 @@ struct AlynnaWidgetSnapshot: Codable, Hashable {
         self.careerTitle = careerTitle
         self.relationshipKey = relationshipKey
         self.relationshipTitle = relationshipTitle
+        self.categoryReasoning = categoryReasoning
+        self.reasoningSummary = reasoningSummary
     }
 }
 
@@ -846,6 +852,18 @@ struct MainView: View {
             return trimmed.isEmpty ? key : trimmed
         }
 
+        let categoryReasoning: [String: String] = [
+            "Place": reasoningStore.text(for: "Place"),
+            "Gemstone": reasoningStore.text(for: "Gemstone"),
+            "Color": reasoningStore.text(for: "Color"),
+            "Scent": reasoningStore.text(for: "Scent"),
+            "Activity": reasoningStore.text(for: "Activity"),
+            "Sound": reasoningStore.text(for: "Sound"),
+            "Career": reasoningStore.text(for: "Career"),
+            "Relationship": reasoningStore.text(for: "Relationship")
+        ]
+        let reasoningSummary = viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines)
+
         let snap = AlynnaWidgetSnapshot(
             mantra: mantra,
             locationName: resolvedWidgetLocation(),
@@ -871,7 +889,9 @@ struct MainView: View {
             careerKey: soundKey(for: "Career"),
             careerTitle: title(for: "Career"),
             relationshipKey: soundKey(for: "Relationship"),
-            relationshipTitle: title(for: "Relationship")
+            relationshipTitle: title(for: "Relationship"),
+            categoryReasoning: categoryReasoning,
+            reasoningSummary: reasoningSummary
         )
         AlynnaWidgetStore.save(snap)
     }
