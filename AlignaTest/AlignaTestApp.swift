@@ -146,6 +146,7 @@ struct RootRouter: View {
                 )
                 .environmentObject(starManager)
                 .environmentObject(themeManager)
+                .environmentObject(onboardingViewModel)
                 .environmentObject(soundPlayer) // ✅ 注入，保证任意子层都能拿到
                 .ignoresSafeArea()
             } else if !isAuthenticated {

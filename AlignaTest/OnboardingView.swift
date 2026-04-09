@@ -28,6 +28,20 @@ class OnboardingViewModel: ObservableObject {
     @Published var color_dislike: Set<String> = []     // 多选
     @Published var allergies: Set<String> = []         // 多选
     @Published var music_dislike: Set<String> = []     // 多选
+
+    // Place signals — populated by LoadingView from the Open-Meteo weather fetch.
+    // Optional; nil means data was unavailable when the loading screen ran.
+    @Published var weatherCondition: String? = nil
+    @Published var temperature: Double? = nil     // °F
+    @Published var windDirection: String? = nil   // compass string, e.g. "NW"
+    @Published var windSpeed: Double? = nil       // mph
+    @Published var humidity: Double? = nil        // 0–100 %
+    @Published var pressure: Double? = nil        // hPa
+    // Earth-surface composition indices — currently nil on the frontend;
+    // the backend derives superior values from its own NDVI/NDWI/NDBI pipeline.
+    @Published var waterPercent: Double? = nil
+    @Published var greenPercent: Double? = nil
+    @Published var builtPercent: Double? = nil
 }
 
 

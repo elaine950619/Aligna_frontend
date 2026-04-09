@@ -2057,12 +2057,27 @@ struct MainView: View {
         timeFormatter.dateFormat = "HH:mm"
         let birthTimeString = timeFormatter.string(from: viewModel.birth_time)
 
-        let payload: [String: Any] = [
+        // Build base payload
+        var payload: [String: Any] = [
             "birth_date": birthDateString,
             "birth_time": birthTimeString,
             "latitude": coord.latitude,
             "longitude": coord.longitude
         ]
+
+        // Attach place signals captured during the loading screen, if available
+        if !viewModel.currentPlace.isEmpty                        { payload["current_place"]      = viewModel.currentPlace }
+        if let v = viewModel.weatherCondition                     { payload["weather_condition"]   = v }
+        if let v = viewModel.temperature                          { payload["temperature"]         = v }
+        if let v = viewModel.windDirection                        { payload["wind_direction"]      = v }
+        if let v = viewModel.windSpeed                            { payload["wind_speed"]          = v }
+        if let v = viewModel.humidity                             { payload["humidity"]            = v }
+        if let v = viewModel.pressure                             { payload["pressure"]            = v }
+        if let v = viewModel.waterPercent                         { payload["water_percent"]       = v }
+        if let v = viewModel.greenPercent                         { payload["green_percent"]       = v }
+        if let v = viewModel.builtPercent                         { payload["built_percent"]       = v }
+
+        print("[PayloadOut] place_signals → current_place=\(viewModel.currentPlace) condition=\(viewModel.weatherCondition ?? "nil") temp=\(viewModel.temperature.map { String($0) } ?? "nil") wind=\(viewModel.windDirection ?? "nil")@\(viewModel.windSpeed.map { String($0) } ?? "nil") humidity=\(viewModel.humidity.map { String($0) } ?? "nil") pressure=\(viewModel.pressure.map { String($0) } ?? "nil")")
 
         guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
             print("❌ 无效的 FastAPI URL")

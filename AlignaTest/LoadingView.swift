@@ -293,6 +293,7 @@ struct LoadingView: View {
 
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var viewModel: OnboardingViewModel
     @ObservedObject var locationManager: LocationManager
 
     @State private var didStartLoading = false
@@ -340,6 +341,13 @@ struct LoadingView: View {
     @AppStorage("widgetWeatherSummary") private var widgetWeatherSummary: String = ""
     @AppStorage("widgetWeatherDetailSummary") private var widgetWeatherDetailSummary: String = ""
     @AppStorage("widgetEnvironmentSummary") private var widgetEnvironmentSummary: String = ""
+
+    // Structured place signals (written to viewModel once fetched)
+    @State private var placeTemperature: Double? = nil
+    @State private var placeWindDirection: String? = nil
+    @State private var placeWindSpeed: Double? = nil
+    @State private var placeHumidity: Double? = nil
+    @State private var placePressure: Double? = nil
 
     init(
         onStartLoading: (() -> Void)? = nil,
@@ -800,42 +808,21 @@ struct LoadingView: View {
             return trimmed
         }
 
-        let location = clean(locationText)
+        let location  = clean(locationText)
         let condition = clean(conditionText)
         let airQuality = clean(airQualityText)
         let density = clean(placeDensityText)
 
-        if let location, let condition, let airQuality, let density {
-            return "I’m sensing \(location).\n\(condition)\n\(airQuality)\n\(density)"
+        var lines: [String] = []
+        if let location  { lines.append("I’m sensing \(location).") }
+        if let condition { lines.append(condition) }
+        if let airQuality { lines.append(airQuality) }
+        if let density { lines.append(density) }
+
+        if lines.isEmpty {
+            return "I’m locating your place…\nI’m sampling today’s air…"
         }
-        if let location, let condition, let airQuality {
-            return "I’m sensing \(location).\n\(condition)\n\(airQuality)"
-        }
-        if let location, let condition, let density {
-            return "I’m sensing \(location).\n\(condition)\n\(density)"
-        }
-        if let location, let airQuality {
-            return "I’m sensing \(location).\n\(airQuality)"
-        }
-        if let condition, let airQuality {
-            return "\(condition)\n\(airQuality)"
-        }
-        if let airQuality, let density {
-            return "\(airQuality)\n\(density)"
-        }
-        if let location {
-            return "I’m sensing \(location)."
-        }
-        if let condition {
-            return condition
-        }
-        if let airQuality {
-            return airQuality
-        }
-        if let density {
-            return density
-        }
-        return "I’m locating your place…\nI’m sampling today’s air…"
+        return lines.joined(separator: "\n")
     }
 
     private func scheduleStageProgression() {
@@ -1063,52 +1050,75 @@ struct LoadingView: View {
         guard !didFetchPlaceSignals else { return }
         didFetchPlaceSignals = true
 
-        // Reverse geocode
+        // Reverse geocode → locationText + viewModel.currentPlace
         getAddressFromCoordinate(coord) { name in
             if let name {
                 DispatchQueue.main.async {
                     locationText = name
                     widgetLocationName = name
+                    viewModel.currentPlace = name
                 }
             }
         }
 
-        // Weather via Open-Meteo (no API key)
+        // Weather via Open-Meteo (no API key) — fetch structured fields
+        let fields = "temperature_2m,weathercode,wind_speed_10m,wind_direction_10m,relative_humidity_2m,surface_pressure"
         let urlStr = "https://api.open-meteo.com/v1/forecast"
             + "?latitude=\(coord.latitude)&longitude=\(coord.longitude)"
-            + "&current=temperature_2m,weathercode,wind_speed_10m,relative_humidity_2m,wind_direction_10m,surface_pressure"
+            + "&current=\(fields)"
             + "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto"
         guard let url = URL(string: urlStr) else { return }
         URLSession.shared.dataTask(with: url) { data, _, _ in
             guard let data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let current = json["current"] as? [String: Any],
-                  let code = current["weathercode"] as? Int,
-                  let temp = current["temperature_2m"] as? Double,
-                  let wind = current["wind_speed_10m"] as? Double,
-                  let humidity = current["relative_humidity_2m"] as? Double,
-                  let windDirection = current["wind_direction_10m"] as? Double,
-                  let pressure = current["surface_pressure"] as? Double else { return }
+                  let current = json["current"] as? [String: Any] else { return }
+
+            let code  = current["weathercode"] as? Int ?? 0
+            let temp  = current["temperature_2m"] as? Double
+            let wspd  = current["wind_speed_10m"] as? Double
+            let wdeg  = current["wind_direction_10m"] as? Double
+            let rhum  = current["relative_humidity_2m"] as? Double
+            let pres  = current["surface_pressure"] as? Double
+
             let description = placeWeatherDescription(for: code)
-            let directionText = windDirectionText(for: windDirection)
-            let windText = "Wind dir \(directionText) · \(Int(wind.rounded())) mph"
-            let humidityText = "Humidity \(Int(humidity.rounded()))%"
-            let pressureText = "Pressure \(Int(pressure.rounded())) hPa"
-            let text = "\(description) · \(Int(temp.rounded()))°F\n\(windText)\n\(humidityText) · \(pressureText)"
-            let widgetSummary = compactWeatherSummary(
-                description: description,
-                temperature: temp,
-                windSpeed: wind
-            )
-            let widgetDetailSummary = compactWeatherDetailSummary(
-                windSpeed: wind,
-                humidity: humidity,
-                pressure: pressure
-            )
+            let windDir     = wdeg.map { windCompassDirection(degrees: $0) }
+
+            // Build display strings
+            let tempStr = temp.map { "\(Int($0.rounded()))°F" } ?? ""
+            let dirText = wdeg.map { windDirectionText(for: $0) } ?? ""
+            let windText = "Wind dir \(dirText) · \(Int((wspd ?? 0).rounded())) mph"
+            let humidityText = "Humidity \(Int((rhum ?? 0).rounded()))%"
+            let pressureText = "Pressure \(Int((pres ?? 0).rounded())) hPa"
+            let text = "\(description) · \(tempStr)\n\(windText)\n\(humidityText) · \(pressureText)"
+
+            // Widget-compact summaries (only when all required values are available)
+            let widgetSummary: String? = temp.flatMap { t in wspd.map { w in
+                compactWeatherSummary(description: description, temperature: t, windSpeed: w)
+            }}
+            let widgetDetailSummary: String? = wspd.flatMap { w in rhum.flatMap { h in pres.map { p in
+                compactWeatherDetailSummary(windSpeed: w, humidity: h, pressure: p)
+            }}}
+
             DispatchQueue.main.async {
-                conditionText = text
-                widgetWeatherSummary = widgetSummary
-                widgetWeatherDetailSummary = widgetDetailSummary
+                conditionText = text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    ? "Cloud · Wind · Rain" : text
+                if let ws = widgetSummary       { widgetWeatherSummary = ws }
+                if let wd = widgetDetailSummary { widgetWeatherDetailSummary = wd }
+                placeTemperature   = temp
+                placeWindDirection = windDir
+                placeWindSpeed     = wspd
+                placeHumidity      = rhum
+                placePressure      = pres
+
+                // Persist into viewModel so MainView can include them in the API payload
+                viewModel.weatherCondition = description.isEmpty ? nil : description
+                viewModel.temperature      = temp
+                viewModel.windDirection    = windDir
+                viewModel.windSpeed        = wspd
+                viewModel.humidity         = rhum
+                viewModel.pressure         = pres
+
+                print("[PlaceSignals] place=\(viewModel.currentPlace) condition=\(description) temp=\(temp.map { String($0) } ?? "nil")°F wind=\(windDir ?? "nil") @\(wspd.map { String($0) } ?? "nil")mph humidity=\(rhum.map { String($0) } ?? "nil")% pressure=\(pres.map { String($0) } ?? "nil")hPa")
             }
         }.resume()
 
@@ -1504,6 +1514,13 @@ struct LoadingView: View {
         }
 
         return bestDistance <= 900 ? bestCategory : .other
+    }
+
+    /// Convert wind-direction degrees (0–360) to 8-point compass string.
+    private func windCompassDirection(degrees: Double) -> String {
+        let dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+        let index = Int((degrees / 45.0).rounded()) % 8
+        return dirs[index]
     }
 
     private func placeWeatherDescription(for code: Int) -> String {
