@@ -16,11 +16,21 @@ struct AlynnaWidgetSnapshot: Codable, Hashable {
     var environmentSummary: String
     var soundKey: String
     var soundTitle: String
+    var colorKey: String
     var colorTitle: String
     var colorHex: String?
+    var placeKey: String
     var placeTitle: String
+    var gemstoneKey: String
     var gemstoneTitle: String
+    var scentKey: String
     var scentTitle: String
+    var activityKey: String
+    var activityTitle: String
+    var careerKey: String
+    var careerTitle: String
+    var relationshipKey: String
+    var relationshipTitle: String
 
     init(
         mantra: String,
@@ -33,11 +43,21 @@ struct AlynnaWidgetSnapshot: Codable, Hashable {
         environmentSummary: String = "",
         soundKey: String = "",
         soundTitle: String = "",
+        colorKey: String = "",
         colorTitle: String,
         colorHex: String? = nil,
+        placeKey: String = "",
         placeTitle: String,
+        gemstoneKey: String = "",
         gemstoneTitle: String,
+        scentKey: String = "",
         scentTitle: String,
+        activityKey: String = "",
+        activityTitle: String = "",
+        careerKey: String = "",
+        careerTitle: String = "",
+        relationshipKey: String = "",
+        relationshipTitle: String = "",
         savedAt: Date = Date()
     ) {
         self.savedAt = savedAt
@@ -51,16 +71,70 @@ struct AlynnaWidgetSnapshot: Codable, Hashable {
         self.environmentSummary = environmentSummary
         self.soundKey = soundKey
         self.soundTitle = soundTitle
+        self.colorKey = colorKey
         self.colorTitle = colorTitle
         self.colorHex = colorHex
+        self.placeKey = placeKey
         self.placeTitle = placeTitle
+        self.gemstoneKey = gemstoneKey
         self.gemstoneTitle = gemstoneTitle
+        self.scentKey = scentKey
         self.scentTitle = scentTitle
+        self.activityKey = activityKey
+        self.activityTitle = activityTitle
+        self.careerKey = careerKey
+        self.careerTitle = careerTitle
+        self.relationshipKey = relationshipKey
+        self.relationshipTitle = relationshipTitle
+    }
+}
+
+private struct WidgetAssetImage: View {
+    let name: String
+
+    var body: some View {
+        if let uiImage = widgetThumbnailImage(named: name) {
+            Image(uiImage: uiImage)
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+        } else {
+            Image(systemName: "questionmark.square.dashed")
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .opacity(0.55)
+        }
+    }
+}
+
+private func widgetThumbnailImage(named name: String, maxPixelDimension: CGFloat = 640) -> UIImage? {
+    guard let image = UIImage(named: name) else { return nil }
+
+    let pixelWidth = image.size.width * image.scale
+    let pixelHeight = image.size.height * image.scale
+    let largestDimension = max(pixelWidth, pixelHeight)
+
+    guard largestDimension > maxPixelDimension else { return image }
+
+    let scaleRatio = maxPixelDimension / largestDimension
+    let scaledSize = CGSize(
+        width: max(1, floor(pixelWidth * scaleRatio)),
+        height: max(1, floor(pixelHeight * scaleRatio))
+    )
+
+    let format = UIGraphicsImageRendererFormat.default()
+    format.scale = 1
+    format.opaque = false
+
+    return UIGraphicsImageRenderer(size: scaledSize, format: format).image { _ in
+        image.draw(in: CGRect(origin: .zero, size: scaledSize))
     }
 }
 
 private let widgetSnapshotKey = "alynna.widget.snapshot"
 private let widgetAppGroupID = "group.martinyuan.AlynnaTest"
+private let widgetSmallCategoryOverrideKey = "widgetSmallCategoryOverride"
 
 enum AlynnaWidgetStore {
     static func load() -> AlynnaWidgetSnapshot? {
@@ -76,10 +150,95 @@ enum AlynnaWidgetStore {
     }
 }
 
+enum AlynnaSmallCategoryStore {
+    static func load(defaultCategory: WidgetRecommendationCategory) -> WidgetRecommendationCategory {
+        guard
+            let defaults = UserDefaults(suiteName: widgetAppGroupID),
+            let rawValue = defaults.string(forKey: widgetSmallCategoryOverrideKey),
+            let storedCategory = WidgetRecommendationCategory(rawValue: rawValue)
+        else {
+            return defaultCategory
+        }
+
+        return storedCategory
+    }
+
+    static func save(_ category: WidgetRecommendationCategory) {
+        guard let defaults = UserDefaults(suiteName: widgetAppGroupID) else { return }
+        defaults.set(category.rawValue, forKey: widgetSmallCategoryOverrideKey)
+    }
+}
+
 // MARK: - Timeline Entry
 struct AlynnaEntry: TimelineEntry {
     let date: Date
     let snapshot: AlynnaWidgetSnapshot
+}
+
+enum WidgetRecommendationCategory: String, AppEnum, CaseIterable {
+    case place = "Place"
+    case gemstone = "Gemstone"
+    case color = "Color"
+    case scent = "Scent"
+    case activity = "Activity"
+    case sound = "Sound"
+    case career = "Career"
+    case relationship = "Relationship"
+
+    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Recommendation Category"
+
+    static var caseDisplayRepresentations: [WidgetRecommendationCategory: DisplayRepresentation] = [
+        .place: "Place",
+        .gemstone: "Gemstone",
+        .color: "Color",
+        .scent: "Scent",
+        .activity: "Activity",
+        .sound: "Sound",
+        .career: "Career",
+        .relationship: "Relationship"
+    ]
+}
+
+struct SelectRecommendationCategoryIntent: WidgetConfigurationIntent {
+    static var title: LocalizedStringResource = "Choose Recommendation"
+    static var description = IntentDescription("Select which daily recommendation category appears in the square widget.")
+
+    @Parameter(title: "Category", default: .gemstone)
+    var category: WidgetRecommendationCategory
+
+    init() { }
+
+    init(category: WidgetRecommendationCategory) {
+        self.category = category
+    }
+}
+
+struct CycleSmallRecommendationCategoryIntent: AppIntent {
+    static var title: LocalizedStringResource = "Next Recommendation Category"
+
+    @Parameter(title: "Current Category")
+    var currentCategory: WidgetRecommendationCategory
+
+    init() { }
+
+    init(currentCategory: WidgetRecommendationCategory) {
+        self.currentCategory = currentCategory
+    }
+
+    func perform() async throws -> some IntentResult {
+        let allCategories = WidgetRecommendationCategory.allCases
+        guard let currentIndex = allCategories.firstIndex(of: currentCategory) else {
+            AlynnaSmallCategoryStore.save(.gemstone)
+            WidgetCenter.shared.reloadTimelines(ofKind: "AlynnaRecommendationWidget")
+            return .result()
+        }
+
+        let nextIndex = allCategories.index(after: currentIndex)
+        let nextCategory = nextIndex == allCategories.endIndex ? allCategories[allCategories.startIndex] : allCategories[nextIndex]
+        AlynnaSmallCategoryStore.save(nextCategory)
+        WidgetCenter.shared.reloadTimelines(ofKind: "AlynnaRecommendationWidget")
+        return .result()
+    }
 }
 
 // MARK: - Provider
@@ -98,11 +257,21 @@ struct AlynnaProvider: TimelineProvider {
                 environmentSummary: "Mostly green with quiet urban edges",
                 soundKey: "ocean_waves",
                 soundTitle: "Ocean Waves",
+                colorKey: "vitality_pink",
                 colorTitle: "Vitality Pink",
                 colorHex: "#FF66CC",
+                placeKey: "window_seat_at_a_cafe",
                 placeTitle: "Window seat at a café",
+                gemstoneKey: "rose_quartz",
                 gemstoneTitle: "Rose Quartz",
-                scentTitle: "Rose Breeze"
+                scentKey: "rose_breeze",
+                scentTitle: "Rose Breeze",
+                activityKey: "clean_mirror",
+                activityTitle: "Clean Mirror",
+                careerKey: "clear_channel",
+                careerTitle: "Clear Channel",
+                relationshipKey: "breathe_sync",
+                relationshipTitle: "Breathe Sync"
             )
         )
     }
@@ -122,6 +291,44 @@ struct AlynnaProvider: TimelineProvider {
 
         let entry = AlynnaEntry(date: Date(), snapshot: snap)
         completion(Timeline(entries: [entry], policy: .after(refresh)))
+    }
+}
+
+struct AlynnaSmallEntry: TimelineEntry {
+    let date: Date
+    let snapshot: AlynnaWidgetSnapshot
+    let category: WidgetRecommendationCategory
+}
+
+struct AlynnaSmallProvider: AppIntentTimelineProvider {
+    typealias Intent = SelectRecommendationCategoryIntent
+
+    func placeholder(in context: Context) -> AlynnaSmallEntry {
+        AlynnaSmallEntry(
+            date: Date(),
+            snapshot: AlynnaProvider().placeholder(in: context).snapshot,
+            category: .gemstone
+        )
+    }
+
+    func snapshot(for configuration: SelectRecommendationCategoryIntent, in context: Context) async -> AlynnaSmallEntry {
+        let resolvedCategory = AlynnaSmallCategoryStore.load(defaultCategory: configuration.category)
+        return AlynnaSmallEntry(
+            date: Date(),
+            snapshot: AlynnaWidgetStore.load() ?? AlynnaProvider().placeholder(in: context).snapshot,
+            category: resolvedCategory
+        )
+    }
+
+    func timeline(for configuration: SelectRecommendationCategoryIntent, in context: Context) async -> Timeline<AlynnaSmallEntry> {
+        let snapshot = AlynnaWidgetStore.load() ?? AlynnaProvider().placeholder(in: context).snapshot
+        let resolvedCategory = AlynnaSmallCategoryStore.load(defaultCategory: configuration.category)
+        var comps = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+        comps.day = (comps.day ?? 0) + 1
+        let next = Calendar.current.date(from: comps) ?? Date().addingTimeInterval(3600 * 24)
+        let refresh = Calendar.current.date(byAdding: .minute, value: 5, to: next) ?? next
+        let entry = AlynnaSmallEntry(date: Date(), snapshot: snapshot, category: resolvedCategory)
+        return Timeline(entries: [entry], policy: .after(refresh))
     }
 }
 
@@ -285,6 +492,121 @@ struct AlynnaWidgetEntryView: View {
     }
 }
 
+private struct SmallRecommendationContent {
+    let categoryLabel: String
+    let title: String
+    let imageName: String?
+    let symbolName: String?
+    let usesColorSwatch: Bool
+}
+
+private func smallRecommendationContent(
+    category: WidgetRecommendationCategory,
+    snapshot: AlynnaWidgetSnapshot
+) -> SmallRecommendationContent {
+    switch category {
+    case .place:
+        return SmallRecommendationContent(categoryLabel: "Place", title: snapshot.placeTitle, imageName: snapshot.placeKey, symbolName: "mappin.and.ellipse", usesColorSwatch: false)
+    case .gemstone:
+        return SmallRecommendationContent(categoryLabel: "Gemstone", title: snapshot.gemstoneTitle, imageName: snapshot.gemstoneKey, symbolName: "sparkles", usesColorSwatch: false)
+    case .color:
+        return SmallRecommendationContent(categoryLabel: "Color", title: snapshot.colorTitle, imageName: nil, symbolName: "circle.lefthalf.filled", usesColorSwatch: true)
+    case .scent:
+        return SmallRecommendationContent(categoryLabel: "Scent", title: snapshot.scentTitle, imageName: snapshot.scentKey, symbolName: "drop.fill", usesColorSwatch: false)
+    case .activity:
+        return SmallRecommendationContent(categoryLabel: "Activity", title: snapshot.activityTitle, imageName: snapshot.activityKey, symbolName: "figure.walk", usesColorSwatch: false)
+    case .sound:
+        let artworkName = soundArtworkAssetName(for: snapshot.soundKey, title: snapshot.soundTitle)
+        return SmallRecommendationContent(categoryLabel: "Sound", title: snapshot.soundTitle, imageName: artworkName ?? snapshot.soundKey, symbolName: soundSymbolName(for: snapshot.soundKey, title: snapshot.soundTitle), usesColorSwatch: false)
+    case .career:
+        return SmallRecommendationContent(categoryLabel: "Career", title: snapshot.careerTitle, imageName: snapshot.careerKey, symbolName: "briefcase.fill", usesColorSwatch: false)
+    case .relationship:
+        return SmallRecommendationContent(categoryLabel: "Relationship", title: snapshot.relationshipTitle, imageName: snapshot.relationshipKey, symbolName: "heart.fill", usesColorSwatch: false)
+    }
+}
+
+struct AlynnaSmallWidgetEntryView: View {
+    let entry: AlynnaSmallProvider.Entry
+
+    var body: some View {
+        let backgroundHex = entry.snapshot.colorHex?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedBackgroundHex = (backgroundHex?.isEmpty == false) ? backgroundHex! : "#151515"
+        let content = smallRecommendationContent(category: entry.category, snapshot: entry.snapshot)
+        let usesDarkText = Color.isLightHex(resolvedBackgroundHex)
+        let primaryText = usesDarkText ? Color.black.opacity(0.82) : Color(hex: "#F7F3EC")
+        let topLabelText = usesDarkText ? Color.black.opacity(0.58) : Color(hex: "#F7F3EC").opacity(0.7)
+        let bottomTitleText = usesDarkText ? Color.black.opacity(0.92) : Color(hex: "#F7F3EC").opacity(0.98)
+        let title = content.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? content.categoryLabel : content.title
+        let activeDotIndex = min(WidgetRecommendationCategory.allCases.firstIndex(of: entry.category) ?? 0, 7) / 2
+
+        GeometryReader { geometry in
+            let minSide = min(geometry.size.width, geometry.size.height)
+
+            VStack(spacing: 0) {
+                Text("Today's \(content.categoryLabel)")
+                    .font(.custom("Merriweather-Bold", size: minSide * 0.072))
+                    .foregroundStyle(topLabelText)
+                    .lineLimit(1)
+                .padding(.top, minSide * 0.08)
+                .padding(.horizontal, minSide * 0.06)
+
+                Spacer(minLength: minSide * 0.015)
+
+                ZStack {
+                    if content.usesColorSwatch {
+                        Circle()
+                            .fill(Color(hex: resolvedBackgroundHex))
+                            .padding(minSide * 0.04)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white.opacity(0.42), lineWidth: 1)
+                                    .padding(minSide * 0.04)
+                            )
+                    } else if let imageName = content.imageName, !imageName.isEmpty {
+                        WidgetAssetImage(name: imageName)
+                            .foregroundColor(primaryText)
+                            .padding(minSide * 0.04)
+                    } else if let symbolName = content.symbolName {
+                        Image(systemName: symbolName)
+                            .font(.system(size: minSide * 0.82, weight: .semibold))
+                            .foregroundStyle(primaryText)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.horizontal, minSide * 0.01)
+
+                Spacer(minLength: minSide * 0.012)
+
+                Text(title)
+                    .font(.custom("Merriweather-Black", size: minSide * 0.096))
+                    .foregroundStyle(bottomTitleText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                    .shadow(color: Color.black.opacity(usesDarkText ? 0.08 : 0.22), radius: 2, x: 0, y: 1)
+
+                Button(intent: CycleSmallRecommendationCategoryIntent(currentCategory: entry.category)) {
+                    HStack(spacing: minSide * 0.018) {
+                        ForEach(0..<4, id: \.self) { index in
+                            Circle()
+                                .fill(index == activeDotIndex ? bottomTitleText : topLabelText.opacity(0.38))
+                                .frame(width: minSide * 0.03, height: minSide * 0.03)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .padding(.top, minSide * 0.03)
+                .padding(.bottom, minSide * 0.07)
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+        }
+        .containerBackground(for: .widget) {
+            WidgetBackground(hex: resolvedBackgroundHex)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .widgetURL(widgetDeepLink(for: entry.category))
+    }
+}
+
 private struct WidgetFooterItem: Hashable {
     let label: String
     let text: String
@@ -303,6 +625,11 @@ private func mantraText(_ text: String, size: CGFloat) -> some View {
 private func widgetAirQualityText() -> String {
     let defaults = UserDefaults(suiteName: widgetAppGroupID)
     return defaults?.string(forKey: "widgetAirQualityText") ?? ""
+}
+
+private func widgetDeepLink(for category: WidgetRecommendationCategory) -> URL? {
+    let encodedCategory = category.rawValue.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? category.rawValue
+    return URL(string: "Alynna://open?category=\(encodedCategory)")
 }
 
 private struct WidgetAudioState {
@@ -912,8 +1239,7 @@ private struct WidgetGrainLayer: View {
 }
 
 // MARK: - 入口
-@main
-struct AlynnaWidget: Widget {
+struct AlynnaMediumWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "AlynnaWidget", provider: AlynnaProvider()) { entry in
             AlynnaWidgetEntryView(entry: entry)
@@ -924,28 +1250,143 @@ struct AlynnaWidget: Widget {
     }
 }
 
+struct AlynnaRecommendationWidget: Widget {
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(
+            kind: "AlynnaRecommendationWidget",
+            intent: SelectRecommendationCategoryIntent.self,
+            provider: AlynnaSmallProvider()
+        ) { entry in
+            AlynnaSmallWidgetEntryView(entry: entry)
+        }
+        .configurationDisplayName("Alynna Focus")
+        .description("Highlight one of your eight daily recommendations in a square card.")
+        .supportedFamilies([.systemSmall])
+    }
+}
+
+@main
+struct AlynnaWidgetBundle: WidgetBundle {
+    var body: some Widget {
+        AlynnaMediumWidget()
+        AlynnaRecommendationWidget()
+    }
+}
+
 #if DEBUG
 struct AlynnaWidget_Previews: PreviewProvider {
+    private static let previewSnapshot = AlynnaWidgetSnapshot(
+        mantra: "Today is not about perfection. It is about noticing small moments, honoring how I feel, and allowing myself to move forward with patience and care.",
+        locationName: "Brooklyn",
+        weatherSummary: "Cool, rainy",
+        environmentSummary: "Mostly green with quiet urban edges",
+        soundKey: "brown_noise",
+        soundTitle: "Brown Noise",
+        colorKey: "amber",
+        colorTitle: "Amber",
+        colorHex: "#D99100",
+        placeKey: "echo_niche",
+        placeTitle: "Echo Niche",
+        gemstoneKey: "amethyst",
+        gemstoneTitle: "Amethyst",
+        scentKey: "bergamot",
+        scentTitle: "Bergamot",
+        activityKey: "clean_mirror",
+        activityTitle: "Polishing Mirror",
+        careerKey: "clear_channel",
+        careerTitle: "Clear Channel",
+        relationshipKey: "breathe_sync",
+        relationshipTitle: "Breathe in Sync"
+    )
+
     static var previews: some View {
         AlynnaWidgetEntryView(
             entry: AlynnaEntry(
                 date: Date(),
-                snapshot: AlynnaWidgetSnapshot(
-                    mantra: "Today is not about perfection. It is about noticing small moments, honoring how I feel, and allowing myself to move forward with patience and care.",
-                    locationName: "Brooklyn",
-                    weatherSummary: "Cool, rainy",
-                    environmentSummary: "Mostly green with quiet urban edges",
-                    soundKey: "ocean_waves",
-                    soundTitle: "Ocean Waves",
-                    colorTitle: "Vitality Pink",
-                    colorHex: "#FF66CC",
-                    placeTitle: "Window seat at a café",
-                    gemstoneTitle: "Rose Quartz",
-                    scentTitle: "Rose Breeze"
-                )
+                snapshot: previewSnapshot
             )
         )
         .previewContext(WidgetPreviewContext(family: .systemMedium))
+
+        AlynnaSmallWidgetEntryView(
+            entry: AlynnaSmallEntry(
+                date: Date(),
+                snapshot: previewSnapshot,
+                category: .gemstone
+            )
+        )
+        .previewDisplayName("Small Gemstone")
+        .previewContext(WidgetPreviewContext(family: .systemSmall))
+
+        AlynnaSmallWidgetEntryView(
+            entry: AlynnaSmallEntry(
+                date: Date(),
+                snapshot: previewSnapshot,
+                category: .place
+            )
+        )
+        .previewDisplayName("Small Place")
+        .previewContext(WidgetPreviewContext(family: .systemSmall))
+
+        AlynnaSmallWidgetEntryView(
+            entry: AlynnaSmallEntry(
+                date: Date(),
+                snapshot: previewSnapshot,
+                category: .color
+            )
+        )
+        .previewDisplayName("Small Color")
+        .previewContext(WidgetPreviewContext(family: .systemSmall))
+
+        AlynnaSmallWidgetEntryView(
+            entry: AlynnaSmallEntry(
+                date: Date(),
+                snapshot: previewSnapshot,
+                category: .scent
+            )
+        )
+        .previewDisplayName("Small Scent")
+        .previewContext(WidgetPreviewContext(family: .systemSmall))
+
+        AlynnaSmallWidgetEntryView(
+            entry: AlynnaSmallEntry(
+                date: Date(),
+                snapshot: previewSnapshot,
+                category: .activity
+            )
+        )
+        .previewDisplayName("Small Activity")
+        .previewContext(WidgetPreviewContext(family: .systemSmall))
+
+        AlynnaSmallWidgetEntryView(
+            entry: AlynnaSmallEntry(
+                date: Date(),
+                snapshot: previewSnapshot,
+                category: .sound
+            )
+        )
+        .previewDisplayName("Small Sound")
+        .previewContext(WidgetPreviewContext(family: .systemSmall))
+
+        AlynnaSmallWidgetEntryView(
+            entry: AlynnaSmallEntry(
+                date: Date(),
+                snapshot: previewSnapshot,
+                category: .career
+            )
+        )
+        .previewDisplayName("Small Career")
+        .previewContext(WidgetPreviewContext(family: .systemSmall))
+
+        AlynnaSmallWidgetEntryView(
+            entry: AlynnaSmallEntry(
+                date: Date(),
+                snapshot: previewSnapshot,
+                category: .relationship
+            )
+        )
+        .previewDisplayName("Small Relationship")
+        .previewContext(WidgetPreviewContext(family: .systemSmall))
     }
 }
 #endif

@@ -22,11 +22,21 @@ struct AlynnaWidgetSnapshot: Codable, Hashable {
     var environmentSummary: String
     var soundKey: String
     var soundTitle: String
+    var colorKey: String
     var colorTitle: String
     var colorHex: String?
+    var placeKey: String
     var placeTitle: String
+    var gemstoneKey: String
     var gemstoneTitle: String
+    var scentKey: String
     var scentTitle: String
+    var activityKey: String
+    var activityTitle: String
+    var careerKey: String
+    var careerTitle: String
+    var relationshipKey: String
+    var relationshipTitle: String
 
     init(
         mantra: String,
@@ -39,11 +49,21 @@ struct AlynnaWidgetSnapshot: Codable, Hashable {
         environmentSummary: String = "",
         soundKey: String = "",
         soundTitle: String = "",
+        colorKey: String = "",
         colorTitle: String,
         colorHex: String? = nil,
+        placeKey: String = "",
         placeTitle: String,
+        gemstoneKey: String = "",
         gemstoneTitle: String,
+        scentKey: String = "",
         scentTitle: String,
+        activityKey: String = "",
+        activityTitle: String = "",
+        careerKey: String = "",
+        careerTitle: String = "",
+        relationshipKey: String = "",
+        relationshipTitle: String = "",
         savedAt: Date = Date()
     ) {
         self.savedAt = savedAt
@@ -57,11 +77,21 @@ struct AlynnaWidgetSnapshot: Codable, Hashable {
         self.environmentSummary = environmentSummary
         self.soundKey = soundKey
         self.soundTitle = soundTitle
+        self.colorKey = colorKey
         self.colorTitle = colorTitle
         self.colorHex = colorHex
+        self.placeKey = placeKey
         self.placeTitle = placeTitle
+        self.gemstoneKey = gemstoneKey
         self.gemstoneTitle = gemstoneTitle
+        self.scentKey = scentKey
         self.scentTitle = scentTitle
+        self.activityKey = activityKey
+        self.activityTitle = activityTitle
+        self.careerKey = careerKey
+        self.careerTitle = careerTitle
+        self.relationshipKey = relationshipKey
+        self.relationshipTitle = relationshipTitle
     }
 }
 
@@ -827,11 +857,21 @@ struct MainView: View {
             environmentSummary: widgetEnvironmentSummary.trimmingCharacters(in: .whitespacesAndNewlines),
             soundKey: soundKey(for: "Sound"),
             soundTitle: title(for: "Sound"),
+            colorKey: soundKey(for: "Color"),
             colorTitle: title(for: "Color"),
             colorHex: todayColorHex(),
+            placeKey: soundKey(for: "Place"),
             placeTitle: title(for: "Place"),
+            gemstoneKey: soundKey(for: "Gemstone"),
             gemstoneTitle: title(for: "Gemstone"),
-            scentTitle: title(for: "Scent")
+            scentKey: soundKey(for: "Scent"),
+            scentTitle: title(for: "Scent"),
+            activityKey: soundKey(for: "Activity"),
+            activityTitle: title(for: "Activity"),
+            careerKey: soundKey(for: "Career"),
+            careerTitle: title(for: "Career"),
+            relationshipKey: soundKey(for: "Relationship"),
+            relationshipTitle: title(for: "Relationship")
         )
         AlynnaWidgetStore.save(snap)
     }
