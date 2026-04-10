@@ -286,7 +286,6 @@ struct MainView: View {
     
     @State private var isMantraExpanded: Bool = false
     @State private var showGridItems: Bool = false
-    @State private var showMantraSaveAlert: Bool = false
     @State private var showTodaySoundPlayer: Bool = false
     @State private var isAutoDismissSoundPlayer = false
     @State private var soundPlayerAutoDismissTask: Task<Void, Never>? = nil
@@ -296,7 +295,6 @@ struct MainView: View {
     @State private var mantraSaveMessage: String = ""
 
     @State private var showReasoningBubble: Bool = false
-    @State private var showRefreshCooldownAlert = false
     @State private var refreshCooldownMessage = ""
     @State private var isManualRefreshFlow = false
 
@@ -333,9 +331,10 @@ struct MainView: View {
     @State private var newFocusDescription: String = ""
     @State private var focusManagerMessage: String = ""
     @State private var focusManagerMessageIsError = false
-    @State private var focusAlertTitle: String = "Focus Update"
-    @State private var focusAlertMessage: String = ""
-    @State private var showFocusAlert = false
+    @State private var mainViewDialogTitle: String = ""
+    @State private var mainViewDialogMessage: String = ""
+    @State private var mainViewDialogSymbol: String = "exclamationmark.circle"
+    @State private var showMainViewDialog = false
     @State private var pendingFocusDeletion: MantraFocus? = nil
     @State private var hasLoadedMantraFocuses = false
     @State private var mantraFocusUsageByDay: [String: DailyFocusUsageEntry] = [:]
@@ -621,6 +620,83 @@ struct MainView: View {
             .shadow(color: Color.black.opacity(themeManager.isNight ? 0.18 : 0.08), radius: 8, x: 0, y: 4)
             .contentShape(Circle())
             .accessibilityHint("Shows why this mantra was chosen")
+    }
+
+    private var mainViewDialog: some View {
+        ZStack {
+            Color.black.opacity(themeManager.isNight ? 0.48 : 0.26)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        showMainViewDialog = false
+                    }
+                }
+
+            VStack(spacing: 16) {
+                Image(systemName: mainViewDialogSymbol)
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundColor(themeManager.primaryText.opacity(0.92))
+                    .frame(width: 44, height: 44)
+                    .background(
+                        Circle()
+                            .fill(themeManager.isNight ? Color(hex: "#182033").opacity(0.96) : Color.white.opacity(0.98))
+                    )
+                    .overlay(
+                        Circle()
+                            .stroke(themeManager.panelStrokeHi.opacity(0.8), lineWidth: 1)
+                    )
+
+                VStack(spacing: 10) {
+                    Text(mainViewDialogTitle)
+                        .font(.custom("Merriweather-Bold", size: 18))
+                        .foregroundColor(themeManager.primaryText.opacity(0.94))
+
+                    Text(mainViewDialogMessage)
+                        .font(.custom("Merriweather-Regular", size: 14))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.84))
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(5)
+                }
+                .padding(.horizontal, 4)
+
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        showMainViewDialog = false
+                    }
+                } label: {
+                    Text("OK")
+                        .font(.custom("Merriweather-Regular", size: 14))
+                        .foregroundColor(themeManager.primaryText.opacity(0.95))
+                        .frame(minWidth: 92)
+                        .padding(.vertical, 10)
+                        .background(
+                            Capsule()
+                                .fill(themeManager.isNight ? Color(hex: "#202A40").opacity(0.98) : Color.white.opacity(0.98))
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(themeManager.panelStrokeHi.opacity(0.7), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 26)
+            .frame(maxWidth: 332)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(themeManager.isNight ? Color(hex: "#111827").opacity(0.98) : Color(hex: "#FCFAF5").opacity(0.99))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(themeManager.panelStrokeHi.opacity(0.82), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(themeManager.isNight ? 0.42 : 0.18), radius: 24, x: 0, y: 14)
+            .padding(.horizontal, 28)
+        }
+        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+        .zIndex(20)
     }
 
     private func expandedMantraLastLineRect(for text: String, width: CGFloat) -> CGRect? {
@@ -940,9 +1016,20 @@ struct MainView: View {
     }
 
     private func showFocusAlert(title: String = "Focus Update", message: String) {
-        focusAlertTitle = title
-        focusAlertMessage = message
-        showFocusAlert = true
+        presentMainViewDialog(
+            title: title,
+            message: message,
+            symbol: title == "Focus Limit Reached" ? "clock.badge.exclamationmark" : "sparkles.square.filled.on.square"
+        )
+    }
+
+    private func presentMainViewDialog(title: String, message: String, symbol: String) {
+        mainViewDialogTitle = title
+        mainViewDialogMessage = message
+        mainViewDialogSymbol = symbol
+        withAnimation(.easeOut(duration: 0.2)) {
+            showMainViewDialog = true
+        }
     }
 
     private func nonDailyFocusLimitMessage() -> String {
@@ -1877,11 +1964,6 @@ struct MainView: View {
                                         .frame(width: actionButtonSize, height: actionButtonSize)
                                         .contentShape(Rectangle())
                                 }
-                                .alert("Share failed", isPresented: $showMantraSaveAlert) {
-                                    Button("OK", role: .cancel) { }
-                                } message: {
-                                    Text(mantraSaveMessage)
-                                }
 
                                 Button {
                                     if isTodaySoundPlaying {
@@ -2052,6 +2134,11 @@ struct MainView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
+            .overlay {
+                if showMainViewDialog {
+                    mainViewDialog
+                }
+            }
             .sheet(isPresented: $showReasoningSheet) {
                 ReasoningSummarySheet(text: viewModel.reasoningSummary)
                     .presentationDetents([.fraction(0.4), .large])
@@ -2084,17 +2171,6 @@ struct MainView: View {
                     .environmentObject(themeManager)
                     .environmentObject(viewModel)
             }
-            .alert(focusAlertTitle, isPresented: $showFocusAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(focusAlertMessage)
-            }
-            .alert("Update Unavailable", isPresented: $showRefreshCooldownAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(refreshCooldownMessage)
-            }
-
         }
         .navigationViewStyle(.stack)
         .toolbar(.hidden, for: .navigationBar)
@@ -2255,7 +2331,11 @@ struct MainView: View {
     private func presentMantraShareSheet() {
         guard let image = captureMantraImage() else {
             mantraSaveMessage = "Could not capture the screenshot."
-            showMantraSaveAlert = true
+            presentMainViewDialog(
+                title: "Share Failed",
+                message: mantraSaveMessage,
+                symbol: "square.and.arrow.up.badge.exclamationmark"
+            )
             return
         }
 
@@ -2838,7 +2918,11 @@ struct MainView: View {
     private func handleManualRefreshTap() {
         guard manualRefreshAllowed() else {
             refreshCooldownMessage = refreshCooldownText()
-            showRefreshCooldownAlert = true
+            presentMainViewDialog(
+                title: "Update Unavailable",
+                message: refreshCooldownMessage,
+                symbol: "clock.badge.exclamationmark"
+            )
             return
         }
         isManualRefreshFlow = true
@@ -2854,17 +2938,15 @@ struct MainView: View {
 
     private func refreshCooldownText() -> String {
         guard lastManualRefreshTimestamp > 0 else {
-            return "You can refresh again in about 12 hours."
+            return "To keep each refresh intentional, the next one will be available 12 hours later. We’re actively developing a subscription option with expanded access. Thank you for your patience."
         }
         let last = Date(timeIntervalSince1970: lastManualRefreshTimestamp)
-        let next = last.addingTimeInterval(12 * 60 * 60)
         let formatter = DateFormatter()
         formatter.locale = .current
         formatter.timeStyle = .short
         formatter.dateStyle = .none
         let lastText = formatter.string(from: last)
-        let nextText = formatter.string(from: next)
-        return "Updated at \(lastText). You can refresh again after \(nextText)."
+        return "Your last rhythm update was at \(lastText). To keep each refresh intentional, the next one will be available 12 hours later. We’re actively developing a subscription option with expanded access. Thank you for your patience."
     }
 
     private func expandMantraIfNeeded() {
