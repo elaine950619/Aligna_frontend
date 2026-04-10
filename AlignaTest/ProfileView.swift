@@ -1243,14 +1243,13 @@ struct ProfileView: View {
     // 主题偏好
     @AppStorage("themePreference") private var themePreferenceRaw: String = ThemePreference.auto.rawValue
     @AppStorage("dailyMantraNotificationEnabled") private var dailyMantraNotificationEnabled: Bool = true
-    @AppStorage("dailyMantraNotificationHour") private var dailyMantraNotificationHour: Int = 9
-    @AppStorage("dailyMantraNotificationMinute") private var dailyMantraNotificationMinute: Int = 0
+    @AppStorage("dailyMantraNotificationHour") private var dailyMantraNotificationHour: Int = 7
+    @AppStorage("dailyMantraNotificationMinute") private var dailyMantraNotificationMinute: Int = 10
     @AppStorage("dailyRhythmUpdateHour") private var dailyRhythmUpdateHour: Int = 7
     @AppStorage("dailyRhythmUpdateMinute") private var dailyRhythmUpdateMinute: Int = 0
     @AppStorage("cachedDailyMantra") private var cachedDailyMantra: String = ""
     @State private var notificationAuthStatus: UNAuthorizationStatus = .notDetermined
     @State private var showNotificationSettingsAlert = false
-    @State private var showNotificationTimeSheet = false
     @State private var showDailyRhythmUpdateSheet = false
     @State private var birthPlaceResults: [PlaceResult] = []
     @State private var didSelectBirthPlaceResult = false
@@ -1355,7 +1354,6 @@ struct ProfileView: View {
                             preferencesCard
                             timelineCard
                             dailyRhythmUpdateCard
-                            notificationCard
                             themeCard
                             aboutCard
                             signOutCard
@@ -1440,9 +1438,6 @@ struct ProfileView: View {
         } message: {
             Text("Allow notifications to receive your daily mantra reminder.")
         }
-        .sheet(isPresented: $showNotificationTimeSheet) {
-            notificationTimeSheet
-        }
         .sheet(isPresented: $showDailyRhythmUpdateSheet) {
             dailyRhythmUpdateSheet
         }
@@ -1492,27 +1487,7 @@ struct ProfileView: View {
                     requestDailyMantraNotifications()
                 } else {
                     dailyMantraNotificationEnabled = false
-                    showNotificationTimeSheet = false
                     MantraNotificationManager.cancelDaily()
-                }
-            }
-        )
-    }
-
-    private var notificationTimeBinding: Binding<Date> {
-        Binding(
-            get: {
-                BirthTimeUtils.makeLocalTimeDate(
-                    hour: dailyMantraNotificationHour,
-                    minute: dailyMantraNotificationMinute
-                )
-            },
-            set: { newValue in
-                let components = BirthTimeUtils.hourMinute(from: newValue)
-                dailyMantraNotificationHour = components.hour
-                dailyMantraNotificationMinute = components.minute
-                if dailyMantraNotificationEnabled {
-                    scheduleDailyMantraNotification()
                 }
             }
         )
@@ -1530,6 +1505,10 @@ struct ProfileView: View {
                 let components = BirthTimeUtils.hourMinute(from: newValue)
                 dailyRhythmUpdateHour = components.hour
                 dailyRhythmUpdateMinute = components.minute
+                syncNotificationTimeToRhythmUpdate()
+                if dailyMantraNotificationEnabled {
+                    scheduleDailyMantraNotification()
+                }
             }
         )
     }
@@ -1553,7 +1532,6 @@ struct ProfileView: View {
                 DispatchQueue.main.async {
                     dailyMantraNotificationEnabled = true
                     notificationAuthStatus = settings.authorizationStatus
-                    showNotificationTimeSheet = true
                     scheduleDailyMantraNotification()
                 }
             case .notDetermined:
@@ -1562,7 +1540,6 @@ struct ProfileView: View {
                         dailyMantraNotificationEnabled = granted
                         updateNotificationAuthStatus()
                         if granted {
-                            showNotificationTimeSheet = true
                             scheduleDailyMantraNotification()
                         } else {
                             showNotificationSettingsAlert = true
@@ -1590,11 +1567,18 @@ struct ProfileView: View {
             cachedDailyMantra = liveMantra
         }
         let mantraText = liveMantra.isEmpty ? cachedDailyMantra : liveMantra
+        syncNotificationTimeToRhythmUpdate()
         MantraNotificationManager.scheduleDaily(
             mantra: mantraText,
             hour: dailyMantraNotificationHour,
             minute: dailyMantraNotificationMinute
         )
+    }
+
+    private func syncNotificationTimeToRhythmUpdate() {
+        let totalMinutes = (dailyRhythmUpdateHour * 60 + dailyRhythmUpdateMinute + 10) % (24 * 60)
+        dailyMantraNotificationHour = totalMinutes / 60
+        dailyMantraNotificationMinute = totalMinutes % 60
     }
 }
 
@@ -1846,69 +1830,53 @@ private extension ProfileView {
 
     private var dailyRhythmUpdateStatusText: String {
         let time = BirthTimeUtils.displayFormatter.string(from: dailyRhythmUpdateTimeBinding.wrappedValue)
-        return "Updates each day at \(time)."
+        return "Daily rhythm begins at \(time)."
     }
 
     var dailyRhythmUpdateCard: some View {
-        Button {
-            showDailyRhythmUpdateSheet = true
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "clock.arrow.circlepath")
-                    .foregroundColor(themeManager.accent)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Daily Rhythm Update")
-                        .font(AlynnaTypography.font(.headline))
-                        .foregroundColor(themeManager.primaryText)
-
-                    Text(dailyRhythmUpdateStatusText)
-                        .font(AlynnaTypography.font(.subheadline))
-                        .foregroundColor(themeManager.descriptionText)
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(themeManager.descriptionText.opacity(0.75))
-            }
-            .padding()
-            .alignaCard()
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var dailyNudgeStatusText: String {
-        if dailyMantraNotificationEnabled {
-            let time = BirthTimeUtils.displayFormatter.string(from: notificationTimeBinding.wrappedValue)
-            return "A daily nudge at \(time)."
-        }
-        return "No daily nudge."
-    }
-
-    var notificationCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                Image(systemName: "bell.badge")
-                    .foregroundColor(themeManager.accent)
+            Button {
+                showDailyRhythmUpdateSheet = true
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .foregroundColor(themeManager.accent)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Notification")
-                        .font(AlynnaTypography.font(.headline))
-                        .foregroundColor(themeManager.primaryText)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Rhythm Update")
+                            .font(AlynnaTypography.font(.headline))
+                            .foregroundColor(themeManager.primaryText)
 
-                    Text(dailyNudgeStatusText)
-                        .font(AlynnaTypography.font(.subheadline))
-                        .foregroundColor(themeManager.descriptionText)
+                        Text(dailyRhythmUpdateStatusText)
+                            .font(AlynnaTypography.font(.subheadline))
+                            .foregroundColor(themeManager.descriptionText)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.75))
                 }
+            }
+            .buttonStyle(.plain)
 
+            HStack(spacing: 8) {
                 Spacer()
+                    .frame(width: 24)
+
+                Text("Send a reminder")
+                    .font(AlynnaTypography.font(.subheadline))
+                    .foregroundColor(themeManager.descriptionText)
 
                 Toggle("", isOn: notificationToggleBinding)
                     .labelsHidden()
                     .toggleStyle(SwitchToggleStyle(tint: themeManager.accent))
                     .frame(maxHeight: .infinity, alignment: .center)
+
+                Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .frame(minHeight: 44, alignment: .center)
@@ -2279,69 +2247,6 @@ private extension ProfileView {
         .padding(.vertical, 4)
     }
 
-    var notificationTimeSheet: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Capsule()
-                .fill(themeManager.descriptionText.opacity(0.35))
-                .frame(width: 42, height: 5)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 8)
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Reminder Time")
-                    .font(AlynnaTypography.font(.title3))
-                    .foregroundColor(themeManager.primaryText)
-                Text("Choose when to receive your daily mantra.")
-                    .font(AlynnaTypography.font(.subheadline))
-                    .foregroundColor(themeManager.descriptionText)
-            }
-
-            DatePicker(
-                "Reminder time",
-                selection: notificationTimeBinding,
-                displayedComponents: .hourAndMinute
-            )
-            .datePickerStyle(.wheel)
-            .labelsHidden()
-            .tint(themeManager.accent)
-            .foregroundStyle(themeManager.primaryText)
-            .colorMultiply(themeManager.primaryText)
-            .environment(\.colorScheme, themeManager.isNight ? .dark : .light)
-            .environment(\.locale, Locale(identifier: "en_US_POSIX"))
-
-            HStack(spacing: 10) {
-                Button(action: {
-                    scheduleDailyMantraNotification()
-                    showNotificationTimeSheet = false
-                }) {
-                    Text("Save")
-                        .font(AlynnaTypography.font(.body))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(themeManager.accent.opacity(0.16))
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                Button(action: {
-                    showNotificationTimeSheet = false
-                }) {
-                    Text("Close")
-                        .font(AlynnaTypography.font(.body))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(themeManager.panelFill)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-            }
-            .foregroundColor(themeManager.accent)
-        }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 20)
-        .preferredColorScheme(themeManager.preferredColorScheme)
-        .presentationDetents([.fraction(0.48), .large])
-        .presentationDragIndicator(.hidden)
-        .presentationBackground(.ultraThinMaterial)
-    }
-
     var dailyRhythmUpdateSheet: some View {
         VStack(alignment: .leading, spacing: 14) {
             Capsule()
@@ -2354,7 +2259,7 @@ private extension ProfileView {
                 Text("Daily Rhythm Update")
                     .font(AlynnaTypography.font(.title3))
                     .foregroundColor(themeManager.primaryText)
-                Text("Choose when a new daily rhythm begins. The default is 7:00 AM.")
+                Text("Choose when a new daily rhythm begins.")
                     .font(AlynnaTypography.font(.subheadline))
                     .foregroundColor(themeManager.descriptionText)
             }

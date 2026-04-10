@@ -234,8 +234,8 @@ struct MainView: View {
     @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
     @AppStorage("didDeleteAccount") private var didDeleteAccount: Bool = false
     @AppStorage("dailyMantraNotificationEnabled") private var dailyMantraNotificationEnabled: Bool = false
-    @AppStorage("dailyMantraNotificationHour") private var dailyMantraNotificationHour: Int = 9
-    @AppStorage("dailyMantraNotificationMinute") private var dailyMantraNotificationMinute: Int = 0
+    @AppStorage("dailyMantraNotificationHour") private var dailyMantraNotificationHour: Int = 7
+    @AppStorage("dailyMantraNotificationMinute") private var dailyMantraNotificationMinute: Int = 10
     @AppStorage("dailyRhythmUpdateHour") private var dailyRhythmUpdateHour: Int = 7
     @AppStorage("dailyRhythmUpdateMinute") private var dailyRhythmUpdateMinute: Int = 0
     @AppStorage("cachedDailyMantra") private var cachedDailyMantra: String = ""
@@ -470,6 +470,17 @@ struct MainView: View {
         formatter.timeZone = .current
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: effectiveDate)
+    }
+
+    private var derivedNotificationTime: (hour: Int, minute: Int) {
+        let totalMinutes = (dailyRhythmUpdateHour * 60 + dailyRhythmUpdateMinute + 10) % (24 * 60)
+        return (totalMinutes / 60, totalMinutes % 60)
+    }
+
+    private func syncNotificationTimeToRhythmUpdate() {
+        let schedule = derivedNotificationTime
+        dailyMantraNotificationHour = schedule.hour
+        dailyMantraNotificationMinute = schedule.minute
     }
 
     private var infoIconButton: some View {
@@ -1826,6 +1837,7 @@ struct MainView: View {
                             if !trimmed.isEmpty {
                                 cachedDailyMantra = trimmed
                                 if dailyMantraNotificationEnabled {
+                                    syncNotificationTimeToRhythmUpdate()
                                     MantraNotificationManager.scheduleDaily(
                                         mantra: trimmed,
                                         hour: dailyMantraNotificationHour,
@@ -1857,6 +1869,7 @@ struct MainView: View {
                     .onChange(of: viewModel.dailyMantra) { _, newValue in
                         cachedDailyMantra = newValue
                         if dailyMantraNotificationEnabled {
+                            syncNotificationTimeToRhythmUpdate()
                             MantraNotificationManager.scheduleDaily(
                                 mantra: newValue,
                                 hour: dailyMantraNotificationHour,
