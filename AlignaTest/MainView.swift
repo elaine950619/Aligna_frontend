@@ -236,6 +236,8 @@ struct MainView: View {
     @AppStorage("dailyMantraNotificationEnabled") private var dailyMantraNotificationEnabled: Bool = false
     @AppStorage("dailyMantraNotificationHour") private var dailyMantraNotificationHour: Int = 9
     @AppStorage("dailyMantraNotificationMinute") private var dailyMantraNotificationMinute: Int = 0
+    @AppStorage("dailyRhythmUpdateHour") private var dailyRhythmUpdateHour: Int = 7
+    @AppStorage("dailyRhythmUpdateMinute") private var dailyRhythmUpdateMinute: Int = 0
     @AppStorage("cachedDailyMantra") private var cachedDailyMantra: String = ""
     @AppStorage("lastRecommendationTimestamp") private var lastRecommendationTimestamp: Double = 0
     @AppStorage("lastRecommendationHasFullSet") private var lastRecommendationHasFullSet: Bool = false
@@ -420,6 +422,56 @@ struct MainView: View {
             : "Generating today’s mantra and rhythm."
     }
 
+    private var hasRefreshedAlignmentToday: Bool {
+        guard lastManualRefreshTimestamp > 0 else { return false }
+        let refreshedDay = effectiveDayString(for: Date(timeIntervalSince1970: lastManualRefreshTimestamp))
+        return refreshedDay == todayString()
+    }
+
+    private var rhythmHeaderSubtitle: String {
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.timeZone = .current
+        formatter.dateFormat = "EEEE, MMMM d"
+
+        let base = formatter.string(from: Date())
+        guard hasRefreshedAlignmentToday || isManualRefreshFlow else { return base }
+
+        let updatedDate = isManualRefreshFlow
+            ? Date()
+            : Date(timeIntervalSince1970: lastManualRefreshTimestamp)
+
+        let timeFormatter = DateFormatter()
+        timeFormatter.locale = .current
+        timeFormatter.timeZone = .current
+        timeFormatter.timeStyle = .short
+        timeFormatter.dateStyle = .none
+
+        return "\(base) (Updated \(timeFormatter.string(from: updatedDate)))"
+    }
+
+    private func effectiveDayString(for date: Date) -> String {
+        var calendar = Calendar.current
+        calendar.timeZone = .current
+
+        let currentComponents = calendar.dateComponents([.hour, .minute], from: date)
+        let currentMinutes = (currentComponents.hour ?? 0) * 60 + (currentComponents.minute ?? 0)
+        let updateMinutes = dailyRhythmUpdateHour * 60 + dailyRhythmUpdateMinute
+
+        let effectiveDate: Date
+        if currentMinutes < updateMinutes {
+            effectiveDate = calendar.date(byAdding: .day, value: -1, to: date) ?? date
+        } else {
+            effectiveDate = date
+        }
+
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: effectiveDate)
+    }
+
     private var infoIconButton: some View {
         Button {
             showReasoningSheet = true
@@ -547,12 +599,20 @@ struct MainView: View {
 
                         }
 
-                        // ✅ 只保留按钮本身（气泡放到全局 overlay）
-                        Text("Daily Rhythm")
-                            .font(.custom("Merriweather-SemiBold", size: 34))
-                            .lineSpacing(AlignaType.logoLineSpacing)
-                            .foregroundColor(themeManager.primaryText)
-                            .padding(.top, 20)
+                        VStack(spacing: 4) {
+                            Text("Today's Rhythm")
+                                .font(.custom("Merriweather-SemiBold", size: 34))
+                                .lineSpacing(AlignaType.logoLineSpacing)
+                                .foregroundColor(themeManager.primaryText)
+
+                            Text(rhythmHeaderSubtitle)
+                                .font(.custom("Merriweather-Bold", size: 12))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.8))
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.85)
+                        }
+                        .padding(.top, 20)
                         .opacity(isMantraExpanded ? 0 : 1)
                         .scaleEffect(isMantraExpanded ? 0.92 : 1)
                         .frame(height: isMantraExpanded ? 0 : nil)
@@ -1381,32 +1441,17 @@ struct MainView: View {
 
     // 原先 startInitialLoad 的主体逻辑移到这里（不修改其内容）
     private func proceedNormalBoot() {
-        
-        startAutoRefetchWatchdog(delay: 8.0)
-        locationManager.requestLocation()
-
         let group = DispatchGroup()
 
         // FIX: 先把生日/时间从用户档案同步到 viewModel
         group.enter()
         hydrateBirthFromProfileIfNeeded { group.leave() }
 
-        group.enter()
-        ensureDailyCurrentPlaceSaved { group.leave() }
-
         let today = todayString()
-        if hasRecentRecommendation {
-            group.enter()
-            loadTodayRecommendation(day: today, source: .cache, allowRemoteFallback: true) { group.leave() }
-        } else {
-            group.enter()
-            beginGenerationFlow()
-            fetchAndSaveRecommendationIfNeeded()
-            waitUntilRecommendationsReady(timeout: 30, softTimeout: 12) { group.leave() }
-        }
+        group.enter()
+        loadTodayRecommendation(day: today, source: .default, allowRemoteFallback: false) { group.leave() }
 
         group.notify(queue: .main) {
-            // (If the doc doesn't exist yet, it'll become available after fetch/save.)
             self.reasoningStore.load(for: Date())
             self.isBootDataReady = true
             attemptBootAdvance()
@@ -1955,8 +2000,26 @@ struct MainView: View {
     
     // 当天字符串
     private func todayString() -> String {
-        let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
-        return df.string(from: Date())
+        let now = Date()
+        var calendar = Calendar.current
+        calendar.timeZone = .current
+
+        let currentComponents = calendar.dateComponents([.hour, .minute], from: now)
+        let currentMinutes = (currentComponents.hour ?? 0) * 60 + (currentComponents.minute ?? 0)
+        let updateMinutes = dailyRhythmUpdateHour * 60 + dailyRhythmUpdateMinute
+
+        let effectiveDate: Date
+        if currentMinutes < updateMinutes {
+            effectiveDate = calendar.date(byAdding: .day, value: -1, to: now) ?? now
+        } else {
+            effectiveDate = now
+        }
+
+        let df = DateFormatter()
+        df.calendar = calendar
+        df.timeZone = .current
+        df.dateFormat = "yyyy-MM-dd"
+        return df.string(from: effectiveDate)
     }
 
     // 当天唯一 DocID：uid_yyyy-MM-dd

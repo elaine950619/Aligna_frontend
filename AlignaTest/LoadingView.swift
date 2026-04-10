@@ -386,7 +386,7 @@ struct LoadingView: View {
     }
 
     private var shouldRunFullLoading: Bool {
-        forceFullLoading || !hasRecentRecommendation
+        forceFullLoading
     }
 
     var body: some View {

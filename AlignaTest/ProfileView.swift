@@ -1245,10 +1245,13 @@ struct ProfileView: View {
     @AppStorage("dailyMantraNotificationEnabled") private var dailyMantraNotificationEnabled: Bool = true
     @AppStorage("dailyMantraNotificationHour") private var dailyMantraNotificationHour: Int = 9
     @AppStorage("dailyMantraNotificationMinute") private var dailyMantraNotificationMinute: Int = 0
+    @AppStorage("dailyRhythmUpdateHour") private var dailyRhythmUpdateHour: Int = 7
+    @AppStorage("dailyRhythmUpdateMinute") private var dailyRhythmUpdateMinute: Int = 0
     @AppStorage("cachedDailyMantra") private var cachedDailyMantra: String = ""
     @State private var notificationAuthStatus: UNAuthorizationStatus = .notDetermined
     @State private var showNotificationSettingsAlert = false
     @State private var showNotificationTimeSheet = false
+    @State private var showDailyRhythmUpdateSheet = false
     @State private var birthPlaceResults: [PlaceResult] = []
     @State private var didSelectBirthPlaceResult = false
     @State private var pendingBirthPlaceCoordinate: CLLocationCoordinate2D?
@@ -1351,6 +1354,7 @@ struct ProfileView: View {
                             personalInfoCard
                             preferencesCard
                             timelineCard
+                            dailyRhythmUpdateCard
                             notificationCard
                             themeCard
                             aboutCard
@@ -1439,6 +1443,9 @@ struct ProfileView: View {
         .sheet(isPresented: $showNotificationTimeSheet) {
             notificationTimeSheet
         }
+        .sheet(isPresented: $showDailyRhythmUpdateSheet) {
+            dailyRhythmUpdateSheet
+        }
         .fullScreenCover(isPresented: $navigateToFrontPage) {
             FrontPageView()
                 .environmentObject(starManager)
@@ -1507,6 +1514,22 @@ struct ProfileView: View {
                 if dailyMantraNotificationEnabled {
                     scheduleDailyMantraNotification()
                 }
+            }
+        )
+    }
+
+    private var dailyRhythmUpdateTimeBinding: Binding<Date> {
+        Binding(
+            get: {
+                BirthTimeUtils.makeLocalTimeDate(
+                    hour: dailyRhythmUpdateHour,
+                    minute: dailyRhythmUpdateMinute
+                )
+            },
+            set: { newValue in
+                let components = BirthTimeUtils.hourMinute(from: newValue)
+                dailyRhythmUpdateHour = components.hour
+                dailyRhythmUpdateMinute = components.minute
             }
         )
     }
@@ -1819,6 +1842,41 @@ private extension ProfileView {
         } label: {
             rowCard(icon: "calendar", title: "Timeline", subtitle: "View your rhythm journey")
         }
+    }
+
+    private var dailyRhythmUpdateStatusText: String {
+        let time = BirthTimeUtils.displayFormatter.string(from: dailyRhythmUpdateTimeBinding.wrappedValue)
+        return "Updates each day at \(time)."
+    }
+
+    var dailyRhythmUpdateCard: some View {
+        Button {
+            showDailyRhythmUpdateSheet = true
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .foregroundColor(themeManager.accent)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Daily Rhythm Update")
+                        .font(AlynnaTypography.font(.headline))
+                        .foregroundColor(themeManager.primaryText)
+
+                    Text(dailyRhythmUpdateStatusText)
+                        .font(AlynnaTypography.font(.subheadline))
+                        .foregroundColor(themeManager.descriptionText)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(themeManager.descriptionText.opacity(0.75))
+            }
+            .padding()
+            .alignaCard()
+        }
+        .buttonStyle(.plain)
     }
 
     private var dailyNudgeStatusText: String {
@@ -2265,6 +2323,68 @@ private extension ProfileView {
                 }
                 Button(action: {
                     showNotificationTimeSheet = false
+                }) {
+                    Text("Close")
+                        .font(AlynnaTypography.font(.body))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(themeManager.panelFill)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+            }
+            .foregroundColor(themeManager.accent)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 20)
+        .preferredColorScheme(themeManager.preferredColorScheme)
+        .presentationDetents([.fraction(0.48), .large])
+        .presentationDragIndicator(.hidden)
+        .presentationBackground(.ultraThinMaterial)
+    }
+
+    var dailyRhythmUpdateSheet: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Capsule()
+                .fill(themeManager.descriptionText.opacity(0.35))
+                .frame(width: 42, height: 5)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 8)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Daily Rhythm Update")
+                    .font(AlynnaTypography.font(.title3))
+                    .foregroundColor(themeManager.primaryText)
+                Text("Choose when a new daily rhythm begins. The default is 7:00 AM.")
+                    .font(AlynnaTypography.font(.subheadline))
+                    .foregroundColor(themeManager.descriptionText)
+            }
+
+            DatePicker(
+                "Update time",
+                selection: dailyRhythmUpdateTimeBinding,
+                displayedComponents: .hourAndMinute
+            )
+            .datePickerStyle(.wheel)
+            .labelsHidden()
+            .tint(themeManager.accent)
+            .foregroundStyle(themeManager.primaryText)
+            .colorMultiply(themeManager.primaryText)
+            .environment(\.colorScheme, themeManager.isNight ? .dark : .light)
+            .environment(\.locale, Locale(identifier: "en_US_POSIX"))
+
+            HStack(spacing: 10) {
+                Button(action: {
+                    showDailyRhythmUpdateSheet = false
+                }) {
+                    Text("Save")
+                        .font(AlynnaTypography.font(.body))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(themeManager.accent.opacity(0.16))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                Button(action: {
+                    showDailyRhythmUpdateSheet = false
                 }) {
                     Text("Close")
                         .font(AlynnaTypography.font(.body))
