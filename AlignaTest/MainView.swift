@@ -429,25 +429,24 @@ struct MainView: View {
     }
 
     private var rhythmHeaderSubtitle: String {
-        let formatter = DateFormatter()
-        formatter.locale = .current
-        formatter.timeZone = .current
-        formatter.dateFormat = "EEEE, MMMM d"
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = .current
+        dateFormatter.timeZone = .current
+        dateFormatter.dateFormat = "EEEE, MMMM d"
 
-        let base = formatter.string(from: Date())
-        guard hasRefreshedAlignmentToday || isManualRefreshFlow else { return base }
+        let dateText = dateFormatter.string(from: Date())
+        let locationText = resolvedWidgetLocation()
+        let updateTimeText = isManualRefreshFlow
+            ? timeText(for: Date())
+            : (lastRecommendationTimeText ?? timeText(for: Date()))
 
-        let updatedDate = isManualRefreshFlow
-            ? Date()
-            : Date(timeIntervalSince1970: lastManualRefreshTimestamp)
+        var segments: [String] = [dateText]
+        if !locationText.isEmpty {
+            segments.append(locationText)
+        }
+        segments.append("Last update: \(updateTimeText)")
 
-        let timeFormatter = DateFormatter()
-        timeFormatter.locale = .current
-        timeFormatter.timeZone = .current
-        timeFormatter.timeStyle = .short
-        timeFormatter.dateStyle = .none
-
-        return "\(base) (Updated \(timeFormatter.string(from: updatedDate)))"
+        return segments.joined(separator: " · ")
     }
 
     private func effectiveDayString(for date: Date) -> String {
@@ -617,8 +616,8 @@ struct MainView: View {
                                 .foregroundColor(themeManager.primaryText)
 
                             Text(rhythmHeaderSubtitle)
-                                .font(.custom("Merriweather-Bold", size: 12))
-                                .foregroundColor(themeManager.descriptionText.opacity(0.8))
+                                .font(.custom("Merriweather-Regular", size: 10))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.52))
                                 .multilineTextAlignment(.center)
                                 .lineLimit(2)
                                 .minimumScaleFactor(0.85)
@@ -655,7 +654,7 @@ struct MainView: View {
                                         .font(AlignaType.homeSubtitle())
                                         .lineSpacing(AlignaType.descLineSpacing)
                                         .multilineTextAlignment(.center)
-                                        .foregroundColor(themeManager.descriptionText)
+                                        .foregroundColor(themeManager.descriptionText.opacity(0.72))
                                         .lineLimit(2)
                                         .truncationMode(.tail)
                                         .padding(.horizontal, geometry.size.width * 0.1)
@@ -860,8 +859,7 @@ struct MainView: View {
             .safeAreaInset(edge: .bottom) {
                 if !isMantraExpanded {
                     (
-                        Text("The daily rhythms above are derived from integrated modeling of Earth observation, climate, air-quality, physiological, and astrological data, ")
-                        + Text("\(updatedOnFooterText).").bold()
+                        Text("The daily rhythms above are derived from integrated modeling of Earth observation, climate, air-quality, physiological, and astrological data.")
                     )
                     .font(.system(size: 10))
                     .multilineTextAlignment(.center)
@@ -1017,7 +1015,8 @@ struct MainView: View {
     private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = .current
-        formatter.setLocalizedDateFormatFromTemplate("MMMd")
+        formatter.timeZone = .current
+        formatter.setLocalizedDateFormatFromTemplate("jmm")
         return formatter
     }()
 
