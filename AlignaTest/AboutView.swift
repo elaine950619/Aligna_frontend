@@ -1,40 +1,77 @@
 import SwiftUI
 
 struct AboutView: View {
-    private var pageBG: Color { Color(.systemBackground) }
-    private var cardBG: Color { Color(.secondarySystemBackground) }
-    private var border: Color { Color.primary.opacity(0.10) }
-    private var titleColor: Color { Color.primary }
-    private var bodyColor: Color { Color.secondary }
+    @EnvironmentObject var themeManager: ThemeManager
+
+    private var cardBG: Color { themeManager.onboardingPanelFill }
+    private var border: Color { themeManager.onboardingPanelStroke }
+    private var titleColor: Color { themeManager.onboardingPrimaryText }
+    private var bodyColor: Color { themeManager.onboardingSecondaryText }
+    private var accentFill: Color { themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.16 : 0.10) }
+    private var versionText: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? version
+        if build == version {
+            return "Version \(version)"
+        }
+        return "Version \(version) (\(build))"
+    }
+
+    private var updatedText: String {
+        guard
+            let executableURL = Bundle.main.executableURL,
+            let attributes = try? FileManager.default.attributesOfItem(atPath: executableURL.path),
+            let modifiedAt = attributes[.modificationDate] as? Date
+        else {
+            return "Updated date unavailable"
+        }
+
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return "Updated \(formatter.string(from: modifiedAt))"
+    }
 
     var body: some View {
         ZStack {
-            pageBG.ignoresSafeArea()
+            AppBackgroundView()
+                .ignoresSafeArea()
 
             ScrollView(showsIndicators: true) {
                 VStack(spacing: 16) {
                     VStack(spacing: 10) {
                         ZStack {
                             Circle()
-                                .fill(cardBG)
-                                .frame(width: 64, height: 64)
+                                .fill(accentFill)
+                                .frame(width: 78, height: 78)
                                 .overlay(
                                     Circle()
                                         .stroke(border, lineWidth: 1)
                                 )
+                                .shadow(color: Color.black.opacity(themeManager.isNight ? 0.18 : 0.10), radius: 18, x: 0, y: 10)
 
-                            Image(systemName: "leaf")
-                                .font(.system(size: 26, weight: .semibold))
-                                .foregroundColor(titleColor)
+                            brandLogo(size: 38)
                         }
                         .padding(.top, 6)
 
-                        Text("About Alynna")
+                        Text("Alynna")
                             .font(AlynnaTypography.font(.title2))
                             .foregroundColor(titleColor)
 
+                        VStack(spacing: 4) {
+                            Text(versionText)
+                                .font(AlynnaTypography.font(.subheadline))
+                                .foregroundColor(bodyColor.opacity(0.88))
+
+                            Text(updatedText)
+                                .font(AlynnaTypography.font(.subheadline))
+                                .foregroundColor(bodyColor.opacity(0.8))
+                        }
+                        .padding(.top, 2)
+
                         Rectangle()
-                            .fill(titleColor.opacity(0.18))
+                            .fill(titleColor.opacity(0.24))
                             .frame(width: 110, height: 1)
                             .padding(.top, 2)
                     }
@@ -50,14 +87,14 @@ struct AboutView: View {
 
                     card {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("Your Energy Companion")
+                            Text("Align Your Inner Rhythm")
                                 .font(AlynnaTypography.font(.headline))
                                 .foregroundColor(titleColor)
 
                             Text("""
-Alynna is an energy companion app that blends astrology with spatial sensing to help you tune your daily flow. By combining your natal chart with your phone's sensors (location, weather, light, and magnetic field), Alynna creates a personalized energy phrase each morning and suggests colors, sounds, and rhythms to match.
+Alynna helps you align your inner rhythm with the world around you, guided by context, not just intuition.
 
-With one gentle cue a day, Alynna helps you reconnect with your body, your space, and your inner balance, making life feel smoother, more attuned, and more aligned in the digital age.
+A personalized rhythm card each day offers a short message with clear, actionable guidance to help you adjust your day.
 """)
                             .font(AlynnaTypography.font(.subheadline))
                             .foregroundColor(bodyColor)
@@ -67,33 +104,74 @@ With one gentle cue a day, Alynna helps you reconnect with your body, your space
 
                     card {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("How Alynna Works")
+                            Text("Eight Areas of Daily Support")
                                 .font(AlynnaTypography.font(.headline))
                                 .foregroundColor(titleColor)
 
                             featureRow(
-                                emoji: "🌟",
-                                title: "Astrology Integration",
-                                desc: "Your natal chart provides the cosmic foundation for personalized insights."
-                            )
-
-                            featureRow(
-                                emoji: "📱",
-                                title: "Spatial Sensing",
-                                desc: "Phone sensors detect location, weather, light, and magnetic field data."
+                                emoji: "📍",
+                                title: "Place",
+                                desc: "Choose or adjust your environment to improve focus, rest, or recovery."
                             )
 
                             featureRow(
                                 emoji: "🎨",
-                                title: "Daily Recommendations",
-                                desc: "Receive personalized suggestions for colors, sounds, and rhythms."
+                                title: "Color",
+                                desc: "Use specific colors to stabilize mood and support attention."
                             )
 
                             featureRow(
-                                emoji: "⚖️",
-                                title: "Inner Balance",
-                                desc: "One gentle daily cue to help you stay aligned with your natural rhythm."
+                                emoji: "🎧",
+                                title: "Sound",
+                                desc: "Reduce distractions and create a calmer mental space."
                             )
+
+                            featureRow(
+                                emoji: "🕯️",
+                                title: "Scent",
+                                desc: "Use scent to reset mood and support transitions, like work to rest."
+                            )
+
+                            featureRow(
+                                emoji: "🚶",
+                                title: "Activity",
+                                desc: "Take actions that match your current energy level, such as focus, slow down, or reset."
+                            )
+
+                            featureRow(
+                                emoji: "🤝",
+                                title: "Relationship",
+                                desc: "Adjust how you engage with others, such as connect, hold space, or set boundaries."
+                            )
+
+                            featureRow(
+                                emoji: "💼",
+                                title: "Career",
+                                desc: "Align your work style with the day, such as deep work, planning, or lighter tasks."
+                            )
+
+                            featureRow(
+                                emoji: "💎",
+                                title: "Gemstone",
+                                desc: "Use symbolic objects as simple anchors for focus and steadiness."
+                            )
+                        }
+                    }
+
+                    card {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("A Gentle Way to Move Through the Day")
+                                .font(AlynnaTypography.font(.headline))
+                                .foregroundColor(titleColor)
+
+                            Text("""
+Alynna is not about prediction or pressure.
+
+It helps you make small, practical adjustments so you can move through the day with more clarity, balance, and ease.
+""")
+                            .font(AlynnaTypography.font(.subheadline))
+                            .foregroundColor(bodyColor)
+                            .lineSpacing(3)
                         }
                     }
 
@@ -125,11 +203,7 @@ Your privacy is paramount. All sensor data is processed locally on your device. 
                     }
 
                     VStack(spacing: 6) {
-                        Text("Alynna Version 1.0")
-                            .font(AlynnaTypography.font(.subheadline))
-                            .foregroundColor(bodyColor.opacity(0.85))
-
-                        Text("© 2024 Alynna. Made with cosmic intention")
+                        Text("© 2026 Alynna. Made with cosmic intention")
                             .font(AlynnaTypography.font(.subheadline))
                             .foregroundColor(bodyColor.opacity(0.75))
                     }
@@ -140,14 +214,15 @@ Your privacy is paramount. All sensor data is processed locally on your device. 
                 .padding(.top, 10)
             }
         }
-        .navigationTitle("About Alynna")
+//        .navigationTitle("About Alynna")
         .navigationBarTitleDisplayMode(.inline)
+        .preferredColorScheme(themeManager.preferredColorScheme)
     }
 
     @ViewBuilder
     private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         content()
-            .padding(16)
+            .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -157,7 +232,7 @@ Your privacy is paramount. All sensor data is processed locally on your device. 
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .stroke(border, lineWidth: 1)
             )
-            .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 6)
+            .shadow(color: Color.black.opacity(themeManager.isNight ? 0.14 : 0.08), radius: 14, x: 0, y: 8)
     }
 
     private func featureRow(emoji: String, title: String, desc: String) -> some View {
@@ -178,6 +253,24 @@ Your privacy is paramount. All sensor data is processed locally on your device. 
             }
 
             Spacer(minLength: 0)
+        }
+    }
+
+    @ViewBuilder
+    private func brandLogo(size: CGFloat) -> some View {
+        if UIImage(named: "alignaSymbol") != nil {
+            Image("alignaSymbol")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: size, height: size)
+                .foregroundColor(titleColor)
+        } else {
+            Image(systemName: "sparkles")
+                .resizable()
+                .scaledToFit()
+                .frame(width: size, height: size)
+                .foregroundColor(titleColor)
         }
     }
 
@@ -202,4 +295,5 @@ Your privacy is paramount. All sensor data is processed locally on your device. 
     NavigationStack {
         AboutView()
     }
+    .environmentObject(ThemeManager())
 }
