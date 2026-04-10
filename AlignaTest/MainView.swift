@@ -440,13 +440,11 @@ struct MainView: View {
             ? timeText(for: Date())
             : (lastRecommendationTimeText ?? timeText(for: Date()))
 
-        var segments: [String] = [dateText]
-        if !locationText.isEmpty {
-            segments.append(locationText)
+        if locationText.isEmpty {
+            return "Last update: \(dateText), \(updateTimeText)"
         }
-        segments.append("Last update: \(updateTimeText)")
 
-        return segments.joined(separator: " · ")
+        return "Last update: \(dateText), \(updateTimeText) at \(locationText)"
     }
 
     private func effectiveDayString(for date: Date) -> String {
