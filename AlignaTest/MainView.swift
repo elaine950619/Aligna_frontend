@@ -233,6 +233,10 @@ private struct FocusedMantraEntry: Codable, Hashable {
     var isDefault: Bool
 }
 
+private struct DailyFocusUsageEntry: Codable, Hashable {
+    var generatedFocuses: [String: Int]
+}
+
 struct MainView: View {
     private enum FocusFormField: Hashable {
         case name
@@ -277,6 +281,7 @@ struct MainView: View {
     @AppStorage("mantraTagSelectionsStorage") private var mantraTagSelectionsStorage: String = ""
     @AppStorage("mantraFocusCacheStorage") private var mantraFocusCacheStorage: String = ""
     @AppStorage("mantraActiveFocusStorage") private var mantraActiveFocusStorage: String = ""
+    @AppStorage("mantraFocusUsageStorage") private var mantraFocusUsageStorage: String = ""
     @State private var isFetchingToday: Bool = false
     
     @State private var isMantraExpanded: Bool = false
@@ -328,10 +333,12 @@ struct MainView: View {
     @State private var newFocusDescription: String = ""
     @State private var focusManagerMessage: String = ""
     @State private var focusManagerMessageIsError = false
+    @State private var focusAlertTitle: String = "Focus Update"
     @State private var focusAlertMessage: String = ""
     @State private var showFocusAlert = false
     @State private var pendingFocusDeletion: MantraFocus? = nil
     @State private var hasLoadedMantraFocuses = false
+    @State private var mantraFocusUsageByDay: [String: DailyFocusUsageEntry] = [:]
     @FocusState private var focusedFocusFormField: FocusFormField?
 
     @AppStorage("watchdogDay") private var watchdogDay: String = ""
@@ -367,6 +374,7 @@ struct MainView: View {
     ]
     private let maxAppliedFocuses = 3
     private let dailyFocusID = "11111111-1111-1111-1111-111111111111"
+    private let maxNonDailyFocusUpdatesPerDay = 2
 
     private var currentFocusSelectionKey: String {
         todayString()
@@ -405,6 +413,10 @@ struct MainView: View {
 
     private var activeFocusName: String {
         activeFocus?.name.lowercased() ?? "daily"
+    }
+
+    private var todayFocusUsage: DailyFocusUsageEntry {
+        mantraFocusUsageByDay[currentFocusSelectionKey] ?? DailyFocusUsageEntry(generatedFocuses: [:])
     }
 
     private var shouldShowCompactFocusBadge: Bool {
@@ -594,6 +606,58 @@ struct MainView: View {
         .opacity(viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.35 : 1)
     }
 
+    private var expandedMantraInfoBadge: some View {
+        infoIconButton
+            .font(.system(size: 13, weight: .semibold))
+            .padding(6)
+            .background(
+                Circle()
+                    .fill(themeManager.panelFill.opacity(themeManager.isNight ? 0.42 : 0.58))
+            )
+            .overlay(
+                Circle()
+                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(themeManager.isNight ? 0.18 : 0.08), radius: 8, x: 0, y: 4)
+            .contentShape(Circle())
+            .accessibilityHint("Shows why this mantra was chosen")
+    }
+
+    private func expandedMantraLastLineRect(for text: String, width: CGFloat) -> CGRect? {
+        let font = UIFont(name: "Merriweather-Bold", size: 23) ?? UIFont.systemFont(ofSize: 23, weight: .bold)
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = .center
+        paragraphStyle.lineBreakMode = .byWordWrapping
+        paragraphStyle.lineSpacing = 12
+
+        let attributed = NSAttributedString(
+            string: text,
+            attributes: [
+                .font: font,
+                .paragraphStyle: paragraphStyle
+            ]
+        )
+
+        let storage = NSTextStorage(attributedString: attributed)
+        let layoutManager = NSLayoutManager()
+        let textContainer = NSTextContainer(size: CGSize(width: width, height: .greatestFiniteMagnitude))
+        textContainer.lineFragmentPadding = 0
+        textContainer.maximumNumberOfLines = 0
+
+        storage.addLayoutManager(layoutManager)
+        layoutManager.addTextContainer(textContainer)
+        layoutManager.ensureLayout(for: textContainer)
+
+        let glyphRange = layoutManager.glyphRange(for: textContainer)
+        var lastLineRect: CGRect?
+
+        layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { _, usedRect, _, _, _ in
+            lastLineRect = usedRect
+        }
+
+        return lastLineRect
+    }
+
     private var generationToastView: some View {
         let isSuccess = generationToastMessage.localizedCaseInsensitiveContains("new")
         let iconName = isSuccess ? "sparkles" : "hourglass"
@@ -613,6 +677,29 @@ struct MainView: View {
         .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 8)
         .transition(.scale.combined(with: .opacity))
         .accessibilityLabel(Text(generationToastMessage))
+    }
+
+    private func focusGuidanceRow(symbol: String, title: String, body: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(themeManager.primaryText.opacity(0.82))
+                .frame(width: 16, alignment: .center)
+                .padding(.top, 1)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.custom("Merriweather-Bold", size: 12))
+                    .foregroundColor(themeManager.primaryText.opacity(0.9))
+
+                Text(body)
+                    .font(.custom("Merriweather-Regular", size: 12))
+                    .foregroundColor(themeManager.descriptionText.opacity(0.72))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
     }
 
     private func normalizedFocusText(_ value: String) -> String {
@@ -662,6 +749,11 @@ struct MainView: View {
             mantraActiveFocusByDay = decoded
         }
 
+        if let data = mantraFocusUsageStorage.data(using: .utf8),
+           let decoded = try? JSONDecoder().decode([String: DailyFocusUsageEntry].self, from: data) {
+            mantraFocusUsageByDay = decoded
+        }
+
         if mantraFocuses.isEmpty {
             mantraFocuses = seededMantraFocuses
         } else {
@@ -702,6 +794,13 @@ struct MainView: View {
             mantraActiveFocusStorage = string
         } else {
             mantraActiveFocusStorage = ""
+        }
+
+        if let data = try? JSONEncoder().encode(mantraFocusUsageByDay),
+           let string = String(data: data, encoding: .utf8) {
+            mantraFocusUsageStorage = string
+        } else {
+            mantraFocusUsageStorage = ""
         }
     }
 
@@ -840,6 +939,34 @@ struct MainView: View {
         focusManagerMessageIsError = false
     }
 
+    private func showFocusAlert(title: String = "Focus Update", message: String) {
+        focusAlertTitle = title
+        focusAlertMessage = message
+        showFocusAlert = true
+    }
+
+    private func nonDailyFocusLimitMessage() -> String {
+        "For now, non-daily focuses can be refreshed up to 2 times per day, and each selected focus can only be updated once per day. If you want to explore more, please choose carefully and come back tomorrow. We’re also working on a subscription plan with more access. Thank you for your patience."
+    }
+
+    private func nonDailyUsageCount(for day: String? = nil) -> Int {
+        let key = day ?? currentFocusSelectionKey
+        return mantraFocusUsageByDay[key]?.generatedFocuses.keys.count ?? 0
+    }
+
+    private func hasGeneratedNonDailyFocusToday(_ focusID: String, day: String? = nil) -> Bool {
+        let key = day ?? currentFocusSelectionKey
+        return (mantraFocusUsageByDay[key]?.generatedFocuses[focusID] ?? 0) > 0
+    }
+
+    private func recordNonDailyFocusGeneration(_ focusID: String, day: String? = nil) {
+        let key = day ?? currentFocusSelectionKey
+        var usage = mantraFocusUsageByDay[key] ?? DailyFocusUsageEntry(generatedFocuses: [:])
+        usage.generatedFocuses[focusID] = 1
+        mantraFocusUsageByDay[key] = usage
+        persistMantraFocuses()
+    }
+
     private func submitNewFocus() {
         createFocus(nameInput: newFocusName, descriptionInput: newFocusDescription)
     }
@@ -866,6 +993,18 @@ struct MainView: View {
         if let entry = focusEntry(for: focusID) {
             applyFocusedEntry(entry, focusID: focusID)
             return
+        }
+
+        if focusID != dailyFocusID {
+            if hasGeneratedNonDailyFocusToday(focusID) {
+                showFocusAlert(title: "Focus Limit Reached", message: nonDailyFocusLimitMessage())
+                return
+            }
+
+            if nonDailyUsageCount() >= maxNonDailyFocusUpdatesPerDay {
+                showFocusAlert(title: "Focus Limit Reached", message: nonDailyFocusLimitMessage())
+                return
+            }
         }
 
         previousActiveFocusIDBeforeFocusRequest = activeFocusID
@@ -1015,8 +1154,7 @@ struct MainView: View {
 
     private func generateFocusedMantra(for focus: MantraFocus) {
         guard focusGenerationTagID == nil || focusGenerationTagID == focus.id.uuidString else {
-            focusAlertMessage = "A focus mantra is already generating. Please wait a moment."
-            showFocusAlert = true
+            showFocusAlert(message: "A focus mantra is already generating. Please wait a moment.")
             return
         }
 
@@ -1054,8 +1192,7 @@ struct MainView: View {
             if let v = viewModel.builtPercent                         { payload["built_percent"]       = v }
 
             guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
-                focusAlertMessage = "Unable to start the focus mantra request right now."
-                showFocusAlert = true
+                showFocusAlert(message: "Unable to start the focus mantra request right now.")
                 completeGenerationIfNeeded(isDefault: true)
                 restorePreviousFocusAfterFailure()
                 return
@@ -1068,8 +1205,7 @@ struct MainView: View {
             do {
                 request.httpBody = try JSONSerialization.data(withJSONObject: payload)
             } catch {
-                focusAlertMessage = "Unable to prepare this focus mantra request."
-                showFocusAlert = true
+                showFocusAlert(message: "Unable to prepare this focus mantra request.")
                 completeGenerationIfNeeded(isDefault: true)
                 restorePreviousFocusAfterFailure()
                 return
@@ -1078,8 +1214,7 @@ struct MainView: View {
             URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error = error {
                     DispatchQueue.main.async {
-                        self.focusAlertMessage = "Could not generate the \(focus.name) mantra: \(error.localizedDescription)"
-                        self.showFocusAlert = true
+                        self.showFocusAlert(message: "Could not generate the \(focus.name) mantra: \(error.localizedDescription)")
                         self.completeGenerationIfNeeded(isDefault: true)
                         self.restorePreviousFocusAfterFailure()
                     }
@@ -1088,8 +1223,7 @@ struct MainView: View {
 
                 guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode), let data = data else {
                     DispatchQueue.main.async {
-                        self.focusAlertMessage = "The \(focus.name) mantra request did not finish successfully."
-                        self.showFocusAlert = true
+                        self.showFocusAlert(message: "The \(focus.name) mantra request did not finish successfully.")
                         self.completeGenerationIfNeeded(isDefault: true)
                         self.restorePreviousFocusAfterFailure()
                     }
@@ -1100,8 +1234,7 @@ struct MainView: View {
                     guard let parsed = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                           let mantra = parsed["mantra"] as? String else {
                         DispatchQueue.main.async {
-                            self.focusAlertMessage = "The \(focus.name) mantra response was incomplete."
-                            self.showFocusAlert = true
+                            self.showFocusAlert(message: "The \(focus.name) mantra response was incomplete.")
                             self.completeGenerationIfNeeded(isDefault: true)
                             self.restorePreviousFocusAfterFailure()
                         }
@@ -1151,6 +1284,7 @@ struct MainView: View {
                     )
 
                     DispatchQueue.main.async {
+                        self.recordNonDailyFocusGeneration(focus.id.uuidString)
                         self.cacheFocusedEntry(entry, for: focus.id.uuidString)
                         self.applyFocusedEntry(entry, focusID: focus.id.uuidString)
                         self.focusGenerationTagID = nil
@@ -1159,8 +1293,7 @@ struct MainView: View {
                     }
                 } catch {
                     DispatchQueue.main.async {
-                        self.focusAlertMessage = "Could not read the \(focus.name) mantra response."
-                        self.showFocusAlert = true
+                        self.showFocusAlert(message: "Could not read the \(focus.name) mantra response.")
                         self.completeGenerationIfNeeded(isDefault: true)
                         self.restorePreviousFocusAfterFailure()
                     }
@@ -1183,8 +1316,7 @@ struct MainView: View {
                 return
             }
             if Date().timeIntervalSince(start) > timeout {
-                focusAlertMessage = "Location is taking too long. Try the \(focus.name) mantra again in a moment."
-                showFocusAlert = true
+                showFocusAlert(message: "Location is taking too long. Try the \(focus.name) mantra again in a moment.")
                 completeGenerationIfNeeded(isDefault: true)
                 restorePreviousFocusAfterFailure()
                 return
@@ -1260,11 +1392,22 @@ struct MainView: View {
             List {
                 Section {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Choose up to 3 life focuses to keep under the mantra.")
-                        Text("Tap a visible focus to regenerate the mantra around that part of life. Each custom focus name can use no more than 2 words.")
+                        Text("How Focuses Work")
+                            .font(.custom("Merriweather-Bold", size: 13))
+                            .foregroundColor(themeManager.primaryText.opacity(0.92))
+                            .padding(.bottom, 2)
+
+                        Text("A focus helps Alynna shape the mantra around a specific part of your life, so the guidance feels more relevant to what you want support with today.")
+                            .font(.custom("Merriweather-Regular", size: 12))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.72))
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        focusGuidanceRow(
+                            symbol: "heart.text.square",
+                            title: "Health note",
+                            body: "If a focus relates to your physical or mental health, treat Alynna as supportive guidance only and continue to follow professional medical advice."
+                        )
                     }
-                    .font(.custom("Merriweather-Regular", size: 12))
-                    .foregroundColor(themeManager.descriptionText.opacity(0.72))
                     .padding(.vertical, 4)
                 }
 
@@ -1407,6 +1550,17 @@ struct MainView: View {
                 Section {
                     if showNewFocusForm {
                         VStack(alignment: .leading, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("Be precise")
+                                    .font(.custom("Merriweather-Bold", size: 12))
+                                    .foregroundColor(themeManager.primaryText.opacity(0.9))
+
+                                Text("For custom focuses, a clear name and precise description help Alynna generate more relevant guidance.")
+                                    .font(.custom("Merriweather-Regular", size: 12))
+                                    .foregroundColor(themeManager.descriptionText.opacity(0.72))
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+
                             TextField("Focus name", text: $newFocusName)
                                 .textInputAutocapitalization(.words)
                                 .autocorrectionDisabled()
@@ -1628,14 +1782,13 @@ struct MainView: View {
 
 
 
-                        Button {
-                            guard isMantraReady else { return }
-                            withAnimation(.easeInOut(duration: 0.45)) {
-                                isMantraExpanded.toggle()
-                            }
-                        } label: {
-                            Group {
-                                if isMantraExpanded {
+                        Group {
+                            if isMantraExpanded {
+                                let textWidth = geometry.size.width * 0.72
+                                let topInset = geometry.size.height * 0.16
+                                let lastLineRect = expandedMantraLastLineRect(for: viewModel.dailyMantra, width: textWidth)
+
+                                ZStack(alignment: .topLeading) {
                                     Text(viewModel.dailyMantra)
                                         .font(AlignaType.expandedMantraBoldItalic())
                                         .lineSpacing(12)
@@ -1644,9 +1797,33 @@ struct MainView: View {
                                             themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
                                         )
                                         .fixedSize(horizontal: false, vertical: true)
-                                        .padding(.horizontal, geometry.size.width * 0.14)
-                                        .padding(.top, geometry.size.height * 0.16)
-                                } else {
+                                        .frame(width: textWidth)
+                                        .padding(.top, topInset)
+                                        .padding(.bottom, 18)
+                                        .frame(maxWidth: .infinity)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            guard isMantraReady else { return }
+                                            withAnimation(.easeInOut(duration: 0.45)) {
+                                                isMantraExpanded.toggle()
+                                            }
+                                        }
+
+                                    if let lastLineRect {
+                                        expandedMantraInfoBadge
+                                            .offset(
+                                                x: (geometry.size.width - textWidth) / 2 + lastLineRect.maxX + 4,
+                                                y: topInset + lastLineRect.maxY - 28
+                                            )
+                                    }
+                                }
+                            } else {
+                                Button {
+                                    guard isMantraReady else { return }
+                                    withAnimation(.easeInOut(duration: 0.45)) {
+                                        isMantraExpanded.toggle()
+                                    }
+                                } label: {
                                     Text(viewModel.dailyMantra)
                                         .font(AlignaType.homeSubtitle())
                                         .lineSpacing(AlignaType.descLineSpacing)
@@ -1655,14 +1832,15 @@ struct MainView: View {
                                         .lineLimit(2)
                                         .truncationMode(.tail)
                                         .padding(.horizontal, geometry.size.width * 0.1)
+                                        .frame(maxWidth: .infinity)
                                 }
+                                .buttonStyle(.plain)
+                                .contentShape(Rectangle())
                             }
-                            .frame(maxWidth: .infinity)
-                            .frame(maxHeight: isMantraExpanded ? .infinity : nil, alignment: isMantraExpanded ? .top : .center)
-                            .opacity(isMantraReady ? 1 : 0)
                         }
-                        .buttonStyle(.plain)
-                        .contentShape(Rectangle())
+                        .frame(maxWidth: .infinity)
+                        .frame(maxHeight: isMantraExpanded ? .infinity : nil, alignment: isMantraExpanded ? .top : .center)
+                        .opacity(isMantraReady ? 1 : 0)
                         .allowsHitTesting(isMantraReady)
                         
                         if isMantraExpanded {
@@ -1690,10 +1868,6 @@ struct MainView: View {
 
                             let actionButtonSize: CGFloat = 32
                             HStack(spacing: 12) {
-                                infoIconButton
-                                    .frame(width: actionButtonSize, height: actionButtonSize)
-                                    .contentShape(Rectangle())
-
                                 Button {
                                     presentMantraShareSheet()
                                 } label: {
@@ -1910,7 +2084,7 @@ struct MainView: View {
                     .environmentObject(themeManager)
                     .environmentObject(viewModel)
             }
-            .alert("Focus Update", isPresented: $showFocusAlert) {
+            .alert(focusAlertTitle, isPresented: $showFocusAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text(focusAlertMessage)

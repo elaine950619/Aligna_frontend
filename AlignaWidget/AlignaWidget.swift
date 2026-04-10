@@ -785,8 +785,15 @@ struct AlynnaSmallWidgetEntryView: View {
                                             .frame(width: minSide * 0.03, height: minSide * 0.03)
                                     }
                                 }
+                                .frame(maxWidth: .infinity)
                                 .padding(.horizontal, minSide * 0.05)
                                 .padding(.vertical, minSide * 0.028)
+                                .background(
+                                    Color.clear
+                                        .contentShape(Rectangle())
+                                        .padding(.horizontal, -minSide * 0.02)
+                                        .padding(.vertical, -minSide * 0.05)
+                                )
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
