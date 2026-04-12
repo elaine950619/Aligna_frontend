@@ -2176,7 +2176,7 @@ struct MainView: View {
                     (
                         Text("The daily rhythms above are derived from integrated modeling of Earth observation, climate, air-quality, physiological, and astrological data.")
                     )
-                    .font(.system(size: 10))
+                    .font(.custom("Merriweather-Regular", size: 10))
                     .multilineTextAlignment(.center)
                     .foregroundColor(themeManager.descriptionText.opacity(0.45))
                     .padding(.horizontal, 24)
