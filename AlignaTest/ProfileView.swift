@@ -1680,32 +1680,26 @@ private extension ProfileView {
                         .font(AlynnaTypography.font(.headline))
                         .foregroundColor(themeManager.primaryText)
 
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("Birth details & places.")
+                    HStack(spacing: 6) {
+                        Text("Tap the lock to reveal the details.")
                             .font(AlynnaTypography.font(.subheadline))
                             .foregroundColor(themeManager.descriptionText)
 
-                        Text("Tap the lock to reveal.")
-                            .font(AlynnaTypography.font(.caption1))
-                            .foregroundColor(themeManager.descriptionText.opacity(0.78))
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.18)) {
+                                isPersonalInfoVisible.toggle()
+                            }
+                        } label: {
+                            Image(systemName: isPersonalInfoVisible ? "lock.open.fill" : "lock.fill")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(themeManager.accent)
+                                .frame(width: 24, height: 24)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(isPersonalInfoVisible ? "Hide personal information" : "Show personal information")
                     }
                 }
-
-                Spacer()
-
-                Button {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        isPersonalInfoVisible.toggle()
-                    }
-                } label: {
-                    Image(systemName: isPersonalInfoVisible ? "lock.open.fill" : "lock.fill")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(themeManager.accent)
-                        .frame(width: 32, height: 32)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(isPersonalInfoVisible ? "Hide personal information" : "Show personal information")
             }
 
             HStack(spacing: 12) {
