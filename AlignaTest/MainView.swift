@@ -626,6 +626,7 @@ struct MainView: View {
             Image(systemName: "info.circle")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(themeManager.primaryText)
+                .opacity(0.8)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Why this mantra")
@@ -744,11 +745,11 @@ struct MainView: View {
         [
             MantraFocus(id: UUID(uuidString: dailyFocusID) ?? UUID(), name: "daily", description: "Your everyday grounding mantra.", createdAt: .distantPast),
             MantraFocus(id: UUID(uuidString: "33333333-3333-3333-3333-333333333333") ?? UUID(), name: "dating", description: "A lens for connection, attraction, and dating energy.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: "22222222-2222-2222-2222-222222222222") ?? UUID(), name: "vacation", description: "Space for rest, travel, and how you want to recharge.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: "77777777-7777-7777-7777-777777777777") ?? UUID(), name: "money", description: "Grounding for finances, stability, and abundance.", createdAt: .distantPast),
             MantraFocus(id: UUID(uuidString: "44444444-4444-4444-4444-444444444444") ?? UUID(), name: "career", description: "Clarity for work, growth, and professional choices.", createdAt: .distantPast),
             MantraFocus(id: UUID(uuidString: "55555555-5555-5555-5555-555555555555") ?? UUID(), name: "friendship", description: "Attention for trust, mutual care, and healthy friendship.", createdAt: .distantPast),
             MantraFocus(id: UUID(uuidString: "66666666-6666-6666-6666-666666666666") ?? UUID(), name: "health", description: "A focus on energy, recovery, and everyday wellbeing.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: "77777777-7777-7777-7777-777777777777") ?? UUID(), name: "money", description: "Grounding for finances, stability, and abundance.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: "22222222-2222-2222-2222-222222222222") ?? UUID(), name: "vacation", description: "Space for rest, travel, and how you want to recharge.", createdAt: .distantPast),
             MantraFocus(id: UUID(uuidString: "88888888-8888-8888-8888-888888888888") ?? UUID(), name: "purpose", description: "A compass for meaning, direction, and what matters most.", createdAt: .distantPast)
         ]
     }
@@ -1902,7 +1903,7 @@ struct MainView: View {
                                         Capsule()
                                             .stroke(Color.white.opacity(0.16), lineWidth: 1)
                                     )
-                                    .offset(x: 18, y: -9)
+                                    .offset(x: 18, y: -13)
                             }
                         }
                         .padding(.top, 20)
