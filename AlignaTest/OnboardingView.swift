@@ -1519,12 +1519,13 @@ struct OnboardingStep3: View {
 
         startLoadingStages()
 
-        let payload: [String: Any] = [
-            "birth_date": birthDateString,
-            "birth_time": birthTimeString,
-            "latitude": lat,
-            "longitude": lng
-        ]
+        let payload = buildRecommendationPayload(
+            viewModel: viewModel,
+            birthDateString: birthDateString,
+            birthTimeString: birthTimeString,
+            latitude: lat,
+            longitude: lng
+        )
 
 
         guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
@@ -2351,12 +2352,13 @@ struct OnboardingFinalStep: View {
         // 这里仍然用你原来传给后端的“字符串时间”，不会影响我们在 Firestore 的存储方案
         startLoadingStages()
 
-        let payload: [String: Any] = [
-            "birth_date": birthDateString,
-            "birth_time": birthTimeString,
-            "latitude": lat,
-            "longitude": lng
-        ]
+        let payload = buildRecommendationPayload(
+            viewModel: viewModel,
+            birthDateString: birthDateString,
+            birthTimeString: birthTimeString,
+            latitude: lat,
+            longitude: lng
+        )
 
 
         guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
@@ -2533,6 +2535,38 @@ struct OnboardingFinalStep: View {
         }.resume()
     }
 
+}
+
+private func buildRecommendationPayload(
+    viewModel: OnboardingViewModel,
+    birthDateString: String,
+    birthTimeString: String,
+    latitude: Double,
+    longitude: Double
+) -> [String: Any] {
+    var payload: [String: Any] = [
+        "birth_date": birthDateString,
+        "birth_time": birthTimeString,
+        "latitude": latitude,
+        "longitude": longitude
+    ]
+
+    let currentPlace = viewModel.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    if !currentPlace.isEmpty                    { payload["current_place"] = currentPlace }
+    if let value = viewModel.weatherCondition   { payload["weather_condition"] = value }
+    if let value = viewModel.temperature        { payload["temperature"] = value }
+    if let value = viewModel.windDirection      { payload["wind_direction"] = value }
+    if let value = viewModel.windSpeed          { payload["wind_speed"] = value }
+    if let value = viewModel.humidity           { payload["humidity"] = value }
+    if let value = viewModel.pressure           { payload["pressure"] = value }
+    if let value = viewModel.airQualityAQI      { payload["air_quality_aqi"] = value }
+    if let value = viewModel.airQualityPM25     { payload["air_quality_pm2_5"] = value }
+    if let value = viewModel.waterPercent       { payload["water_percent"] = value }
+    if let value = viewModel.greenPercent       { payload["green_percent"] = value }
+    if let value = viewModel.builtPercent       { payload["built_percent"] = value }
+
+    return payload
 }
 
 private struct PostOnboardingLoadingFlow: View {
