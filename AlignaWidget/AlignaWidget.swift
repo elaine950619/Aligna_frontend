@@ -561,9 +561,10 @@ struct AlynnaWidgetEntryView: View {
 
                         Button(intent: ToggleMediumRecommendationFaceIntent()) {
                             ViewThatFits(in: .vertical) {
-                                mantraText(displayMantra, size: minSide * 0.143)
-                                mantraText(displayMantra, size: minSide * 0.135)
-                                mantraText(displayMantra, size: minSide * 0.127)
+                                mantraText(displayMantra, size: minSide * 0.128)
+                                mantraText(displayMantra, size: minSide * 0.12)
+                                mantraText(displayMantra, size: minSide * 0.112)
+                                mantraText(displayMantra, size: minSide * 0.104)
                             }
                         }
                         .buttonStyle(.plain)
@@ -827,9 +828,9 @@ private func mantraText(_ text: String, size: CGFloat) -> some View {
     Text(text)
         .font(.custom("CormorantGaramond-SemiBold", size: size))
         .multilineTextAlignment(.leading)
-        .lineLimit(3)
-        .minimumScaleFactor(0.8)
-        .lineSpacing(size * 0.085)
+        .lineLimit(4)
+        .minimumScaleFactor(0.72)
+        .lineSpacing(size * 0.06)
         .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
 }
 
