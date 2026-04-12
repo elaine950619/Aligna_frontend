@@ -734,75 +734,79 @@ struct AlynnaSmallWidgetEntryView: View {
                     }
                     .buttonStyle(.plain)
                 } else {
-                    Button(intent: ToggleSmallRecommendationFaceIntent(baseCategory: entry.baseCategory)) {
-                        VStack(spacing: 0) {
-                            Text("Today's \(content.categoryLabel)")
-                                .font(.custom("Merriweather-Bold", size: minSide * 0.072))
-                                .foregroundStyle(topLabelText)
-                                .lineLimit(1)
-                                .padding(.top, minSide * 0.08)
-                                .padding(.horizontal, minSide * 0.06)
+                    let topInset = minSide * 0.075
+                    let titleTopGap = minSide * 0.014
+                    let dotsTopGap = minSide * 0.008
+                    let dotsBottomInset = minSide * 0.02
+                    let visualScale = minSide * 0.98
 
-                            Spacer(minLength: minSide * 0.015)
+                    VStack(spacing: 0) {
+                        Text("Today's \(content.categoryLabel)")
+                            .font(.custom("Merriweather-Bold", size: minSide * 0.072))
+                            .foregroundStyle(topLabelText)
+                            .lineLimit(1)
+                            .padding(.top, topInset)
+                            .padding(.horizontal, minSide * 0.06)
 
+                        Spacer(minLength: minSide * 0.008)
+
+                        Button(intent: ToggleSmallRecommendationFaceIntent(baseCategory: entry.baseCategory)) {
                             ZStack {
                                 if content.usesColorSwatch {
                                     Circle()
                                         .fill(Color(hex: resolvedBackgroundHex))
-                                        .padding(minSide * 0.04)
+                                        .padding(minSide * 0.025)
                                         .overlay(
                                             Circle()
                                                 .stroke(Color.white.opacity(0.42), lineWidth: 1)
-                                                .padding(minSide * 0.04)
+                                                .padding(minSide * 0.025)
                                         )
                                 } else if let imageName = content.imageName, !imageName.isEmpty {
                                     WidgetAssetImage(name: imageName)
                                         .foregroundColor(primaryText)
-                                        .padding(minSide * 0.04)
+                                        .padding(minSide * 0.02)
                                 } else if let symbolName = content.symbolName {
                                     Image(systemName: symbolName)
-                                        .font(.system(size: minSide * 0.9, weight: .semibold))
+                                        .font(.system(size: visualScale, weight: .semibold))
                                         .foregroundStyle(primaryText)
                                 }
                             }
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .padding(.horizontal, minSide * 0.01)
-
-                            Spacer(minLength: minSide * 0.012)
-
-                            Text(title)
-                                .font(.custom("Merriweather-Black", size: minSide * 0.096))
-                                .foregroundStyle(bottomTitleText)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.72)
-                                .shadow(color: Color.black.opacity(usesDarkText ? 0.08 : 0.22), radius: 2, x: 0, y: 1)
-
-                            Button(intent: CycleSmallRecommendationCategoryIntent(currentCategory: entry.category, baseCategory: entry.baseCategory)) {
-                                VStack(spacing: minSide * 0.018) {
-                                    HStack(spacing: minSide * 0.018) {
-                                        ForEach(0..<4, id: \.self) { index in
-                                            Circle()
-                                                .fill(index == activeDotIndex ? bottomTitleText : topLabelText.opacity(0.38))
-                                                .frame(width: minSide * 0.03, height: minSide * 0.03)
-                                        }
-                                    }
-
-                                    Spacer(minLength: 0)
-                                }
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                                .padding(.horizontal, minSide * 0.05)
-                                .padding(.top, minSide * 0.028)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                             .contentShape(Rectangle())
-                            .padding(.top, minSide * 0.06)
                         }
+                        .buttonStyle(.plain)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .contentShape(Rectangle())
+
+                        Button(intent: CycleSmallRecommendationCategoryIntent(currentCategory: entry.category, baseCategory: entry.baseCategory)) {
+                            VStack(spacing: 0) {
+                                Text(title)
+                                    .font(.custom("Merriweather-Black", size: minSide * 0.096))
+                                    .foregroundStyle(bottomTitleText)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.72)
+                                    .shadow(color: Color.black.opacity(usesDarkText ? 0.08 : 0.22), radius: 2, x: 0, y: 1)
+
+                                HStack(spacing: minSide * 0.018) {
+                                    ForEach(0..<4, id: \.self) { index in
+                                        Circle()
+                                            .fill(index == activeDotIndex ? bottomTitleText : topLabelText.opacity(0.38))
+                                            .frame(width: minSide * 0.03, height: minSide * 0.03)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.top, dotsTopGap)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .bottom)
+                            .padding(.horizontal, minSide * 0.05)
+                            .padding(.top, titleTopGap)
+                            .padding(.bottom, dotsBottomInset)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
