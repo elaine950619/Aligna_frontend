@@ -1256,6 +1256,7 @@ struct ProfileView: View {
     @State private var birthPlaceResults: [PlaceResult] = []
     @State private var didSelectBirthPlaceResult = false
     @State private var pendingBirthPlaceCoordinate: CLLocationCoordinate2D?
+    @State private var isPersonalInfoVisible = false
 
     // Busy & Error
     @State private var isBusy = false
@@ -1679,16 +1680,38 @@ private extension ProfileView {
                         .font(AlynnaTypography.font(.headline))
                         .foregroundColor(themeManager.primaryText)
 
-                    Text("Birth details & places.")
-                        .font(AlynnaTypography.font(.subheadline))
-                        .foregroundColor(themeManager.descriptionText)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Birth details & places.")
+                            .font(AlynnaTypography.font(.subheadline))
+                            .foregroundColor(themeManager.descriptionText)
+
+                        Text("Tap the lock to reveal.")
+                            .font(AlynnaTypography.font(.caption1))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.78))
+                    }
                 }
+
+                Spacer()
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        isPersonalInfoVisible.toggle()
+                    }
+                } label: {
+                    Image(systemName: isPersonalInfoVisible ? "lock.open.fill" : "lock.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(themeManager.accent)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(isPersonalInfoVisible ? "Hide personal information" : "Show personal information")
             }
 
             HStack(spacing: 12) {
                 infoRow(
                     title: "Birthday",
-                    value: hasLoadedProfileData ? Self.birthDateDisplayFormatter.string(from: birthday) : "—",
+                    value: hasLoadedProfileData ? (isPersonalInfoVisible ? Self.birthDateDisplayFormatter.string(from: birthday) : personalInfoMaskText) : "—",
                     editable: hasLoadedProfileData
                 ) {
                     guard hasLoadedProfileData else { return }
@@ -1716,7 +1739,7 @@ private extension ProfileView {
 
                 infoRow(
                     title: "Birth Time",
-                    value: hasLoadedProfileData ? BirthTimeUtils.displayFormatter.string(from: birthTime).lowercased() : "—",
+                    value: hasLoadedProfileData ? (isPersonalInfoVisible ? BirthTimeUtils.displayFormatter.string(from: birthTime).lowercased() : personalInfoMaskText) : "—",
                     editable: hasLoadedProfileData
                 ) {
                     guard hasLoadedProfileData else { return }
@@ -1752,7 +1775,7 @@ private extension ProfileView {
 
                 infoRowWithTrailingButton(
                     title: "Current Place",
-                    value: currentPlace.isEmpty ? "—" : currentPlace,
+                    value: currentPlace.isEmpty ? "—" : (isPersonalInfoVisible ? currentPlace : personalInfoMaskText),
                     systemImage: "arrow.clockwise",
                     onTap: { refreshCurrentPlace() }
                 )
@@ -1762,7 +1785,7 @@ private extension ProfileView {
             HStack(spacing: 12) {
                 infoRow(
                     title: "Gender",
-                    value: gender.isEmpty ? "—" : gender,
+                    value: gender.isEmpty ? "—" : (isPersonalInfoVisible ? gender : personalInfoMaskText),
                     editable: hasLoadedProfileData
                 ) {
                     guard hasLoadedProfileData else { return }
@@ -1793,7 +1816,7 @@ private extension ProfileView {
 
                 infoRow(
                     title: "Relationship",
-                    value: relationshipStatus.isEmpty ? "—" : relationshipStatus,
+                    value: relationshipStatus.isEmpty ? "—" : (isPersonalInfoVisible ? relationshipStatus : personalInfoMaskText),
                     editable: hasLoadedProfileData
                 ) {
                     guard hasLoadedProfileData else { return }
@@ -1859,6 +1882,10 @@ private extension ProfileView {
     private var dailyRhythmUpdateStatusText: String {
         let time = BirthTimeUtils.displayFormatter.string(from: dailyRhythmUpdateTimeBinding.wrappedValue)
         return "Daily rhythm begins at \(time)."
+    }
+
+    private var personalInfoMaskText: String {
+        "********"
     }
 
     private var locationInfoDialogMessage: String {
@@ -2624,7 +2651,7 @@ private extension ProfileView {
             if birthPlace.isEmpty {
                 LoadingDots(color: themeManager.primaryText.opacity(0.7))
             } else {
-                Text(birthPlace)
+                Text(isPersonalInfoVisible ? birthPlace : personalInfoMaskText)
                     .font(AlynnaTypography.font(.callout))
                     .foregroundColor(themeManager.primaryText)
             }
