@@ -1299,10 +1299,6 @@ struct MainView: View {
             if let v = viewModel.waterPercent                         { payload["water_percent"]       = v }
             if let v = viewModel.greenPercent                         { payload["green_percent"]       = v }
             if let v = viewModel.builtPercent                         { payload["built_percent"]       = v }
-            if let v = viewModel.geomagneticDeclinationDeg            { payload["geomagnetic_declination_deg"] = v }
-            if let v = viewModel.geomagneticDeclinationSvDegPerYear   { payload["geomagnetic_declination_sv_deg_per_year"] = v }
-            if let v = viewModel.geomagneticDeclinationUncertaintyDeg { payload["geomagnetic_declination_uncertainty_deg"] = v }
-            if let v = viewModel.geomagneticElevationKm               { payload["geomagnetic_elevation_km"] = v }
 
             guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
                 showFocusAlert(message: "Unable to start the focus mantra request right now.")
@@ -3595,10 +3591,6 @@ struct MainView: View {
         if let v = viewModel.waterPercent                         { payload["water_percent"]       = v }
         if let v = viewModel.greenPercent                         { payload["green_percent"]       = v }
         if let v = viewModel.builtPercent                         { payload["built_percent"]       = v }
-        if let v = viewModel.geomagneticDeclinationDeg            { payload["geomagnetic_declination_deg"] = v }
-        if let v = viewModel.geomagneticDeclinationSvDegPerYear   { payload["geomagnetic_declination_sv_deg_per_year"] = v }
-        if let v = viewModel.geomagneticDeclinationUncertaintyDeg { payload["geomagnetic_declination_uncertainty_deg"] = v }
-        if let v = viewModel.geomagneticElevationKm               { payload["geomagnetic_elevation_km"] = v }
 
         print("[PayloadOut] place_signals → current_place=\(viewModel.currentPlace) condition=\(viewModel.weatherCondition ?? "nil") temp=\(viewModel.temperature.map { String($0) } ?? "nil") wind=\(viewModel.windDirection ?? "nil")@\(viewModel.windSpeed.map { String($0) } ?? "nil") humidity=\(viewModel.humidity.map { String($0) } ?? "nil") pressure=\(viewModel.pressure.map { String($0) } ?? "nil")")
 

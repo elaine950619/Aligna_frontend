@@ -42,10 +42,6 @@ class OnboardingViewModel: ObservableObject {
     @Published var waterPercent: Double? = nil
     @Published var greenPercent: Double? = nil
     @Published var builtPercent: Double? = nil
-    @Published var geomagneticDeclinationDeg: Double? = nil
-    @Published var geomagneticDeclinationSvDegPerYear: Double? = nil
-    @Published var geomagneticDeclinationUncertaintyDeg: Double? = nil
-    @Published var geomagneticElevationKm: Double? = nil
 }
 
 
@@ -1523,25 +1519,13 @@ struct OnboardingStep3: View {
 
         startLoadingStages()
 
-        var payload: [String: Any] = [
+        let payload: [String: Any] = [
             "birth_date": birthDateString,
             "birth_time": birthTimeString,
             "latitude": lat,
             "longitude": lng
         ]
 
-        if let v = viewModel.geomagneticDeclinationDeg {
-            payload["geomagnetic_declination_deg"] = v
-        }
-        if let v = viewModel.geomagneticDeclinationSvDegPerYear {
-            payload["geomagnetic_declination_sv_deg_per_year"] = v
-        }
-        if let v = viewModel.geomagneticDeclinationUncertaintyDeg {
-            payload["geomagnetic_declination_uncertainty_deg"] = v
-        }
-        if let v = viewModel.geomagneticElevationKm {
-            payload["geomagnetic_elevation_km"] = v
-        }
 
         guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
             print("❌ 无效的 FastAPI URL")
@@ -1797,7 +1781,6 @@ import Combine
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     @Published var currentLocation: CLLocationCoordinate2D?
-    @Published var currentAltitudeMeters: Double?
     @Published var locationStatus: CLAuthorizationStatus?
 
     var authorizationStatus: CLAuthorizationStatus {
@@ -1831,7 +1814,6 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         guard let last = locations.last else { return }
         DispatchQueue.main.async {
             self.currentLocation = last.coordinate
-            self.currentAltitudeMeters = last.altitude
         }
     }
 
@@ -2369,25 +2351,13 @@ struct OnboardingFinalStep: View {
         // 这里仍然用你原来传给后端的“字符串时间”，不会影响我们在 Firestore 的存储方案
         startLoadingStages()
 
-        var payload: [String: Any] = [
+        let payload: [String: Any] = [
             "birth_date": birthDateString,
             "birth_time": birthTimeString,
             "latitude": lat,
             "longitude": lng
         ]
 
-        if let v = viewModel.geomagneticDeclinationDeg {
-            payload["geomagnetic_declination_deg"] = v
-        }
-        if let v = viewModel.geomagneticDeclinationSvDegPerYear {
-            payload["geomagnetic_declination_sv_deg_per_year"] = v
-        }
-        if let v = viewModel.geomagneticDeclinationUncertaintyDeg {
-            payload["geomagnetic_declination_uncertainty_deg"] = v
-        }
-        if let v = viewModel.geomagneticElevationKm {
-            payload["geomagnetic_elevation_km"] = v
-        }
 
         guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
             print("❌ 无效的 FastAPI URL")
