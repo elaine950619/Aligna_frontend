@@ -387,6 +387,13 @@ struct MainView: View {
     ]
     private let maxAppliedFocuses = 3
     private let dailyFocusID = "11111111-1111-1111-1111-111111111111"
+    private let fertilityFocusID = "22222222-2222-2222-2222-222222222222"
+    private let connectionFocusID = "33333333-3333-3333-3333-333333333333"
+    private let transitionFocusID = "44444444-4444-4444-4444-444444444444"
+    private let caregivingFocusID = "55555555-5555-5555-5555-555555555555"
+    private let recoveryFocusID = "66666666-6666-6666-6666-666666666666"
+    private let clarityFocusID = "77777777-7777-7777-7777-777777777777"
+    private let griefFocusID = "88888888-8888-8888-8888-888888888888"
     private let maxNonDailyFocusUpdatesPerDay = 2
 
     private var currentFocusSelectionKey: String {
@@ -426,6 +433,20 @@ struct MainView: View {
 
     private var activeFocusName: String {
         activeFocus?.name.lowercased() ?? "daily"
+    }
+
+    private var normalizedGender: String {
+        viewModel.gender.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private var normalizedRelationshipStatus: String {
+        viewModel.relationshipStatus.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private var userAge: Int? {
+        let years = Calendar.current.dateComponents([.year], from: viewModel.birth_date, to: Date()).year
+        guard let years, years > 0 else { return nil }
+        return years
     }
 
     private var todayFocusUsage: DailyFocusUsageEntry {
@@ -744,18 +765,95 @@ struct MainView: View {
     private var seededMantraFocuses: [MantraFocus] {
         [
             MantraFocus(id: UUID(uuidString: dailyFocusID) ?? UUID(), name: "daily", description: "Your everyday grounding mantra.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: "33333333-3333-3333-3333-333333333333") ?? UUID(), name: "dating", description: "A lens for connection, attraction, and dating energy.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: "77777777-7777-7777-7777-777777777777") ?? UUID(), name: "money", description: "Grounding for finances, stability, and abundance.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: "44444444-4444-4444-4444-444444444444") ?? UUID(), name: "career", description: "Clarity for work, growth, and professional choices.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: "55555555-5555-5555-5555-555555555555") ?? UUID(), name: "friendship", description: "Attention for trust, mutual care, and healthy friendship.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: "66666666-6666-6666-6666-666666666666") ?? UUID(), name: "health", description: "A focus on energy, recovery, and everyday wellbeing.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: "22222222-2222-2222-2222-222222222222") ?? UUID(), name: "vacation", description: "Space for rest, travel, and how you want to recharge.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: "88888888-8888-8888-8888-888888888888") ?? UUID(), name: "purpose", description: "A compass for meaning, direction, and what matters most.", createdAt: .distantPast)
+            MantraFocus(id: UUID(uuidString: fertilityFocusID) ?? UUID(), name: "fertility", description: "Attention for conception, hormones, and family-building hopes.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: connectionFocusID) ?? UUID(), name: "connection", description: "A lens for intimacy, partnership, and emotional closeness.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: transitionFocusID) ?? UUID(), name: "transition", description: "Support for change, uncertainty, and a life in motion.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: caregivingFocusID) ?? UUID(), name: "caregiving", description: "Grounding while supporting someone who depends on you.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: recoveryFocusID) ?? UUID(), name: "recovery", description: "Space for repair, steadiness, and rebuilding your energy.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: clarityFocusID) ?? UUID(), name: "clarity", description: "Perspective for decisions, priorities, and what matters now.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: griefFocusID) ?? UUID(), name: "grief", description: "Holding space for loss, remembrance, and emotional tenderness.", createdAt: .distantPast)
         ]
     }
 
     private var seededFocusIDs: Set<String> {
         Set(seededMantraFocuses.map { $0.id.uuidString })
+    }
+
+    private var seededFocusesByID: [String: MantraFocus] {
+        Dictionary(uniqueKeysWithValues: seededMantraFocuses.map { ($0.id.uuidString, $0) })
+    }
+
+    private var recommendedDefaultFocusIDs: [String] {
+        var prioritized: [String] = []
+
+        let isFemale = normalizedGender == "female"
+        let isMale = normalizedGender == "male"
+        let isSingle = normalizedRelationshipStatus == "single"
+        let isPartnered = normalizedRelationshipStatus == "in a relationship"
+        let isOtherRelationship = normalizedRelationshipStatus == "other"
+        let age = userAge ?? 0
+
+        if isFemale && isPartnered && (25...42).contains(age) {
+            prioritized.append(fertilityFocusID)
+        }
+
+        if isPartnered {
+            prioritized.append(connectionFocusID)
+        }
+
+        if age >= 45 {
+            prioritized.append(caregivingFocusID)
+            prioritized.append(recoveryFocusID)
+        } else if age >= 32 {
+            prioritized.append(recoveryFocusID)
+        }
+
+        if isSingle {
+            prioritized.append(clarityFocusID)
+            prioritized.append(transitionFocusID)
+        }
+
+        if isOtherRelationship {
+            prioritized.append(transitionFocusID)
+            prioritized.append(recoveryFocusID)
+        }
+
+        if isMale {
+            prioritized.append(clarityFocusID)
+        }
+
+        prioritized.append(contentsOf: [
+            recoveryFocusID,
+            clarityFocusID,
+            transitionFocusID,
+            connectionFocusID,
+            caregivingFocusID,
+            griefFocusID,
+            fertilityFocusID
+        ])
+
+        var uniqueIDs: [String] = [dailyFocusID]
+        for id in prioritized where !uniqueIDs.contains(id) {
+            uniqueIDs.append(id)
+            if uniqueIDs.count == maxAppliedFocuses {
+                break
+            }
+        }
+        return uniqueIDs
+    }
+
+    private func syncSeededFocusDefinitions() {
+        guard !mantraFocuses.isEmpty else { return }
+
+        mantraFocuses = mantraFocuses.map { existing in
+            guard let seeded = seededFocusesByID[existing.id.uuidString] else { return existing }
+            return MantraFocus(
+                id: existing.id,
+                name: seeded.name,
+                description: seeded.description,
+                createdAt: existing.createdAt
+            )
+        }
     }
 
     private func loadMantraFocusesIfNeeded() {
@@ -790,6 +888,7 @@ struct MainView: View {
         if mantraFocuses.isEmpty {
             mantraFocuses = seededMantraFocuses
         } else {
+            syncSeededFocusDefinitions()
             for seededFocus in seededMantraFocuses where !mantraFocuses.contains(where: { $0.name.caseInsensitiveCompare(seededFocus.name) == .orderedSame }) {
                 mantraFocuses.append(seededFocus)
             }
@@ -839,16 +938,24 @@ struct MainView: View {
 
     private func ensureDefaultFocusSetupForToday() {
         let day = currentFocusSelectionKey
-        let defaultIDs = seededMantraFocuses.prefix(3).map { $0.id.uuidString }
+        let defaultIDs = recommendedDefaultFocusIDs
         let existing = mantraFocusSelections[day] ?? []
         if existing.isEmpty {
             mantraFocusSelections[day] = defaultIDs
         } else {
             var merged = existing.filter { mantraFocusLookup[$0] != nil }
-            let oldParentingID = "22222222-2222-2222-2222-222222222222"
-            let datingID = "33333333-3333-3333-3333-333333333333"
-            let oldDefaultSet = [dailyFocusID, oldParentingID, datingID]
-            if merged == oldDefaultSet {
+            let legacyDefaultSets = [
+                [dailyFocusID, fertilityFocusID, connectionFocusID],
+                [dailyFocusID, connectionFocusID, clarityFocusID],
+                [dailyFocusID, fertilityFocusID, clarityFocusID]
+            ]
+            let legacyFocusNames = Set(["dating", "money", "career", "friendship", "health", "vacation", "purpose"])
+            let isLegacyNameSet = merged.count == maxAppliedFocuses && merged.allSatisfy { focusID in
+                guard let focus = mantraFocusLookup[focusID] else { return false }
+                return legacyFocusNames.contains(focus.name.lowercased())
+            }
+
+            if legacyDefaultSets.contains(merged) || isLegacyNameSet {
                 merged = defaultIDs
             }
             if !merged.contains(dailyFocusID) {
