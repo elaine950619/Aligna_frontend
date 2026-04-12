@@ -416,7 +416,7 @@ struct LoadingView: View {
                     Spacer()
                     if let footer = footerText {
                         Text(footer)
-                            .font(.custom("Merriweather-Bold", size: 10))
+                            .font(.custom("Merriweather-Regular", size: 10))
                             .foregroundColor(themeManager.descriptionText.opacity(0.7))
                             .padding(.bottom, 12)
                     }
@@ -1184,6 +1184,8 @@ struct LoadingView: View {
             DispatchQueue.main.async {
                 airQualityText = combined
                 widgetAirQualityText = readable
+                viewModel.airQualityAQI = aqiValue
+                viewModel.airQualityPM25 = pmValue
             }
         }.resume()
     }

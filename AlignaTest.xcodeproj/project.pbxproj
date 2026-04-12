@@ -18,12 +18,6 @@
 		54C65BCB2E6E22D100A41F9A /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 54C65BCA2E6E22D100A41F9A /* FirebaseFirestore */; };
 		54C65BCE2E6E230500A41F9A /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 54C65BCD2E6E230500A41F9A /* GoogleSignIn */; };
 		54C65BD02E6E230500A41F9A /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 54C65BCF2E6E230500A41F9A /* GoogleSignInSwift */; };
-		54DE58DB2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DA2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf */; };
-		54DE58DD2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DA2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf */; };
-		54DE58E22DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DE2DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf */; };
-		54DE58E32DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */; };
-		54DE58E42DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DE2DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf */; };
-		54DE58E52DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */; };
 		6E3988C92F64F01B00A8E2A1 /* Merriweather-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F352F219F1900E620E2 /* Merriweather-LightItalic.ttf */; };
 		6E3988CA2F64F01B00A8E2A1 /* CormorantGaramond-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23EF92F2199B300E620E2 /* CormorantGaramond-Bold.ttf */; };
 		6E3988CB2F64F01B00A8E2A1 /* Merriweather-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F442F21A19200E620E2 /* Merriweather-Light.ttf */; };
@@ -45,41 +39,17 @@
 		B966DC9A2F2BE69A00051926 /* FirebaseAnalyticsIdentitySupport in Frameworks */ = {isa = PBXBuildFile; productRef = B966DC992F2BE69A00051926 /* FirebaseAnalyticsIdentitySupport */; };
 		B966DC9C2F2BE93700051926 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = B966DC9B2F2BE93700051926 /* FirebaseStorage */; };
 		B974A4042F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B974A4032F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf */; };
-		B974A4052F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B974A4032F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf */; };
-		B974A4062F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B974A4032F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf */; };
-		B974A4092F351C0000AE4F1C /* Merriweather-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B974A4082F351C0000AE4F1C /* Merriweather-Bold.ttf */; };
 		B974A40A2F351C0000AE4F1C /* Merriweather-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B974A4082F351C0000AE4F1C /* Merriweather-Bold.ttf */; };
-		B974A40B2F351C0000AE4F1C /* Merriweather-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B974A4082F351C0000AE4F1C /* Merriweather-Bold.ttf */; };
-		B9B23EF62F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23EF42F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf */; };
-		B9B23EF72F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23EF42F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf */; };
 		B9B23EF82F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23EF42F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf */; };
-		B9B23EFB2F2199B300E620E2 /* CormorantGaramond-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23EF92F2199B300E620E2 /* CormorantGaramond-Bold.ttf */; };
 		B9B23EFC2F2199B300E620E2 /* CormorantGaramond-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23EF92F2199B300E620E2 /* CormorantGaramond-Bold.ttf */; };
-		B9B23EFD2F2199B300E620E2 /* CormorantGaramond-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23EF92F2199B300E620E2 /* CormorantGaramond-Bold.ttf */; };
-		B9B23F042F2199CC00E620E2 /* Gloock-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F032F2199CC00E620E2 /* Gloock-Regular.ttf */; };
 		B9B23F052F2199CC00E620E2 /* Gloock-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F032F2199CC00E620E2 /* Gloock-Regular.ttf */; };
-		B9B23F062F2199CC00E620E2 /* Gloock-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F032F2199CC00E620E2 /* Gloock-Regular.ttf */; };
 		B9B23F222F219E8A00E620E2 /* Merriweather-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F212F219E8A00E620E2 /* Merriweather-Italic.ttf */; };
-		B9B23F232F219E8A00E620E2 /* Merriweather-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F212F219E8A00E620E2 /* Merriweather-Italic.ttf */; };
-		B9B23F252F219E8A00E620E2 /* Merriweather-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F212F219E8A00E620E2 /* Merriweather-Italic.ttf */; };
 		B9B23F282F219E9A00E620E2 /* Merriweather-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F262F219E9A00E620E2 /* Merriweather-Regular.ttf */; };
-		B9B23F292F219E9A00E620E2 /* Merriweather-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F262F219E9A00E620E2 /* Merriweather-Regular.ttf */; };
-		B9B23F2A2F219E9A00E620E2 /* Merriweather-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F262F219E9A00E620E2 /* Merriweather-Regular.ttf */; };
-		B9B23F2C2F219EB800E620E2 /* Merriweather-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F2B2F219EB800E620E2 /* Merriweather-Black.ttf */; };
-		B9B23F2D2F219EB800E620E2 /* Merriweather-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F2B2F219EB800E620E2 /* Merriweather-Black.ttf */; };
 		B9B23F2F2F219EB800E620E2 /* Merriweather-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F2B2F219EB800E620E2 /* Merriweather-Black.ttf */; };
-		B9B23F362F219F1900E620E2 /* Merriweather-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F352F219F1900E620E2 /* Merriweather-LightItalic.ttf */; };
 		B9B23F372F219F1900E620E2 /* Merriweather-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F352F219F1900E620E2 /* Merriweather-LightItalic.ttf */; };
-		B9B23F392F219F1900E620E2 /* Merriweather-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F352F219F1900E620E2 /* Merriweather-LightItalic.ttf */; };
-		B9B23F452F21A19200E620E2 /* Merriweather-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F442F21A19200E620E2 /* Merriweather-Light.ttf */; };
-		B9B23F462F21A19200E620E2 /* Merriweather-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F442F21A19200E620E2 /* Merriweather-Light.ttf */; };
 		B9B23F482F21A19200E620E2 /* Merriweather-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F442F21A19200E620E2 /* Merriweather-Light.ttf */; };
 		F2B9748E2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748C2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf */; };
 		F2B9748F2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748D2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf */; };
-		F2B974922F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748C2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf */; };
-		F2B974932F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748D2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf */; };
-		F2B974942F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748C2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf */; };
-		F2B974952F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748D2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -89,20 +59,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 54C65B702E6E115C00A41F9A;
 			remoteInfo = AlignaWidgetExtension;
-		};
-		54DE58BE2DC29A93008BE4B8 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 54DE58A82DC29A91008BE4B8 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 54DE58AF2DC29A91008BE4B8;
-			remoteInfo = AlignaTest;
-		};
-		54DE58C82DC29A93008BE4B8 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 54DE58A82DC29A91008BE4B8 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 54DE58AF2DC29A91008BE4B8;
-			remoteInfo = AlignaTest;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -127,8 +83,6 @@
 		54C65B752E6E115C00A41F9A /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		54C65B8B2E6E125600A41F9A /* AlignaWidgetExtensionRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AlignaWidgetExtensionRelease.entitlements; sourceTree = "<group>"; };
 		54DE58B02DC29A91008BE4B8 /* AlignaTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AlignaTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		54DE58BD2DC29A93008BE4B8 /* AlignaTestTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AlignaTestTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		54DE58C72DC29A93008BE4B8 /* AlignaTestUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AlignaTestUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		54DE58DA2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-VariableFont_opsz,wght.ttf"; sourceTree = "<group>"; };
 		54DE58DE2DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlayfairDisplay-Italic-VariableFont_wght.ttf"; sourceTree = "<group>"; };
 		54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlayfairDisplay-VariableFont_wght.ttf"; sourceTree = "<group>"; };
@@ -147,22 +101,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		548498042E2B8E5A00E93C9D /* Exceptions for "AlignaTest" folder in "AlignaTestTests" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				DS_Store,
-				"GoogleService-Info.plist",
-			);
-			target = 54DE58BC2DC29A93008BE4B8 /* AlignaTestTests */;
-		};
-		548498052E2B8E5A00E93C9D /* Exceptions for "AlignaTest" folder in "AlignaTestUITests" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				DS_Store,
-				"GoogleService-Info.plist",
-			);
-			target = 54DE58C62DC29A93008BE4B8 /* AlignaTestUITests */;
-		};
 		54C65BBA2E6E161800A41F9A /* Exceptions for "AlignaTest" folder in "AlignaWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -200,8 +138,6 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				54C65BC42E6E17C100A41F9A /* Exceptions for "AlignaTest" folder in "AlignaTest" target */,
-				548498042E2B8E5A00E93C9D /* Exceptions for "AlignaTest" folder in "AlignaTestTests" target */,
-				548498052E2B8E5A00E93C9D /* Exceptions for "AlignaTest" folder in "AlignaTestUITests" target */,
 				54C65BBA2E6E161800A41F9A /* Exceptions for "AlignaTest" folder in "AlignaWidgetExtension" target */,
 			);
 			path = AlignaTest;
@@ -246,20 +182,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		54DE58BA2DC29A93008BE4B8 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		54DE58C42DC29A93008BE4B8 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -291,8 +213,6 @@
 			isa = PBXGroup;
 			children = (
 				54DE58B02DC29A91008BE4B8 /* AlignaTest.app */,
-				54DE58BD2DC29A93008BE4B8 /* AlignaTestTests.xctest */,
-				54DE58C72DC29A93008BE4B8 /* AlignaTestUITests.xctest */,
 				54C65B712E6E115C00A41F9A /* AlignaWidgetExtension.appex */,
 			);
 			name = Products;
@@ -379,52 +299,6 @@
 			productReference = 54DE58B02DC29A91008BE4B8 /* AlignaTest.app */;
 			productType = "com.apple.product-type.application";
 		};
-		54DE58BC2DC29A93008BE4B8 /* AlignaTestTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 54DE58D42DC29A93008BE4B8 /* Build configuration list for PBXNativeTarget "AlignaTestTests" */;
-			buildPhases = (
-				54DE58B92DC29A93008BE4B8 /* Sources */,
-				54DE58BA2DC29A93008BE4B8 /* Frameworks */,
-				54DE58BB2DC29A93008BE4B8 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				54DE58BF2DC29A93008BE4B8 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				54DE58C02DC29A93008BE4B8 /* AlignaTestTests */,
-			);
-			name = AlignaTestTests;
-			packageProductDependencies = (
-			);
-			productName = AlignaTestTests;
-			productReference = 54DE58BD2DC29A93008BE4B8 /* AlignaTestTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		54DE58C62DC29A93008BE4B8 /* AlignaTestUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 54DE58D72DC29A93008BE4B8 /* Build configuration list for PBXNativeTarget "AlignaTestUITests" */;
-			buildPhases = (
-				54DE58C32DC29A93008BE4B8 /* Sources */,
-				54DE58C42DC29A93008BE4B8 /* Frameworks */,
-				54DE58C52DC29A93008BE4B8 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				54DE58C92DC29A93008BE4B8 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				54DE58CA2DC29A93008BE4B8 /* AlignaTestUITests */,
-			);
-			name = AlignaTestUITests;
-			packageProductDependencies = (
-			);
-			productName = AlignaTestUITests;
-			productReference = 54DE58C72DC29A93008BE4B8 /* AlignaTestUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -440,14 +314,6 @@
 					};
 					54DE58AF2DC29A91008BE4B8 = {
 						CreatedOnToolsVersion = 16.3;
-					};
-					54DE58BC2DC29A93008BE4B8 = {
-						CreatedOnToolsVersion = 16.3;
-						TestTargetID = 54DE58AF2DC29A91008BE4B8;
-					};
-					54DE58C62DC29A93008BE4B8 = {
-						CreatedOnToolsVersion = 16.3;
-						TestTargetID = 54DE58AF2DC29A91008BE4B8;
 					};
 				};
 			};
@@ -470,8 +336,6 @@
 			projectRoot = "";
 			targets = (
 				54DE58AF2DC29A91008BE4B8 /* AlignaTest */,
-				54DE58BC2DC29A93008BE4B8 /* AlignaTestTests */,
-				54DE58C62DC29A93008BE4B8 /* AlignaTestUITests */,
 				54C65B702E6E115C00A41F9A /* AlignaWidgetExtension */,
 			);
 		};
@@ -522,50 +386,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		54DE58BB2DC29A93008BE4B8 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				B974A4062F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf in Resources */,
-				54DE58E42DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
-				54DE58E52DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
-				B9B23F392F219F1900E620E2 /* Merriweather-LightItalic.ttf in Resources */,
-				F2B974922F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf in Resources */,
-				F2B974932F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */,
-				54DE58DD2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf in Resources */,
-				B9B23F292F219E9A00E620E2 /* Merriweather-Regular.ttf in Resources */,
-				B9B23F462F21A19200E620E2 /* Merriweather-Light.ttf in Resources */,
-				B9B23EF72F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf in Resources */,
-				B9B23EFD2F2199B300E620E2 /* CormorantGaramond-Bold.ttf in Resources */,
-				B9B23F2C2F219EB800E620E2 /* Merriweather-Black.ttf in Resources */,
-				B9B23F042F2199CC00E620E2 /* Gloock-Regular.ttf in Resources */,
-				B9B23F232F219E8A00E620E2 /* Merriweather-Italic.ttf in Resources */,
-				B974A40B2F351C0000AE4F1C /* Merriweather-Bold.ttf in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		54DE58C52DC29A93008BE4B8 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				B974A4052F3519FA00AE4F1C /* PlayfairDisplay-Bold.ttf in Resources */,
-				54DE58E22DC2A05F008BE4B8 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
-				54DE58E32DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
-				B9B23F362F219F1900E620E2 /* Merriweather-LightItalic.ttf in Resources */,
-				F2B974942F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf in Resources */,
-				F2B974952F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */,
-				54DE58DB2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf in Resources */,
-				B9B23F2A2F219E9A00E620E2 /* Merriweather-Regular.ttf in Resources */,
-				B9B23F452F21A19200E620E2 /* Merriweather-Light.ttf in Resources */,
-				B9B23EF62F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf in Resources */,
-				B9B23EFB2F2199B300E620E2 /* CormorantGaramond-Bold.ttf in Resources */,
-				B9B23F2D2F219EB800E620E2 /* Merriweather-Black.ttf in Resources */,
-				B9B23F062F2199CC00E620E2 /* Gloock-Regular.ttf in Resources */,
-				B9B23F252F219E8A00E620E2 /* Merriweather-Italic.ttf in Resources */,
-				B974A4092F351C0000AE4F1C /* Merriweather-Bold.ttf in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -583,20 +403,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		54DE58B92DC29A93008BE4B8 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		54DE58C32DC29A93008BE4B8 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -604,16 +410,6 @@
 			isa = PBXTargetDependency;
 			target = 54C65B702E6E115C00A41F9A /* AlignaWidgetExtension */;
 			targetProxy = 54C65B832E6E115E00A41F9A /* PBXContainerItemProxy */;
-		};
-		54DE58BF2DC29A93008BE4B8 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 54DE58AF2DC29A91008BE4B8 /* AlignaTest */;
-			targetProxy = 54DE58BE2DC29A93008BE4B8 /* PBXContainerItemProxy */;
-		};
-		54DE58C92DC29A93008BE4B8 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 54DE58AF2DC29A91008BE4B8 /* AlignaTest */;
-			targetProxy = 54DE58C82DC29A93008BE4B8 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -626,7 +422,7 @@
 				CODE_SIGN_ENTITLEMENTS = AlignaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = J58VC5CY3K;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AlignaWidget/Info.plist;
@@ -658,7 +454,7 @@
 				CODE_SIGN_ENTITLEMENTS = AlignaWidgetExtensionRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = J58VC5CY3K;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AlignaWidget/Info.plist;
@@ -812,7 +608,7 @@
 				CODE_SIGN_ENTITLEMENTS = AlignaTest/AlignaTest.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = J58VC5CY3K;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -849,7 +645,7 @@
 				CODE_SIGN_ENTITLEMENTS = AlignaTest/AlignaTestRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = J58VC5CY3K;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -874,78 +670,6 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Release;
-		};
-		54DE58D52DC29A93008BE4B8 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = J58VC5CY3K;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
-				MARKETING_VERSION = 2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = Aligna;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AlignaTest.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AlignaTest";
-			};
-			name = Debug;
-		};
-		54DE58D62DC29A93008BE4B8 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = J58VC5CY3K;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
-				MARKETING_VERSION = 2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = Aligna;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AlignaTest.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AlignaTest";
-			};
-			name = Release;
-		};
-		54DE58D82DC29A93008BE4B8 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = J58VC5CY3K;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = Aligna;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = AlignaTest;
-			};
-			name = Debug;
-		};
-		54DE58D92DC29A93008BE4B8 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = J58VC5CY3K;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = Aligna;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = AlignaTest;
 			};
 			name = Release;
 		};
@@ -975,24 +699,6 @@
 			buildConfigurations = (
 				54DE58D22DC29A93008BE4B8 /* Debug */,
 				54DE58D32DC29A93008BE4B8 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		54DE58D42DC29A93008BE4B8 /* Build configuration list for PBXNativeTarget "AlignaTestTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				54DE58D52DC29A93008BE4B8 /* Debug */,
-				54DE58D62DC29A93008BE4B8 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		54DE58D72DC29A93008BE4B8 /* Build configuration list for PBXNativeTarget "AlignaTestUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				54DE58D82DC29A93008BE4B8 /* Debug */,
-				54DE58D92DC29A93008BE4B8 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

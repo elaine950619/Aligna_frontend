@@ -217,7 +217,32 @@ struct SafeImage: View {
     }
 }
 
+private struct MantraFocus: Identifiable, Codable, Hashable {
+    let id: UUID
+    var name: String
+    var description: String
+    var createdAt: Date
+}
+
+private struct FocusedMantraEntry: Codable, Hashable {
+    var mantra: String
+    var recommendations: [String: String]
+    var reasoningSummary: String
+    var locationName: String
+    var savedAt: Date
+    var isDefault: Bool
+}
+
+private struct DailyFocusUsageEntry: Codable, Hashable {
+    var generatedFocuses: [String: Int]
+}
+
 struct MainView: View {
+    private enum FocusFormField: Hashable {
+        case name
+        case description
+    }
+
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var viewModel: OnboardingViewModel
@@ -245,6 +270,7 @@ struct MainView: View {
     @AppStorage("shouldExpandMantraOnBoot") private var shouldExpandMantraOnBoot: Bool = false
     @AppStorage("shouldExpandMantraFromNotification") private var shouldExpandMantraFromNotification: Bool = false
     @AppStorage("mantraExpandHapticDay") private var mantraExpandHapticDay: String = ""
+    @AppStorage("mantraGuidanceHintTapCount") private var mantraGuidanceHintTapCount: Int = 0
     @AppStorage("widgetLocationName") private var widgetLocationName: String = ""
     @AppStorage("widgetSunSign") private var widgetSunSign: String = ""
     @AppStorage("widgetMoonSign") private var widgetMoonSign: String = ""
@@ -252,11 +278,16 @@ struct MainView: View {
     @AppStorage("widgetWeatherSummary") private var widgetWeatherSummary: String = ""
     @AppStorage("widgetWeatherDetailSummary") private var widgetWeatherDetailSummary: String = ""
     @AppStorage("widgetEnvironmentSummary") private var widgetEnvironmentSummary: String = ""
+    @AppStorage("mantraTagLibraryStorage") private var mantraTagLibraryStorage: String = ""
+    @AppStorage("mantraTagSelectionsStorage") private var mantraTagSelectionsStorage: String = ""
+    @AppStorage("mantraFocusCacheStorage") private var mantraFocusCacheStorage: String = ""
+    @AppStorage("mantraActiveFocusStorage") private var mantraActiveFocusStorage: String = ""
+    @AppStorage("mantraFocusUsageStorage") private var mantraFocusUsageStorage: String = ""
+    @AppStorage("hasDismissedFocusHelper") private var hasDismissedFocusHelper: Bool = false
     @State private var isFetchingToday: Bool = false
     
     @State private var isMantraExpanded: Bool = false
     @State private var showGridItems: Bool = false
-    @State private var showMantraSaveAlert: Bool = false
     @State private var showTodaySoundPlayer: Bool = false
     @State private var isAutoDismissSoundPlayer = false
     @State private var soundPlayerAutoDismissTask: Task<Void, Never>? = nil
@@ -266,7 +297,6 @@ struct MainView: View {
     @State private var mantraSaveMessage: String = ""
 
     @State private var showReasoningBubble: Bool = false
-    @State private var showRefreshCooldownAlert = false
     @State private var refreshCooldownMessage = ""
     @State private var isManualRefreshFlow = false
 
@@ -290,11 +320,32 @@ struct MainView: View {
     @State private var isDefaultRecommendation = false
     @State private var pendingGenerationToast = false
     @State private var showReasoningSheet = false
+    @State private var showFocusManagerSheet = false
+    @State private var showFocusHint = false
+    @State private var showNewFocusForm = false
+    @State private var mantraFocuses: [MantraFocus] = []
+    @State private var mantraFocusSelections: [String: [String]] = [:]
+    @State private var mantraFocusCache: [String: [String: FocusedMantraEntry]] = [:]
+    @State private var mantraActiveFocusByDay: [String: String] = [:]
+    @State private var focusGenerationTagID: String? = nil
+    @State private var previousActiveFocusIDBeforeFocusRequest: String? = nil
+    @State private var newFocusName: String = ""
+    @State private var newFocusDescription: String = ""
+    @State private var focusManagerMessage: String = ""
+    @State private var focusManagerMessageIsError = false
+    @State private var mainViewDialogTitle: String = ""
+    @State private var mainViewDialogMessage: String = ""
+    @State private var mainViewDialogSymbol: String = "exclamationmark.circle"
+    @State private var showMainViewDialog = false
+    @State private var mainViewDialogPrimaryButtonTitle: String? = nil
+    @State private var mainViewDialogPrimaryAction: (() -> Void)? = nil
+    @State private var pendingFocusDeletion: MantraFocus? = nil
+    @State private var hasLoadedMantraFocuses = false
+    @State private var mantraFocusUsageByDay: [String: DailyFocusUsageEntry] = [:]
+    @FocusState private var focusedFocusFormField: FocusFormField?
 
     @AppStorage("watchdogDay") private var watchdogDay: String = ""
     @AppStorage("todayAutoRefetchAttempts") private var todayAutoRefetchAttempts: Int = 0
-    @AppStorage("mantraGenerationHapticDay") private var mantraGenerationHapticDay: String = ""
-
     // NEW: 多次重试的配置
     private let maxRefetchAttempts = 3
     private let initialRefetchDelay: TimeInterval = 8.0
@@ -309,11 +360,23 @@ struct MainView: View {
     
     @State private var didBootVisuals = false
     @State private var shouldCollapseMantraOnReturn = false
+    @State private var privilegedNickname: String = ""
 
     private var hasRecentRecommendation: Bool {
         guard lastRecommendationHasFullSet else { return false }
         let age = Date().timeIntervalSince1970 - lastRecommendationTimestamp
         return age >= 0 && age < 24 * 60 * 60
+    }
+
+    private var isPrivilegedUser: Bool {
+        let candidates = [privilegedNickname, viewModel.nickname]
+        return candidates.contains {
+            $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "jakobzhao"
+        }
+    }
+
+    private var shouldShowMantraGuidanceHint: Bool {
+        isMantraExpanded && mantraGuidanceHintTapCount < 3
     }
 
     private let colorHexMapping: [String:String] = [
@@ -322,6 +385,77 @@ struct MainView: View {
         "sage_green":"#9EB49F", "silver_white":"#C0C0C0", "slate_blue":"#6A5ACD",
         "teal":"#008080"
     ]
+    private let maxAppliedFocuses = 3
+    private let dailyFocusID = "11111111-1111-1111-1111-111111111111"
+    private let fertilityFocusID = "22222222-2222-2222-2222-222222222222"
+    private let connectionFocusID = "33333333-3333-3333-3333-333333333333"
+    private let transitionFocusID = "44444444-4444-4444-4444-444444444444"
+    private let caregivingFocusID = "55555555-5555-5555-5555-555555555555"
+    private let recoveryFocusID = "66666666-6666-6666-6666-666666666666"
+    private let clarityFocusID = "77777777-7777-7777-7777-777777777777"
+    private let griefFocusID = "88888888-8888-8888-8888-888888888888"
+    private let maxNonDailyFocusUpdatesPerDay = 2
+
+    private var currentFocusSelectionKey: String {
+        todayString()
+    }
+
+    private var appliedMantraFocusIDs: [String] {
+        mantraFocusSelections[currentFocusSelectionKey] ?? []
+    }
+
+    private var mantraFocusLookup: [String: MantraFocus] {
+        Dictionary(uniqueKeysWithValues: mantraFocuses.map { ($0.id.uuidString, $0) })
+    }
+
+    private var appliedMantraFocuses: [MantraFocus] {
+        appliedMantraFocusIDs.compactMap { mantraFocusLookup[$0] }
+    }
+
+    private var canApplyMoreFocuses: Bool {
+        appliedMantraFocusIDs.count < maxAppliedFocuses
+    }
+
+    private var canSaveNewFocus: Bool {
+        !normalizedFocusText(newFocusName).isEmpty && !normalizedFocusText(newFocusDescription).isEmpty
+    }
+
+    private var activeFocusID: String {
+        if let stored = mantraActiveFocusByDay[currentFocusSelectionKey], mantraFocusLookup[stored] != nil {
+            return stored
+        }
+        return dailyFocusID
+    }
+
+    private var activeFocus: MantraFocus? {
+        mantraFocusLookup[activeFocusID]
+    }
+
+    private var activeFocusName: String {
+        activeFocus?.name.lowercased() ?? "daily"
+    }
+
+    private var normalizedGender: String {
+        viewModel.gender.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private var normalizedRelationshipStatus: String {
+        viewModel.relationshipStatus.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private var userAge: Int? {
+        let years = Calendar.current.dateComponents([.year], from: viewModel.birth_date, to: Date()).year
+        guard let years, years > 0 else { return nil }
+        return years
+    }
+
+    private var todayFocusUsage: DailyFocusUsageEntry {
+        mantraFocusUsageByDay[currentFocusSelectionKey] ?? DailyFocusUsageEntry(generatedFocuses: [:])
+    }
+
+    private var shouldShowCompactFocusBadge: Bool {
+        !isMantraExpanded && activeFocusName != "daily"
+    }
 
     init(
         previewExpanded: Bool = false,
@@ -414,12 +548,38 @@ struct MainView: View {
 
     private var generationStatusText: String? {
         guard isGenerationInProgress else { return nil }
+        if let focusGenerationTagID,
+           let focus = mantraFocusLookup[focusGenerationTagID] {
+            return "Generating your \(focus.name) focus mantra."
+        }
         if isUsingPreviousResult {
             return "Showing previous result. Generating today’s mantra and rhythm."
         }
         return showGenerationStrongHint
             ? "Still generating today’s mantra and rhythm."
             : "Generating today’s mantra and rhythm."
+    }
+
+    private var focusHelperText: String {
+        if let generationStatusText {
+            return generationStatusText
+        }
+        return !hasDismissedFocusHelper
+            ? "Choose up to 3 life focuses for what this mantra should pay attention to."
+            : ""
+    }
+
+    private var focusHelperShowsProgress: Bool {
+        generationStatusText != nil
+    }
+
+    private var shouldShowFocusHelper: Bool {
+        !focusHelperText.isEmpty
+    }
+
+    private func dismissFocusHelperIfNeeded() {
+        guard !hasDismissedFocusHelper else { return }
+        hasDismissedFocusHelper = true
     }
 
     private var hasRefreshedAlignmentToday: Bool {
@@ -429,25 +589,22 @@ struct MainView: View {
     }
 
     private var rhythmHeaderSubtitle: String {
-        let formatter = DateFormatter()
-        formatter.locale = .current
-        formatter.timeZone = .current
-        formatter.dateFormat = "EEEE, MMMM d"
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = .current
+        dateFormatter.timeZone = .current
+        dateFormatter.dateFormat = "EEEE, MMMM d"
 
-        let base = formatter.string(from: Date())
-        guard hasRefreshedAlignmentToday || isManualRefreshFlow else { return base }
+        let dateText = dateFormatter.string(from: Date())
+        let locationText = resolvedWidgetLocation()
+        let updateTimeText = isManualRefreshFlow
+            ? timeText(for: Date())
+            : (lastRecommendationTimeText ?? timeText(for: Date()))
 
-        let updatedDate = isManualRefreshFlow
-            ? Date()
-            : Date(timeIntervalSince1970: lastManualRefreshTimestamp)
+        if locationText.isEmpty {
+            return "Last update: \(dateText), \(updateTimeText)"
+        }
 
-        let timeFormatter = DateFormatter()
-        timeFormatter.locale = .current
-        timeFormatter.timeZone = .current
-        timeFormatter.timeStyle = .short
-        timeFormatter.dateStyle = .none
-
-        return "\(base) (Updated \(timeFormatter.string(from: updatedDate)))"
+        return "Last update: \(dateText), \(updateTimeText) at \(locationText)"
     }
 
     private func effectiveDayString(for date: Date) -> String {
@@ -490,11 +647,69 @@ struct MainView: View {
             Image(systemName: "info.circle")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(themeManager.primaryText)
+                .opacity(0.8)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Why this mantra")
         .disabled(viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-        .opacity(viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.35 : 1)
+        .opacity(viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.98 : 1)
+    }
+
+    private var expandedMantraInfoBadge: some View {
+        infoIconButton
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundColor(themeManager.primaryText)
+            .contentShape(Rectangle())
+            .accessibilityHint("Shows why this mantra was chosen")
+    }
+
+    private var mainViewDialog: some View {
+        AlynnaActionDialog(
+            title: mainViewDialogTitle,
+            message: mainViewDialogMessage,
+            symbol: mainViewDialogSymbol,
+            primaryButtonTitle: mainViewDialogPrimaryButtonTitle,
+            primaryAction: mainViewDialogPrimaryAction,
+            dismissButtonTitle: mainViewDialogPrimaryButtonTitle == nil ? "OK" : "Cancel",
+            onDismiss: dismissMainViewDialog
+        )
+        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+        .zIndex(20)
+    }
+
+    private func expandedMantraLastLineRect(for text: String, width: CGFloat) -> CGRect? {
+        let font = UIFont(name: "Merriweather-Bold", size: 23) ?? UIFont.systemFont(ofSize: 23, weight: .bold)
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = .center
+        paragraphStyle.lineBreakMode = .byWordWrapping
+        paragraphStyle.lineSpacing = 12
+
+        let attributed = NSAttributedString(
+            string: text,
+            attributes: [
+                .font: font,
+                .paragraphStyle: paragraphStyle
+            ]
+        )
+
+        let storage = NSTextStorage(attributedString: attributed)
+        let layoutManager = NSLayoutManager()
+        let textContainer = NSTextContainer(size: CGSize(width: width, height: .greatestFiniteMagnitude))
+        textContainer.lineFragmentPadding = 0
+        textContainer.maximumNumberOfLines = 0
+
+        storage.addLayoutManager(layoutManager)
+        layoutManager.addTextContainer(textContainer)
+        layoutManager.ensureLayout(for: textContainer)
+
+        let glyphRange = layoutManager.glyphRange(for: textContainer)
+        var lastLineRect: CGRect?
+
+        layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { _, usedRect, _, _, _ in
+            lastLineRect = usedRect
+        }
+
+        return lastLineRect
     }
 
     private var generationToastView: some View {
@@ -516,6 +731,1163 @@ struct MainView: View {
         .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 8)
         .transition(.scale.combined(with: .opacity))
         .accessibilityLabel(Text(generationToastMessage))
+    }
+
+    private func focusGuidanceRow(symbol: String, title: String, body: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(themeManager.primaryText.opacity(0.82))
+                .frame(width: 16, alignment: .center)
+                .padding(.top, 1)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.custom("Merriweather-Bold", size: 12))
+                    .foregroundColor(themeManager.primaryText.opacity(0.9))
+
+                Text(body)
+                    .font(.custom("Merriweather-Regular", size: 12))
+                    .foregroundColor(themeManager.descriptionText.opacity(0.72))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func normalizedFocusText(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var seededMantraFocuses: [MantraFocus] {
+        [
+            MantraFocus(id: UUID(uuidString: dailyFocusID) ?? UUID(), name: "daily", description: "Your everyday grounding mantra.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: fertilityFocusID) ?? UUID(), name: "fertility", description: "Attention for conception, hormones, and family-building hopes.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: connectionFocusID) ?? UUID(), name: "connection", description: "A lens for intimacy, partnership, and emotional closeness.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: transitionFocusID) ?? UUID(), name: "transition", description: "Support for change, uncertainty, and a life in motion.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: caregivingFocusID) ?? UUID(), name: "caregiving", description: "Grounding while supporting someone who depends on you.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: recoveryFocusID) ?? UUID(), name: "recovery", description: "Space for repair, steadiness, and rebuilding your energy.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: clarityFocusID) ?? UUID(), name: "clarity", description: "Perspective for decisions, priorities, and what matters now.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: griefFocusID) ?? UUID(), name: "grief", description: "Holding space for loss, remembrance, and emotional tenderness.", createdAt: .distantPast)
+        ]
+    }
+
+    private var seededFocusIDs: Set<String> {
+        Set(seededMantraFocuses.map { $0.id.uuidString })
+    }
+
+    private var seededFocusesByID: [String: MantraFocus] {
+        Dictionary(uniqueKeysWithValues: seededMantraFocuses.map { ($0.id.uuidString, $0) })
+    }
+
+    private var recommendedDefaultFocusIDs: [String] {
+        var prioritized: [String] = []
+
+        let isFemale = normalizedGender == "female"
+        let isMale = normalizedGender == "male"
+        let isSingle = normalizedRelationshipStatus == "single"
+        let isPartnered = normalizedRelationshipStatus == "in a relationship"
+        let isOtherRelationship = normalizedRelationshipStatus == "other"
+        let age = userAge ?? 0
+
+        if isFemale && isPartnered && (25...42).contains(age) {
+            prioritized.append(fertilityFocusID)
+        }
+
+        if isPartnered {
+            prioritized.append(connectionFocusID)
+        }
+
+        if age >= 45 {
+            prioritized.append(caregivingFocusID)
+            prioritized.append(recoveryFocusID)
+        } else if age >= 32 {
+            prioritized.append(recoveryFocusID)
+        }
+
+        if isSingle {
+            prioritized.append(clarityFocusID)
+            prioritized.append(transitionFocusID)
+        }
+
+        if isOtherRelationship {
+            prioritized.append(transitionFocusID)
+            prioritized.append(recoveryFocusID)
+        }
+
+        if isMale {
+            prioritized.append(clarityFocusID)
+        }
+
+        prioritized.append(contentsOf: [
+            recoveryFocusID,
+            clarityFocusID,
+            transitionFocusID,
+            connectionFocusID,
+            caregivingFocusID,
+            griefFocusID,
+            fertilityFocusID
+        ])
+
+        var uniqueIDs: [String] = [dailyFocusID]
+        for id in prioritized where !uniqueIDs.contains(id) {
+            uniqueIDs.append(id)
+            if uniqueIDs.count == maxAppliedFocuses {
+                break
+            }
+        }
+        return uniqueIDs
+    }
+
+    private func syncSeededFocusDefinitions() {
+        guard !mantraFocuses.isEmpty else { return }
+
+        mantraFocuses = mantraFocuses.map { existing in
+            guard let seeded = seededFocusesByID[existing.id.uuidString] else { return existing }
+            return MantraFocus(
+                id: existing.id,
+                name: seeded.name,
+                description: seeded.description,
+                createdAt: existing.createdAt
+            )
+        }
+    }
+
+    private func loadMantraFocusesIfNeeded() {
+        guard !hasLoadedMantraFocuses else { return }
+        hasLoadedMantraFocuses = true
+
+        if let data = mantraTagLibraryStorage.data(using: .utf8),
+           let decoded = try? JSONDecoder().decode([MantraFocus].self, from: data) {
+            mantraFocuses = decoded
+        }
+
+        if let data = mantraTagSelectionsStorage.data(using: .utf8),
+           let decoded = try? JSONDecoder().decode([String: [String]].self, from: data) {
+            mantraFocusSelections = decoded
+        }
+
+        if let data = mantraFocusCacheStorage.data(using: .utf8),
+           let decoded = try? JSONDecoder().decode([String: [String: FocusedMantraEntry]].self, from: data) {
+            mantraFocusCache = decoded
+        }
+
+        if let data = mantraActiveFocusStorage.data(using: .utf8),
+           let decoded = try? JSONDecoder().decode([String: String].self, from: data) {
+            mantraActiveFocusByDay = decoded
+        }
+
+        if let data = mantraFocusUsageStorage.data(using: .utf8),
+           let decoded = try? JSONDecoder().decode([String: DailyFocusUsageEntry].self, from: data) {
+            mantraFocusUsageByDay = decoded
+        }
+
+        if mantraFocuses.isEmpty {
+            mantraFocuses = seededMantraFocuses
+        } else {
+            syncSeededFocusDefinitions()
+            for seededFocus in seededMantraFocuses where !mantraFocuses.contains(where: { $0.name.caseInsensitiveCompare(seededFocus.name) == .orderedSame }) {
+                mantraFocuses.append(seededFocus)
+            }
+        }
+
+        ensureDefaultFocusSetupForToday()
+        pruneInvalidFocusSelectionsAndPersist()
+        persistMantraFocuses()
+    }
+
+    private func persistMantraFocuses() {
+        if let data = try? JSONEncoder().encode(mantraFocuses),
+           let string = String(data: data, encoding: .utf8) {
+            mantraTagLibraryStorage = string
+        } else {
+            mantraTagLibraryStorage = ""
+        }
+
+        if let data = try? JSONEncoder().encode(mantraFocusSelections),
+           let string = String(data: data, encoding: .utf8) {
+            mantraTagSelectionsStorage = string
+        } else {
+            mantraTagSelectionsStorage = ""
+        }
+
+        if let data = try? JSONEncoder().encode(mantraFocusCache),
+           let string = String(data: data, encoding: .utf8) {
+            mantraFocusCacheStorage = string
+        } else {
+            mantraFocusCacheStorage = ""
+        }
+
+        if let data = try? JSONEncoder().encode(mantraActiveFocusByDay),
+           let string = String(data: data, encoding: .utf8) {
+            mantraActiveFocusStorage = string
+        } else {
+            mantraActiveFocusStorage = ""
+        }
+
+        if let data = try? JSONEncoder().encode(mantraFocusUsageByDay),
+           let string = String(data: data, encoding: .utf8) {
+            mantraFocusUsageStorage = string
+        } else {
+            mantraFocusUsageStorage = ""
+        }
+    }
+
+    private func ensureDefaultFocusSetupForToday() {
+        let day = currentFocusSelectionKey
+        let defaultIDs = recommendedDefaultFocusIDs
+        let existing = mantraFocusSelections[day] ?? []
+        if existing.isEmpty {
+            mantraFocusSelections[day] = defaultIDs
+        } else {
+            var merged = existing.filter { mantraFocusLookup[$0] != nil }
+            let legacyDefaultSets = [
+                [dailyFocusID, fertilityFocusID, connectionFocusID],
+                [dailyFocusID, connectionFocusID, clarityFocusID],
+                [dailyFocusID, fertilityFocusID, clarityFocusID]
+            ]
+            let legacyFocusNames = Set(["dating", "money", "career", "friendship", "health", "vacation", "purpose"])
+            let isLegacyNameSet = merged.count == maxAppliedFocuses && merged.allSatisfy { focusID in
+                guard let focus = mantraFocusLookup[focusID] else { return false }
+                return legacyFocusNames.contains(focus.name.lowercased())
+            }
+
+            if legacyDefaultSets.contains(merged) || isLegacyNameSet {
+                merged = defaultIDs
+            }
+            if !merged.contains(dailyFocusID) {
+                merged.insert(dailyFocusID, at: 0)
+            }
+            mantraFocusSelections[day] = Array(merged.prefix(maxAppliedFocuses))
+        }
+
+        if mantraActiveFocusByDay[day] == nil || mantraFocusLookup[mantraActiveFocusByDay[day] ?? ""] == nil {
+            mantraActiveFocusByDay[day] = dailyFocusID
+        }
+    }
+
+    private func pruneInvalidFocusSelectionsAndPersist() {
+        let validIDs = Set(mantraFocuses.map { $0.id.uuidString })
+        var pruned: [String: [String]] = [:]
+
+        for (key, ids) in mantraFocusSelections {
+            let filtered = ids.filter { validIDs.contains($0) }
+            if !filtered.isEmpty {
+                var normalized = Array(filtered.prefix(maxAppliedFocuses))
+                if !normalized.contains(dailyFocusID), validIDs.contains(dailyFocusID) {
+                    normalized.insert(dailyFocusID, at: 0)
+                    normalized = Array(normalized.prefix(maxAppliedFocuses))
+                }
+                pruned[key] = normalized
+            }
+        }
+
+        mantraFocusSelections = pruned
+        mantraActiveFocusByDay = mantraActiveFocusByDay.filter { key, value in
+            validIDs.contains(value) && mantraFocusSelections[key] != nil
+        }
+    }
+
+    private func updateAppliedMantraFocusIDs(_ ids: [String]) {
+        let cleaned = Array(ids.prefix(maxAppliedFocuses))
+        mantraFocusSelections[currentFocusSelectionKey] = cleaned
+        if !cleaned.contains(activeFocusID) {
+            mantraActiveFocusByDay[currentFocusSelectionKey] = cleaned.first ?? dailyFocusID
+        }
+        persistMantraFocuses()
+    }
+
+    private func updateActiveFocusID(_ focusID: String) {
+        mantraActiveFocusByDay[currentFocusSelectionKey] = focusID
+        persistMantraFocuses()
+    }
+
+    private func focusEntry(for focusID: String, day: String? = nil) -> FocusedMantraEntry? {
+        mantraFocusCache[day ?? currentFocusSelectionKey]?[focusID]
+    }
+
+    private func cacheFocusedEntry(_ entry: FocusedMantraEntry, for focusID: String, day: String? = nil) {
+        let key = day ?? currentFocusSelectionKey
+        var entries = mantraFocusCache[key] ?? [:]
+        entries[focusID] = entry
+        mantraFocusCache[key] = entries
+        persistMantraFocuses()
+    }
+
+    private func applyFocusedEntry(_ entry: FocusedMantraEntry, focusID: String) {
+        let displayRecommendations: [String: String]
+        let displayReasoningSummary: String
+        let displayLocationName: String
+
+        if entry.isDefault {
+            displayRecommendations = entry.recommendations
+            displayReasoningSummary = entry.reasoningSummary
+            displayLocationName = entry.locationName
+        } else if let dailyEntry = focusEntry(for: dailyFocusID) {
+            displayRecommendations = dailyEntry.recommendations
+            displayReasoningSummary = dailyEntry.reasoningSummary
+            displayLocationName = dailyEntry.locationName
+        } else {
+            displayRecommendations = viewModel.recommendations
+            displayReasoningSummary = viewModel.reasoningSummary
+            displayLocationName = lastRecommendationPlace
+        }
+
+        updateActiveFocusID(focusID)
+        viewModel.dailyMantra = entry.mantra
+        viewModel.recommendations = displayRecommendations
+        viewModel.reasoningSummary = displayReasoningSummary
+        lastRecommendationPlace = displayLocationName
+        lastRecommendationDate = todayString()
+        isDefaultRecommendation = entry.isDefault
+        updateLastRecommendationStampIfReady(mantra: entry.mantra, recs: displayRecommendations, isDefault: entry.isDefault)
+        fetchAllRecommendationTitles()
+        persistWidgetSnapshotFromViewModel()
+        markMantraReadyIfPossible()
+    }
+
+    private func cacheCurrentDailyFocusIfPossible(day: String? = nil) {
+        let mantra = viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !mantra.isEmpty, !viewModel.recommendations.isEmpty else { return }
+
+        let entry = FocusedMantraEntry(
+            mantra: mantra,
+            recommendations: viewModel.recommendations,
+            reasoningSummary: viewModel.reasoningSummary,
+            locationName: lastRecommendationPlace,
+            savedAt: Date(),
+            isDefault: isDefaultRecommendation
+        )
+        cacheFocusedEntry(entry, for: dailyFocusID, day: day)
+    }
+
+    private func focusWordCount(for value: String) -> Int {
+        let normalized = normalizedFocusText(value)
+        guard !normalized.isEmpty else { return 0 }
+        return normalized.split(separator: " ").count
+    }
+
+    private func isDuplicateFocusName(_ value: String) -> Bool {
+        let normalized = normalizedFocusText(value).lowercased()
+        return mantraFocuses.contains { $0.name.lowercased() == normalized }
+    }
+
+    private func setFocusManagerMessage(_ message: String, isError: Bool = false) {
+        focusManagerMessage = message
+        focusManagerMessageIsError = isError
+    }
+
+    private func clearFocusManagerMessage() {
+        focusManagerMessage = ""
+        focusManagerMessageIsError = false
+    }
+
+    private func showFocusAlert(title: String = "Focus Update", message: String) {
+        presentMainViewDialog(
+            title: title,
+            message: message,
+            symbol: title == "Focus Limit Reached" ? "clock.badge.exclamationmark" : "sparkles.square.filled.on.square"
+        )
+    }
+
+    private func presentMainViewDialog(
+        title: String,
+        message: String,
+        symbol: String,
+        primaryButtonTitle: String? = nil,
+        primaryAction: (() -> Void)? = nil
+    ) {
+        mainViewDialogTitle = title
+        mainViewDialogMessage = message
+        mainViewDialogSymbol = symbol
+        mainViewDialogPrimaryButtonTitle = primaryButtonTitle
+        mainViewDialogPrimaryAction = primaryAction
+        withAnimation(.easeOut(duration: 0.2)) {
+            showMainViewDialog = true
+        }
+    }
+
+    private func dismissMainViewDialog() {
+        mainViewDialogPrimaryButtonTitle = nil
+        mainViewDialogPrimaryAction = nil
+        withAnimation(.easeOut(duration: 0.2)) {
+            showMainViewDialog = false
+        }
+    }
+
+    private func openAppSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString),
+              UIApplication.shared.canOpenURL(url) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private func presentLocationPermissionRequiredAlert(for focusName: String? = nil) {
+        let message: String
+        if let focusName {
+            message = "Turn on Location Access in Settings. Alynna uses weather, humidity, pressure, and nearby conditions to shape your \(focusName) mantra."
+        } else {
+            message = "Turn on Location Access in Settings. Alynna uses weather, humidity, pressure, and nearby conditions to calculate your mantra and rhythm."
+        }
+        presentMainViewDialog(
+            title: "Location Access Matters",
+            message: message,
+            symbol: "location.slash.circle",
+            primaryButtonTitle: "Open Settings",
+            primaryAction: openAppSettings
+        )
+    }
+
+    private func canProceedWithLocationRefresh() -> Bool {
+        let authorizationStatus = locationManager.authorizationStatus
+        switch authorizationStatus {
+        case .denied, .restricted:
+            presentLocationPermissionRequiredAlert()
+            return false
+        default:
+            return true
+        }
+    }
+
+    private func nonDailyFocusLimitMessage() -> String {
+        "For now, non-daily focuses can be refreshed up to 2 times per day, and each selected focus can only be updated once per day. If you want to explore more, please choose carefully and come back tomorrow. We’re also working on a subscription plan with more access. Thank you for your patience."
+    }
+
+    private func nonDailyUsageCount(for day: String? = nil) -> Int {
+        if isPrivilegedUser { return 0 }
+        let key = day ?? currentFocusSelectionKey
+        return mantraFocusUsageByDay[key]?.generatedFocuses.keys.count ?? 0
+    }
+
+    private func hasGeneratedNonDailyFocusToday(_ focusID: String, day: String? = nil) -> Bool {
+        if isPrivilegedUser { return false }
+        let key = day ?? currentFocusSelectionKey
+        return (mantraFocusUsageByDay[key]?.generatedFocuses[focusID] ?? 0) > 0
+    }
+
+    private func recordNonDailyFocusGeneration(_ focusID: String, day: String? = nil) {
+        let key = day ?? currentFocusSelectionKey
+        var usage = mantraFocusUsageByDay[key] ?? DailyFocusUsageEntry(generatedFocuses: [:])
+        usage.generatedFocuses[focusID] = 1
+        mantraFocusUsageByDay[key] = usage
+        persistMantraFocuses()
+    }
+
+    private func submitNewFocus() {
+        createFocus(nameInput: newFocusName, descriptionInput: newFocusDescription)
+    }
+
+    private func saveFocusFromButtonTap() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            submitNewFocus()
+        }
+    }
+
+    private func selectFocus(_ focus: MantraFocus) {
+        loadMantraFocusesIfNeeded()
+
+        let focusID = focus.id.uuidString
+        if activeFocusID == focusID {
+            return
+        }
+
+        if focusID != dailyFocusID {
+            dismissFocusHelperIfNeeded()
+        }
+
+        if activeFocusID == dailyFocusID {
+            cacheCurrentDailyFocusIfPossible()
+        }
+
+        if let entry = focusEntry(for: focusID) {
+            applyFocusedEntry(entry, focusID: focusID)
+            return
+        }
+
+        if focusID != dailyFocusID {
+            if hasGeneratedNonDailyFocusToday(focusID) {
+                showFocusAlert(title: "Focus Limit Reached", message: nonDailyFocusLimitMessage())
+                return
+            }
+
+            if nonDailyUsageCount() >= maxNonDailyFocusUpdatesPerDay {
+                showFocusAlert(title: "Focus Limit Reached", message: nonDailyFocusLimitMessage())
+                return
+            }
+        }
+
+        previousActiveFocusIDBeforeFocusRequest = activeFocusID
+        updateActiveFocusID(focusID)
+
+        if focusID == dailyFocusID {
+            loadTodayRecommendation(day: todayString(), source: .default, allowRemoteFallback: true)
+        } else {
+            generateFocusedMantra(for: focus)
+        }
+    }
+
+    private func toggleFocusVisibility(_ focus: MantraFocus) {
+        loadMantraFocusesIfNeeded()
+
+        let focusID = focus.id.uuidString
+        var ids = appliedMantraFocusIDs
+
+        if let index = ids.firstIndex(of: focusID) {
+            if focusID == dailyFocusID {
+                setFocusManagerMessage("Daily stays pinned so you can always return to the daily mantra.", isError: true)
+                return
+            }
+            dismissFocusHelperIfNeeded()
+            let wasActive = activeFocusID == focusID
+            ids.remove(at: index)
+            updateAppliedMantraFocusIDs(ids)
+            clearFocusManagerMessage()
+            if wasActive {
+                let fallbackFocusID = ids.first ?? dailyFocusID
+                if let entry = focusEntry(for: fallbackFocusID) {
+                    applyFocusedEntry(entry, focusID: fallbackFocusID)
+                } else {
+                    updateActiveFocusID(fallbackFocusID)
+                    loadTodayRecommendation(day: todayString(), source: .default, allowRemoteFallback: true)
+                }
+            }
+            return
+        }
+
+        guard ids.count < maxAppliedFocuses else {
+            setFocusManagerMessage("Show up to 3 focuses under the mantra. Remove one first to add another.", isError: true)
+            return
+        }
+
+        ids.append(focusID)
+        dismissFocusHelperIfNeeded()
+        updateAppliedMantraFocusIDs(ids)
+        clearFocusManagerMessage()
+        selectFocus(focus)
+    }
+
+    private func createFocus(nameInput: String? = nil, descriptionInput: String? = nil) {
+        loadMantraFocusesIfNeeded()
+
+        let name = normalizedFocusText(nameInput ?? newFocusName)
+        let description = normalizedFocusText(descriptionInput ?? newFocusDescription)
+
+        guard !name.isEmpty else { return }
+
+        guard focusWordCount(for: name) <= 2 else {
+            setFocusManagerMessage("Each focus name can use up to 2 words.", isError: true)
+            return
+        }
+
+        guard !description.isEmpty else {
+            setFocusManagerMessage("Add a short description for this focus.", isError: true)
+            return
+        }
+
+        guard !isDuplicateFocusName(name) else {
+            setFocusManagerMessage("That focus already exists.", isError: true)
+            return
+        }
+
+        let newFocus = MantraFocus(id: UUID(), name: name, description: description, createdAt: Date())
+        mantraFocuses.insert(newFocus, at: 0)
+        dismissFocusHelperIfNeeded()
+        focusedFocusFormField = nil
+        newFocusName = ""
+        newFocusDescription = ""
+        showNewFocusForm = false
+
+        if canApplyMoreFocuses {
+            var ids = appliedMantraFocusIDs
+            ids.append(newFocus.id.uuidString)
+            updateAppliedMantraFocusIDs(ids)
+            selectFocus(newFocus)
+            setFocusManagerMessage("Focus saved and added below the mantra.")
+        } else {
+            setFocusManagerMessage("Focus saved. Remove one current focus if you want to show it under the mantra.")
+        }
+
+        persistMantraFocuses()
+    }
+
+    private func deleteFocus(_ focus: MantraFocus) {
+        guard focus.id.uuidString != dailyFocusID else {
+            setFocusManagerMessage("Daily stays pinned and cannot be deleted.", isError: true)
+            pendingFocusDeletion = nil
+            return
+        }
+
+        let focusID = focus.id.uuidString
+        mantraFocuses.removeAll { $0.id == focus.id }
+        mantraFocusSelections = mantraFocusSelections.reduce(into: [:]) { partialResult, item in
+            let filtered = item.value.filter { $0 != focusID }
+            if !filtered.isEmpty {
+                partialResult[item.key] = filtered
+            }
+        }
+        mantraFocusCache = mantraFocusCache.reduce(into: [:]) { partialResult, item in
+            var entries = item.value
+            entries.removeValue(forKey: focusID)
+            if !entries.isEmpty {
+                partialResult[item.key] = entries
+            }
+        }
+        if activeFocusID == focusID {
+            if let dailyEntry = focusEntry(for: dailyFocusID) {
+                applyFocusedEntry(dailyEntry, focusID: dailyFocusID)
+            } else {
+                updateActiveFocusID(dailyFocusID)
+                loadTodayRecommendation(day: todayString(), source: .default, allowRemoteFallback: true)
+            }
+        }
+        pendingFocusDeletion = nil
+        setFocusManagerMessage("Focus deleted.")
+        persistMantraFocuses()
+    }
+
+    private func resetNewFocusForm() {
+        newFocusName = ""
+        newFocusDescription = ""
+        showNewFocusForm = false
+    }
+
+    private func restorePreviousFocusAfterFailure() {
+        let fallbackFocusID = previousActiveFocusIDBeforeFocusRequest ?? dailyFocusID
+        previousActiveFocusIDBeforeFocusRequest = nil
+        focusGenerationTagID = nil
+
+        if let entry = focusEntry(for: fallbackFocusID) {
+            applyFocusedEntry(entry, focusID: fallbackFocusID)
+        } else {
+            updateActiveFocusID(dailyFocusID)
+            loadTodayRecommendation(day: todayString(), source: .default, allowRemoteFallback: true)
+        }
+    }
+
+    private func generateFocusedMantra(for focus: MantraFocus) {
+        guard focusGenerationTagID == nil || focusGenerationTagID == focus.id.uuidString else {
+            showFocusAlert(message: "A focus mantra is already generating. Please wait a moment.")
+            return
+        }
+
+        focusGenerationTagID = focus.id.uuidString
+        beginGenerationFlow()
+
+        func request(using coord: CLLocationCoordinate2D) {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            let birthDateString = dateFormatter.string(from: viewModel.birth_date)
+
+            let timeFormatter = DateFormatter()
+            timeFormatter.dateFormat = "HH:mm"
+            let birthTimeString = timeFormatter.string(from: viewModel.birth_time)
+
+            var payload: [String: Any] = [
+                "birth_date": birthDateString,
+                "birth_time": birthTimeString,
+                "latitude": coord.latitude,
+                "longitude": coord.longitude,
+                "focus_tag": focus.name,
+                "focus_description": focus.description,
+                "focus_mode": "personal"
+            ]
+
+            if !viewModel.currentPlace.isEmpty                        { payload["current_place"]      = viewModel.currentPlace }
+            if let v = viewModel.weatherCondition                     { payload["weather_condition"]   = v }
+            if let v = viewModel.temperature                          { payload["temperature"]         = v }
+            if let v = viewModel.windDirection                        { payload["wind_direction"]      = v }
+            if let v = viewModel.windSpeed                            { payload["wind_speed"]          = v }
+            if let v = viewModel.humidity                             { payload["humidity"]            = v }
+            if let v = viewModel.pressure                             { payload["pressure"]            = v }
+            if let v = viewModel.airQualityAQI                        { payload["air_quality_aqi"]     = v }
+            if let v = viewModel.airQualityPM25                       { payload["air_quality_pm2_5"]   = v }
+            if let v = viewModel.waterPercent                         { payload["water_percent"]       = v }
+            if let v = viewModel.greenPercent                         { payload["green_percent"]       = v }
+            if let v = viewModel.builtPercent                         { payload["built_percent"]       = v }
+
+            guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
+                showFocusAlert(message: "Unable to start the focus mantra request right now.")
+                completeGenerationIfNeeded(isDefault: true)
+                restorePreviousFocusAfterFailure()
+                return
+            }
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+            do {
+                request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+            } catch {
+                showFocusAlert(message: "Unable to prepare this focus mantra request.")
+                completeGenerationIfNeeded(isDefault: true)
+                restorePreviousFocusAfterFailure()
+                return
+            }
+
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    DispatchQueue.main.async {
+                        self.showFocusAlert(message: "Could not generate the \(focus.name) mantra: \(error.localizedDescription)")
+                        self.completeGenerationIfNeeded(isDefault: true)
+                        self.restorePreviousFocusAfterFailure()
+                    }
+                    return
+                }
+
+                guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode), let data = data else {
+                    DispatchQueue.main.async {
+                        self.showFocusAlert(message: "The \(focus.name) mantra request did not finish successfully.")
+                        self.completeGenerationIfNeeded(isDefault: true)
+                        self.restorePreviousFocusAfterFailure()
+                    }
+                    return
+                }
+
+                do {
+                    guard let parsed = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                          let mantra = parsed["mantra"] as? String else {
+                        DispatchQueue.main.async {
+                            self.showFocusAlert(message: "The \(focus.name) mantra response was incomplete.")
+                            self.completeGenerationIfNeeded(isDefault: true)
+                            self.restorePreviousFocusAfterFailure()
+                        }
+                        return
+                    }
+
+                    let reasoningSummary: String = {
+                        if let s = parsed["reasoning_summary"] as? String, !s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return s }
+                        if let explanation = parsed["explanation"] as? [String: Any],
+                           let s = explanation["reasoning_summary"] as? String,
+                           !s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            return s
+                        }
+                        return ""
+                    }()
+
+                    let normalized: [String: String] = {
+                        if let recs = parsed["recommendations"] as? [String: String] {
+                            let reduced = recs.reduce(into: [String: String]()) { acc, kv in
+                                if let canon = canonicalCategory(from: kv.key) {
+                                    acc[canon] = sanitizeDocumentName(kv.value)
+                                }
+                            }
+                            if !reduced.isEmpty {
+                                return reduced
+                            }
+                        }
+
+                        if let dailyEntry = self.focusEntry(for: self.dailyFocusID) {
+                            return dailyEntry.recommendations
+                        }
+
+                        return self.viewModel.recommendations
+                    }()
+
+                    let resolvedPlace = self.lastRecommendationPlace.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        ? self.viewModel.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines)
+                        : self.lastRecommendationPlace.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                    let entry = FocusedMantraEntry(
+                        mantra: mantra,
+                        recommendations: normalized,
+                        reasoningSummary: reasoningSummary,
+                        locationName: resolvedPlace,
+                        savedAt: Date(),
+                        isDefault: false
+                    )
+
+                    DispatchQueue.main.async {
+                        self.recordNonDailyFocusGeneration(focus.id.uuidString)
+                        self.cacheFocusedEntry(entry, for: focus.id.uuidString)
+                        self.applyFocusedEntry(entry, focusID: focus.id.uuidString)
+                        self.focusGenerationTagID = nil
+                        self.previousActiveFocusIDBeforeFocusRequest = nil
+                        self.completeGenerationIfNeeded(isDefault: false)
+                    }
+                } catch {
+                    DispatchQueue.main.async {
+                        self.showFocusAlert(message: "Could not read the \(focus.name) mantra response.")
+                        self.completeGenerationIfNeeded(isDefault: true)
+                        self.restorePreviousFocusAfterFailure()
+                    }
+                }
+            }.resume()
+        }
+
+        let authorizationStatus = locationManager.authorizationStatus
+        switch authorizationStatus {
+        case .denied, .restricted:
+            presentLocationPermissionRequiredAlert(for: focus.name)
+            completeGenerationIfNeeded(isDefault: true)
+            restorePreviousFocusAfterFailure()
+            return
+        case .notDetermined, .authorizedAlways, .authorizedWhenInUse:
+            break
+        @unknown default:
+            presentLocationPermissionRequiredAlert(for: focus.name)
+            completeGenerationIfNeeded(isDefault: true)
+            restorePreviousFocusAfterFailure()
+            return
+        }
+
+        if let coord = locationManager.currentLocation {
+            request(using: coord)
+            return
+        }
+
+        locationManager.requestLocation()
+        let start = Date()
+        let timeout: TimeInterval = 8.0
+
+        func poll() {
+            if let coord = locationManager.currentLocation {
+                request(using: coord)
+                return
+            }
+            let latestAuthorizationStatus = locationManager.authorizationStatus
+            if latestAuthorizationStatus == .denied || latestAuthorizationStatus == .restricted {
+                presentLocationPermissionRequiredAlert(for: focus.name)
+                completeGenerationIfNeeded(isDefault: true)
+                restorePreviousFocusAfterFailure()
+                return
+            }
+            if Date().timeIntervalSince(start) > timeout {
+                showFocusAlert(message: "Location is taking too long. Try the \(focus.name) mantra again in a moment.")
+                completeGenerationIfNeeded(isDefault: true)
+                restorePreviousFocusAfterFailure()
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: poll)
+        }
+
+        poll()
+    }
+
+    private var expandedMantraFocusStrip: some View {
+        HStack(spacing: 8) {
+            ForEach(appliedMantraFocuses.prefix(maxAppliedFocuses)) { focus in
+                let isActive = activeFocusID == focus.id.uuidString
+                Button {
+                    selectFocus(focus)
+                } label: {
+                    Text(focus.name)
+                        .font(.custom("Merriweather-Regular", size: 12))
+                        .foregroundColor(isActive ? Color.black.opacity(0.78) : themeManager.primaryText.opacity(0.88))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(
+                            Capsule()
+                                .fill(
+                                    isActive
+                                        ? Color(red: 0.94, green: 0.88, blue: 0.72).opacity(themeManager.isNight ? 0.92 : 0.84)
+                                        : themeManager.panelFill.opacity(themeManager.isNight ? 0.38 : 0.48)
+                                )
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(
+                                    isActive ? Color.white.opacity(0.32) : Color.white.opacity(0.16),
+                                    lineWidth: 1
+                                )
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+
+            Button {
+                loadMantraFocusesIfNeeded()
+                showFocusHint = true
+                showFocusManagerSheet = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 10, weight: .semibold))
+                    Text("focus")
+                        .font(.custom("Merriweather-Regular", size: 12))
+                }
+                .foregroundColor(themeManager.descriptionText.opacity(0.85))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(
+                    Capsule()
+                        .fill(themeManager.panelFill.opacity(themeManager.isNight ? 0.24 : 0.3))
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.14), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                )
+            }
+            .buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.horizontal, 24)
+    }
+
+    private var focusManagerSheet: some View {
+        NavigationStack {
+            List {
+                Section {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("How Focuses Work")
+                            .font(.custom("Merriweather-Bold", size: 13))
+                            .foregroundColor(themeManager.primaryText.opacity(0.92))
+                            .padding(.bottom, 2)
+
+                        Text("A focus helps Alynna shape the mantra around a specific part of your life, so the guidance feels more relevant to what you want support with today.")
+                            .font(.custom("Merriweather-Regular", size: 12))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.72))
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        focusGuidanceRow(
+                            symbol: "heart.text.square",
+                            title: "Health note",
+                            body: "If a focus relates to your physical or mental health, treat Alynna as supportive guidance only and continue to follow professional medical advice."
+                        )
+                    }
+                    .padding(.vertical, 4)
+                }
+
+                Section("Current Focus") {
+                    if let activeFocus {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(activeFocus.name)
+                                .font(.custom("Merriweather-Bold", size: 14))
+                                .foregroundColor(themeManager.primaryText)
+                            Text(activeFocus.description)
+                                .font(.custom("Merriweather-Regular", size: 12))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.74))
+                        }
+                    }
+                }
+
+                Section("Preset Focuses") {
+                    ForEach(seededMantraFocuses) { focus in
+                        let isVisible = appliedMantraFocusIDs.contains(focus.id.uuidString)
+                        HStack(alignment: .top, spacing: 12) {
+                            Button {
+                                if isVisible {
+                                    selectFocus(focus)
+                                } else {
+                                    toggleFocusVisibility(focus)
+                                }
+                            } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(focus.name)
+                                        .font(.custom("Merriweather-Bold", size: 14))
+                                        .foregroundColor(themeManager.primaryText)
+                                    Text(focus.description)
+                                        .font(.custom("Merriweather-Regular", size: 12))
+                                        .foregroundColor(themeManager.descriptionText.opacity(0.74))
+                                        .multilineTextAlignment(.leading)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .opacity(!isVisible && !canApplyMoreFocuses ? 0.45 : 1)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(!isVisible && !canApplyMoreFocuses)
+
+                            Button {
+                                if isVisible, focus.id.uuidString != dailyFocusID {
+                                    toggleFocusVisibility(focus)
+                                } else if !isVisible {
+                                    toggleFocusVisibility(focus)
+                                }
+                            } label: {
+                                Image(systemName: isVisible ? "checkmark.circle.fill" : "plus.circle")
+                                    .foregroundColor(
+                                        isVisible
+                                            ? themeManager.primaryText.opacity(0.86)
+                                            : themeManager.descriptionText.opacity(0.5)
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(focus.id.uuidString == dailyFocusID || (!isVisible && !canApplyMoreFocuses))
+
+                            if focus.id.uuidString != dailyFocusID {
+                                Button(role: .destructive) {
+                                    pendingFocusDeletion = focus
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .foregroundColor(.red.opacity(0.85))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+
+                Section("Custom Focuses") {
+                    let customFocuses = mantraFocuses.filter { !seededFocusIDs.contains($0.id.uuidString) }
+                    if !focusManagerMessage.isEmpty {
+                        Text(focusManagerMessage)
+                            .font(.custom("Merriweather-Regular", size: 12))
+                            .foregroundColor(
+                                focusManagerMessageIsError
+                                    ? Color.red.opacity(0.88)
+                                    : themeManager.descriptionText.opacity(0.82)
+                            )
+                            .multilineTextAlignment(.leading)
+                    }
+                    if customFocuses.isEmpty {
+                        Text("No custom focuses yet.")
+                            .font(.custom("Merriweather-Regular", size: 14))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.72))
+                    } else {
+                        ForEach(customFocuses) { focus in
+                            let isVisible = appliedMantraFocusIDs.contains(focus.id.uuidString)
+                            HStack(alignment: .top, spacing: 12) {
+                                Button {
+                                    if isVisible {
+                                        selectFocus(focus)
+                                    } else {
+                                        toggleFocusVisibility(focus)
+                                    }
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(focus.name)
+                                            .font(.custom("Merriweather-Bold", size: 14))
+                                            .foregroundColor(themeManager.primaryText)
+                                        Text(focus.description)
+                                            .font(.custom("Merriweather-Regular", size: 12))
+                                            .foregroundColor(themeManager.descriptionText.opacity(0.74))
+                                            .multilineTextAlignment(.leading)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .opacity(!isVisible && !canApplyMoreFocuses ? 0.45 : 1)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(!isVisible && !canApplyMoreFocuses)
+
+                                Button {
+                                    toggleFocusVisibility(focus)
+                                } label: {
+                                    Image(systemName: isVisible ? "checkmark.circle.fill" : "plus.circle")
+                                        .foregroundColor(
+                                            isVisible
+                                                ? themeManager.primaryText.opacity(0.86)
+                                                : themeManager.descriptionText.opacity(0.5)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(!isVisible && !canApplyMoreFocuses)
+
+                                Button(role: .destructive) {
+                                    pendingFocusDeletion = focus
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .foregroundColor(.red.opacity(0.85))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+
+                Section {
+                    if showNewFocusForm {
+                        VStack(alignment: .leading, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("Be precise")
+                                    .font(.custom("Merriweather-Bold", size: 12))
+                                    .foregroundColor(themeManager.primaryText.opacity(0.9))
+
+                                Text("For custom focuses, a clear name and precise description help Alynna generate more relevant guidance.")
+                                    .font(.custom("Merriweather-Regular", size: 12))
+                                    .foregroundColor(themeManager.descriptionText.opacity(0.72))
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+
+                            TextField("Focus name", text: $newFocusName)
+                                .textInputAutocapitalization(.words)
+                                .autocorrectionDisabled()
+                                .focused($focusedFocusFormField, equals: .name)
+                                .submitLabel(.next)
+                                .onSubmit {
+                                    focusedFocusFormField = .description
+                                }
+
+                            Text("Use no more than 2 words.")
+                                .font(.custom("Merriweather-Regular", size: 11))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.7))
+
+                            TextField("What should this focus hold space for?", text: $newFocusDescription, axis: .vertical)
+                                .lineLimit(3...5)
+                                .textInputAutocapitalization(.sentences)
+                                .focused($focusedFocusFormField, equals: .description)
+                                .submitLabel(.done)
+                                .onSubmit {
+                                    submitNewFocus()
+                                }
+
+                            HStack {
+                                Button("Cancel") {
+                                    resetNewFocusForm()
+                                }
+                                .foregroundColor(themeManager.descriptionText.opacity(0.85))
+
+                                Spacer()
+
+                                Button {
+                                    saveFocusFromButtonTap()
+                                } label: {
+                                    Text("Save Focus")
+                                        .frame(minWidth: 96, minHeight: 36)
+                                        .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.borderedProminent)
+                            }
+                            .font(.custom("Merriweather-Regular", size: 14))
+                        }
+                        .padding(.vertical, 4)
+                    } else {
+                        Button {
+                            clearFocusManagerMessage()
+                            showNewFocusForm = true
+                        } label: {
+                            Label("New Custom Focus", systemImage: "plus")
+                                .font(.custom("Merriweather-Regular", size: 14))
+                        }
+                    }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(themeManager.panelFill.opacity(themeManager.isNight ? 0.95 : 0.9))
+            .navigationTitle("Focuses")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Close") {
+                        showFocusManagerSheet = false
+                    }
+                    .foregroundColor(themeManager.primaryText)
+                }
+            }
+            .confirmationDialog(
+                "Delete Focus?",
+                isPresented: Binding(
+                    get: { pendingFocusDeletion != nil },
+                    set: { if !$0 { pendingFocusDeletion = nil } }
+                ),
+                titleVisibility: .visible
+            ) {
+                if let focus = pendingFocusDeletion {
+                    Button("Delete \"\(focus.name)\" Focus", role: .destructive) {
+                        deleteFocus(focus)
+                    }
+                }
+                Button("Cancel", role: .cancel) {
+                    pendingFocusDeletion = nil
+                }
+            } message: {
+                if let focus = pendingFocusDeletion {
+                    Text("This deletes \(focus.name) everywhere it appears and clears its cached focused mantra.")
+                }
+            }
+        }
     }
 
     private func showNoSoundToastIfNeeded() {
@@ -617,11 +1989,29 @@ struct MainView: View {
                                 .foregroundColor(themeManager.primaryText)
 
                             Text(rhythmHeaderSubtitle)
-                                .font(.custom("Merriweather-Bold", size: 12))
-                                .foregroundColor(themeManager.descriptionText.opacity(0.8))
+                                .font(.custom("Merriweather-Regular", size: 10))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.52))
                                 .multilineTextAlignment(.center)
                                 .lineLimit(2)
                                 .minimumScaleFactor(0.85)
+                        }
+                        .overlay(alignment: .topTrailing) {
+                            if shouldShowCompactFocusBadge, let activeFocus {
+                                Text(activeFocus.name)
+                                    .font(.custom("Merriweather-Regular", size: 10))
+                                    .foregroundColor(themeManager.primaryText.opacity(0.84))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(
+                                        Capsule()
+                                            .fill(themeManager.panelFill.opacity(themeManager.isNight ? 0.42 : 0.55))
+                                    )
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                                    )
+                                    .offset(x: 18, y: -13)
+                            }
                         }
                         .padding(.top, 20)
                         .opacity(isMantraExpanded ? 0 : 1)
@@ -632,68 +2022,106 @@ struct MainView: View {
 
 
 
-                        Button {
-                            guard isMantraReady else { return }
-                            withAnimation(.easeInOut(duration: 0.45)) {
-                                isMantraExpanded.toggle()
-                            }
-                        } label: {
-                            Group {
-                                if isMantraExpanded {
-                                    Text(viewModel.dailyMantra)
-                                        .font(AlignaType.expandedMantraBoldItalic())
-                                        .lineSpacing(12)
-                                        .multilineTextAlignment(.center)
-                                        .foregroundColor(
-                                            themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
-                                        )
-                                        .fixedSize(horizontal: false, vertical: true)
-                                        .padding(.horizontal, geometry.size.width * 0.14)
-                                        .padding(.top, geometry.size.height * 0.16)
-                                } else {
+                        Group {
+                            if isMantraExpanded {
+                                let textWidth = geometry.size.width * 0.72
+                                let topInset = geometry.size.height * 0.16
+                                let lastLineRect = expandedMantraLastLineRect(for: viewModel.dailyMantra, width: textWidth)
+
+                                VStack(spacing: 0) {
+                                    ZStack(alignment: .topLeading) {
+                                        VStack(spacing: 1) {
+                                            Text(viewModel.dailyMantra)
+                                                .font(AlignaType.expandedMantraBoldItalic())
+                                                .lineSpacing(12)
+                                                .multilineTextAlignment(.center)
+                                                .foregroundColor(
+                                                    themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
+                                                )
+                                                .fixedSize(horizontal: false, vertical: true)
+                                                .frame(width: textWidth)
+
+                                            if shouldShowMantraGuidanceHint {
+                                                Text("Tap the mantra above to reveal today’s rhythm guidance.")
+                                                    .font(.custom("Merriweather-Regular", size: 11))
+                                                    .foregroundColor(themeManager.descriptionText.opacity(0.68))
+                                                    .multilineTextAlignment(.center)
+                                                    .frame(width: textWidth * 0.96)
+                                                    .transition(.opacity)
+                                            }
+                                        }
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            toggleMantraExpansion()
+                                        }
+
+                                        if let lastLineRect {
+                                            expandedMantraInfoBadge
+                                                .position(
+                                                    x: min(lastLineRect.maxX + 10, textWidth - 8),
+                                                    y: max(lastLineRect.maxY - 15, 8)
+                                                )
+                                        }
+                                    }
+                                    .frame(width: textWidth, alignment: .center)
+                                    .padding(.top, topInset)
+                                    .padding(.bottom, shouldShowMantraGuidanceHint ? 8 : 18)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    toggleMantraExpansion()
+                                }
+                            } else {
+                                Button {
+                                    toggleMantraExpansion()
+                                } label: {
                                     Text(viewModel.dailyMantra)
                                         .font(AlignaType.homeSubtitle())
                                         .lineSpacing(AlignaType.descLineSpacing)
                                         .multilineTextAlignment(.center)
-                                        .foregroundColor(themeManager.descriptionText)
+                                        .foregroundColor(themeManager.descriptionText.opacity(0.72))
                                         .lineLimit(2)
                                         .truncationMode(.tail)
                                         .padding(.horizontal, geometry.size.width * 0.1)
+                                        .frame(maxWidth: .infinity)
                                 }
+                                .buttonStyle(.plain)
+                                .contentShape(Rectangle())
                             }
-                            .frame(maxWidth: .infinity)
-                            .frame(maxHeight: isMantraExpanded ? .infinity : nil, alignment: isMantraExpanded ? .top : .center)
-                            .opacity(isMantraReady ? 1 : 0)
                         }
-                        .buttonStyle(.plain)
-                        .contentShape(Rectangle())
+                        .frame(maxWidth: .infinity)
+                        .frame(maxHeight: isMantraExpanded ? .infinity : nil, alignment: isMantraExpanded ? .top : .center)
+                        .opacity(isMantraReady ? 1 : 0)
                         .allowsHitTesting(isMantraReady)
                         
                         if isMantraExpanded {
-                            if let generationStatusText {
+                            VStack(spacing: 8) {
                                 HStack(spacing: 8) {
-                                    ProgressView()
-                                        .progressViewStyle(.circular)
-                                        .tint(themeManager.descriptionText.opacity(0.75))
-                                        .scaleEffect(0.8)
+                                    if focusHelperShowsProgress {
+                                        ProgressView()
+                                            .progressViewStyle(.circular)
+                                            .tint(themeManager.descriptionText.opacity(0.75))
+                                            .scaleEffect(0.8)
+                                    }
 
-                                    Text(generationStatusText)
-                                        .font(AlignaType.helperSmall())
-                                        .lineSpacing(AlignaType.small14LineSpacing)
-                                        .foregroundColor(themeManager.descriptionText.opacity(0.75))
-                                        .multilineTextAlignment(.center)
+                                    if shouldShowFocusHelper {
+                                        Text(focusHelperText)
+                                            .font(AlignaType.helperSmall())
+                                            .lineSpacing(AlignaType.small14LineSpacing)
+                                            .foregroundColor(themeManager.descriptionText.opacity(0.75))
+                                            .multilineTextAlignment(.center)
+                                    }
                                 }
                                 .padding(.horizontal, geometry.size.width * 0.12)
-                                .padding(.top, 10)
-                                .transition(.opacity)
+
+                                expandedMantraFocusStrip
                             }
+                            .padding(.top, 12)
+                            .transition(.move(edge: .top).combined(with: .opacity))
 
                             let actionButtonSize: CGFloat = 32
                             HStack(spacing: 12) {
-                                infoIconButton
-                                    .frame(width: actionButtonSize, height: actionButtonSize)
-                                    .contentShape(Rectangle())
-
                                 Button {
                                     presentMantraShareSheet()
                                 } label: {
@@ -702,11 +2130,6 @@ struct MainView: View {
                                         .foregroundColor(themeManager.primaryText)
                                         .frame(width: actionButtonSize, height: actionButtonSize)
                                         .contentShape(Rectangle())
-                                }
-                                .alert("Share failed", isPresented: $showMantraSaveAlert) {
-                                    Button("OK", role: .cancel) { }
-                                } message: {
-                                    Text(mantraSaveMessage)
                                 }
 
                                 Button {
@@ -840,6 +2263,7 @@ struct MainView: View {
                     .onAppear {
                         starManager.animateStar = true
                         themeManager.appBecameActive()
+                        loadMantraFocusesIfNeeded()
                         ensureDefaultsIfMissing()
                         fetchAllRecommendationTitles()
                         if !todaySoundKey.isEmpty, todaySoundKey != lastPrefetchedSoundKey {
@@ -860,10 +2284,9 @@ struct MainView: View {
             .safeAreaInset(edge: .bottom) {
                 if !isMantraExpanded {
                     (
-                        Text("The daily rhythms above are derived from integrated modeling of Earth observation, climate, air-quality, physiological, and astrological data, ")
-                        + Text("\(updatedOnFooterText).").bold()
+                        Text("The daily rhythms above are derived from integrated modeling of Earth observation, climate, air-quality, physiological, and astrological data.")
                     )
-                    .font(.system(size: 10))
+                    .font(.custom("Merriweather-Regular", size: 10))
                     .multilineTextAlignment(.center)
                     .foregroundColor(themeManager.descriptionText.opacity(0.45))
                     .padding(.horizontal, 24)
@@ -878,9 +2301,24 @@ struct MainView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
+            .overlay {
+                if showMainViewDialog {
+                    mainViewDialog
+                }
+            }
             .sheet(isPresented: $showReasoningSheet) {
                 ReasoningSummarySheet(text: viewModel.reasoningSummary)
                     .presentationDetents([.fraction(0.4), .large])
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(24)
+            }
+            .sheet(isPresented: $showFocusManagerSheet, onDismiss: {
+                resetNewFocusForm()
+                clearFocusManagerMessage()
+                pendingFocusDeletion = nil
+            }) {
+                focusManagerSheet
+                    .presentationDetents([.fraction(0.58), .large])
                     .presentationDragIndicator(.visible)
                     .presentationCornerRadius(24)
             }
@@ -900,12 +2338,6 @@ struct MainView: View {
                     .environmentObject(themeManager)
                     .environmentObject(viewModel)
             }
-            .alert("Update Unavailable", isPresented: $showRefreshCooldownAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(refreshCooldownMessage)
-            }
-
         }
         .navigationViewStyle(.stack)
         .toolbar(.hidden, for: .navigationBar)
@@ -1017,7 +2449,8 @@ struct MainView: View {
     private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = .current
-        formatter.setLocalizedDateFormatFromTemplate("MMMd")
+        formatter.timeZone = .current
+        formatter.setLocalizedDateFormatFromTemplate("jmm")
         return formatter
     }()
 
@@ -1065,7 +2498,11 @@ struct MainView: View {
     private func presentMantraShareSheet() {
         guard let image = captureMantraImage() else {
             mantraSaveMessage = "Could not capture the screenshot."
-            showMantraSaveAlert = true
+            presentMainViewDialog(
+                title: "Share Failed",
+                message: mantraSaveMessage,
+                symbol: "square.and.arrow.up.badge.exclamationmark"
+            )
             return
         }
 
@@ -1337,6 +2774,10 @@ struct MainView: View {
             let hasProfile = data != nil && !nickname.isEmpty
 
             DispatchQueue.main.async {
+                if !nickname.isEmpty {
+                    privilegedNickname = nickname
+                    viewModel.nickname = nickname
+                }
                 if let _ = error {
                     if didDeleteAccount {
                         didDeleteAccount = false
@@ -1356,6 +2797,11 @@ struct MainView: View {
                                 let data = snapshot?.data()
                                 let nickname = (data?["nickname"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                                 let hasProfile = data != nil && !nickname.isEmpty
+
+                                if !nickname.isEmpty {
+                                    privilegedNickname = nickname
+                                    viewModel.nickname = nickname
+                                }
 
                                 if hasProfile {
                                     hasCompletedOnboarding = true
@@ -1646,9 +3092,14 @@ struct MainView: View {
     }
 
     private func handleManualRefreshTap() {
+        guard canProceedWithLocationRefresh() else { return }
         guard manualRefreshAllowed() else {
             refreshCooldownMessage = refreshCooldownText()
-            showRefreshCooldownAlert = true
+            presentMainViewDialog(
+                title: "Update Unavailable",
+                message: refreshCooldownMessage,
+                symbol: "clock.badge.exclamationmark"
+            )
             return
         }
         isManualRefreshFlow = true
@@ -1658,23 +3109,22 @@ struct MainView: View {
     }
 
     private func manualRefreshAllowed() -> Bool {
+        if isPrivilegedUser { return true }
         let now = Date().timeIntervalSince1970
         return now - lastManualRefreshTimestamp >= 12 * 60 * 60
     }
 
     private func refreshCooldownText() -> String {
         guard lastManualRefreshTimestamp > 0 else {
-            return "You can refresh again in about 12 hours."
+            return "To keep each refresh intentional, the next one will be available 12 hours later. We’re actively developing a subscription option with expanded access. Thank you for your patience."
         }
         let last = Date(timeIntervalSince1970: lastManualRefreshTimestamp)
-        let next = last.addingTimeInterval(12 * 60 * 60)
         let formatter = DateFormatter()
         formatter.locale = .current
         formatter.timeStyle = .short
         formatter.dateStyle = .none
         let lastText = formatter.string(from: last)
-        let nextText = formatter.string(from: next)
-        return "Updated at \(lastText). You can refresh again after \(nextText)."
+        return "Your last rhythm update was at \(lastText). To keep each refresh intentional, the next one will be available 12 hours later. We’re actively developing a subscription option with expanded access. Thank you for your patience."
     }
 
     private func expandMantraIfNeeded() {
@@ -1728,6 +3178,7 @@ struct MainView: View {
         isGenerationInProgress = false
         isUsingPreviousResult = false
         showGenerationStrongHint = false
+        focusGenerationTagID = nil
         if !isDefault {
             if bootPhase == .main {
                 triggerGenerationHapticIfNeeded()
@@ -1739,12 +3190,23 @@ struct MainView: View {
     }
 
     private func triggerGenerationHapticIfNeeded() {
-        let today = todayString()
-        guard mantraGenerationHapticDay != today else { return }
-        mantraGenerationHapticDay = today
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.prepare()
-        generator.impactOccurred()
+        let light = UIImpactFeedbackGenerator(style: .light)
+        let medium = UIImpactFeedbackGenerator(style: .medium)
+        let success = UINotificationFeedbackGenerator()
+
+        light.prepare()
+        medium.prepare()
+        success.prepare()
+
+        light.impactOccurred()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.10) {
+            medium.impactOccurred()
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) {
+            success.notificationOccurred(.success)
+        }
     }
 
     private func showCenterToast(_ message: String, duration: TimeInterval, includeTime: Bool = true) {
@@ -1771,6 +3233,17 @@ struct MainView: View {
             withAnimation(.easeOut(duration: 0.35)) {
                 showGridItems = true
             }
+        }
+    }
+
+    private func toggleMantraExpansion() {
+        guard isMantraReady else { return }
+        let wasExpanded = isMantraExpanded
+        if wasExpanded && mantraGuidanceHintTapCount < 3 {
+            mantraGuidanceHintTapCount += 1
+        }
+        withAnimation(.easeInOut(duration: 0.45)) {
+            isMantraExpanded.toggle()
         }
     }
 
@@ -1989,6 +3462,7 @@ struct MainView: View {
         guard let uid = Auth.auth().currentUser?.uid else {
             print("❌ 未登录，无法强制重拉"); return
         }
+        guard canProceedWithLocationRefresh() else { return }
         let today = todayString()
         let docRef = todayDocRef(uid: uid, day: today)
 
@@ -2103,6 +3577,14 @@ struct MainView: View {
         let limit: TimeInterval = 8.0
 
         func attempt() {
+            let authorizationStatus = locationManager.authorizationStatus
+            if authorizationStatus == .denied || authorizationStatus == .restricted {
+                presentLocationPermissionRequiredAlert()
+                todayFetchLock = ""
+                isFetchingToday = false
+                completeGenerationIfNeeded(isDefault: true)
+                return
+            }
             if let coord = locationManager.currentLocation {
                 fetchFromFastAPIAndSave(coord: coord, userId: uid, today: today, docRef: docRef)
                 return
@@ -2130,6 +3612,7 @@ struct MainView: View {
         guard let uid = Auth.auth().currentUser?.uid else {
             print("❌ 用户未登录，跳过获取推荐"); return
         }
+        guard canProceedWithLocationRefresh() else { return }
         let today = todayString()
         let docRef = todayDocRef(uid: uid, day: today)
 
@@ -2170,6 +3653,7 @@ struct MainView: View {
 
 
             // 尚无今日记录 → 加锁并等待定位就绪后只发一次
+            guard canProceedWithLocationRefresh() else { return }
             todayFetchLock = today
             isFetchingToday = true
             if locationManager.currentLocation == nil {
@@ -2210,6 +3694,8 @@ struct MainView: View {
         if let v = viewModel.windSpeed                            { payload["wind_speed"]          = v }
         if let v = viewModel.humidity                             { payload["humidity"]            = v }
         if let v = viewModel.pressure                             { payload["pressure"]            = v }
+        if let v = viewModel.airQualityAQI                        { payload["air_quality_aqi"]     = v }
+        if let v = viewModel.airQualityPM25                       { payload["air_quality_pm2_5"]   = v }
         if let v = viewModel.waterPercent                         { payload["water_percent"]       = v }
         if let v = viewModel.greenPercent                         { payload["green_percent"]       = v }
         if let v = viewModel.builtPercent                         { payload["built_percent"]       = v }
@@ -2401,6 +3887,7 @@ struct MainView: View {
                         viewModel.dailyMantra = mantra
                         lastRecommendationDate = today
                         viewModel.reasoningSummary = reasoning
+                        cacheCurrentDailyFocusIfPossible(day: today)
                         updateLastRecommendationStampIfReady(mantra: mantra, recs: normalized, isDefault: false)
                         completeGenerationIfNeeded(isDefault: false)
 
@@ -2746,6 +4233,7 @@ struct MainView: View {
 
                 let resolvedMantra = mantraTrim.isEmpty ? self.viewModel.dailyMantra : fetchedMantra
                 self.isDefaultRecommendation = isDefault
+                self.cacheCurrentDailyFocusIfPossible(day: today)
                 self.updateLastRecommendationStampIfReady(mantra: resolvedMantra, recs: recs, isDefault: isDefault)
                 self.completeGenerationIfNeeded(isDefault: isDefault)
 
