@@ -13,7 +13,14 @@ struct PreferencesView: View {
 
     @State private var isSaving = false
     @State private var errorMessage: String?
+    @State private var showSavedAlert = false
 
+    @State private var didInitialize = false
+    @State private var scentDislikeDraft: Set<String> = []
+    @State private var actPreferDraft: Set<String> = []
+    @State private var colorDislikeDraft: Set<String> = []
+    @State private var allergiesDraft: Set<String> = []
+    @State private var musicDislikeDraft: Set<String> = []
 
     private let scentOptions  = ["Floral", "Strong", "Woody", "Citrus", "Spicy", "Other"]
     private let actOptions    = ["Static", "Dynamic", "No preference"]
@@ -37,8 +44,8 @@ struct PreferencesView: View {
                             "Any scent that don’t feel right?",
                             content: chips(
                                 options: scentOptions,
-                                isSelected: { viewModel.scent_dislike.contains($0) },
-                                toggle: { toggleSet(&viewModel.scent_dislike, $0) }
+                                isSelected: { scentDislikeDraft.contains($0) },
+                                toggle: { toggleSet(&scentDislikeDraft, $0) }
 
 
                             )
@@ -48,8 +55,8 @@ struct PreferencesView: View {
                             "Activity preference?",
                             content: chips(
                                 options: actOptions,
-                                isSelected: { viewModel.act_prefer.contains($0) },
-                                toggle: { toggleSet(&viewModel.act_prefer, $0) }
+                                isSelected: { actPreferDraft.contains($0) },
+                                toggle: { toggleSet(&actPreferDraft, $0) }
                             )
                         )
 
@@ -57,8 +64,8 @@ struct PreferencesView: View {
                             "Any color that don’t feel right?",
                             content: chips(
                                 options: colorOptions,
-                                isSelected: { viewModel.color_dislike.contains($0) },
-                                toggle: { toggleSet(&viewModel.color_dislike, $0) }
+                                isSelected: { colorDislikeDraft.contains($0) },
+                                toggle: { toggleSet(&colorDislikeDraft, $0) }
                             )
                         )
 
@@ -66,8 +73,8 @@ struct PreferencesView: View {
                             "Any allergies we should know about?",
                             content: chips(
                                 options: allergyOpts,
-                                isSelected: { viewModel.allergies.contains($0) },
-                                toggle: { toggleSet(&viewModel.allergies, $0) }
+                                isSelected: { allergiesDraft.contains($0) },
+                                toggle: { toggleSet(&allergiesDraft, $0) }
                             )
                         )
 
@@ -75,8 +82,8 @@ struct PreferencesView: View {
                             "Any sound that don’t feel right?",
                             content: chips(
                                 options: musicOptions,
-                                isSelected: { viewModel.music_dislike.contains($0) },
-                                toggle: { toggleSet(&viewModel.music_dislike, $0) }
+                                isSelected: { musicDislikeDraft.contains($0) },
+                                toggle: { toggleSet(&musicDislikeDraft, $0) }
                             )
                         )
 
@@ -121,10 +128,25 @@ struct PreferencesView: View {
                 }
             }
         }
+        .onAppear {
+            if !didInitialize {
+                scentDislikeDraft = viewModel.scent_dislike
+                actPreferDraft = viewModel.act_prefer
+                colorDislikeDraft = viewModel.color_dislike
+                allergiesDraft = viewModel.allergies
+                musicDislikeDraft = viewModel.music_dislike
+                didInitialize = true
+            }
+        }
         .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: { _ in errorMessage = nil })) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(errorMessage ?? "")
+        }
+        .alert("Saved", isPresented: $showSavedAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Your preferences have been saved.")
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
@@ -206,11 +228,11 @@ struct PreferencesView: View {
         isSaving = true
 
         let payload: [String: Any] = [
-            "scent_dislike": Array(viewModel.scent_dislike),
-            "act_prefer": Array(viewModel.act_prefer),
-            "color_dislike": Array(viewModel.color_dislike),
-            "allergies": Array(viewModel.allergies),
-            "music_dislike": Array(viewModel.music_dislike),
+            "scent_dislike": Array(scentDislikeDraft),
+            "act_prefer": Array(actPreferDraft),
+            "color_dislike": Array(colorDislikeDraft),
+            "allergies": Array(allergiesDraft),
+            "music_dislike": Array(musicDislikeDraft),
             "updatedAt": FieldValue.serverTimestamp()
         ]
 
@@ -218,6 +240,13 @@ struct PreferencesView: View {
             isSaving = false
             if let err = err {
                 errorMessage = err.localizedDescription
+            } else {
+                viewModel.scent_dislike = scentDislikeDraft
+                viewModel.act_prefer = actPreferDraft
+                viewModel.color_dislike = colorDislikeDraft
+                viewModel.allergies = allergiesDraft
+                viewModel.music_dislike = musicDislikeDraft
+                showSavedAlert = true
             }
         }
     }
