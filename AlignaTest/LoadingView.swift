@@ -298,6 +298,7 @@ struct LoadingView: View {
 
     @State private var didStartLoading = false
     @State private var didFetchPlaceSignals = false
+    @State private var didFetchGeomagnetic = false
     @State private var stage: LoadingStage = .initial
     @State private var initialPulse = false
 
@@ -1061,6 +1062,10 @@ struct LoadingView: View {
             }
         }
 
+        // Geomagnetic (NOAA/NCEI) — optional signals; failure should not block loading
+        let elevationKm = locationManager.currentAltitudeMeters.map { $0 / 1000.0 }
+        fetchGeomagnetic(for: coord, elevationKm: elevationKm)
+
         // Weather via Open-Meteo (no API key) — fetch structured fields
         let fields = "temperature_2m,weathercode,wind_speed_10m,wind_direction_10m,relative_humidity_2m,surface_pressure"
         let urlStr = "https://api.open-meteo.com/v1/forecast"
@@ -1129,6 +1134,195 @@ struct LoadingView: View {
         fetchLandCoverDensity(for: coord)
     }
 
+    private enum GeomagneticAPIConfig {
+        static let baseURL = "https://www.ngdc.noaa.gov/geomag-web/calculators/calculateIgrfgrid"
+        // NOAA / NCEI API key (optional). Leave empty and inject securely at build time.
+        static let apiKey = ""
+        static let latStepSize = "0.1"
+        static let lonStepSize = "0.1"
+    }
+
+    private struct GeomagneticValues {
+        var declinationDeg: Double? = nil
+        var declinationSvDegPerYear: Double? = nil
+        var declinationUncertaintyDeg: Double? = nil
+        var elevationKm: Double? = nil
+    }
+
+    private func fetchGeomagnetic(for coord: CLLocationCoordinate2D, elevationKm: Double?) {
+        guard !didFetchGeomagnetic else { return }
+        didFetchGeomagnetic = true
+
+        var components = URLComponents(string: GeomagneticAPIConfig.baseURL)
+        let latText = String(format: "%.6f", coord.latitude)
+        let lonText = String(format: "%.6f", coord.longitude)
+        var items: [URLQueryItem] = [
+            URLQueryItem(name: "lat1", value: latText),
+            URLQueryItem(name: "lat2", value: latText),
+            URLQueryItem(name: "lon1", value: lonText),
+            URLQueryItem(name: "lon2", value: lonText),
+            URLQueryItem(name: "latStepSize", value: GeomagneticAPIConfig.latStepSize),
+            URLQueryItem(name: "lonStepSize", value: GeomagneticAPIConfig.lonStepSize),
+            URLQueryItem(name: "magneticComponent", value: "d"),
+            URLQueryItem(name: "date", value: geomagneticDateString())
+        ]
+        if let elevationKm {
+            items.append(URLQueryItem(name: "elevation", value: String(format: "%.3f", elevationKm)))
+        }
+        if !GeomagneticAPIConfig.apiKey.isEmpty {
+            items.append(URLQueryItem(name: "key", value: GeomagneticAPIConfig.apiKey))
+        }
+        components?.queryItems = items
+
+        guard let url = components?.url else { return }
+        URLSession.shared.dataTask(with: url) { data, _, _ in
+            guard let data else { return }
+
+            let parsedFromJSON: GeomagneticValues? = {
+                guard let json = try? JSONSerialization.jsonObject(with: data) else { return nil }
+                let values = extractGeomagneticValues(from: json)
+                return values.declinationDeg != nil || values.declinationSvDegPerYear != nil
+                    || values.declinationUncertaintyDeg != nil || values.elevationKm != nil
+                    ? values : nil
+            }()
+
+            let parsedFromXML: GeomagneticValues? = parsedFromJSON ?? parseGeomagneticXML(data)
+            let parsedFromText: GeomagneticValues? = parsedFromXML ?? parseGeomagneticText(String(data: data, encoding: .utf8) ?? "")
+            guard let values = parsedFromText else { return }
+
+            DispatchQueue.main.async {
+                viewModel.geomagneticDeclinationDeg = values.declinationDeg
+                viewModel.geomagneticDeclinationSvDegPerYear = values.declinationSvDegPerYear
+                viewModel.geomagneticDeclinationUncertaintyDeg = values.declinationUncertaintyDeg
+                viewModel.geomagneticElevationKm = elevationKm ?? values.elevationKm
+            }
+        }.resume()
+    }
+
+    private func geomagneticDateString() -> String {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "en_US_POSIX")
+        df.timeZone = .current
+        df.dateFormat = "yyyy-MM-dd"
+        return df.string(from: Date())
+    }
+
+    private func extractGeomagneticValues(from any: Any) -> GeomagneticValues {
+        var values = GeomagneticValues()
+
+        func parseDouble(_ value: Any?) -> Double? {
+            if let v = value as? Double { return v }
+            if let v = value as? Int { return Double(v) }
+            if let s = value as? String {
+                let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
+                return Double(trimmed)
+            }
+            return nil
+        }
+
+        func assign(_ key: String, _ value: Any?) {
+            let k = key.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            guard let number = parseDouble(value) else { return }
+            switch k {
+            case "declination", "declination_deg", "declinationdeg", "dec", "d":
+                if values.declinationDeg == nil { values.declinationDeg = number }
+            case "declination_sv", "declination_sv_deg_per_year", "declination_sv_degperyear", "declinationsv", "dsv", "sv", "declination_sv_deg":
+                if values.declinationSvDegPerYear == nil { values.declinationSvDegPerYear = number }
+            case "declination_uncertainty", "declination_uncertainty_deg", "declinationuncertainty", "uncertainty", "d_uncertainty":
+                if values.declinationUncertaintyDeg == nil { values.declinationUncertaintyDeg = number }
+            case "elevation", "elevation_km", "elevationkm":
+                if values.elevationKm == nil { values.elevationKm = number }
+            default:
+                break
+            }
+        }
+
+        func walk(_ node: Any) {
+            if let dict = node as? [String: Any] {
+                for (key, value) in dict {
+                    assign(key, value)
+                    walk(value)
+                }
+            } else if let array = node as? [Any] {
+                for item in array { walk(item) }
+            }
+        }
+
+        walk(any)
+        return values
+    }
+
+    private func parseGeomagneticXML(_ data: Data) -> GeomagneticValues? {
+        let parser = XMLParser(data: data)
+        let delegate = GeomagneticXMLParser()
+        parser.delegate = delegate
+        guard parser.parse() else { return nil }
+        return delegate.values
+    }
+
+    private func parseGeomagneticText(_ text: String) -> GeomagneticValues? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        func matchValue(_ keys: [String]) -> Double? {
+            for key in keys {
+                let pattern = "(?i)\\b\(key)\\b\\s*[:=]\\s*([-+]?\\d+(?:\\.\\d+)?)"
+                if let regex = try? NSRegularExpression(pattern: pattern, options: []),
+                   let match = regex.firstMatch(in: trimmed, options: [], range: NSRange(trimmed.startIndex..., in: trimmed)),
+                   let range = Range(match.range(at: 1), in: trimmed) {
+                    return Double(trimmed[range])
+                }
+            }
+            return nil
+        }
+
+        var values = GeomagneticValues()
+        values.declinationDeg = matchValue(["declination", "declination_deg", "dec", "d"])
+        values.declinationSvDegPerYear = matchValue(["declination_sv", "declination_sv_deg_per_year", "declinationsv", "dsv", "sv"])
+        values.declinationUncertaintyDeg = matchValue(["declination_uncertainty", "declination_uncertainty_deg", "uncertainty", "d_uncertainty"])
+        values.elevationKm = matchValue(["elevation", "elevation_km", "elevationkm"])
+
+        return values.declinationDeg != nil || values.declinationSvDegPerYear != nil
+            || values.declinationUncertaintyDeg != nil || values.elevationKm != nil
+            ? values : nil
+    }
+
+    private final class GeomagneticXMLParser: NSObject, XMLParserDelegate {
+        private var currentElement: String = ""
+        private var currentText: String = ""
+        var values = GeomagneticValues()
+
+        func parser(_ parser: XMLParser, didStartElement elementName: String,
+                    namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
+            currentElement = elementName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            currentText = ""
+        }
+
+        func parser(_ parser: XMLParser, foundCharacters string: String) {
+            currentText += string
+        }
+
+        func parser(_ parser: XMLParser, didEndElement elementName: String,
+                    namespaceURI: String?, qualifiedName qName: String?) {
+            let key = currentElement
+            let text = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty, let number = Double(text) else { return }
+
+            switch key {
+            case "declination", "declination_deg", "declinationdeg", "dec", "d":
+                if values.declinationDeg == nil { values.declinationDeg = number }
+            case "declination_sv", "declination_sv_deg_per_year", "declination_sv_degperyear", "declinationsv", "dsv", "sv", "declination_sv_deg":
+                if values.declinationSvDegPerYear == nil { values.declinationSvDegPerYear = number }
+            case "declination_uncertainty", "declination_uncertainty_deg", "declinationuncertainty", "uncertainty", "d_uncertainty":
+                if values.declinationUncertaintyDeg == nil { values.declinationUncertaintyDeg = number }
+            case "elevation", "elevation_km", "elevationkm":
+                if values.elevationKm == nil { values.elevationKm = number }
+            default:
+                break
+            }
+        }
+    }
+
     private enum LandCoverCategory {
         case water
         case green
@@ -1184,6 +1378,8 @@ struct LoadingView: View {
             DispatchQueue.main.async {
                 airQualityText = combined
                 widgetAirQualityText = readable
+                viewModel.airQualityAQI = aqiValue
+                viewModel.airQualityPM25 = pmValue
             }
         }.resume()
     }

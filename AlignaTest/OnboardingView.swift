@@ -37,11 +37,15 @@ class OnboardingViewModel: ObservableObject {
     @Published var windSpeed: Double? = nil       // mph
     @Published var humidity: Double? = nil        // 0–100 %
     @Published var pressure: Double? = nil        // hPa
-    // Earth-surface composition indices — currently nil on the frontend;
-    // the backend derives superior values from its own NDVI/NDWI/NDBI pipeline.
+    @Published var airQualityAQI: Double? = nil
+    @Published var airQualityPM25: Double? = nil
     @Published var waterPercent: Double? = nil
     @Published var greenPercent: Double? = nil
     @Published var builtPercent: Double? = nil
+    @Published var geomagneticDeclinationDeg: Double? = nil
+    @Published var geomagneticDeclinationSvDegPerYear: Double? = nil
+    @Published var geomagneticDeclinationUncertaintyDeg: Double? = nil
+    @Published var geomagneticElevationKm: Double? = nil
 }
 
 
@@ -1516,12 +1520,25 @@ struct OnboardingStep3: View {
 
         startLoadingStages()
 
-        let payload: [String: Any] = [
+        var payload: [String: Any] = [
             "birth_date": birthDateString,
             "birth_time": birthTimeString,
             "latitude": lat,
             "longitude": lng
         ]
+
+        if let v = viewModel.geomagneticDeclinationDeg {
+            payload["geomagnetic_declination_deg"] = v
+        }
+        if let v = viewModel.geomagneticDeclinationSvDegPerYear {
+            payload["geomagnetic_declination_sv_deg_per_year"] = v
+        }
+        if let v = viewModel.geomagneticDeclinationUncertaintyDeg {
+            payload["geomagnetic_declination_uncertainty_deg"] = v
+        }
+        if let v = viewModel.geomagneticElevationKm {
+            payload["geomagnetic_elevation_km"] = v
+        }
 
         guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
             print("❌ 无效的 FastAPI URL")
@@ -1777,6 +1794,7 @@ import Combine
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     @Published var currentLocation: CLLocationCoordinate2D?
+    @Published var currentAltitudeMeters: Double?
     @Published var locationStatus: CLAuthorizationStatus?
 
     override init() {
@@ -1804,7 +1822,10 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let last = locations.last else { return }
-        DispatchQueue.main.async { self.currentLocation = last.coordinate }
+        DispatchQueue.main.async {
+            self.currentLocation = last.coordinate
+            self.currentAltitudeMeters = last.altitude
+        }
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
@@ -2287,12 +2308,25 @@ struct OnboardingFinalStep: View {
         // 这里仍然用你原来传给后端的“字符串时间”，不会影响我们在 Firestore 的存储方案
         startLoadingStages()
 
-        let payload: [String: Any] = [
+        var payload: [String: Any] = [
             "birth_date": birthDateString,
             "birth_time": birthTimeString,
             "latitude": lat,
             "longitude": lng
         ]
+
+        if let v = viewModel.geomagneticDeclinationDeg {
+            payload["geomagnetic_declination_deg"] = v
+        }
+        if let v = viewModel.geomagneticDeclinationSvDegPerYear {
+            payload["geomagnetic_declination_sv_deg_per_year"] = v
+        }
+        if let v = viewModel.geomagneticDeclinationUncertaintyDeg {
+            payload["geomagnetic_declination_uncertainty_deg"] = v
+        }
+        if let v = viewModel.geomagneticElevationKm {
+            payload["geomagnetic_elevation_km"] = v
+        }
 
         guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
             print("❌ 无效的 FastAPI URL")
