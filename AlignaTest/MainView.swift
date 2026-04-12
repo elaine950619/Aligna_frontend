@@ -302,6 +302,9 @@ struct MainView: View {
 
     @AppStorage("todayAutoRefetchDone") private var todayAutoRefetchDone: String = ""
     @AppStorage("shouldShowBootLoading") private var shouldShowBootLoading: Bool = false
+    @AppStorage("showMainGenerationOverlay") private var showMainGenerationOverlay: Bool = false
+    @AppStorage("mainGenerationOverlayTitle") private var mainGenerationOverlayTitle: String = "Generating today's mantra"
+    @AppStorage("mainGenerationOverlayMessage") private var mainGenerationOverlayMessage: String = "We're weaving together your cosmic, environmental, and personal signals."
 
     @State private var autoRefetchScheduled = false
 
@@ -582,6 +585,16 @@ struct MainView: View {
     private func dismissFocusHelperIfNeeded() {
         guard !hasDismissedFocusHelper else { return }
         hasDismissedFocusHelper = true
+    }
+
+    private func configureDailyGenerationOverlay() {
+        mainGenerationOverlayTitle = "Generating today's mantra"
+        mainGenerationOverlayMessage = "We're weaving together your cosmic, environmental, and personal signals."
+    }
+
+    private func configureFocusGenerationOverlay(for focusName: String) {
+        mainGenerationOverlayTitle = "Generating your focus mantra"
+        mainGenerationOverlayMessage = "We're shaping a mantra around \(focusName) and today's signals."
     }
 
     private var hasRefreshedAlignmentToday: Bool {
@@ -1383,6 +1396,8 @@ struct MainView: View {
         }
 
         focusGenerationTagID = focus.id.uuidString
+        showMainGenerationOverlay = true
+        configureFocusGenerationOverlay(for: focus.name)
         beginGenerationFlow()
 
         func request(using coord: CLLocationCoordinate2D) {
@@ -3079,6 +3094,7 @@ struct MainView: View {
                     isGenerationInProgress = false
                     isUsingPreviousResult = false
                     showGenerationStrongHint = false
+                    showMainGenerationOverlay = false
                     ensureDefaultsIfMissing()
                 }
                 // Timeout: still move on (you can choose to stay on loading if you prefer)
@@ -3176,6 +3192,9 @@ struct MainView: View {
         isGenerationInProgress = true
         showGenerationStrongHint = false
         isDefaultRecommendation = false
+        if focusGenerationTagID == nil {
+            configureDailyGenerationOverlay()
+        }
         let hasContent = !viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             || !viewModel.recommendations.isEmpty
             || lastRecommendationHasFullSet
@@ -3187,6 +3206,7 @@ struct MainView: View {
         isGenerationInProgress = false
         isUsingPreviousResult = false
         showGenerationStrongHint = false
+        showMainGenerationOverlay = false
         focusGenerationTagID = nil
         if !isDefault {
             if bootPhase == .main {
@@ -3268,15 +3288,24 @@ struct MainView: View {
                         startInitialLoad()
                     },
                     onPersonalComplete: { didProvidePersonal in
-                        if didProvidePersonal {
+                        if isManualRefreshFlow {
                             forceRefetchDailyIfNotLocked()
+                            if showMainGenerationOverlay {
+                                isBootDataReady = true
+                            }
+                        } else if didProvidePersonal && !hasRecentRecommendation {
+                            forceRefetchDailyIfNotLocked()
+                            if showMainGenerationOverlay {
+                                isBootDataReady = true
+                            }
                         } else if hasRecentRecommendation {
+                            showMainGenerationOverlay = false
                             isBootDataReady = true
+                        } else {
+                            showMainGenerationOverlay = false
                         }
                         if isManualRefreshFlow {
-                            if didProvidePersonal {
-                                lastManualRefreshTimestamp = Date().timeIntervalSince1970
-                            }
+                            lastManualRefreshTimestamp = Date().timeIntervalSince1970
                             isManualRefreshFlow = false
                             isBootDataReady = true
                         }
@@ -3306,6 +3335,22 @@ struct MainView: View {
                 }
             case .main:
                             mainContent // (extract your existing NavigationStack content into a computed var)
+                        }
+                    }
+                    .overlay {
+                        if bootPhase == .main && showMainGenerationOverlay {
+                            ZStack {
+                                Color.black.opacity(themeManager.isNight ? 0.34 : 0.18)
+                                    .ignoresSafeArea()
+
+                                AlynnaGenerationOverlayCard(
+                                    title: mainGenerationOverlayTitle,
+                                    message: mainGenerationOverlayMessage,
+                                    showDots: true
+                                )
+                                .environmentObject(themeManager)
+                            }
+                            .transition(.opacity)
                         }
                     }
                     .onAppear {
@@ -3482,9 +3527,13 @@ struct MainView: View {
     // === 替换你原有的 forceRefetchDailyIfNotLocked()（整段替换） ===
     private func forceRefetchDailyIfNotLocked() {
         guard let uid = Auth.auth().currentUser?.uid else {
+            showMainGenerationOverlay = false
             print("❌ 未登录，无法强制重拉"); return
         }
-        guard canProceedWithLocationRefresh() else { return }
+        guard canProceedWithLocationRefresh() else {
+            showMainGenerationOverlay = false
+            return
+        }
         let today = todayString()
         let docRef = todayDocRef(uid: uid, day: today)
 
@@ -3621,6 +3670,7 @@ struct MainView: View {
                 )
                 todayFetchLock = ""  // 释放互斥锁
                 isFetchingToday = false
+                completeGenerationIfNeeded(isDefault: true)
                 return
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: attempt)

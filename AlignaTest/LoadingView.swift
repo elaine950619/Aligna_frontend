@@ -283,6 +283,71 @@ struct Shimmer: ViewModifier {
 }
 extension View { func shimmer() -> some View { modifier(Shimmer()) } }
 
+struct AlynnaGenerationOverlayCard: View {
+    @EnvironmentObject var themeManager: ThemeManager
+    let title: String
+    let message: String
+    let showDots: Bool
+    @State private var dotPhase: Int = 0
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 28, weight: .medium))
+                .foregroundColor(themeManager.primaryText)
+
+            Text(title)
+                .font(.custom("Merriweather-Bold", size: 18))
+                .foregroundColor(themeManager.primaryText)
+
+            Text(message)
+                .font(.custom("Merriweather-Regular", size: 12))
+                .foregroundColor(themeManager.descriptionText.opacity(0.88))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if showDots {
+                HStack(spacing: 6) {
+                    ForEach(0..<3, id: \.self) { index in
+                        Circle()
+                            .fill(themeManager.primaryText.opacity(dotPhase == index ? 0.95 : 0.28))
+                            .frame(width: 5, height: 5)
+                            .offset(y: dotPhase == index ? -2 : 0)
+                            .animation(.easeInOut(duration: 0.22), value: dotPhase)
+                    }
+                }
+                .padding(.top, 2)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 22)
+        .frame(maxWidth: 300)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(themeManager.isNight ? Color.black.opacity(0.92) : Color.white.opacity(0.96))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(themeManager.isNight ? Color.white.opacity(0.16) : Color.black.opacity(0.10), lineWidth: 1)
+                )
+        )
+        .shadow(color: Color.black.opacity(themeManager.isNight ? 0.34 : 0.18), radius: 20, x: 0, y: 10)
+        .onAppear {
+            guard showDots else { return }
+            dotPhase = 0
+            Timer.scheduledTimer(withTimeInterval: 0.45, repeats: true) { timer in
+                if dotPhase >= 0 {
+                    dotPhase = (dotPhase + 1) % 3
+                } else {
+                    timer.invalidate()
+                }
+            }
+        }
+        .onDisappear {
+            dotPhase = -1
+        }
+    }
+}
+
 // MARK: - LoadingView
 
 struct LoadingView: View {
@@ -296,6 +361,7 @@ struct LoadingView: View {
     @EnvironmentObject var viewModel: OnboardingViewModel
     @EnvironmentObject var locationPermissionCoordinator: LocationPermissionCoordinator
     @ObservedObject var locationManager: LocationManager
+    @AppStorage("showMainGenerationOverlay") private var showMainGenerationOverlay: Bool = false
 
     @State private var didStartLoading = false
     @State private var didFetchPlaceSignals = false
@@ -318,6 +384,7 @@ struct LoadingView: View {
     @State private var personalCompleted = false
     @State private var isProcessingPersonal = false
     @State private var didInteractPersonal = false
+    @State private var isGeneratingOverlayVisible = false
 
     @State private var mood: String? = nil
     @State private var stress: String? = nil
@@ -369,6 +436,7 @@ struct LoadingView: View {
         case cosmic
         case place
         case personal
+        case gathering
     }
 
     private var anyPersonalSelection: Bool {
@@ -384,6 +452,10 @@ struct LoadingView: View {
         guard lastRecommendationHasFullSet else { return false }
         let age = Date().timeIntervalSince1970 - lastRecommendationTimestamp
         return age >= 0 && age < 24 * 60 * 60
+    }
+
+    private var shouldGenerateTodayReading: Bool {
+        forceFullLoading || !hasRecentRecommendation
     }
 
     private var shouldRunFullLoading: Bool {
@@ -446,6 +518,10 @@ struct LoadingView: View {
                 if newStage == .personal {
                     loadPersonalSelections()
                     scheduleAutoSkipIfNeeded()
+                } else {
+                    autoSkipWorkItem?.cancel()
+                    autoSkipTimer?.invalidate()
+                    autoSkipSecondsRemaining = 0
                 }
             }
             .onChange(of: didInteractPersonal, initial: false) { _, interacted in
@@ -515,6 +591,18 @@ struct LoadingView: View {
                 }
                 .frame(height: contentHeight, alignment: .top)
                 .padding(.top, 28)
+
+            case .gathering:
+                stageHeader(title: "Your signals are in place",
+                            subtitle: gatheringSubtitleView,
+                            iconName: "sparkles.rectangle.stack.fill",
+                            topPadding: 6)
+                    .frame(height: headerHeight, alignment: .top)
+                VStack(spacing: 10) {
+                    gatheringSummary
+                }
+                .frame(height: contentHeight, alignment: .top)
+                .padding(.top, 20)
             }
         }
     }
@@ -661,8 +749,7 @@ struct LoadingView: View {
 
             Button {
                 didInteractPersonal = true
-                isProcessingPersonal = true
-                completePersonal()
+                continueToGathering()
             } label: {
                 HStack(spacing: 8) {
                     if isProcessingPersonal {
@@ -671,7 +758,7 @@ struct LoadingView: View {
                             .tint(themeManager.isNight ? Color.black : Color.white)
                             .scaleEffect(0.75)
                     }
-                    Text(isProcessingPersonal ? "Preparing your mantra…" : primaryActionLabel)
+                    Text(isProcessingPersonal ? "Preparing the next step…" : primaryActionLabel)
                 }
                 .font(.custom("Merriweather-Bold", size: 13))
                 .foregroundColor(themeManager.isNight ? Color.black : Color.white)
@@ -682,6 +769,51 @@ struct LoadingView: View {
             }
             .disabled(isProcessingPersonal)
             .padding(.top, 2)
+        }
+    }
+
+    private var gatheringSummary: some View {
+        VStack(spacing: 10) {
+            gatheringCard(
+                title: "From the Cosmos",
+                iconName: "moon.stars.fill",
+                lines: cosmosSummaryLines
+            )
+
+            gatheringCard(
+                title: "From Your Environment",
+                iconName: "cloud.sun.fill",
+                lines: environmentSummaryLines
+            )
+
+            gatheringCard(
+                title: "From Within",
+                iconName: "person.fill",
+                lines: personalSummaryLines
+            )
+
+            Button {
+                beginGenerationOverlay()
+            } label: {
+                HStack(spacing: 8) {
+                    if isGeneratingOverlayVisible {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .tint(themeManager.isNight ? Color.black : Color.white)
+                            .scaleEffect(0.75)
+                    }
+                    Text(buttonTitleForGathering)
+                }
+                .font(.custom("Merriweather-Bold", size: 13))
+                .foregroundColor(themeManager.isNight ? Color.black : Color.white)
+                .padding(.vertical, 9)
+                .padding(.horizontal, 22)
+                .frame(maxWidth: .infinity)
+                .background(themeManager.primaryText)
+                .cornerRadius(12)
+            }
+            .disabled(isGeneratingOverlayVisible)
+            .padding(.top, 4)
         }
     }
 
@@ -745,6 +877,8 @@ struct LoadingView: View {
             return "Place signals are derived from local environment and weather."
         case .personal:
             return nil
+        case .gathering:
+            return "We are ready to compose today's mantra and rhythm."
         }
     }
 
@@ -803,6 +937,13 @@ struct LoadingView: View {
         return Text(text)
             .font(AlignaType.helperSmall())
             .foregroundColor(themeManager.descriptionText.opacity(0.85))
+    }
+
+    private var gatheringSubtitleView: some View {
+        Text("From the cosmos, your environment, and within, we've gathered what shapes today.")
+            .font(AlignaType.helperSmall())
+            .foregroundColor(themeManager.descriptionText.opacity(0.85))
+            .multilineTextAlignment(.center)
     }
 
     private var initialSubtitleText: Text {
@@ -1036,8 +1177,7 @@ struct LoadingView: View {
         let item = DispatchWorkItem {
             if shouldAutoSkipPersonal {
                 DispatchQueue.main.async {
-                    isProcessingPersonal = true
-                    completePersonal()
+                    continueToGathering()
                 }
             }
         }
@@ -1053,6 +1193,173 @@ struct LoadingView: View {
             return "Skip in \(autoSkipSecondsRemaining)s"
         }
         return "Continue"
+    }
+
+    private var cosmosSummaryLines: [String] {
+        [
+            summaryLine("Sun in \(sunText)"),
+            summaryLine("Moon in \(moonText)"),
+            summaryLine("Rising in \(risingText)"),
+            summaryLine(moonPhaseLabel(for: Date()))
+        ].compactMap { $0 }
+    }
+
+    private var environmentSummaryLines: [String] {
+        [
+            summaryLine(locationText, placeholder: "Your place"),
+            summaryLine(compactConditionSummary),
+            summaryLine(compactAirQualitySummary),
+            summaryLine(compactDensitySummary)
+        ].compactMap { $0 }
+    }
+
+    private var personalSummaryLines: [String] {
+        var lines: [String?] = [
+            normalizedSelection(mood).map { "\($0) mood" },
+            normalizedSelection(stress).map { "\($0) stress" },
+            normalizedSelection(sleep).map { "\($0) sleep" },
+            normalizedSelection(source).map { "\($0) on your mind" }
+        ]
+
+        let noteText = personalNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !noteText.isEmpty {
+            lines.append(String(noteText.prefix(70)))
+        }
+
+        let compactLines = lines.compactMap { summaryLine($0) }
+        return compactLines.isEmpty ? ["Open to what feels true today."] : compactLines
+    }
+
+    private var compactConditionSummary: String {
+        let text = conditionText.replacingOccurrences(of: "\n", with: " · ").trimmingCharacters(in: .whitespacesAndNewlines)
+        return text == "Cloud · Wind · Rain" ? "Today's weather is taking shape." : text
+    }
+
+    private var compactAirQualitySummary: String {
+        let text = airQualityText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.isEmpty || text == "Air quality —" ? "Air quality is being sensed." : text
+    }
+
+    private var compactDensitySummary: String {
+        let text = placeDensityText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.isEmpty || text == "Water — · Green — · Built —" ? "Landscape signals are being gathered." : text
+    }
+
+    private func summaryLine(_ text: String?, placeholder: String? = nil) -> String? {
+        let trimmed = text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if trimmed.isEmpty || trimmed == "—" {
+            return placeholder
+        }
+        return trimmed
+    }
+
+    private func gatheringCard(title: String, iconName: String, lines: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Image(systemName: iconName)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(themeManager.primaryText.opacity(0.88))
+                    .frame(width: 22, height: 22)
+                    .background(Color.white.opacity(0.05))
+                    .clipShape(Circle())
+
+                Text(title)
+                    .font(.custom("Merriweather-Bold", size: 13))
+                    .foregroundColor(themeManager.primaryText)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(Array(lines.prefix(4)).indices, id: \.self) { index in
+                    Text(lines[index])
+                        .font(.custom("Merriweather-Regular", size: 11))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.9))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.white.opacity(0.03))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(themeManager.primaryText.opacity(0.14), lineWidth: 1)
+        )
+        .cornerRadius(12)
+        .padding(.horizontal, 6)
+    }
+
+    private var generatingOverlay: some View {
+        ZStack {
+            Color.black.opacity(themeManager.isNight ? 0.34 : 0.18)
+                .ignoresSafeArea()
+
+            VStack(spacing: 14) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundColor(themeManager.primaryText)
+                    .opacity(iconVisible ? 1.0 : 0.45)
+                    .scaleEffect(iconVisible ? 1.0 : 0.94)
+                    .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: iconVisible)
+
+                Text("Generating your mantra")
+                    .font(.custom("Merriweather-Bold", size: 18))
+                    .foregroundColor(themeManager.primaryText)
+
+                Text("We're weaving together your cosmic, environmental, and personal signals.")
+                    .font(.custom("Merriweather-Regular", size: 12))
+                    .foregroundColor(themeManager.descriptionText.opacity(0.88))
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                loadingDots
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 22)
+            .frame(maxWidth: 300)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(themeManager.panelFill.opacity(0.98))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .stroke(themeManager.panelStrokeHi.opacity(0.65), lineWidth: 1)
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.18), radius: 18, x: 0, y: 10)
+            .allowsHitTesting(true)
+        }
+        .transition(.opacity)
+    }
+
+    private func continueToGathering() {
+        guard stage == .personal else { return }
+        autoSkipWorkItem?.cancel()
+        autoSkipTimer?.invalidate()
+        autoSkipSecondsRemaining = 0
+        isProcessingPersonal = false
+        withAnimation(.easeInOut(duration: 0.3)) {
+            stage = .gathering
+        }
+    }
+
+    private func beginGenerationOverlay() {
+        guard !isGeneratingOverlayVisible else { return }
+        if shouldGenerateTodayReading {
+            isGeneratingOverlayVisible = true
+            showMainGenerationOverlay = true
+        } else {
+            isGeneratingOverlayVisible = false
+            showMainGenerationOverlay = false
+        }
+        completePersonal()
+    }
+
+    private var buttonTitleForGathering: String {
+        if isGeneratingOverlayVisible {
+            return "Generating your mantra..."
+        }
+        return shouldGenerateTodayReading ? "Generate Today's Mantra" : "See Today's Mantra"
     }
 
     private func fetchPlaceAndWeather(for coord: CLLocationCoordinate2D) {
@@ -1622,6 +1929,10 @@ private struct LoadingViewPreviewContainer: View {
 
 #Preview("Loading Personal") {
     LoadingViewPreviewContainer(stage: .personal)
+}
+
+#Preview("Loading Gathering") {
+    LoadingViewPreviewContainer(stage: .gathering)
 }
 
 #Preview("Loading Night") {

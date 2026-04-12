@@ -210,6 +210,109 @@ struct SuggestionRow: View {
     }
 }
 
+private struct TimelineSuggestionDetailSheet: View {
+    let item: SuggestionItem
+
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var themeManager: ThemeManager
+    @EnvironmentObject private var viewModel: OnboardingViewModel
+
+    private var iconName: String {
+        viewModel.recommendations[item.category] ?? item.assetName
+    }
+
+    private var overviewText: String {
+        let text = item.description.trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.isEmpty ? "No overview available." : text
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(alignment: .center, spacing: 16) {
+                    dialogSymbol
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(item.title)
+                            .font(AlynnaTypography.font(.title3))
+                            .foregroundColor(themeManager.primaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Spacer(minLength: 0)
+                }
+
+                detailBodyCard(bodyText: overviewText)
+
+                Spacer(minLength: 0)
+            }
+            .padding(20)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text(item.category)
+                        .font(AlynnaTypography.font(.headline))
+                        .foregroundColor(themeManager.primaryText)
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(themeManager.descriptionText)
+                            .frame(width: 30, height: 30)
+                            .background(Color.secondary.opacity(0.12))
+                            .clipShape(Circle())
+                    }
+                }
+            }
+        }
+        .presentationDetents([.height(300)])
+        .presentationDragIndicator(.visible)
+    }
+
+    @ViewBuilder
+    private var dialogSymbol: some View {
+        Group {
+            if !iconName.isEmpty, UIImage(named: iconName) != nil {
+                Image(iconName)
+                    .resizable()
+                    .renderingMode(.template)
+                    .foregroundColor(themeManager.accent)
+                    .aspectRatio(contentMode: .fit)
+                    .padding(16)
+            } else {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 30, weight: .semibold))
+                    .foregroundColor(themeManager.accent)
+            }
+        }
+        .frame(width: 76, height: 76)
+        .background(Color.secondary.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+
+    private func detailBodyCard(bodyText: String) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(bodyText)
+                .font(AlynnaTypography.font(.body))
+                .foregroundColor(themeManager.descriptionText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.secondary.opacity(0.08))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
+                )
+        )
+    }
+}
+
 
 
 struct PlaceholderRow: View {
@@ -247,6 +350,7 @@ struct TimelineView: View {
     @State private var journalText: String = ""
     @State private var isLoadingJournal: Bool = false
     @State private var secondaryLoadTask: Task<Void, Never>? = nil
+    @State private var selectedSuggestion: SuggestionItem? = nil
 
     
     private let enableLoading: Bool
@@ -600,7 +704,12 @@ struct TimelineView: View {
                             } else {
                                 LazyVGrid(columns: [GridItem(.flexible())], spacing: 8) {
                                     ForEach(dayItems, id: \.id) { item in
-                                        SuggestionRow(item: item)
+                                        Button {
+                                            selectedSuggestion = item
+                                        } label: {
+                                            SuggestionRow(item: item)
+                                        }
+                                        .buttonStyle(.plain)
                                     }
                                 }
                                 .padding(.horizontal, 16)
@@ -614,6 +723,9 @@ struct TimelineView: View {
             }
             }
             .toolbar(.hidden, for: .navigationBar)
+            .sheet(item: $selectedSuggestion) { item in
+                TimelineSuggestionDetailSheet(item: item)
+            }
         }
     }
 }
