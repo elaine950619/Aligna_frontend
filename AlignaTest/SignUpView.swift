@@ -383,37 +383,58 @@ struct SignUpView: View {
                     .transaction { $0.animation = nil }
 
                 }
-                .alert(isPresented: $showAlert) {
-                    Alert(title: Text("Notice"),
-                          message: Text(alertMessage),
-                          dismissButton: .default(Text("OK")))
-                }
-                .alert("Sign In", isPresented: $showInfoAlert) {
-                    Button("Continue") {
+                .overlay {
+                    if showAlert {
+                        AlynnaActionDialog(
+                            title: "Notice",
+                            message: alertMessage,
+                            symbol: "exclamationmark.circle",
+                            tone: .error,
+                            dismissButtonTitle: "OK",
+                            onDismiss: { showAlert = false }
+                        )
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                        .zIndex(20)
+                    } else if showInfoAlert {
+                        AlynnaActionDialog(
+                            title: "Sign In",
+                            message: infoMessage,
+                            symbol: "arrow.right.circle",
+                            tone: .info,
+                            dismissButtonTitle: "Continue",
+                            onDismiss: {
+                                showInfoAlert = false
                         if navigateToLoginOnDismiss {
                             navigateToLoginOnDismiss = false
                             navigateToLogin = true
                         }
+                            }
+                        )
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                        .zIndex(20)
+                    } else if showVerifyAlert {
+                        AlynnaActionDialog(
+                            title: "Verify Email",
+                            message: verifyMessage,
+                            symbol: "envelope.badge",
+                            tone: .warning,
+                            primaryButtonTitle: "I Verified",
+                            primaryAction: {
+                                guard !isVerifyingEmail else { return }
+                                isVerifyingEmail = true
+                                checkEmailVerificationAndContinue()
+                            },
+                            secondaryButtonTitle: "Resend",
+                            secondaryAction: {
+                                guard !isVerifyingEmail else { return }
+                                resendVerificationEmail()
+                            },
+                            dismissButtonTitle: "Cancel",
+                            onDismiss: { showVerifyAlert = false }
+                        )
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                        .zIndex(20)
                     }
-                } message: {
-                    Text(infoMessage)
-                }
-                .alert("Verify Email", isPresented: $showVerifyAlert) {
-                    Button("I Verified") {
-                        guard !isVerifyingEmail else { return }
-                        isVerifyingEmail = true
-                        checkEmailVerificationAndContinue()
-                    }
-                    .disabled(isVerifyingEmail)
-                    Button("Resend") {
-                        guard !isVerifyingEmail else { return }
-                        resendVerificationEmail()
-                    }
-                    .disabled(isVerifyingEmail)
-                    Button("Cancel", role: .cancel) { }
-                        .disabled(isVerifyingEmail)
-                } message: {
-                    Text(verifyMessage)
                 }
                 .navigationDestination(isPresented: $navigateToOnboarding) {
                     OnboardingStep0(viewModel: viewModel)

@@ -176,17 +176,21 @@ struct JournalView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)      // hide default "Back"
         .toolbarBackground(.hidden, for: .navigationBar)
-        .alert("Reset entry?", isPresented: $showResetConfirm) {
-            Button("Cancel", role: .cancel) {}
-            Button("Reset", role: .destructive) {
-                text = ""
-                mood = nil
-                stress = nil
-                sleep = nil
-                emotionalSource = nil
+        .overlay {
+            if showResetConfirm {
+                AlynnaActionDialog(
+                    title: "Reset entry?",
+                    message: "This will clear the current text. It won’t delete anything saved previously.",
+                    symbol: "arrow.counterclockwise.circle",
+                    tone: .destructive,
+                    primaryButtonTitle: "Reset",
+                    primaryAction: resetCurrentEntry,
+                    dismissButtonTitle: "Cancel",
+                    onDismiss: { showResetConfirm = false }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .zIndex(20)
             }
-        } message: {
-            Text("This will clear the current text. It won’t delete anything saved previously.")
         }
         .sheet(isPresented: $showNotesEditor) {
             NotesEditorSheet(initialText: text) { updatedText in
@@ -258,6 +262,14 @@ struct JournalView: View {
             NotificationCenter.default.removeObserver(observer)
             keyboardHideObserver = nil
         }
+    }
+
+    private func resetCurrentEntry() {
+        text = ""
+        mood = nil
+        stress = nil
+        sleep = nil
+        emotionalSource = nil
     }
 
     private func normalizedSelection(_ value: String?) -> String? {

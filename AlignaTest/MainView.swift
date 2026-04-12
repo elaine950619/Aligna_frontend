@@ -340,6 +340,7 @@ struct MainView: View {
     @State private var mainViewDialogPrimaryButtonTitle: String? = nil
     @State private var mainViewDialogPrimaryAction: (() -> Void)? = nil
     @State private var mainViewDialogIsLocationPermission = false
+    @State private var mainViewDialogTone: AlynnaDialogTone = .info
     @State private var pendingFocusDeletion: MantraFocus? = nil
     @State private var hasLoadedMantraFocuses = false
     @State private var mantraFocusUsageByDay: [String: DailyFocusUsageEntry] = [:]
@@ -669,6 +670,7 @@ struct MainView: View {
             title: mainViewDialogTitle,
             message: mainViewDialogMessage,
             symbol: mainViewDialogSymbol,
+            tone: mainViewDialogTone,
             primaryButtonTitle: mainViewDialogPrimaryButtonTitle,
             primaryAction: mainViewDialogPrimaryAction,
             dismissButtonTitle: mainViewDialogPrimaryButtonTitle == nil ? "OK" : "Cancel",
@@ -1100,7 +1102,8 @@ struct MainView: View {
         symbol: String,
         primaryButtonTitle: String? = nil,
         primaryAction: (() -> Void)? = nil,
-        isLocationPermissionDialog: Bool = false
+        isLocationPermissionDialog: Bool = false,
+        tone: AlynnaDialogTone = .info
     ) {
         mainViewDialogTitle = title
         mainViewDialogMessage = message
@@ -1108,6 +1111,7 @@ struct MainView: View {
         mainViewDialogPrimaryButtonTitle = primaryButtonTitle
         mainViewDialogPrimaryAction = primaryAction
         mainViewDialogIsLocationPermission = isLocationPermissionDialog
+        mainViewDialogTone = tone
         withAnimation(.easeOut(duration: 0.2)) {
             showMainViewDialog = true
         }
@@ -1117,6 +1121,7 @@ struct MainView: View {
         mainViewDialogPrimaryButtonTitle = nil
         mainViewDialogPrimaryAction = nil
         mainViewDialogIsLocationPermission = false
+        mainViewDialogTone = .info
         withAnimation(.easeOut(duration: 0.2)) {
             showMainViewDialog = false
         }
@@ -1139,7 +1144,8 @@ struct MainView: View {
             symbol: "location.slash.circle",
             primaryButtonTitle: "Open Settings",
             primaryAction: openAppSettings,
-            isLocationPermissionDialog: true
+            isLocationPermissionDialog: true,
+            tone: .warning
         )
     }
 

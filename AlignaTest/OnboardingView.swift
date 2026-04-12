@@ -1992,6 +1992,7 @@ struct OnboardingFinalStep: View {
                         title: "Location Access Matters",
                         message: "Turn on Location Access in Settings. Alynna uses weather, humidity, pressure, and nearby conditions to calculate your mantra and rhythm.",
                         symbol: "location.slash.circle",
+                        tone: .warning,
                         primaryButtonTitle: "Open Settings",
                         primaryAction: { locationPermissionCoordinator.openAppSettings() },
                         dismissButtonTitle: "Not Now",

@@ -126,6 +126,30 @@ struct PreferencesView: View {
                         .padding(18)
                         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
                 }
+
+                if let errorMessage {
+                    AlynnaActionDialog(
+                        title: "Error",
+                        message: errorMessage,
+                        symbol: "exclamationmark.circle",
+                        tone: .error,
+                        dismissButtonTitle: "OK",
+                        onDismiss: { self.errorMessage = nil }
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    .zIndex(20)
+                } else if showSavedAlert {
+                    AlynnaActionDialog(
+                        title: "Saved",
+                        message: "Your preferences have been saved.",
+                        symbol: "checkmark.circle",
+                        tone: .success,
+                        dismissButtonTitle: "OK",
+                        onDismiss: { showSavedAlert = false }
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    .zIndex(20)
+                }
             }
         }
         .onAppear {
@@ -137,16 +161,6 @@ struct PreferencesView: View {
                 musicDislikeDraft = viewModel.music_dislike
                 didInitialize = true
             }
-        }
-        .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: { _ in errorMessage = nil })) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(errorMessage ?? "")
-        }
-        .alert("Saved", isPresented: $showSavedAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("Your preferences have been saved.")
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)

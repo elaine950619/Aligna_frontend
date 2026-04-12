@@ -1377,6 +1377,45 @@ struct ProfileView: View {
 
                     if showLocationInfoAlert {
                         locationInfoDialog
+                    } else if let errorMessage {
+                        AlynnaActionDialog(
+                            title: "Error",
+                            message: errorMessage,
+                            symbol: "exclamationmark.circle",
+                            tone: .error,
+                            dismissButtonTitle: "OK",
+                            onDismiss: { self.errorMessage = nil }
+                        )
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                        .zIndex(20)
+                    } else if showRefreshAlert {
+                        AlynnaActionDialog(
+                            title: refreshAlertTitle,
+                            message: refreshAlertMessage,
+                            symbol: "location.circle",
+                            tone: .info,
+                            dismissButtonTitle: "OK",
+                            onDismiss: { showRefreshAlert = false }
+                        )
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                        .zIndex(20)
+                    } else if showNotificationSettingsAlert {
+                        AlynnaActionDialog(
+                            title: "Enable Notifications",
+                            message: "Allow notifications to receive your daily mantra reminder.",
+                            symbol: "bell.badge",
+                            tone: .warning,
+                            primaryButtonTitle: "Open Settings",
+                            primaryAction: {
+                                if let url = URL(string: UIApplication.openSettingsURLString) {
+                                    UIApplication.shared.open(url)
+                                }
+                            },
+                            dismissButtonTitle: "Not Now",
+                            onDismiss: { showNotificationSettingsAlert = false }
+                        )
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                        .zIndex(20)
                     }
 
                     VStack {
@@ -1433,27 +1472,6 @@ struct ProfileView: View {
             Button("Confirm", role: .destructive) { handlePasswordReauthAndDelete() }
         } message: {
             Text("For security reasons, please enter your password to delete your account.")
-        }
-        .alert("Error",
-               isPresented: Binding(get: { errorMessage != nil }, set: { _ in errorMessage = nil })) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(errorMessage ?? "")
-        }
-        .alert(refreshAlertTitle, isPresented: $showRefreshAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(refreshAlertMessage)
-        }
-        .alert("Enable Notifications", isPresented: $showNotificationSettingsAlert) {
-            Button("Open Settings") {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
-                }
-            }
-            Button("Not Now", role: .cancel) { }
-        } message: {
-            Text("Allow notifications to receive your daily mantra reminder.")
         }
         .sheet(isPresented: $showDailyRhythmUpdateSheet) {
             dailyRhythmUpdateSheet

@@ -513,22 +513,36 @@ struct LoginView: View {
                     }
                 }
             }
-            .alert(isPresented: $showAlert) {
-                Alert(
-                    title: Text("Error"),
-                    message: Text(alertMessage),
-                    dismissButton: .default(Text("OK"))
-                )
-            }
-            .alert("Almost there", isPresented: $showInfoAlert) {
-                Button("Continue") {
+            .overlay {
+                if showAlert {
+                    AlynnaActionDialog(
+                        title: "Error",
+                        message: alertMessage,
+                        symbol: "exclamationmark.circle",
+                        tone: .error,
+                        dismissButtonTitle: "OK",
+                        onDismiss: { showAlert = false }
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    .zIndex(20)
+                } else if showInfoAlert {
+                    AlynnaActionDialog(
+                        title: "Almost there",
+                        message: infoMessage,
+                        symbol: "person.crop.circle.badge.exclamationmark",
+                        tone: .info,
+                        dismissButtonTitle: "Continue",
+                        onDismiss: {
+                            showInfoAlert = false
                     if dismissAfterInfo {
                         dismissAfterInfo = false
                         dismiss()
                     }
+                        }
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    .zIndex(20)
                 }
-            } message: {
-                Text(infoMessage)
             }
         }
         .navigationBarBackButtonHidden(true)
@@ -580,4 +594,3 @@ struct LoginView: View {
             .environmentObject(OnboardingViewModel())
     }
 }
-
