@@ -282,6 +282,7 @@ struct MainView: View {
     @AppStorage("mantraFocusCacheStorage") private var mantraFocusCacheStorage: String = ""
     @AppStorage("mantraActiveFocusStorage") private var mantraActiveFocusStorage: String = ""
     @AppStorage("mantraFocusUsageStorage") private var mantraFocusUsageStorage: String = ""
+    @AppStorage("hasDismissedFocusHelper") private var hasDismissedFocusHelper: Bool = false
     @State private var isFetchingToday: Bool = false
     
     @State private var isMantraExpanded: Bool = false
@@ -526,11 +527,25 @@ struct MainView: View {
     }
 
     private var focusHelperText: String {
-        generationStatusText ?? "Choose up to 3 life focuses for what this mantra should pay attention to."
+        if let generationStatusText {
+            return generationStatusText
+        }
+        return !hasDismissedFocusHelper
+            ? "Choose up to 3 life focuses for what this mantra should pay attention to."
+            : ""
     }
 
     private var focusHelperShowsProgress: Bool {
         generationStatusText != nil
+    }
+
+    private var shouldShowFocusHelper: Bool {
+        !focusHelperText.isEmpty
+    }
+
+    private func dismissFocusHelperIfNeeded() {
+        guard !hasDismissedFocusHelper else { return }
+        hasDismissedFocusHelper = true
     }
 
     private var hasRefreshedAlignmentToday: Bool {
@@ -608,17 +623,7 @@ struct MainView: View {
     private var expandedMantraInfoBadge: some View {
         infoIconButton
             .font(.system(size: 13, weight: .semibold))
-            .padding(6)
-            .background(
-                Circle()
-                    .fill(themeManager.panelFill.opacity(themeManager.isNight ? 0.42 : 0.58))
-            )
-            .overlay(
-                Circle()
-                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(themeManager.isNight ? 0.18 : 0.08), radius: 8, x: 0, y: 4)
-            .contentShape(Circle())
+            .contentShape(Rectangle())
             .accessibilityHint("Shows why this mantra was chosen")
     }
 
@@ -787,8 +792,8 @@ struct MainView: View {
     private var seededMantraFocuses: [MantraFocus] {
         [
             MantraFocus(id: UUID(uuidString: dailyFocusID) ?? UUID(), name: "daily", description: "Your everyday grounding mantra.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: "22222222-2222-2222-2222-222222222222") ?? UUID(), name: "parenting", description: "Guidance you want to carry into parenting moments.", createdAt: .distantPast),
             MantraFocus(id: UUID(uuidString: "33333333-3333-3333-3333-333333333333") ?? UUID(), name: "dating", description: "A lens for connection, attraction, and dating energy.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: "22222222-2222-2222-2222-222222222222") ?? UUID(), name: "vacation", description: "Space for rest, travel, and how you want to recharge.", createdAt: .distantPast),
             MantraFocus(id: UUID(uuidString: "44444444-4444-4444-4444-444444444444") ?? UUID(), name: "career", description: "Clarity for work, growth, and professional choices.", createdAt: .distantPast),
             MantraFocus(id: UUID(uuidString: "55555555-5555-5555-5555-555555555555") ?? UUID(), name: "friendship", description: "Attention for trust, mutual care, and healthy friendship.", createdAt: .distantPast),
             MantraFocus(id: UUID(uuidString: "66666666-6666-6666-6666-666666666666") ?? UUID(), name: "health", description: "A focus on energy, recovery, and everyday wellbeing.", createdAt: .distantPast),
@@ -888,6 +893,12 @@ struct MainView: View {
             mantraFocusSelections[day] = defaultIDs
         } else {
             var merged = existing.filter { mantraFocusLookup[$0] != nil }
+            let oldParentingID = "22222222-2222-2222-2222-222222222222"
+            let datingID = "33333333-3333-3333-3333-333333333333"
+            let oldDefaultSet = [dailyFocusID, oldParentingID, datingID]
+            if merged == oldDefaultSet {
+                merged = defaultIDs
+            }
             if !merged.contains(dailyFocusID) {
                 merged.insert(dailyFocusID, at: 0)
             }
@@ -1073,6 +1084,10 @@ struct MainView: View {
             return
         }
 
+        if focusID != dailyFocusID {
+            dismissFocusHelperIfNeeded()
+        }
+
         if activeFocusID == dailyFocusID {
             cacheCurrentDailyFocusIfPossible()
         }
@@ -1115,6 +1130,7 @@ struct MainView: View {
                 setFocusManagerMessage("Daily stays pinned so you can always return to the daily mantra.", isError: true)
                 return
             }
+            dismissFocusHelperIfNeeded()
             let wasActive = activeFocusID == focusID
             ids.remove(at: index)
             updateAppliedMantraFocusIDs(ids)
@@ -1137,6 +1153,7 @@ struct MainView: View {
         }
 
         ids.append(focusID)
+        dismissFocusHelperIfNeeded()
         updateAppliedMantraFocusIDs(ids)
         clearFocusManagerMessage()
         selectFocus(focus)
@@ -1167,6 +1184,7 @@ struct MainView: View {
 
         let newFocus = MantraFocus(id: UUID(), name: name, description: description, createdAt: Date())
         mantraFocuses.insert(newFocus, at: 0)
+        dismissFocusHelperIfNeeded()
         focusedFocusFormField = nil
         newFocusName = ""
         newFocusDescription = ""
@@ -1940,11 +1958,13 @@ struct MainView: View {
                                             .scaleEffect(0.8)
                                     }
 
-                                    Text(focusHelperText)
-                                        .font(AlignaType.helperSmall())
-                                        .lineSpacing(AlignaType.small14LineSpacing)
-                                        .foregroundColor(themeManager.descriptionText.opacity(0.75))
-                                        .multilineTextAlignment(.center)
+                                    if shouldShowFocusHelper {
+                                        Text(focusHelperText)
+                                            .font(AlignaType.helperSmall())
+                                            .lineSpacing(AlignaType.small14LineSpacing)
+                                            .foregroundColor(themeManager.descriptionText.opacity(0.75))
+                                            .multilineTextAlignment(.center)
+                                    }
                                 }
                                 .padding(.horizontal, geometry.size.width * 0.12)
 
