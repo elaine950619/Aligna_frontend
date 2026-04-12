@@ -1250,6 +1250,7 @@ struct ProfileView: View {
     @AppStorage("cachedDailyMantra") private var cachedDailyMantra: String = ""
     @State private var notificationAuthStatus: UNAuthorizationStatus = .notDetermined
     @State private var locationAuthStatus: CLAuthorizationStatus = .notDetermined
+    @State private var isLocationServicesEnabled = true
     @State private var showNotificationSettingsAlert = false
     @State private var showLocationInfoAlert = false
     @State private var showDailyRhythmUpdateSheet = false
@@ -1573,7 +1574,11 @@ struct ProfileView: View {
 
     private func updateLocationAuthorizationStatus() {
         let manager = CLLocationManager()
-        locationAuthStatus = manager.authorizationStatus
+        let status = manager.authorizationStatus
+        locationAuthStatus = status
+        // Drive the UI from the authorization state instead of synchronously
+        // querying system-wide location services, which can block the main thread.
+        isLocationServicesEnabled = status != .restricted
     }
 
     private func requestLocationAccess() {
@@ -1888,7 +1893,7 @@ private extension ProfileView {
     }
 
     private var locationStatusTitle: String {
-        guard CLLocationManager.locationServicesEnabled() else { return "System services off" }
+        guard isLocationServicesEnabled else { return "System services off" }
 
         switch locationAuthStatus {
         case .authorizedAlways, .authorizedWhenInUse:
@@ -1916,7 +1921,7 @@ private extension ProfileView {
     }
 
     private var isLocationEnabled: Bool {
-        guard CLLocationManager.locationServicesEnabled() else { return false }
+        guard isLocationServicesEnabled else { return false }
         switch locationAuthStatus {
         case .authorizedAlways, .authorizedWhenInUse:
             return true

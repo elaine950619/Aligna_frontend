@@ -583,13 +583,14 @@ struct OnboardingStep1: View {
                                         } label: {
                                             let selected = viewModel.gender == gender
                                             Text(gender)
+                                                .font(.custom(selected ? "Merriweather-Bold" : "Merriweather-Regular", size: 16))
                                                 .frame(maxWidth: .infinity)
                                                 .padding()
-                                                .background(selected ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.18 : 0.14) : panelBG)
+                                                .background(selected ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.3 : 0.22) : panelBG)
                                                 .foregroundColor(selected ? themeManager.onboardingPrimaryText : themeManager.onboardingSecondaryText)
                                                 .overlay(
                                                     RoundedRectangle(cornerRadius: 10)
-                                                        .stroke(selected ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.55 : 0.35) : stroke, lineWidth: 1)
+                                                        .stroke(selected ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.9 : 0.72) : stroke, lineWidth: selected ? 2 : 1)
                                                 )
                                                 .cornerRadius(10)
                                         }
@@ -744,20 +745,22 @@ struct OnboardingStep1: View {
 
     @ViewBuilder
     private func statusButton(_ status: String) -> some View {
+        let selected = viewModel.relationshipStatus == status
         Button {
             viewModel.relationshipStatus = status
         } label: {
             Text(status)
+                .font(.custom(selected ? "Merriweather-Bold" : "Merriweather-Regular", size: 16))
                 .lineLimit(1)
                 .minimumScaleFactor(0.95)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(.vertical, 10)
-        .background(viewModel.relationshipStatus == status ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.18 : 0.14) : panelBG)
-        .foregroundColor(viewModel.relationshipStatus == status ? themeManager.onboardingPrimaryText : themeManager.onboardingSecondaryText)
+        .background(selected ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.3 : 0.22) : panelBG)
+        .foregroundColor(selected ? themeManager.onboardingPrimaryText : themeManager.onboardingSecondaryText)
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(viewModel.relationshipStatus == status ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.55 : 0.35) : stroke, lineWidth: 1)
+                .stroke(selected ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.9 : 0.72) : stroke, lineWidth: selected ? 2 : 1)
         )
         .cornerRadius(10)
     }
@@ -1233,15 +1236,15 @@ struct OnboardingStep3: View {
                 } label: {
                     let selected = isSelected(opt)
                     Text(opt)
-                        .font(.custom("Merriweather-Regular", size: 14))
+                        .font(.custom(selected ? "Merriweather-Bold" : "Merriweather-Regular", size: 14))
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
-                        .background(selected ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.18 : 0.14) : panelBG)
+                        .background(selected ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.3 : 0.22) : panelBG)
                         .foregroundColor(selected ? themeManager.onboardingPrimaryText : themeManager.onboardingSecondaryText)
                         .overlay(
                             RoundedRectangle(cornerRadius: 14)
-                                .stroke(selected ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.55 : 0.35) : stroke, lineWidth: 1)
+                                .stroke(selected ? themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.9 : 0.72) : stroke, lineWidth: selected ? 2 : 1)
                         )
                         .cornerRadius(14)
                 }

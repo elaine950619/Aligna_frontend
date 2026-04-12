@@ -28,6 +28,7 @@ enum SessionCacheManager {
         "shouldExpandMantraOnBoot",
         "shouldExpandMantraFromNotification",
         "mantraExpandHapticDay",
+        "mantraGenerationHapticDay",
         "widgetLocationName",
         "widgetSunSign",
         "widgetMoonSign",

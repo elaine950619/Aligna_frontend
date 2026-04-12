@@ -343,8 +343,6 @@ struct MainView: View {
 
     @AppStorage("watchdogDay") private var watchdogDay: String = ""
     @AppStorage("todayAutoRefetchAttempts") private var todayAutoRefetchAttempts: Int = 0
-    @AppStorage("mantraGenerationHapticDay") private var mantraGenerationHapticDay: String = ""
-
     // NEW: 多次重试的配置
     private let maxRefetchAttempts = 3
     private let initialRefetchDelay: TimeInterval = 8.0
@@ -1893,33 +1891,43 @@ struct MainView: View {
                                 let topInset = geometry.size.height * 0.16
                                 let lastLineRect = expandedMantraLastLineRect(for: viewModel.dailyMantra, width: textWidth)
 
-                                ZStack(alignment: .topLeading) {
-                                    Text(viewModel.dailyMantra)
-                                        .font(AlignaType.expandedMantraBoldItalic())
-                                        .lineSpacing(12)
-                                        .multilineTextAlignment(.center)
-                                        .foregroundColor(
-                                            themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
-                                        )
-                                        .fixedSize(horizontal: false, vertical: true)
-                                        .frame(width: textWidth)
-                                        .padding(.top, topInset)
-                                        .padding(.bottom, 18)
-                                        .frame(maxWidth: .infinity)
-                                        .contentShape(Rectangle())
-                                        .onTapGesture {
-                                            guard isMantraReady else { return }
-                                            withAnimation(.easeInOut(duration: 0.45)) {
-                                                isMantraExpanded.toggle()
-                                            }
-                                        }
-
-                                    if let lastLineRect {
-                                        expandedMantraInfoBadge
-                                            .offset(
-                                                x: (geometry.size.width - textWidth) / 2 + lastLineRect.maxX + 4,
-                                                y: topInset + lastLineRect.maxY - 28
+                                VStack(spacing: 0) {
+                                    ZStack(alignment: .topLeading) {
+                                        Text(viewModel.dailyMantra)
+                                            .font(AlignaType.expandedMantraBoldItalic())
+                                            .lineSpacing(12)
+                                            .multilineTextAlignment(.center)
+                                            .foregroundColor(
+                                                themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
                                             )
+                                            .fixedSize(horizontal: false, vertical: true)
+                                            .frame(width: textWidth)
+                                            .contentShape(Rectangle())
+                                            .onTapGesture {
+                                                guard isMantraReady else { return }
+                                                withAnimation(.easeInOut(duration: 0.45)) {
+                                                    isMantraExpanded.toggle()
+                                                }
+                                            }
+
+                                        if let lastLineRect {
+                                            expandedMantraInfoBadge
+                                                .position(
+                                                    x: min(lastLineRect.maxX + 10, textWidth - 8),
+                                                    y: max(lastLineRect.maxY - 15, 8)
+                                                )
+                                        }
+                                    }
+                                    .frame(width: textWidth, alignment: .center)
+                                    .padding(.top, topInset)
+                                    .padding(.bottom, 18)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    guard isMantraReady else { return }
+                                    withAnimation(.easeInOut(duration: 0.45)) {
+                                        isMantraExpanded.toggle()
                                     }
                                 }
                             } else {
@@ -3032,12 +3040,23 @@ struct MainView: View {
     }
 
     private func triggerGenerationHapticIfNeeded() {
-        let today = todayString()
-        guard mantraGenerationHapticDay != today else { return }
-        mantraGenerationHapticDay = today
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.prepare()
-        generator.impactOccurred()
+        let light = UIImpactFeedbackGenerator(style: .light)
+        let medium = UIImpactFeedbackGenerator(style: .medium)
+        let success = UINotificationFeedbackGenerator()
+
+        light.prepare()
+        medium.prepare()
+        success.prepare()
+
+        light.impactOccurred()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.10) {
+            medium.impactOccurred()
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) {
+            success.notificationOccurred(.success)
+        }
     }
 
     private func showCenterToast(_ message: String, duration: TimeInterval, includeTime: Bool = true) {
