@@ -778,27 +778,26 @@ struct AlynnaSmallWidgetEntryView: View {
                                 .shadow(color: Color.black.opacity(usesDarkText ? 0.08 : 0.22), radius: 2, x: 0, y: 1)
 
                             Button(intent: CycleSmallRecommendationCategoryIntent(currentCategory: entry.category, baseCategory: entry.baseCategory)) {
-                                HStack(spacing: minSide * 0.018) {
-                                    ForEach(0..<4, id: \.self) { index in
-                                        Circle()
-                                            .fill(index == activeDotIndex ? bottomTitleText : topLabelText.opacity(0.38))
-                                            .frame(width: minSide * 0.03, height: minSide * 0.03)
+                                VStack(spacing: minSide * 0.018) {
+                                    HStack(spacing: minSide * 0.018) {
+                                        ForEach(0..<4, id: \.self) { index in
+                                            Circle()
+                                                .fill(index == activeDotIndex ? bottomTitleText : topLabelText.opacity(0.38))
+                                                .frame(width: minSide * 0.03, height: minSide * 0.03)
+                                        }
                                     }
+
+                                    Spacer(minLength: 0)
                                 }
-                                .frame(maxWidth: .infinity)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                                 .padding(.horizontal, minSide * 0.05)
-                                .padding(.vertical, minSide * 0.028)
-                                .background(
-                                    Color.clear
-                                        .contentShape(Rectangle())
-                                        .padding(.horizontal, -minSide * 0.02)
-                                        .padding(.vertical, -minSide * 0.05)
-                                )
+                                .padding(.top, minSide * 0.028)
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                            .contentShape(Rectangle())
                             .padding(.top, minSide * 0.06)
-                            .padding(.bottom, minSide * 0.07)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .contentShape(Rectangle())
