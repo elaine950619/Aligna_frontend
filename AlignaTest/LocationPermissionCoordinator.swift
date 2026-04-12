@@ -4,9 +4,11 @@ import UIKit
 
 final class LocationPermissionCoordinator: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published private(set) var authorizationStatus: CLAuthorizationStatus
+    @Published private(set) var settingsReturnCount: Int = 0
 
     private let manager = CLLocationManager()
     private var didBecomeActiveObserver: NSObjectProtocol?
+    private var isAwaitingSettingsReturn = false
 
     override init() {
         authorizationStatus = manager.authorizationStatus
@@ -18,7 +20,7 @@ final class LocationPermissionCoordinator: NSObject, ObservableObject, CLLocatio
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.refreshAuthorizationStatus()
+            self?.handleDidBecomeActive()
         }
     }
 
@@ -58,12 +60,21 @@ final class LocationPermissionCoordinator: NSObject, ObservableObject, CLLocatio
     func openAppSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString),
               UIApplication.shared.canOpenURL(url) else { return }
+        isAwaitingSettingsReturn = true
         UIApplication.shared.open(url)
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         DispatchQueue.main.async {
             self.authorizationStatus = manager.authorizationStatus
+        }
+    }
+
+    private func handleDidBecomeActive() {
+        refreshAuthorizationStatus()
+        if isAwaitingSettingsReturn {
+            isAwaitingSettingsReturn = false
+            settingsReturnCount += 1
         }
     }
 }

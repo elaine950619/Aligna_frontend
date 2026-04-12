@@ -159,6 +159,7 @@ struct RootRouter: View {
     @StateObject private var onboardingViewModel = OnboardingViewModel()
     @StateObject private var soundPlayer = SoundPlayer.shared
     @StateObject private var reasoningStore = DailyReasoningStore()
+    @StateObject private var locationPermissionCoordinator = LocationPermissionCoordinator()
 
     // 路由状态
     @State private var isReady = false
@@ -219,6 +220,7 @@ struct RootRouter: View {
                 .environmentObject(themeManager)
                 .environmentObject(onboardingViewModel)
                 .environmentObject(soundPlayer) // ✅ 注入，保证任意子层都能拿到
+                .environmentObject(locationPermissionCoordinator)
                 .ignoresSafeArea()
             } else if !isAuthenticated {
                 // 未登录 → 开场页
@@ -230,6 +232,7 @@ struct RootRouter: View {
                 .environmentObject(onboardingViewModel)
                 .environmentObject(soundPlayer)  // ✅ 注入
                 .environmentObject(reasoningStore)
+                .environmentObject(locationPermissionCoordinator)
                 .preferredColorScheme(themeManager.isNight ? .dark : .light)
             } else if needsOnboarding == true {
                 // 已登录但资料不完整 → Onboarding
@@ -241,6 +244,7 @@ struct RootRouter: View {
                 .environmentObject(onboardingViewModel)
                 .environmentObject(soundPlayer)
                 .environmentObject(reasoningStore)
+                .environmentObject(locationPermissionCoordinator)
                 .preferredColorScheme(themeManager.isNight ? .dark : .light)
             } else {
                 // 已登录 → 首页（由 MainView 内部决定是否先走 Loading）
@@ -250,6 +254,7 @@ struct RootRouter: View {
                     .environmentObject(onboardingViewModel)
                     .environmentObject(soundPlayer)  // ✅ 注入
                     .environmentObject(reasoningStore)
+                    .environmentObject(locationPermissionCoordinator)
                     .preferredColorScheme(themeManager.isNight ? .dark : .light)
             }
         }

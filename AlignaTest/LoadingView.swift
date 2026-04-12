@@ -294,6 +294,7 @@ struct LoadingView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var viewModel: OnboardingViewModel
+    @EnvironmentObject var locationPermissionCoordinator: LocationPermissionCoordinator
     @ObservedObject var locationManager: LocationManager
 
     @State private var didStartLoading = false
@@ -424,6 +425,7 @@ struct LoadingView: View {
                 .padding(.horizontal, 16)
             }
             .onAppear {
+                locationPermissionCoordinator.refreshAuthorizationStatus()
                 scheduleStageProgression()
                 startEmojiTimers()
                 startIconShake()
@@ -434,7 +436,8 @@ struct LoadingView: View {
                 // otherwise ask for it so .onReceive fires when it arrives.
                 if let coord = locationManager.currentLocation {
                     fetchPlaceAndWeather(for: coord)
-                } else {
+                } else if locationPermissionCoordinator.authorizationStatus != .denied &&
+                            locationPermissionCoordinator.authorizationStatus != .restricted {
                     locationManager.requestLocation()
                 }
             }
@@ -460,6 +463,12 @@ struct LoadingView: View {
             }
             .onReceive(locationManager.$currentLocation.compactMap { $0 }) { coord in
                 fetchPlaceAndWeather(for: coord)
+            }
+            .onChange(of: locationPermissionCoordinator.authorizationStatus) { _, status in
+                if (status == .authorizedAlways || status == .authorizedWhenInUse),
+                   locationManager.currentLocation == nil {
+                    locationManager.requestLocation()
+                }
             }
             .preferredColorScheme(themeManager.preferredColorScheme)
             .sheet(isPresented: $showPersonalNotesEditor) {

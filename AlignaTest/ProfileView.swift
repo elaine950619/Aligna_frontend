@@ -1191,6 +1191,7 @@ extension View {
 struct ProfileView: View {
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var locationPermissionCoordinator: LocationPermissionCoordinator
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var viewModel: OnboardingViewModel
     @Environment(\.colorScheme) private var colorScheme
@@ -1249,8 +1250,6 @@ struct ProfileView: View {
     @AppStorage("dailyRhythmUpdateMinute") private var dailyRhythmUpdateMinute: Int = 0
     @AppStorage("cachedDailyMantra") private var cachedDailyMantra: String = ""
     @State private var notificationAuthStatus: UNAuthorizationStatus = .notDetermined
-    @State private var locationAuthStatus: CLAuthorizationStatus = .notDetermined
-    @State private var isLocationServicesEnabled = true
     @State private var showNotificationSettingsAlert = false
     @State private var showLocationInfoAlert = false
     @State private var showDailyRhythmUpdateSheet = false
@@ -1270,9 +1269,8 @@ struct ProfileView: View {
     @State private var navigateToFrontPage = false
     
     
-    // 保持定位器存活，避免回调丢失
+    // 保持单次定位器存活，避免回调丢失
     @State private var activeLocationFetcher: OneShotLocationFetcher?
-    @State private var locationPermissionRequester: LocationPermissionRequester?
 
     // 刷新结果弹窗
     @State private var showRefreshAlert = false
@@ -1402,7 +1400,7 @@ struct ProfileView: View {
                     makeNavBarTransparent()
                     themeManager.setSystemColorScheme(colorScheme)
                     updateNotificationAuthStatus()
-                    updateLocationAuthorizationStatus()
+                    locationPermissionCoordinator.refreshAuthorizationStatus()
                     if isPreviewMode {
                         applyPreviewDataIfNeeded()
                     } else {
@@ -1412,6 +1410,14 @@ struct ProfileView: View {
                 .onDisappear { restoreNavBarDefault() }
                 .onChange(of: colorScheme) {
                     themeManager.setSystemColorScheme(colorScheme)
+                }
+                .onChange(of: locationPermissionCoordinator.authorizationStatus) { _, status in
+                    handleLocationAuthorizationStatusChange(status)
+                }
+                .onChange(of: locationPermissionCoordinator.settingsReturnCount) { _, _ in
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        showLocationInfoAlert = false
+                    }
                 }
             }
         }
@@ -1572,25 +1578,21 @@ struct ProfileView: View {
         }
     }
 
-    private func updateLocationAuthorizationStatus() {
-        let manager = CLLocationManager()
-        let status = manager.authorizationStatus
-        locationAuthStatus = status
-        // Drive the UI from the authorization state instead of synchronously
-        // querying system-wide location services, which can block the main thread.
-        isLocationServicesEnabled = status != .restricted
+    private func requestLocationAccess() {
+        let status = locationPermissionCoordinator.authorizationStatus
+        if status == .denied || status == .restricted {
+            withAnimation(.easeOut(duration: 0.2)) {
+                showLocationInfoAlert = true
+            }
+            return
+        }
+        locationPermissionCoordinator.requestWhenInUseAuthorization()
     }
 
-    private func requestLocationAccess() {
-        let requester = LocationPermissionRequester()
-        locationPermissionRequester = requester
-        requester.requestAuthorization { status in
-            DispatchQueue.main.async {
-                locationAuthStatus = status
-                locationPermissionRequester = nil
-                if status == .denied || status == .restricted {
-                    showLocationInfoAlert = true
-                }
+    private func handleLocationAuthorizationStatusChange(_ status: CLAuthorizationStatus) {
+        if status == .authorizedAlways || status == .authorizedWhenInUse {
+            withAnimation(.easeOut(duration: 0.2)) {
+                showLocationInfoAlert = false
             }
         }
     }
@@ -1893,9 +1895,7 @@ private extension ProfileView {
     }
 
     private var locationStatusTitle: String {
-        guard isLocationServicesEnabled else { return "System services off" }
-
-        switch locationAuthStatus {
+        switch locationPermissionCoordinator.authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
             return "On"
         case .notDetermined:
@@ -1910,7 +1910,7 @@ private extension ProfileView {
     }
 
     private var locationStatusColor: Color {
-        switch locationAuthStatus {
+        switch locationPermissionCoordinator.authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
             return themeManager.accent
         case .denied, .restricted:
@@ -1921,8 +1921,7 @@ private extension ProfileView {
     }
 
     private var isLocationEnabled: Bool {
-        guard isLocationServicesEnabled else { return false }
-        switch locationAuthStatus {
+        switch locationPermissionCoordinator.authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
             return true
         default:
@@ -2036,7 +2035,7 @@ private extension ProfileView {
                 }
             }
 
-            if locationAuthStatus == .denied || locationAuthStatus == .restricted {
+            if locationPermissionCoordinator.isDeniedOrRestricted {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(locationStatusColor)
@@ -2090,7 +2089,7 @@ private extension ProfileView {
                 .padding(.horizontal, 4)
 
                 HStack(spacing: 10) {
-                    if locationAuthStatus == .notDetermined {
+                    if locationPermissionCoordinator.authorizationStatus == .notDetermined {
                         Button {
                             withAnimation(.easeOut(duration: 0.2)) {
                                 showLocationInfoAlert = false
@@ -2115,9 +2114,7 @@ private extension ProfileView {
                     }
 
                     Button {
-                        if let url = URL(string: UIApplication.openSettingsURLString) {
-                            UIApplication.shared.open(url)
-                        }
+                        locationPermissionCoordinator.openAppSettings()
                     } label: {
                         Text("Open Settings")
                             .font(.custom("Merriweather-Regular", size: 14))
@@ -2893,34 +2890,6 @@ private extension ProfileView {
 
         func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
             callback?(.failure(error)); callback = nil
-        }
-    }
-
-    final class LocationPermissionRequester: NSObject, CLLocationManagerDelegate {
-        private let manager = CLLocationManager()
-        private var callback: ((CLAuthorizationStatus) -> Void)?
-
-        override init() {
-            super.init()
-            manager.delegate = self
-        }
-
-        func requestAuthorization(_ callback: @escaping (CLAuthorizationStatus) -> Void) {
-            self.callback = callback
-            let status = manager.authorizationStatus
-            if status == .notDetermined {
-                manager.requestWhenInUseAuthorization()
-            } else {
-                callback(status)
-                self.callback = nil
-            }
-        }
-
-        func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-            let status = manager.authorizationStatus
-            guard status != .notDetermined else { return }
-            callback?(status)
-            callback = nil
         }
     }
 

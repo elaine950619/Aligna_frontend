@@ -1842,6 +1842,7 @@ struct OnboardingFinalStep: View {
     @ObservedObject var viewModel: OnboardingViewModel
     @EnvironmentObject var starManager: StarAnimationManager
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var locationPermissionCoordinator: LocationPermissionCoordinator
     @Environment(\.dismiss) private var dismiss
 
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding = false
@@ -1863,7 +1864,7 @@ struct OnboardingFinalStep: View {
     @State private var navigateToHome = false
     @StateObject private var appleAuth = AppleAuthManager()
     @State private var showLocationAccessDialog = false
-    @State private var locationAccessDialogPrimaryAction: (() -> Void)? = nil
+    @State private var suppressAutomaticLocationAccessDialog = false
 
     // 入场动画
     @State private var showIntro = false
@@ -1917,7 +1918,8 @@ struct OnboardingFinalStep: View {
                         Group {
                             Button {
                                 guard !isLoading else { return }
-                                let authorizationStatus = locationManager.authorizationStatus
+                                suppressAutomaticLocationAccessDialog = false
+                                let authorizationStatus = locationPermissionCoordinator.authorizationStatus
                                 if authorizationStatus == .denied || authorizationStatus == .restricted {
                                     presentLocationAccessDialog()
                                     return
@@ -1991,7 +1993,7 @@ struct OnboardingFinalStep: View {
                         message: "Turn on Location Access in Settings. Alynna uses weather, humidity, pressure, and nearby conditions to calculate your mantra and rhythm.",
                         symbol: "location.slash.circle",
                         primaryButtonTitle: "Open Settings",
-                        primaryAction: locationAccessDialogPrimaryAction,
+                        primaryAction: { locationPermissionCoordinator.openAppSettings() },
                         dismissButtonTitle: "Not Now",
                         onDismiss: dismissLocationAccessDialog
                     )
@@ -2008,7 +2010,8 @@ struct OnboardingFinalStep: View {
                 // 进页面即发起位置权限与解析
                 didAttemptReverseGeocode = false
                 locationMessage = "Requesting location permission..."
-                handleLocationAuthorizationStatus(locationManager.authorizationStatus)
+                locationPermissionCoordinator.refreshAuthorizationStatus()
+                handleLocationAuthorizationStatus(locationPermissionCoordinator.authorizationStatus)
                 locationManager.requestLocation()
             }
             .onDisappear {
@@ -2054,7 +2057,19 @@ struct OnboardingFinalStep: View {
 
             // 监听权限
             .onReceive(locationManager.$locationStatus.compactMap { $0 }) { status in
+                locationPermissionCoordinator.refreshAuthorizationStatus()
                 handleLocationAuthorizationStatus(status)
+            }
+            .onChange(of: locationPermissionCoordinator.authorizationStatus) { _, status in
+                handleLocationAuthorizationStatus(status)
+                if (status == .authorizedAlways || status == .authorizedWhenInUse),
+                   locationManager.currentLocation == nil {
+                    locationManager.requestLocation()
+                }
+            }
+            .onChange(of: locationPermissionCoordinator.settingsReturnCount) { _, _ in
+                suppressAutomaticLocationAccessDialog = true
+                dismissLocationAccessDialog()
             }
             // 完成后跳首页
             .fullScreenCover(isPresented: $navigateToHome) {
@@ -2079,8 +2094,10 @@ struct OnboardingFinalStep: View {
                 loadingStageIndex = 0
                 showLongWaitHint = false
             }
+            guard !suppressAutomaticLocationAccessDialog else { return }
             presentLocationAccessDialog()
         case .authorizedAlways, .authorizedWhenInUse:
+            suppressAutomaticLocationAccessDialog = false
             dismissLocationAccessDialog()
         default:
             break
@@ -2088,23 +2105,15 @@ struct OnboardingFinalStep: View {
     }
 
     private func presentLocationAccessDialog() {
-        locationAccessDialogPrimaryAction = openAppSettings
         withAnimation(.easeOut(duration: 0.2)) {
             showLocationAccessDialog = true
         }
     }
 
     private func dismissLocationAccessDialog() {
-        locationAccessDialogPrimaryAction = nil
         withAnimation(.easeOut(duration: 0.2)) {
             showLocationAccessDialog = false
         }
-    }
-
-    private func openAppSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString),
-              UIApplication.shared.canOpenURL(url) else { return }
-        UIApplication.shared.open(url)
     }
 
     private func finalInfoCard(title: String, value: String) -> some View {

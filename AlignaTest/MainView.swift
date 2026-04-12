@@ -247,8 +247,8 @@ struct MainView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var viewModel: OnboardingViewModel
     @EnvironmentObject var soundPlayer: SoundPlayer
-    
     @EnvironmentObject var reasoningStore: DailyReasoningStore
+    @EnvironmentObject var locationPermissionCoordinator: LocationPermissionCoordinator
     
     @AppStorage("lastRecommendationDate") var lastRecommendationDate: String = ""
     @AppStorage("lastRecommendationPlace") var lastRecommendationPlace: String = ""   // ✅ NEW
@@ -339,6 +339,7 @@ struct MainView: View {
     @State private var showMainViewDialog = false
     @State private var mainViewDialogPrimaryButtonTitle: String? = nil
     @State private var mainViewDialogPrimaryAction: (() -> Void)? = nil
+    @State private var mainViewDialogIsLocationPermission = false
     @State private var pendingFocusDeletion: MantraFocus? = nil
     @State private var hasLoadedMantraFocuses = false
     @State private var mantraFocusUsageByDay: [String: DailyFocusUsageEntry] = [:]
@@ -1098,13 +1099,15 @@ struct MainView: View {
         message: String,
         symbol: String,
         primaryButtonTitle: String? = nil,
-        primaryAction: (() -> Void)? = nil
+        primaryAction: (() -> Void)? = nil,
+        isLocationPermissionDialog: Bool = false
     ) {
         mainViewDialogTitle = title
         mainViewDialogMessage = message
         mainViewDialogSymbol = symbol
         mainViewDialogPrimaryButtonTitle = primaryButtonTitle
         mainViewDialogPrimaryAction = primaryAction
+        mainViewDialogIsLocationPermission = isLocationPermissionDialog
         withAnimation(.easeOut(duration: 0.2)) {
             showMainViewDialog = true
         }
@@ -1113,15 +1116,14 @@ struct MainView: View {
     private func dismissMainViewDialog() {
         mainViewDialogPrimaryButtonTitle = nil
         mainViewDialogPrimaryAction = nil
+        mainViewDialogIsLocationPermission = false
         withAnimation(.easeOut(duration: 0.2)) {
             showMainViewDialog = false
         }
     }
 
     private func openAppSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString),
-              UIApplication.shared.canOpenURL(url) else { return }
-        UIApplication.shared.open(url)
+        locationPermissionCoordinator.openAppSettings()
     }
 
     private func presentLocationPermissionRequiredAlert(for focusName: String? = nil) {
@@ -1136,12 +1138,13 @@ struct MainView: View {
             message: message,
             symbol: "location.slash.circle",
             primaryButtonTitle: "Open Settings",
-            primaryAction: openAppSettings
+            primaryAction: openAppSettings,
+            isLocationPermissionDialog: true
         )
     }
 
     private func canProceedWithLocationRefresh() -> Bool {
-        let authorizationStatus = locationManager.authorizationStatus
+        let authorizationStatus = locationPermissionCoordinator.authorizationStatus
         switch authorizationStatus {
         case .denied, .restricted:
             presentLocationPermissionRequiredAlert()
@@ -3301,6 +3304,7 @@ struct MainView: View {
                     }
                     .onAppear {
                         // run once on cold start
+                        locationPermissionCoordinator.refreshAuthorizationStatus()
                         if !didBootVisuals {
                             didBootVisuals = true
                             starManager.animateStar = true
@@ -3375,6 +3379,18 @@ struct MainView: View {
                             isMantraExpanded = true
                         }
                         shouldExpandMantraFromNotification = false
+                    }
+                    .onChange(of: locationPermissionCoordinator.authorizationStatus) { _, status in
+                        if (status == .authorizedAlways || status == .authorizedWhenInUse),
+                           showMainViewDialog,
+                           mainViewDialogIsLocationPermission {
+                            dismissMainViewDialog()
+                        }
+                    }
+                    .onChange(of: locationPermissionCoordinator.settingsReturnCount) { _, _ in
+                        if showMainViewDialog, mainViewDialogIsLocationPermission {
+                            dismissMainViewDialog()
+                        }
                     }
                 }
     private func fetchAllRecommendationTitles() {
