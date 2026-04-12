@@ -1249,11 +1249,15 @@ struct ProfileView: View {
     @AppStorage("dailyRhythmUpdateMinute") private var dailyRhythmUpdateMinute: Int = 0
     @AppStorage("cachedDailyMantra") private var cachedDailyMantra: String = ""
     @State private var notificationAuthStatus: UNAuthorizationStatus = .notDetermined
+    @State private var locationAuthStatus: CLAuthorizationStatus = .notDetermined
+    @State private var isLocationServicesEnabled = true
     @State private var showNotificationSettingsAlert = false
+    @State private var showLocationInfoAlert = false
     @State private var showDailyRhythmUpdateSheet = false
     @State private var birthPlaceResults: [PlaceResult] = []
     @State private var didSelectBirthPlaceResult = false
     @State private var pendingBirthPlaceCoordinate: CLLocationCoordinate2D?
+    @State private var isPersonalInfoVisible = false
 
     // Busy & Error
     @State private var isBusy = false
@@ -1268,6 +1272,7 @@ struct ProfileView: View {
     
     // 保持定位器存活，避免回调丢失
     @State private var activeLocationFetcher: OneShotLocationFetcher?
+    @State private var locationPermissionRequester: LocationPermissionRequester?
 
     // 刷新结果弹窗
     @State private var showRefreshAlert = false
@@ -1354,6 +1359,7 @@ struct ProfileView: View {
                             preferencesCard
                             timelineCard
                             dailyRhythmUpdateCard
+                            locationAccessCard
                             themeCard
                             aboutCard
                             signOutCard
@@ -1369,6 +1375,10 @@ struct ProfileView: View {
                             .scaleEffect(1.1)
                             .padding(18)
                             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    }
+
+                    if showLocationInfoAlert {
+                        locationInfoDialog
                     }
 
                     VStack {
@@ -1392,6 +1402,7 @@ struct ProfileView: View {
                     makeNavBarTransparent()
                     themeManager.setSystemColorScheme(colorScheme)
                     updateNotificationAuthStatus()
+                    updateLocationAuthorizationStatus()
                     if isPreviewMode {
                         applyPreviewDataIfNeeded()
                     } else {
@@ -1561,6 +1572,29 @@ struct ProfileView: View {
         }
     }
 
+    private func updateLocationAuthorizationStatus() {
+        let manager = CLLocationManager()
+        let status = manager.authorizationStatus
+        locationAuthStatus = status
+        // Drive the UI from the authorization state instead of synchronously
+        // querying system-wide location services, which can block the main thread.
+        isLocationServicesEnabled = status != .restricted
+    }
+
+    private func requestLocationAccess() {
+        let requester = LocationPermissionRequester()
+        locationPermissionRequester = requester
+        requester.requestAuthorization { status in
+            DispatchQueue.main.async {
+                locationAuthStatus = status
+                locationPermissionRequester = nil
+                if status == .denied || status == .restricted {
+                    showLocationInfoAlert = true
+                }
+            }
+        }
+    }
+
     private func scheduleDailyMantraNotification() {
         let liveMantra = viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines)
         if !liveMantra.isEmpty {
@@ -1651,16 +1685,32 @@ private extension ProfileView {
                         .font(AlynnaTypography.font(.headline))
                         .foregroundColor(themeManager.primaryText)
 
-                    Text("Birth details & places.")
-                        .font(AlynnaTypography.font(.subheadline))
-                        .foregroundColor(themeManager.descriptionText)
+                    HStack(spacing: 6) {
+                        Text("Tap the lock to reveal the details.")
+                            .font(AlynnaTypography.font(.subheadline))
+                            .foregroundColor(themeManager.descriptionText)
+
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.18)) {
+                                isPersonalInfoVisible.toggle()
+                            }
+                        } label: {
+                            Image(systemName: isPersonalInfoVisible ? "lock.open.fill" : "lock.fill")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(themeManager.accent)
+                                .frame(width: 24, height: 24)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(isPersonalInfoVisible ? "Hide personal information" : "Show personal information")
+                    }
                 }
             }
 
             HStack(spacing: 12) {
                 infoRow(
                     title: "Birthday",
-                    value: hasLoadedProfileData ? Self.birthDateDisplayFormatter.string(from: birthday) : "—",
+                    value: hasLoadedProfileData ? (isPersonalInfoVisible ? Self.birthDateDisplayFormatter.string(from: birthday) : personalInfoMaskText) : "—",
                     editable: hasLoadedProfileData
                 ) {
                     guard hasLoadedProfileData else { return }
@@ -1688,7 +1738,7 @@ private extension ProfileView {
 
                 infoRow(
                     title: "Birth Time",
-                    value: hasLoadedProfileData ? BirthTimeUtils.displayFormatter.string(from: birthTime).lowercased() : "—",
+                    value: hasLoadedProfileData ? (isPersonalInfoVisible ? BirthTimeUtils.displayFormatter.string(from: birthTime).lowercased() : personalInfoMaskText) : "—",
                     editable: hasLoadedProfileData
                 ) {
                     guard hasLoadedProfileData else { return }
@@ -1724,7 +1774,7 @@ private extension ProfileView {
 
                 infoRowWithTrailingButton(
                     title: "Current Place",
-                    value: currentPlace.isEmpty ? "—" : currentPlace,
+                    value: currentPlace.isEmpty ? "—" : (isPersonalInfoVisible ? currentPlace : personalInfoMaskText),
                     systemImage: "arrow.clockwise",
                     onTap: { refreshCurrentPlace() }
                 )
@@ -1734,7 +1784,7 @@ private extension ProfileView {
             HStack(spacing: 12) {
                 infoRow(
                     title: "Gender",
-                    value: gender.isEmpty ? "—" : gender,
+                    value: gender.isEmpty ? "—" : (isPersonalInfoVisible ? gender : personalInfoMaskText),
                     editable: hasLoadedProfileData
                 ) {
                     guard hasLoadedProfileData else { return }
@@ -1765,7 +1815,7 @@ private extension ProfileView {
 
                 infoRow(
                     title: "Relationship",
-                    value: relationshipStatus.isEmpty ? "—" : relationshipStatus,
+                    value: relationshipStatus.isEmpty ? "—" : (isPersonalInfoVisible ? relationshipStatus : personalInfoMaskText),
                     editable: hasLoadedProfileData
                 ) {
                     guard hasLoadedProfileData else { return }
@@ -1833,6 +1883,53 @@ private extension ProfileView {
         return "Daily rhythm begins at \(time)."
     }
 
+    private var personalInfoMaskText: String {
+        "********"
+    }
+
+    private var locationInfoDialogMessage: String {
+        let settingsPath = "If iOS opens the app settings page first, go to Location, then choose While Using the App or Always."
+        return "Location helps us understand your local context, including weather, humidity, pressure, and nearby environmental patterns such as greenery and built surroundings.\n\nWe store this information only to support your recommendations and continuity across the app. We do not share your location with other users or third parties.\n\n\(settingsPath)"
+    }
+
+    private var locationStatusTitle: String {
+        guard isLocationServicesEnabled else { return "System services off" }
+
+        switch locationAuthStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            return "On"
+        case .notDetermined:
+            return "Not enabled"
+        case .denied:
+            return "Off"
+        case .restricted:
+            return "Restricted"
+        @unknown default:
+            return "Unavailable"
+        }
+    }
+
+    private var locationStatusColor: Color {
+        switch locationAuthStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            return themeManager.accent
+        case .denied, .restricted:
+            return Color.orange.opacity(0.9)
+        default:
+            return themeManager.descriptionText.opacity(0.8)
+        }
+    }
+
+    private var isLocationEnabled: Bool {
+        guard isLocationServicesEnabled else { return false }
+        switch locationAuthStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            return true
+        default:
+            return false
+        }
+    }
+
     var dailyRhythmUpdateCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Button {
@@ -1867,16 +1964,16 @@ private extension ProfileView {
                 Spacer()
                     .frame(width: 24)
 
-                Text("Send a reminder")
+                Text("Send a notification")
                     .font(AlynnaTypography.font(.subheadline))
                     .foregroundColor(themeManager.descriptionText)
+
+                Spacer(minLength: 0)
 
                 Toggle("", isOn: notificationToggleBinding)
                     .labelsHidden()
                     .toggleStyle(SwitchToggleStyle(tint: themeManager.accent))
                     .frame(maxHeight: .infinity, alignment: .center)
-
-                Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .frame(minHeight: 44, alignment: .center)
@@ -1902,6 +1999,170 @@ private extension ProfileView {
         }
         .padding()
         .alignaCard()
+    }
+
+    var locationAccessCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "location.circle")
+                    .foregroundColor(themeManager.accent)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Location Access")
+                        .font(AlynnaTypography.font(.headline))
+                        .foregroundColor(themeManager.primaryText)
+
+                    Button {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            showLocationInfoAlert = true
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Text("Improves your rhythm and mantra guidance")
+                                .font(AlynnaTypography.font(.subheadline))
+                                .foregroundColor(themeManager.descriptionText)
+                                .multilineTextAlignment(.leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                            Toggle("", isOn: .constant(isLocationEnabled))
+                                .labelsHidden()
+                                .toggleStyle(SwitchToggleStyle(tint: themeManager.accent))
+                                .allowsHitTesting(false)
+                                .frame(maxHeight: .infinity, alignment: .center)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            if locationAuthStatus == .denied || locationAuthStatus == .restricted {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(locationStatusColor)
+                    Text("Location access is off. Tap to review details or open Settings.")
+                        .font(AlynnaTypography.font(.footnote))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.85))
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .alignaCard()
+    }
+
+    private var locationInfoDialog: some View {
+        ZStack {
+            Color.black.opacity(themeManager.isNight ? 0.48 : 0.26)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        showLocationInfoAlert = false
+                    }
+                }
+
+            VStack(spacing: 16) {
+                Image(systemName: "location.circle")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundColor(themeManager.primaryText.opacity(0.92))
+                    .frame(width: 44, height: 44)
+                    .background(
+                        Circle()
+                            .fill(themeManager.isNight ? Color(hex: "#182033").opacity(0.96) : Color.white.opacity(0.98))
+                    )
+                    .overlay(
+                        Circle()
+                            .stroke(themeManager.panelStrokeHi.opacity(0.8), lineWidth: 1)
+                    )
+
+                VStack(spacing: 10) {
+                    Text("Location Access")
+                        .font(.custom("Merriweather-Bold", size: 18))
+                        .foregroundColor(themeManager.primaryText.opacity(0.94))
+
+                    Text(locationInfoDialogMessage)
+                        .font(.custom("Merriweather-Regular", size: 14))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.84))
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(5)
+                }
+                .padding(.horizontal, 4)
+
+                HStack(spacing: 10) {
+                    if locationAuthStatus == .notDetermined {
+                        Button {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                showLocationInfoAlert = false
+                            }
+                            requestLocationAccess()
+                        } label: {
+                            Text("Allow Access")
+                                .font(.custom("Merriweather-Regular", size: 14))
+                                .foregroundColor(themeManager.primaryText.opacity(0.95))
+                                .frame(minWidth: 116)
+                                .padding(.vertical, 10)
+                                .background(
+                                    Capsule()
+                                        .fill(themeManager.isNight ? Color(hex: "#202A40").opacity(0.98) : Color.white.opacity(0.98))
+                                )
+                                .overlay(
+                                    Capsule()
+                                        .stroke(themeManager.panelStrokeHi.opacity(0.7), lineWidth: 1)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    Button {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        Text("Open Settings")
+                            .font(.custom("Merriweather-Regular", size: 14))
+                            .foregroundColor(themeManager.primaryText.opacity(0.95))
+                            .frame(minWidth: 116)
+                            .padding(.vertical, 10)
+                            .background(
+                                Capsule()
+                                    .fill(themeManager.isNight ? Color(hex: "#202A40").opacity(0.98) : Color.white.opacity(0.98))
+                            )
+                            .overlay(
+                                Capsule()
+                                    .stroke(themeManager.panelStrokeHi.opacity(0.7), lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        showLocationInfoAlert = false
+                    }
+                } label: {
+                    Text("Not Now")
+                        .font(.custom("Merriweather-Regular", size: 13))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.9))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 22)
+            .padding(.vertical, 24)
+            .frame(maxWidth: 320)
+            .background(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(themeManager.isNight ? Color(hex: "#101726").opacity(0.98) : Color(hex: "#F7F1E3").opacity(0.985))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .stroke(themeManager.panelStrokeHi.opacity(0.7), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(themeManager.isNight ? 0.26 : 0.14), radius: 24, x: 0, y: 10)
+            .padding(.horizontal, 28)
+        }
+        .transition(.opacity.combined(with: .scale(scale: 0.98)))
+        .zIndex(10)
     }
 
     var themeCard: some View {
@@ -2389,7 +2650,7 @@ private extension ProfileView {
             if birthPlace.isEmpty {
                 LoadingDots(color: themeManager.primaryText.opacity(0.7))
             } else {
-                Text(birthPlace)
+                Text(isPersonalInfoVisible ? birthPlace : personalInfoMaskText)
                     .font(AlynnaTypography.font(.callout))
                     .foregroundColor(themeManager.primaryText)
             }
@@ -2632,6 +2893,34 @@ private extension ProfileView {
 
         func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
             callback?(.failure(error)); callback = nil
+        }
+    }
+
+    final class LocationPermissionRequester: NSObject, CLLocationManagerDelegate {
+        private let manager = CLLocationManager()
+        private var callback: ((CLAuthorizationStatus) -> Void)?
+
+        override init() {
+            super.init()
+            manager.delegate = self
+        }
+
+        func requestAuthorization(_ callback: @escaping (CLAuthorizationStatus) -> Void) {
+            self.callback = callback
+            let status = manager.authorizationStatus
+            if status == .notDetermined {
+                manager.requestWhenInUseAuthorization()
+            } else {
+                callback(status)
+                self.callback = nil
+            }
+        }
+
+        func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+            let status = manager.authorizationStatus
+            guard status != .notDetermined else { return }
+            callback?(status)
+            callback = nil
         }
     }
 

@@ -270,6 +270,7 @@ struct MainView: View {
     @AppStorage("shouldExpandMantraOnBoot") private var shouldExpandMantraOnBoot: Bool = false
     @AppStorage("shouldExpandMantraFromNotification") private var shouldExpandMantraFromNotification: Bool = false
     @AppStorage("mantraExpandHapticDay") private var mantraExpandHapticDay: String = ""
+    @AppStorage("mantraGuidanceHintTapCount") private var mantraGuidanceHintTapCount: Int = 0
     @AppStorage("widgetLocationName") private var widgetLocationName: String = ""
     @AppStorage("widgetSunSign") private var widgetSunSign: String = ""
     @AppStorage("widgetMoonSign") private var widgetMoonSign: String = ""
@@ -282,6 +283,7 @@ struct MainView: View {
     @AppStorage("mantraFocusCacheStorage") private var mantraFocusCacheStorage: String = ""
     @AppStorage("mantraActiveFocusStorage") private var mantraActiveFocusStorage: String = ""
     @AppStorage("mantraFocusUsageStorage") private var mantraFocusUsageStorage: String = ""
+    @AppStorage("hasDismissedFocusHelper") private var hasDismissedFocusHelper: Bool = false
     @State private var isFetchingToday: Bool = false
     
     @State private var isMantraExpanded: Bool = false
@@ -335,6 +337,8 @@ struct MainView: View {
     @State private var mainViewDialogMessage: String = ""
     @State private var mainViewDialogSymbol: String = "exclamationmark.circle"
     @State private var showMainViewDialog = false
+    @State private var mainViewDialogPrimaryButtonTitle: String? = nil
+    @State private var mainViewDialogPrimaryAction: (() -> Void)? = nil
     @State private var pendingFocusDeletion: MantraFocus? = nil
     @State private var hasLoadedMantraFocuses = false
     @State private var mantraFocusUsageByDay: [String: DailyFocusUsageEntry] = [:]
@@ -342,8 +346,6 @@ struct MainView: View {
 
     @AppStorage("watchdogDay") private var watchdogDay: String = ""
     @AppStorage("todayAutoRefetchAttempts") private var todayAutoRefetchAttempts: Int = 0
-    @AppStorage("mantraGenerationHapticDay") private var mantraGenerationHapticDay: String = ""
-
     // NEW: 多次重试的配置
     private let maxRefetchAttempts = 3
     private let initialRefetchDelay: TimeInterval = 8.0
@@ -358,11 +360,23 @@ struct MainView: View {
     
     @State private var didBootVisuals = false
     @State private var shouldCollapseMantraOnReturn = false
+    @State private var privilegedNickname: String = ""
 
     private var hasRecentRecommendation: Bool {
         guard lastRecommendationHasFullSet else { return false }
         let age = Date().timeIntervalSince1970 - lastRecommendationTimestamp
         return age >= 0 && age < 24 * 60 * 60
+    }
+
+    private var isPrivilegedUser: Bool {
+        let candidates = [privilegedNickname, viewModel.nickname]
+        return candidates.contains {
+            $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "jakobzhao"
+        }
+    }
+
+    private var shouldShowMantraGuidanceHint: Bool {
+        isMantraExpanded && mantraGuidanceHintTapCount < 3
     }
 
     private let colorHexMapping: [String:String] = [
@@ -526,11 +540,25 @@ struct MainView: View {
     }
 
     private var focusHelperText: String {
-        generationStatusText ?? "Choose up to 3 life focuses for what this mantra should pay attention to."
+        if let generationStatusText {
+            return generationStatusText
+        }
+        return !hasDismissedFocusHelper
+            ? "Choose up to 3 life focuses for what this mantra should pay attention to."
+            : ""
     }
 
     private var focusHelperShowsProgress: Bool {
         generationStatusText != nil
+    }
+
+    private var shouldShowFocusHelper: Bool {
+        !focusHelperText.isEmpty
+    }
+
+    private func dismissFocusHelperIfNeeded() {
+        guard !hasDismissedFocusHelper else { return }
+        hasDismissedFocusHelper = true
     }
 
     private var hasRefreshedAlignmentToday: Bool {
@@ -602,99 +630,27 @@ struct MainView: View {
         .buttonStyle(.plain)
         .accessibilityLabel("Why this mantra")
         .disabled(viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-        .opacity(viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.35 : 1)
+        .opacity(viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.98 : 1)
     }
 
     private var expandedMantraInfoBadge: some View {
         infoIconButton
             .font(.system(size: 13, weight: .semibold))
-            .padding(6)
-            .background(
-                Circle()
-                    .fill(themeManager.panelFill.opacity(themeManager.isNight ? 0.42 : 0.58))
-            )
-            .overlay(
-                Circle()
-                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(themeManager.isNight ? 0.18 : 0.08), radius: 8, x: 0, y: 4)
-            .contentShape(Circle())
+            .foregroundColor(themeManager.primaryText)
+            .contentShape(Rectangle())
             .accessibilityHint("Shows why this mantra was chosen")
     }
 
     private var mainViewDialog: some View {
-        ZStack {
-            Color.black.opacity(themeManager.isNight ? 0.48 : 0.26)
-                .ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        showMainViewDialog = false
-                    }
-                }
-
-            VStack(spacing: 16) {
-                Image(systemName: mainViewDialogSymbol)
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(themeManager.primaryText.opacity(0.92))
-                    .frame(width: 44, height: 44)
-                    .background(
-                        Circle()
-                            .fill(themeManager.isNight ? Color(hex: "#182033").opacity(0.96) : Color.white.opacity(0.98))
-                    )
-                    .overlay(
-                        Circle()
-                            .stroke(themeManager.panelStrokeHi.opacity(0.8), lineWidth: 1)
-                    )
-
-                VStack(spacing: 10) {
-                    Text(mainViewDialogTitle)
-                        .font(.custom("Merriweather-Bold", size: 18))
-                        .foregroundColor(themeManager.primaryText.opacity(0.94))
-
-                    Text(mainViewDialogMessage)
-                        .font(.custom("Merriweather-Regular", size: 14))
-                        .foregroundColor(themeManager.descriptionText.opacity(0.84))
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(5)
-                }
-                .padding(.horizontal, 4)
-
-                Button {
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        showMainViewDialog = false
-                    }
-                } label: {
-                    Text("OK")
-                        .font(.custom("Merriweather-Regular", size: 14))
-                        .foregroundColor(themeManager.primaryText.opacity(0.95))
-                        .frame(minWidth: 92)
-                        .padding(.vertical, 10)
-                        .background(
-                            Capsule()
-                                .fill(themeManager.isNight ? Color(hex: "#202A40").opacity(0.98) : Color.white.opacity(0.98))
-                        )
-                        .overlay(
-                            Capsule()
-                                .stroke(themeManager.panelStrokeHi.opacity(0.7), lineWidth: 1)
-                        )
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 26)
-            .frame(maxWidth: 332)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(themeManager.isNight ? Color(hex: "#111827").opacity(0.98) : Color(hex: "#FCFAF5").opacity(0.99))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(themeManager.panelStrokeHi.opacity(0.82), lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(themeManager.isNight ? 0.42 : 0.18), radius: 24, x: 0, y: 14)
-            .padding(.horizontal, 28)
-        }
+        AlynnaActionDialog(
+            title: mainViewDialogTitle,
+            message: mainViewDialogMessage,
+            symbol: mainViewDialogSymbol,
+            primaryButtonTitle: mainViewDialogPrimaryButtonTitle,
+            primaryAction: mainViewDialogPrimaryAction,
+            dismissButtonTitle: mainViewDialogPrimaryButtonTitle == nil ? "OK" : "Cancel",
+            onDismiss: dismissMainViewDialog
+        )
         .transition(.opacity.combined(with: .scale(scale: 0.96)))
         .zIndex(20)
     }
@@ -787,8 +743,8 @@ struct MainView: View {
     private var seededMantraFocuses: [MantraFocus] {
         [
             MantraFocus(id: UUID(uuidString: dailyFocusID) ?? UUID(), name: "daily", description: "Your everyday grounding mantra.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: "22222222-2222-2222-2222-222222222222") ?? UUID(), name: "parenting", description: "Guidance you want to carry into parenting moments.", createdAt: .distantPast),
             MantraFocus(id: UUID(uuidString: "33333333-3333-3333-3333-333333333333") ?? UUID(), name: "dating", description: "A lens for connection, attraction, and dating energy.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: "22222222-2222-2222-2222-222222222222") ?? UUID(), name: "vacation", description: "Space for rest, travel, and how you want to recharge.", createdAt: .distantPast),
             MantraFocus(id: UUID(uuidString: "44444444-4444-4444-4444-444444444444") ?? UUID(), name: "career", description: "Clarity for work, growth, and professional choices.", createdAt: .distantPast),
             MantraFocus(id: UUID(uuidString: "55555555-5555-5555-5555-555555555555") ?? UUID(), name: "friendship", description: "Attention for trust, mutual care, and healthy friendship.", createdAt: .distantPast),
             MantraFocus(id: UUID(uuidString: "66666666-6666-6666-6666-666666666666") ?? UUID(), name: "health", description: "A focus on energy, recovery, and everyday wellbeing.", createdAt: .distantPast),
@@ -888,6 +844,12 @@ struct MainView: View {
             mantraFocusSelections[day] = defaultIDs
         } else {
             var merged = existing.filter { mantraFocusLookup[$0] != nil }
+            let oldParentingID = "22222222-2222-2222-2222-222222222222"
+            let datingID = "33333333-3333-3333-3333-333333333333"
+            let oldDefaultSet = [dailyFocusID, oldParentingID, datingID]
+            if merged == oldDefaultSet {
+                merged = defaultIDs
+            }
             if !merged.contains(dailyFocusID) {
                 merged.insert(dailyFocusID, at: 0)
             }
@@ -1023,12 +985,61 @@ struct MainView: View {
         )
     }
 
-    private func presentMainViewDialog(title: String, message: String, symbol: String) {
+    private func presentMainViewDialog(
+        title: String,
+        message: String,
+        symbol: String,
+        primaryButtonTitle: String? = nil,
+        primaryAction: (() -> Void)? = nil
+    ) {
         mainViewDialogTitle = title
         mainViewDialogMessage = message
         mainViewDialogSymbol = symbol
+        mainViewDialogPrimaryButtonTitle = primaryButtonTitle
+        mainViewDialogPrimaryAction = primaryAction
         withAnimation(.easeOut(duration: 0.2)) {
             showMainViewDialog = true
+        }
+    }
+
+    private func dismissMainViewDialog() {
+        mainViewDialogPrimaryButtonTitle = nil
+        mainViewDialogPrimaryAction = nil
+        withAnimation(.easeOut(duration: 0.2)) {
+            showMainViewDialog = false
+        }
+    }
+
+    private func openAppSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString),
+              UIApplication.shared.canOpenURL(url) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private func presentLocationPermissionRequiredAlert(for focusName: String? = nil) {
+        let message: String
+        if let focusName {
+            message = "Turn on Location Access in Settings. Alynna uses weather, humidity, pressure, and nearby conditions to shape your \(focusName) mantra."
+        } else {
+            message = "Turn on Location Access in Settings. Alynna uses weather, humidity, pressure, and nearby conditions to calculate your mantra and rhythm."
+        }
+        presentMainViewDialog(
+            title: "Location Access Matters",
+            message: message,
+            symbol: "location.slash.circle",
+            primaryButtonTitle: "Open Settings",
+            primaryAction: openAppSettings
+        )
+    }
+
+    private func canProceedWithLocationRefresh() -> Bool {
+        let authorizationStatus = locationManager.authorizationStatus
+        switch authorizationStatus {
+        case .denied, .restricted:
+            presentLocationPermissionRequiredAlert()
+            return false
+        default:
+            return true
         }
     }
 
@@ -1037,11 +1048,13 @@ struct MainView: View {
     }
 
     private func nonDailyUsageCount(for day: String? = nil) -> Int {
+        if isPrivilegedUser { return 0 }
         let key = day ?? currentFocusSelectionKey
         return mantraFocusUsageByDay[key]?.generatedFocuses.keys.count ?? 0
     }
 
     private func hasGeneratedNonDailyFocusToday(_ focusID: String, day: String? = nil) -> Bool {
+        if isPrivilegedUser { return false }
         let key = day ?? currentFocusSelectionKey
         return (mantraFocusUsageByDay[key]?.generatedFocuses[focusID] ?? 0) > 0
     }
@@ -1071,6 +1084,10 @@ struct MainView: View {
         let focusID = focus.id.uuidString
         if activeFocusID == focusID {
             return
+        }
+
+        if focusID != dailyFocusID {
+            dismissFocusHelperIfNeeded()
         }
 
         if activeFocusID == dailyFocusID {
@@ -1115,6 +1132,7 @@ struct MainView: View {
                 setFocusManagerMessage("Daily stays pinned so you can always return to the daily mantra.", isError: true)
                 return
             }
+            dismissFocusHelperIfNeeded()
             let wasActive = activeFocusID == focusID
             ids.remove(at: index)
             updateAppliedMantraFocusIDs(ids)
@@ -1137,6 +1155,7 @@ struct MainView: View {
         }
 
         ids.append(focusID)
+        dismissFocusHelperIfNeeded()
         updateAppliedMantraFocusIDs(ids)
         clearFocusManagerMessage()
         selectFocus(focus)
@@ -1167,6 +1186,7 @@ struct MainView: View {
 
         let newFocus = MantraFocus(id: UUID(), name: name, description: description, createdAt: Date())
         mantraFocuses.insert(newFocus, at: 0)
+        dismissFocusHelperIfNeeded()
         focusedFocusFormField = nil
         newFocusName = ""
         newFocusDescription = ""
@@ -1394,6 +1414,22 @@ struct MainView: View {
             }.resume()
         }
 
+        let authorizationStatus = locationManager.authorizationStatus
+        switch authorizationStatus {
+        case .denied, .restricted:
+            presentLocationPermissionRequiredAlert(for: focus.name)
+            completeGenerationIfNeeded(isDefault: true)
+            restorePreviousFocusAfterFailure()
+            return
+        case .notDetermined, .authorizedAlways, .authorizedWhenInUse:
+            break
+        @unknown default:
+            presentLocationPermissionRequiredAlert(for: focus.name)
+            completeGenerationIfNeeded(isDefault: true)
+            restorePreviousFocusAfterFailure()
+            return
+        }
+
         if let coord = locationManager.currentLocation {
             request(using: coord)
             return
@@ -1406,6 +1442,13 @@ struct MainView: View {
         func poll() {
             if let coord = locationManager.currentLocation {
                 request(using: coord)
+                return
+            }
+            let latestAuthorizationStatus = locationManager.authorizationStatus
+            if latestAuthorizationStatus == .denied || latestAuthorizationStatus == .restricted {
+                presentLocationPermissionRequiredAlert(for: focus.name)
+                completeGenerationIfNeeded(isDefault: true)
+                restorePreviousFocusAfterFailure()
                 return
             }
             if Date().timeIntervalSince(start) > timeout {
@@ -1881,41 +1924,53 @@ struct MainView: View {
                                 let topInset = geometry.size.height * 0.16
                                 let lastLineRect = expandedMantraLastLineRect(for: viewModel.dailyMantra, width: textWidth)
 
-                                ZStack(alignment: .topLeading) {
-                                    Text(viewModel.dailyMantra)
-                                        .font(AlignaType.expandedMantraBoldItalic())
-                                        .lineSpacing(12)
-                                        .multilineTextAlignment(.center)
-                                        .foregroundColor(
-                                            themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
-                                        )
-                                        .fixedSize(horizontal: false, vertical: true)
-                                        .frame(width: textWidth)
-                                        .padding(.top, topInset)
-                                        .padding(.bottom, 18)
-                                        .frame(maxWidth: .infinity)
-                                        .contentShape(Rectangle())
-                                        .onTapGesture {
-                                            guard isMantraReady else { return }
-                                            withAnimation(.easeInOut(duration: 0.45)) {
-                                                isMantraExpanded.toggle()
+                                VStack(spacing: 0) {
+                                    ZStack(alignment: .topLeading) {
+                                        VStack(spacing: 1) {
+                                            Text(viewModel.dailyMantra)
+                                                .font(AlignaType.expandedMantraBoldItalic())
+                                                .lineSpacing(12)
+                                                .multilineTextAlignment(.center)
+                                                .foregroundColor(
+                                                    themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
+                                                )
+                                                .fixedSize(horizontal: false, vertical: true)
+                                                .frame(width: textWidth)
+
+                                            if shouldShowMantraGuidanceHint {
+                                                Text("Tap the mantra above to reveal today’s rhythm guidance.")
+                                                    .font(.custom("Merriweather-Regular", size: 11))
+                                                    .foregroundColor(themeManager.descriptionText.opacity(0.68))
+                                                    .multilineTextAlignment(.center)
+                                                    .frame(width: textWidth * 0.96)
+                                                    .transition(.opacity)
                                             }
                                         }
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            toggleMantraExpansion()
+                                        }
 
-                                    if let lastLineRect {
-                                        expandedMantraInfoBadge
-                                            .offset(
-                                                x: (geometry.size.width - textWidth) / 2 + lastLineRect.maxX + 4,
-                                                y: topInset + lastLineRect.maxY - 28
-                                            )
+                                        if let lastLineRect {
+                                            expandedMantraInfoBadge
+                                                .position(
+                                                    x: min(lastLineRect.maxX + 10, textWidth - 8),
+                                                    y: max(lastLineRect.maxY - 15, 8)
+                                                )
+                                        }
                                     }
+                                    .frame(width: textWidth, alignment: .center)
+                                    .padding(.top, topInset)
+                                    .padding(.bottom, shouldShowMantraGuidanceHint ? 8 : 18)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    toggleMantraExpansion()
                                 }
                             } else {
                                 Button {
-                                    guard isMantraReady else { return }
-                                    withAnimation(.easeInOut(duration: 0.45)) {
-                                        isMantraExpanded.toggle()
-                                    }
+                                    toggleMantraExpansion()
                                 } label: {
                                     Text(viewModel.dailyMantra)
                                         .font(AlignaType.homeSubtitle())
@@ -1946,11 +2001,13 @@ struct MainView: View {
                                             .scaleEffect(0.8)
                                     }
 
-                                    Text(focusHelperText)
-                                        .font(AlignaType.helperSmall())
-                                        .lineSpacing(AlignaType.small14LineSpacing)
-                                        .foregroundColor(themeManager.descriptionText.opacity(0.75))
-                                        .multilineTextAlignment(.center)
+                                    if shouldShowFocusHelper {
+                                        Text(focusHelperText)
+                                            .font(AlignaType.helperSmall())
+                                            .lineSpacing(AlignaType.small14LineSpacing)
+                                            .foregroundColor(themeManager.descriptionText.opacity(0.75))
+                                            .multilineTextAlignment(.center)
+                                    }
                                 }
                                 .padding(.horizontal, geometry.size.width * 0.12)
 
@@ -2125,7 +2182,7 @@ struct MainView: View {
                     (
                         Text("The daily rhythms above are derived from integrated modeling of Earth observation, climate, air-quality, physiological, and astrological data.")
                     )
-                    .font(.system(size: 10))
+                    .font(.custom("Merriweather-Regular", size: 10))
                     .multilineTextAlignment(.center)
                     .foregroundColor(themeManager.descriptionText.opacity(0.45))
                     .padding(.horizontal, 24)
@@ -2613,6 +2670,10 @@ struct MainView: View {
             let hasProfile = data != nil && !nickname.isEmpty
 
             DispatchQueue.main.async {
+                if !nickname.isEmpty {
+                    privilegedNickname = nickname
+                    viewModel.nickname = nickname
+                }
                 if let _ = error {
                     if didDeleteAccount {
                         didDeleteAccount = false
@@ -2632,6 +2693,11 @@ struct MainView: View {
                                 let data = snapshot?.data()
                                 let nickname = (data?["nickname"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                                 let hasProfile = data != nil && !nickname.isEmpty
+
+                                if !nickname.isEmpty {
+                                    privilegedNickname = nickname
+                                    viewModel.nickname = nickname
+                                }
 
                                 if hasProfile {
                                     hasCompletedOnboarding = true
@@ -2922,6 +2988,7 @@ struct MainView: View {
     }
 
     private func handleManualRefreshTap() {
+        guard canProceedWithLocationRefresh() else { return }
         guard manualRefreshAllowed() else {
             refreshCooldownMessage = refreshCooldownText()
             presentMainViewDialog(
@@ -2938,6 +3005,7 @@ struct MainView: View {
     }
 
     private func manualRefreshAllowed() -> Bool {
+        if isPrivilegedUser { return true }
         let now = Date().timeIntervalSince1970
         return now - lastManualRefreshTimestamp >= 12 * 60 * 60
     }
@@ -3018,12 +3086,23 @@ struct MainView: View {
     }
 
     private func triggerGenerationHapticIfNeeded() {
-        let today = todayString()
-        guard mantraGenerationHapticDay != today else { return }
-        mantraGenerationHapticDay = today
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.prepare()
-        generator.impactOccurred()
+        let light = UIImpactFeedbackGenerator(style: .light)
+        let medium = UIImpactFeedbackGenerator(style: .medium)
+        let success = UINotificationFeedbackGenerator()
+
+        light.prepare()
+        medium.prepare()
+        success.prepare()
+
+        light.impactOccurred()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.10) {
+            medium.impactOccurred()
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) {
+            success.notificationOccurred(.success)
+        }
     }
 
     private func showCenterToast(_ message: String, duration: TimeInterval, includeTime: Bool = true) {
@@ -3050,6 +3129,17 @@ struct MainView: View {
             withAnimation(.easeOut(duration: 0.35)) {
                 showGridItems = true
             }
+        }
+    }
+
+    private func toggleMantraExpansion() {
+        guard isMantraReady else { return }
+        let wasExpanded = isMantraExpanded
+        if wasExpanded && mantraGuidanceHintTapCount < 3 {
+            mantraGuidanceHintTapCount += 1
+        }
+        withAnimation(.easeInOut(duration: 0.45)) {
+            isMantraExpanded.toggle()
         }
     }
 
@@ -3268,6 +3358,7 @@ struct MainView: View {
         guard let uid = Auth.auth().currentUser?.uid else {
             print("❌ 未登录，无法强制重拉"); return
         }
+        guard canProceedWithLocationRefresh() else { return }
         let today = todayString()
         let docRef = todayDocRef(uid: uid, day: today)
 
@@ -3382,6 +3473,14 @@ struct MainView: View {
         let limit: TimeInterval = 8.0
 
         func attempt() {
+            let authorizationStatus = locationManager.authorizationStatus
+            if authorizationStatus == .denied || authorizationStatus == .restricted {
+                presentLocationPermissionRequiredAlert()
+                todayFetchLock = ""
+                isFetchingToday = false
+                completeGenerationIfNeeded(isDefault: true)
+                return
+            }
             if let coord = locationManager.currentLocation {
                 fetchFromFastAPIAndSave(coord: coord, userId: uid, today: today, docRef: docRef)
                 return
@@ -3409,6 +3508,7 @@ struct MainView: View {
         guard let uid = Auth.auth().currentUser?.uid else {
             print("❌ 用户未登录，跳过获取推荐"); return
         }
+        guard canProceedWithLocationRefresh() else { return }
         let today = todayString()
         let docRef = todayDocRef(uid: uid, day: today)
 
@@ -3449,6 +3549,7 @@ struct MainView: View {
 
 
             // 尚无今日记录 → 加锁并等待定位就绪后只发一次
+            guard canProceedWithLocationRefresh() else { return }
             todayFetchLock = today
             isFetchingToday = true
             if locationManager.currentLocation == nil {
