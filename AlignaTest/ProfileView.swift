@@ -4063,6 +4063,7 @@ private extension ProfileView {
             viewModel.recommendations = [:]
             viewModel.dailyMantra = ""
             viewModel.reasoningSummary = ""
+            viewModel.howToEngage = [:]
             viewModel.scent_dislike = []
             viewModel.act_prefer = []
             viewModel.color_dislike = []

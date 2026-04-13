@@ -225,23 +225,15 @@ struct DetailScaffold<MainContent: View>: View {
                 Text(item.description)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
-                    .font(AlynnaType.desc18Italic())
-                    .lineSpacing(AlynnaType.desc18LineSpacing)
+                    .font(.custom("Merriweather-Regular", size: 17))
+                    .lineSpacing(4)
                     .fixedSize(horizontal: false, vertical: true)
-                    .foregroundColor(themeManager.descriptionText)
+                    .foregroundColor(themeManager.descriptionText.opacity(0.85))
+                    .padding(.bottom, 6)
 
                 // Custom middle content
                 mainContent
-
-                // Explanation
-                Text(item.explanation)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                    .padding(.bottom)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .font(AlynnaType.explain14Regular())
-                    .lineSpacing(AlynnaType.explain14LineSpacing)
-                    .foregroundColor(Color(hex: "#B9A08B").opacity(0.7))
+                    .padding(.top, 4)
             }
             .padding()
             .padding(.top, 36)
@@ -483,21 +475,22 @@ extension View {
     }
 }
 
+private enum ClickHintKeys {
+    static let global = "aligna.detail.click.hint.count"
+}
+
 struct ClickableHeroImage: View {
     @EnvironmentObject var themeManager: ThemeManager
 
     let imageName: String
-    let clickStorageKey: String
     let onTap: () -> Void
 
-    @AppStorage private var clickCount: Int
+    @AppStorage(ClickHintKeys.global) private var clickCount: Int = 0
     private var showHint: Bool { clickCount < 3 }
 
-    init(imageName: String, clickStorageKey: String, onTap: @escaping () -> Void) {
+    init(imageName: String, onTap: @escaping () -> Void) {
         self.imageName = imageName
-        self.clickStorageKey = clickStorageKey
         self.onTap = onTap
-        self._clickCount = AppStorage(wrappedValue: 0, clickStorageKey)
     }
 
     var body: some View {
@@ -1167,7 +1160,7 @@ struct SoundDetailView: View {
             collection: "sounds",
             documentName: documentName
         ) { item in
-            SoundExtraContent(documentName: documentName, title: item.title)
+            SoundExtraContent(documentName: documentName, title: item.title, anchor: item.anchor)
         }
     }
 }
@@ -1178,17 +1171,18 @@ private struct SoundExtraContent: View {
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var soundPlayer: SoundPlayer
     @EnvironmentObject var reasoningStore: DailyReasoningStore
+    @EnvironmentObject var viewModel: OnboardingViewModel
     @Environment(\.colorScheme) private var colorScheme
 
     let documentName: String
     let title: String
+    let anchor: String?
 
     // Reasoning sheet (image tap)
     @State private var showReasoning = false
     @State private var showPlayButton = false
 
-    // ✅ click hint (first 3 times)
-    @AppStorage("aligna.sound.click.count") private var soundClickCount: Int = 0
+    @AppStorage(ClickHintKeys.global) private var soundClickCount: Int = 0
     private var showSoundClickHint: Bool { soundClickCount < 3 }
 
     private var playRingFill: Color {
@@ -1270,6 +1264,17 @@ private struct SoundExtraContent: View {
                 )
                 .presentationBackground(.clear)
             }
+
+            let engageText = viewModel.howToEngage["Sound"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !engageText.isEmpty {
+                DailyAnchorView(text: engageText)
+                    .environmentObject(themeManager)
+                    .padding(.top, 8)
+            } else if let anchor, !anchor.isEmpty {
+                DailyAnchorView(text: anchor)
+                    .environmentObject(themeManager)
+                    .padding(.top, 8)
+            }
         }
     }
 }
@@ -1285,6 +1290,7 @@ struct IconItem: Identifiable {
 struct PlaceDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var reasoningStore: DailyReasoningStore
+    @EnvironmentObject var viewModel: OnboardingViewModel
 
     let documentName: String
 
@@ -1305,8 +1311,7 @@ struct PlaceDetailView: View {
             VStack(spacing: 24) {
 
                 ClickableHeroImage(
-                    imageName: documentName,
-                    clickStorageKey: "aligna.place.click.count"
+                    imageName: documentName
                 ) {
                     showReasoning = true
                 }
@@ -1317,6 +1322,17 @@ struct PlaceDetailView: View {
                         themeManager: themeManager
                     )
                     .presentationBackground(.clear)
+                }
+
+                let engageText = viewModel.howToEngage["Place"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                if !engageText.isEmpty {
+                    DailyAnchorView(text: engageText)
+                        .environmentObject(themeManager)
+                        .padding(.top, 8)
+                } else if let anchor = item.anchor, !anchor.isEmpty {
+                    DailyAnchorView(text: anchor)
+                        .environmentObject(themeManager)
+                        .padding(.top, 8)
                 }
 
 //                HStacchk(spacing: 40) {
@@ -1358,7 +1374,9 @@ struct DailyAnchorView: View {
         colorScheme == .dark ? Color.white.opacity(0.45) : Color.black.opacity(0.35)
     }
     private var quoteTextColor: Color {
-        colorScheme == .dark ? Color(white: 0.94).opacity(0.9) : Color.black.opacity(0.85)
+        colorScheme == .dark
+            ? themeManager.primaryText.opacity(0.82)
+            : themeManager.primaryText.opacity(0.88)
     }
     private var quoteShadowColor: Color {
         colorScheme == .dark ? Color.white.opacity(0.18) : Color.black.opacity(0.10)
@@ -1390,7 +1408,7 @@ struct DailyAnchorView: View {
                     .blur(radius: 18)
                     .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: pulse)
 
-                Text("✦ Daily anchor ✦")
+                Text("✦ Daily Anchor ✦")
                     .font(.custom("Merriweather-Italic", size: 18))
                     .foregroundColor(themeManager.foregroundColor.opacity(0.9))
                     .shadow(color: themeManager.foregroundColor.opacity(0.25), radius: 12, x: 0, y: 0)
@@ -1416,42 +1434,19 @@ struct DailyAnchorView: View {
                             .stroke((colorScheme == .dark ? Color.white : Color.black).opacity(0.08), lineWidth: 1)
                     )
 
-                Text("“")
-                    .font(.custom("Merriweather-Black", size: 28))
-                    .foregroundColor(quoteMarkColor)
-                    .rotationEffect(.degrees(shimmer ? 5 : 0))
-                    .opacity(shimmer ? 0.7 : 0.4)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    .padding(8)
-                    .animation(.easeInOut(duration: 6).repeatForever(autoreverses: true), value: shimmer)
-
-                Text("”")
-                    .font(.custom("Merriweather-Black", size: 28))
-                    .foregroundColor(quoteMarkColor)
-                    .rotationEffect(.degrees(shimmer ? 185 : 180))
-                    .opacity(shimmer ? 0.7 : 0.4)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-                    .padding(8)
-                    .animation(.easeInOut(duration: 6).repeatForever(autoreverses: true).delay(3), value: shimmer)
-
-
                 // the quote text
                 Text(text)
                     .font(.custom("Merriweather-Italic", size: 19))
                     .foregroundColor(quoteTextColor)
-                    .multilineTextAlignment(.center)
+                    .multilineTextAlignment(.leading)
                     .lineSpacing(4)
-                    .padding(.horizontal, 16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
                     .padding(.vertical, 14)
                     .shadow(color: quoteShadowColor, radius: 10)
             }
             .fixedSize(horizontal: false, vertical: true)
 
-            // Bottom gradient divider
-            GradientHairline()
-                .frame(height: 1)
-                .padding(.horizontal, 8)
-                .opacity(0.9)
         }
         .onAppear {
             pulse = true
@@ -1673,13 +1668,14 @@ struct GemstoneDetailView: View {
 private struct GemstoneExtraContent: View {
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var reasoningStore: DailyReasoningStore
+    @EnvironmentObject var viewModel: OnboardingViewModel
 
 
     let documentName: String
     let item: RecommendationItem
 
     @State private var showLinkSheet = false
-    @AppStorage("aligna.gem.click.count") private var gemClickCount: Int = 0
+    @AppStorage(ClickHintKeys.global) private var gemClickCount: Int = 0
     private var showGemClickHint: Bool { gemClickCount < 3 }
 
     var body: some View {
@@ -1717,7 +1713,12 @@ private struct GemstoneExtraContent: View {
                 .presentationCornerRadius(28)
             }
 
-            if let anchor = item.anchor, !anchor.isEmpty {
+            let engageText = viewModel.howToEngage["Gemstone"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !engageText.isEmpty {
+                DailyAnchorView(text: engageText)
+                    .environmentObject(themeManager)
+                    .padding(.top, 8)
+            } else if let anchor = item.anchor, !anchor.isEmpty {
                 DailyAnchorView(text: anchor)
                     .environmentObject(themeManager)
                     .padding(.top, 8)
@@ -1811,14 +1812,14 @@ struct ColorDetailView: View {
 private struct ColorExtraContent: View {
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var reasoningStore: DailyReasoningStore
+    @EnvironmentObject var viewModel: OnboardingViewModel
 
     let item: RecommendationItem
     let hex: String?
 
     @State private var showReasoning = false
 
-    // ✅ click hint (first 3 times)
-    @AppStorage("aligna.color.click.count") private var colorClickCount: Int = 0
+    @AppStorage(ClickHintKeys.global) private var colorClickCount: Int = 0
     private var showColorClickHint: Bool { colorClickCount < 3 }
 
     var body: some View {
@@ -1845,6 +1846,17 @@ private struct ColorExtraContent: View {
                 themeManager: themeManager
             )
             .presentationBackground(.clear)
+        }
+
+        let engageText = viewModel.howToEngage["Color"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !engageText.isEmpty {
+            DailyAnchorView(text: engageText)
+                .environmentObject(themeManager)
+                .padding(.top, 8)
+        } else if let anchor = item.anchor, !anchor.isEmpty {
+            DailyAnchorView(text: anchor)
+                .environmentObject(themeManager)
+                .padding(.top, 8)
         }
     }
 }
@@ -1975,14 +1987,14 @@ struct ScentDetailView: View {
 private struct ScentExtraContent: View {
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var reasoningStore: DailyReasoningStore
+    @EnvironmentObject var viewModel: OnboardingViewModel
 
     let documentName: String
     let item: RecommendationItem
 
     @State private var showLinkSheet = false
 
-    // ✅ show hint only first few times (like Gemstone)
-    @AppStorage("aligna.scent.click.count") private var scentClickCount: Int = 0
+    @AppStorage(ClickHintKeys.global) private var scentClickCount: Int = 0
     private var showScentClickHint: Bool { scentClickCount < 3 }
 
     var body: some View {
@@ -2039,6 +2051,16 @@ private struct ScentExtraContent: View {
 //                .padding(16)
 //            }
 
+            let engageText = viewModel.howToEngage["Scent"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !engageText.isEmpty {
+                DailyAnchorView(text: engageText)
+                    .environmentObject(themeManager)
+                    .padding(.top, 8)
+            } else if let anchor = item.anchor, !anchor.isEmpty {
+                DailyAnchorView(text: anchor)
+                    .environmentObject(themeManager)
+                    .padding(.top, 8)
+            }
         }
     }
 }
@@ -2047,6 +2069,7 @@ private struct ScentExtraContent: View {
 struct ActivityDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var reasoningStore: DailyReasoningStore
+    @EnvironmentObject var viewModel: OnboardingViewModel
 
     let documentName: String
     @State private var showReasoning = false
@@ -2057,17 +2080,29 @@ struct ActivityDetailView: View {
             collection: "activities",
             documentName: documentName
         ) { item in
-            ClickableHeroImage(
-                imageName: documentName,
-                clickStorageKey: "aligna.activity.click.count"
-            ) { showReasoning = true }
-            .sheet(isPresented: $showReasoning) {
-                ReasoningSheet(
-                    sectionTitle: "Activity",
-                    reasoningText: reasoningStore.text(for: "Activity"),
-                    themeManager: themeManager
-                )
-                .presentationBackground(.clear)
+            VStack(spacing: 24) {
+                ClickableHeroImage(
+                    imageName: documentName
+                ) { showReasoning = true }
+                .sheet(isPresented: $showReasoning) {
+                    ReasoningSheet(
+                        sectionTitle: "Activity",
+                        reasoningText: reasoningStore.text(for: "Activity"),
+                        themeManager: themeManager
+                    )
+                    .presentationBackground(.clear)
+                }
+
+                let engageText = viewModel.howToEngage["Activity"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                if !engageText.isEmpty {
+                    DailyAnchorView(text: engageText)
+                        .environmentObject(themeManager)
+                        .padding(.top, 8)
+                } else if let anchor = item.anchor, !anchor.isEmpty {
+                    DailyAnchorView(text: anchor)
+                        .environmentObject(themeManager)
+                        .padding(.top, 8)
+                }
             }
         }
     }
@@ -2077,6 +2112,7 @@ struct ActivityDetailView: View {
 struct CareerDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var reasoningStore: DailyReasoningStore
+    @EnvironmentObject var viewModel: OnboardingViewModel
 
     let documentName: String
     @State private var showReasoning = false
@@ -2087,17 +2123,29 @@ struct CareerDetailView: View {
             collection: "careers",
             documentName: documentName
         ) { item in
-            ClickableHeroImage(
-                imageName: documentName,
-                clickStorageKey: "aligna.career.click.count"
-            ) { showReasoning = true }
-            .sheet(isPresented: $showReasoning) {
-                ReasoningSheet(
-                    sectionTitle: "Career",
-                    reasoningText: reasoningStore.text(for: "Career"),
-                    themeManager: themeManager
-                )
-                .presentationBackground(.clear)
+            VStack(spacing: 24) {
+                ClickableHeroImage(
+                    imageName: documentName
+                ) { showReasoning = true }
+                .sheet(isPresented: $showReasoning) {
+                    ReasoningSheet(
+                        sectionTitle: "Career",
+                        reasoningText: reasoningStore.text(for: "Career"),
+                        themeManager: themeManager
+                    )
+                    .presentationBackground(.clear)
+                }
+
+                let engageText = viewModel.howToEngage["Career"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                if !engageText.isEmpty {
+                    DailyAnchorView(text: engageText)
+                        .environmentObject(themeManager)
+                        .padding(.top, 8)
+                } else if let anchor = item.anchor, !anchor.isEmpty {
+                    DailyAnchorView(text: anchor)
+                        .environmentObject(themeManager)
+                        .padding(.top, 8)
+                }
             }
         }
     }
@@ -2108,6 +2156,7 @@ struct CareerDetailView: View {
 struct RelationshipDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var reasoningStore: DailyReasoningStore
+    @EnvironmentObject var viewModel: OnboardingViewModel
 
 
     let documentName: String
@@ -2119,17 +2168,29 @@ struct RelationshipDetailView: View {
             collection: "relationships",
             documentName: documentName
         ) { item in
-            ClickableHeroImage(
-                imageName: documentName,
-                clickStorageKey: "aligna.relationship.click.count"
-            ) { showReasoning = true }
-            .sheet(isPresented: $showReasoning) {
-                ReasoningSheet(
-                    sectionTitle: "Relationship",
-                    reasoningText: reasoningStore.text(for: "Relationship"),
-                    themeManager: themeManager
-                )
-                .presentationBackground(.clear)
+            VStack(spacing: 24) {
+                ClickableHeroImage(
+                    imageName: documentName
+                ) { showReasoning = true }
+                .sheet(isPresented: $showReasoning) {
+                    ReasoningSheet(
+                        sectionTitle: "Relationship",
+                        reasoningText: reasoningStore.text(for: "Relationship"),
+                        themeManager: themeManager
+                    )
+                    .presentationBackground(.clear)
+                }
+
+                let engageText = viewModel.howToEngage["Relationship"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                if !engageText.isEmpty {
+                    DailyAnchorView(text: engageText)
+                        .environmentObject(themeManager)
+                        .padding(.top, 8)
+                } else if let anchor = item.anchor, !anchor.isEmpty {
+                    DailyAnchorView(text: anchor)
+                        .environmentObject(themeManager)
+                        .padding(.top, 8)
+                }
             }
         }
     }
@@ -2142,6 +2203,7 @@ private struct DetailPreviewContainer<Content: View>: View {
     @StateObject private var starManager = StarAnimationManager()
     @StateObject private var soundPlayer = SoundPlayer()
     @StateObject private var reasoningStore = DailyReasoningStore()
+    @StateObject private var viewModel = OnboardingViewModel()
     @StateObject private var themeManager: ThemeManager
 
     init(isNight: Bool, @ViewBuilder content: () -> Content) {
@@ -2165,6 +2227,7 @@ private struct DetailPreviewContainer<Content: View>: View {
                     .environmentObject(starManager)
                     .environmentObject(soundPlayer)
                     .environmentObject(reasoningStore)
+                    .environmentObject(viewModel)
                     .environmentObject(themeManager)
             }
         }

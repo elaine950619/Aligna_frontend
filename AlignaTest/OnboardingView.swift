@@ -20,6 +20,7 @@ class OnboardingViewModel: ObservableObject {
     @Published var recommendations: [String: String] = [:]
     @Published var dailyMantra: String = ""
     @Published var reasoningSummary: String = ""
+    @Published var howToEngage: [String: String] = [:]
 
     
     // ✅ 新增：Step3 的五个答案
@@ -1640,10 +1641,28 @@ struct OnboardingStep3: View {
                         return [:]
                     }()
 
+                    let rawHowToEngage: [String: String] = {
+                        if let explanation = parsed["explanation"] as? [String: Any],
+                           let engageAny = explanation["how_to_engage"] {
+                            return coerceStringDict(engageAny)
+                        }
+                        if let engageAny = parsed["how_to_engage"] {
+                            return coerceStringDict(engageAny)
+                        }
+                        return [:]
+                    }()
+
+                    let normalizedHowToEngage: [String: String] = rawHowToEngage.reduce(into: [:]) { acc, pair in
+                        let key = canonicalCategoryKey(pair.key) ?? pair.key.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !key.isEmpty else { return }
+                        acc[key] = pair.value
+                    }
+
                     print("🧠 FastAPI(raw) reasoning count:", rawReasoning.count, "keys:", rawReasoning.keys.sorted())
 
                     DispatchQueue.main.async {
                         viewModel.recommendations = normalizedRecs
+                        viewModel.howToEngage = normalizedHowToEngage
                         isLoading = false
                         loadingStageIndex = 0
                         showLongWaitHint = false
@@ -1660,6 +1679,9 @@ struct OnboardingStep3: View {
                         if !rawReasoning.isEmpty {
                             recommendationData["reasoning"] = rawReasoning
                             recommendationData["mapping"] = rawReasoning
+                        }
+                        if !normalizedHowToEngage.isEmpty {
+                            recommendationData["how_to_engage"] = normalizedHowToEngage
                         }
 
                         let docId = "\(userId)_\(createdAt)"
@@ -2484,10 +2506,28 @@ struct OnboardingFinalStep: View {
                         return [:]
                     }()
 
+                    let rawHowToEngage: [String: String] = {
+                        if let explanation = parsed["explanation"] as? [String: Any],
+                           let engageAny = explanation["how_to_engage"] {
+                            return coerceStringDict(engageAny)
+                        }
+                        if let engageAny = parsed["how_to_engage"] {
+                            return coerceStringDict(engageAny)
+                        }
+                        return [:]
+                    }()
+
+                    let normalizedHowToEngage: [String: String] = rawHowToEngage.reduce(into: [:]) { acc, pair in
+                        let key = canonicalCategoryKey(pair.key) ?? pair.key.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !key.isEmpty else { return }
+                        acc[key] = pair.value
+                    }
+
                     print("🧠 FastAPI(raw) reasoning count:", rawReasoning.count, "keys:", rawReasoning.keys.sorted())
                     
                     DispatchQueue.main.async {
                         viewModel.recommendations = normalizedRecs
+                        viewModel.howToEngage = normalizedHowToEngage
                         self.isLoading = false
                         self.loadingStageIndex = 0
                         self.showLongWaitHint = false
@@ -2506,6 +2546,9 @@ struct OnboardingFinalStep: View {
                             // Write backend keys as-is (FastAPI returns canonical keys like "Place", "Color", ...)
                             recommendationData["reasoning"] = rawReasoning
                             recommendationData["mapping"] = rawReasoning
+                        }
+                        if !normalizedHowToEngage.isEmpty {
+                            recommendationData["how_to_engage"] = normalizedHowToEngage
                         }
 
                         let docId = "\(userId)_\(createdAt)"

@@ -228,9 +228,60 @@ private struct FocusedMantraEntry: Codable, Hashable {
     var mantra: String
     var recommendations: [String: String]
     var reasoningSummary: String
+    var howToEngage: [String: String]
     var locationName: String
     var savedAt: Date
     var isDefault: Bool
+
+    init(
+        mantra: String,
+        recommendations: [String: String],
+        reasoningSummary: String,
+        howToEngage: [String: String] = [:],
+        locationName: String,
+        savedAt: Date,
+        isDefault: Bool
+    ) {
+        self.mantra = mantra
+        self.recommendations = recommendations
+        self.reasoningSummary = reasoningSummary
+        self.howToEngage = howToEngage
+        self.locationName = locationName
+        self.savedAt = savedAt
+        self.isDefault = isDefault
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case mantra
+        case recommendations
+        case reasoningSummary
+        case howToEngage
+        case locationName
+        case savedAt
+        case isDefault
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        mantra = try container.decode(String.self, forKey: .mantra)
+        recommendations = try container.decode([String: String].self, forKey: .recommendations)
+        reasoningSummary = try container.decode(String.self, forKey: .reasoningSummary)
+        howToEngage = try container.decodeIfPresent([String: String].self, forKey: .howToEngage) ?? [:]
+        locationName = try container.decode(String.self, forKey: .locationName)
+        savedAt = try container.decode(Date.self, forKey: .savedAt)
+        isDefault = try container.decode(Bool.self, forKey: .isDefault)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(mantra, forKey: .mantra)
+        try container.encode(recommendations, forKey: .recommendations)
+        try container.encode(reasoningSummary, forKey: .reasoningSummary)
+        try container.encode(howToEngage, forKey: .howToEngage)
+        try container.encode(locationName, forKey: .locationName)
+        try container.encode(savedAt, forKey: .savedAt)
+        try container.encode(isDefault, forKey: .isDefault)
+    }
 }
 
 private struct DailyFocusUsageEntry: Codable, Hashable {
@@ -1048,19 +1099,23 @@ struct MainView: View {
     private func applyFocusedEntry(_ entry: FocusedMantraEntry, focusID: String) {
         let displayRecommendations: [String: String]
         let displayReasoningSummary: String
+        let displayHowToEngage: [String: String]
         let displayLocationName: String
 
         if entry.isDefault {
             displayRecommendations = entry.recommendations
             displayReasoningSummary = entry.reasoningSummary
+            displayHowToEngage = entry.howToEngage
             displayLocationName = entry.locationName
         } else if let dailyEntry = focusEntry(for: dailyFocusID) {
             displayRecommendations = dailyEntry.recommendations
             displayReasoningSummary = dailyEntry.reasoningSummary
+            displayHowToEngage = entry.howToEngage.isEmpty ? dailyEntry.howToEngage : entry.howToEngage
             displayLocationName = dailyEntry.locationName
         } else {
             displayRecommendations = viewModel.recommendations
             displayReasoningSummary = viewModel.reasoningSummary
+            displayHowToEngage = entry.howToEngage.isEmpty ? viewModel.howToEngage : entry.howToEngage
             displayLocationName = lastRecommendationPlace
         }
 
@@ -1068,6 +1123,7 @@ struct MainView: View {
         viewModel.dailyMantra = entry.mantra
         viewModel.recommendations = displayRecommendations
         viewModel.reasoningSummary = displayReasoningSummary
+        viewModel.howToEngage = displayHowToEngage
         lastRecommendationPlace = displayLocationName
         lastRecommendationDate = todayString()
         isDefaultRecommendation = entry.isDefault
@@ -1085,6 +1141,7 @@ struct MainView: View {
             mantra: mantra,
             recommendations: viewModel.recommendations,
             reasoningSummary: viewModel.reasoningSummary,
+            howToEngage: viewModel.howToEngage,
             locationName: lastRecommendationPlace,
             savedAt: Date(),
             isDefault: isDefaultRecommendation
@@ -1505,6 +1562,32 @@ struct MainView: View {
                         return ""
                     }()
 
+                    func coerceStringDict(_ any: Any?) -> [String: String] {
+                        if let dict = any as? [String: String] { return dict }
+                        guard let dict = any as? [String: Any] else { return [:] }
+                        return dict.reduce(into: [String: String]()) { acc, pair in
+                            if let s = pair.value as? String { acc[pair.key] = s }
+                        }
+                    }
+
+                    let normalizedHowToEngage: [String: String] = {
+                        let raw: [String: String]
+                        if let explanation = parsed["explanation"] as? [String: Any],
+                           let engageAny = explanation["how_to_engage"] {
+                            raw = coerceStringDict(engageAny)
+                        } else if let engageAny = parsed["how_to_engage"] {
+                            raw = coerceStringDict(engageAny)
+                        } else {
+                            raw = [:]
+                        }
+
+                        return raw.reduce(into: [:]) { acc, pair in
+                            let key = self.canonicalCategory(from: pair.key) ?? pair.key.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard !key.isEmpty else { return }
+                            acc[key] = pair.value
+                        }
+                    }()
+
                     let normalized: [String: String] = {
                         if let recs = parsed["recommendations"] as? [String: String] {
                             let reduced = recs.reduce(into: [String: String]()) { acc, kv in
@@ -1532,6 +1615,7 @@ struct MainView: View {
                         mantra: mantra,
                         recommendations: normalized,
                         reasoningSummary: reasoningSummary,
+                        howToEngage: normalizedHowToEngage,
                         locationName: resolvedPlace,
                         savedAt: Date(),
                         isDefault: false
@@ -3937,6 +4021,23 @@ struct MainView: View {
                         return [:]
                     }()
 
+                    let rawHowToEngage: [String: String] = {
+                        if let explanation = parsed["explanation"] as? [String: Any],
+                           let engageAny = explanation["how_to_engage"] {
+                            return coerceStringDict(engageAny)
+                        }
+                        if let engageAny = parsed["how_to_engage"] {
+                            return coerceStringDict(engageAny)
+                        }
+                        return [:]
+                    }()
+
+                    let normalizedHowToEngage: [String: String] = rawHowToEngage.reduce(into: [:]) { acc, pair in
+                        let key = self.canonicalCategory(from: pair.key) ?? pair.key.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !key.isEmpty else { return }
+                        acc[key] = pair.value
+                    }
+
                     let reasoningSummary: String? = {
                         if let s = parsed["reasoning_summary"] as? String { return s }
                         if let explanation = parsed["explanation"] as? [String: Any],
@@ -3974,6 +4075,7 @@ struct MainView: View {
                         // 更新本地
                         viewModel.recommendations = normalized
                         viewModel.dailyMantra = mantra
+                        viewModel.howToEngage = normalizedHowToEngage
                         lastRecommendationDate = today
                         viewModel.reasoningSummary = reasoning
                         cacheCurrentDailyFocusIfPossible(day: today)
@@ -4010,6 +4112,11 @@ struct MainView: View {
                             recommendationData["reasoning"] = FieldValue.delete()
                             recommendationData["mapping"] = FieldValue.delete()
                             print("⚠️ Backend did not provide reasoning/mapping; not writing placeholder reasoning.")
+                        }
+                        if !normalizedHowToEngage.isEmpty {
+                            recommendationData["how_to_engage"] = normalizedHowToEngage
+                        } else {
+                            recommendationData["how_to_engage"] = FieldValue.delete()
                         }
 
                         recommendationData["reasoning_summary"] = reasoning
@@ -4249,6 +4356,7 @@ struct MainView: View {
             var fetchedMantra = ""
             var fetchedReasoning = ""
             var reasoningMap: [String: String] = [:]
+            var fetchedHowToEngage: [String: String] = [:]
 
             let fetchedPlace = (data["generatedPlace"] as? String ?? "")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -4265,6 +4373,15 @@ struct MainView: View {
                     if let s = value as? String {
                         reasoningMap[key] = s
                     }
+                }
+            }
+
+            if let rawHowToEngage = data["how_to_engage"] as? [String: Any] {
+                for (key, value) in rawHowToEngage {
+                    guard let s = value as? String else { continue }
+                    let resolvedKey = canonicalCategory(from: key) ?? key.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !resolvedKey.isEmpty else { continue }
+                    fetchedHowToEngage[resolvedKey] = s
                 }
             }
 
@@ -4310,6 +4427,7 @@ struct MainView: View {
                 }
 
                 self.viewModel.recommendations = recs
+                self.viewModel.howToEngage = fetchedHowToEngage
 
                 // ✅ 只有在 Firestore 真有 mantra 时才覆盖；避免把已有 UI 文本刷成空
                 let mantraTrim = fetchedMantra.trimmingCharacters(in: .whitespacesAndNewlines)
