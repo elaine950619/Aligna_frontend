@@ -320,6 +320,7 @@ struct MainView: View {
     @State private var showGenerationToast = false
     @State private var generationToastMessage = ""
     @State private var showGenerationStrongHint = false
+    @State private var generationOverlaySequence: Int = 0
     @State private var isDefaultRecommendation = false
     @State private var pendingGenerationToast = false
     @State private var showReasoningSheet = false
@@ -566,16 +567,13 @@ struct MainView: View {
     }
 
     private var focusHelperText: String {
-        if let generationStatusText {
-            return generationStatusText
-        }
         return !hasDismissedFocusHelper
             ? "Choose up to 3 life focuses for what this mantra should pay attention to."
             : ""
     }
 
     private var focusHelperShowsProgress: Bool {
-        generationStatusText != nil
+        false
     }
 
     private var shouldShowFocusHelper: Bool {
@@ -595,6 +593,20 @@ struct MainView: View {
     private func configureFocusGenerationOverlay(for focusName: String) {
         mainGenerationOverlayTitle = "Generating your focus mantra"
         mainGenerationOverlayMessage = "We're shaping a mantra around \(focusName) and today's signals."
+    }
+
+    private func scheduleGenerationOverlayHints() {
+        generationOverlaySequence += 1
+        let sequence = generationOverlaySequence
+        let isFocusGeneration = focusGenerationTagID != nil
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 12) {
+            guard generationOverlaySequence == sequence, isGenerationInProgress else { return }
+            showGenerationStrongHint = true
+            mainGenerationOverlayMessage = isFocusGeneration
+                ? "Holding tight. Focus mantra requests can take up to a minute."
+                : "Holding tight. Generating today's mantra can take up to a minute."
+        }
     }
 
     private var hasRefreshedAlignmentToday: Bool {
@@ -1442,6 +1454,7 @@ struct MainView: View {
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.timeoutInterval = 60
 
             do {
                 request.httpBody = try JSONSerialization.data(withJSONObject: payload)
@@ -3195,6 +3208,7 @@ struct MainView: View {
         if focusGenerationTagID == nil {
             configureDailyGenerationOverlay()
         }
+        scheduleGenerationOverlayHints()
         let hasContent = !viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             || !viewModel.recommendations.isEmpty
             || lastRecommendationHasFullSet
@@ -3203,6 +3217,7 @@ struct MainView: View {
 
     private func completeGenerationIfNeeded(isDefault: Bool) {
         guard isGenerationInProgress else { return }
+        generationOverlaySequence += 1
         isGenerationInProgress = false
         isUsingPreviousResult = false
         showGenerationStrongHint = false
@@ -3293,7 +3308,7 @@ struct MainView: View {
                             if showMainGenerationOverlay {
                                 isBootDataReady = true
                             }
-                        } else if didProvidePersonal && !hasRecentRecommendation {
+                        } else if showMainGenerationOverlay && !hasRecentRecommendation {
                             forceRefetchDailyIfNotLocked()
                             if showMainGenerationOverlay {
                                 isBootDataReady = true
@@ -3537,10 +3552,14 @@ struct MainView: View {
         let today = todayString()
         let docRef = todayDocRef(uid: uid, day: today)
 
-        // 若已有在途请求，就不重复发
-        if todayFetchLock == today || isFetchingToday {
+        // 若已有在途请求，就不重复发；仅有同日旧锁但当前没有活跃请求时，视为 stale lock
+        if isFetchingToday {
             print("⏳ Watchdog: 今日请求已在进行中，跳过强制重拉")
             return
+        }
+        if todayFetchLock == today {
+            print("⚠️ 检测到 stale todayFetchLock，清除后继续重拉")
+            todayFetchLock = ""
         }
 
         beginGenerationFlow()
@@ -3688,10 +3707,14 @@ struct MainView: View {
         let today = todayString()
         let docRef = todayDocRef(uid: uid, day: today)
 
-        // 单日互斥：同一天只允许一条在途请求
-        if todayFetchLock == today || isFetchingToday {
+        // 单日互斥：仅阻止真实在途请求；同日旧锁但当前无活跃请求时清理后继续
+        if isFetchingToday {
             print("⏳ 今日拉取已在进行或已加锁，跳过二次触发")
             return
+        }
+        if todayFetchLock == today {
+            print("⚠️ 检测到 stale todayFetchLock，清除后继续今日拉取")
+            todayFetchLock = ""
         }
 
         // 直接命中 docId 判断是否已有今日推荐（避免并发竞态）
@@ -3789,6 +3812,7 @@ struct MainView: View {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 60
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: payload)
         } catch {
@@ -3923,21 +3947,14 @@ struct MainView: View {
                     }()
 
                     let reasoningSummaryText = reasoningSummary?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                    if reasoningSummaryText.isEmpty {
-                        print("❌ FastAPI 返回缺少 reasoning_summary")
-                        saveDefaultDailyRecommendationToCalendar(
-                            userId: userId,
-                            today: today,
-                            docRef: docRef,
-                            reason: "missing_reasoning_summary"
-                        )
-                        return
-                    }
+                    let resolvedReasoningSummary = reasoningSummaryText.isEmpty
+                        ? "Generated from your current signals."
+                        : reasoningSummaryText
 
                     print("🧠 FastAPI rawReasoning count:", rawReasoning.count, "keys:", rawReasoning.keys.sorted())
 
 
-                    let reasoning = reasoningSummaryText
+                    let reasoning = resolvedReasoningSummary
 
                     DispatchQueue.main.async {
                         // ✅ 把后端 recommendations 的 key 统一成规范写法

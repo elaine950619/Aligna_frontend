@@ -594,7 +594,7 @@ struct LoadingView: View {
 
             case .gathering:
                 stageHeader(title: "Your signals are in place",
-                            subtitle: gatheringSubtitleView,
+                            subtitle: EmptyView(),
                             iconName: "sparkles.rectangle.stack.fill",
                             topPadding: 6)
                     .frame(height: headerHeight, alignment: .top)
@@ -602,7 +602,7 @@ struct LoadingView: View {
                     gatheringSummary
                 }
                 .frame(height: contentHeight, alignment: .top)
-                .padding(.top, 20)
+                .padding(.top, 10)
             }
         }
     }
@@ -777,42 +777,71 @@ struct LoadingView: View {
             gatheringCard(
                 title: "From the Cosmos",
                 iconName: "moon.stars.fill",
-                lines: cosmosSummaryLines
+                rows: cosmosSummaryRows
             )
 
             gatheringCard(
                 title: "From Your Environment",
                 iconName: "cloud.sun.fill",
-                lines: environmentSummaryLines
+                rows: environmentSummaryRows
             )
 
             gatheringCard(
                 title: "From Within",
                 iconName: "person.fill",
-                lines: personalSummaryLines
+                rows: personalSummaryRows
             )
 
-            Button {
-                beginGenerationOverlay()
-            } label: {
-                HStack(spacing: 8) {
-                    if isGeneratingOverlayVisible {
-                        ProgressView()
-                            .progressViewStyle(.circular)
-                            .tint(themeManager.isNight ? Color.black : Color.white)
-                            .scaleEffect(0.75)
-                    }
-                    Text(buttonTitleForGathering)
+            Text("These signals are used only to shape your experience here, and nowhere else.")
+                .font(AlignaType.helperSmall())
+                .foregroundColor(themeManager.descriptionText.opacity(0.82))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 4)
+                .padding(.horizontal, 12)
+
+            HStack(spacing: 10) {
+                Button {
+                    handleNotNow()
+                } label: {
+                    Text("Not Now")
+                        .font(.custom("Merriweather-Bold", size: 13))
+                        .foregroundColor(themeManager.primaryText)
+                        .padding(.vertical, 9)
+                        .padding(.horizontal, 18)
+                        .background(Color.white.opacity(0.04))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(themeManager.primaryText.opacity(0.18), lineWidth: 1)
+                        )
+                        .cornerRadius(12)
                 }
-                .font(.custom("Merriweather-Bold", size: 13))
-                .foregroundColor(themeManager.isNight ? Color.black : Color.white)
-                .padding(.vertical, 9)
-                .padding(.horizontal, 22)
-                .frame(maxWidth: .infinity)
-                .background(themeManager.primaryText)
-                .cornerRadius(12)
+                .buttonStyle(.plain)
+                .disabled(isGeneratingOverlayVisible)
+
+                Button {
+                    beginGenerationOverlay()
+                } label: {
+                    HStack(spacing: 8) {
+                        if isGeneratingOverlayVisible {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .tint(themeManager.isNight ? Color.black : Color.white)
+                                .scaleEffect(0.75)
+                        }
+                        Text(buttonTitleForGathering)
+                    }
+                    .font(.custom("Merriweather-Bold", size: 13))
+                    .foregroundColor(themeManager.isNight ? Color.black : Color.white)
+                    .padding(.vertical, 9)
+                    .padding(.horizontal, 22)
+                    .frame(maxWidth: .infinity)
+                    .background(themeManager.primaryText)
+                    .cornerRadius(12)
+                }
+                .disabled(isGeneratingOverlayVisible)
             }
-            .disabled(isGeneratingOverlayVisible)
+            .frame(maxWidth: .infinity)
             .padding(.top, 4)
         }
     }
@@ -878,7 +907,7 @@ struct LoadingView: View {
         case .personal:
             return nil
         case .gathering:
-            return "We are ready to compose today's mantra and rhythm."
+            return nil
         }
     }
 
@@ -937,13 +966,6 @@ struct LoadingView: View {
         return Text(text)
             .font(AlignaType.helperSmall())
             .foregroundColor(themeManager.descriptionText.opacity(0.85))
-    }
-
-    private var gatheringSubtitleView: some View {
-        Text("From the cosmos, your environment, and within, we've gathered what shapes today.")
-            .font(AlignaType.helperSmall())
-            .foregroundColor(themeManager.descriptionText.opacity(0.85))
-            .multilineTextAlignment(.center)
     }
 
     private var initialSubtitleText: Text {
@@ -1195,39 +1217,58 @@ struct LoadingView: View {
         return "Continue"
     }
 
-    private var cosmosSummaryLines: [String] {
-        [
-            summaryLine("Sun in \(sunText)"),
-            summaryLine("Moon in \(moonText)"),
-            summaryLine("Rising in \(risingText)"),
-            summaryLine(moonPhaseLabel(for: Date()))
-        ].compactMap { $0 }
+    private struct GatheringSegment: Hashable {
+        let label: String
+        let value: String
     }
 
-    private var environmentSummaryLines: [String] {
+    private var cosmosSummaryRows: [[GatheringSegment]] {
         [
-            summaryLine(locationText, placeholder: "Your place"),
-            summaryLine(compactConditionSummary),
-            summaryLine(compactAirQualitySummary),
-            summaryLine(compactDensitySummary)
-        ].compactMap { $0 }
+            [
+                GatheringSegment(label: "Sun", value: summaryValue(sunText, fallback: "—")),
+                GatheringSegment(label: "Moon", value: summaryValue(moonText, fallback: "—")),
+                GatheringSegment(label: "Rising", value: summaryValue(risingText, fallback: "—"))
+            ],
+            [
+                GatheringSegment(label: "Moon phase", value: summaryValue(moonPhaseLabel(for: Date()), fallback: "—"))
+            ]
+        ]
     }
 
-    private var personalSummaryLines: [String] {
-        var lines: [String?] = [
-            normalizedSelection(mood).map { "\($0) mood" },
-            normalizedSelection(stress).map { "\($0) stress" },
-            normalizedSelection(sleep).map { "\($0) sleep" },
-            normalizedSelection(source).map { "\($0) on your mind" }
+    private var environmentSummaryRows: [[GatheringSegment]] {
+        [
+            [
+                GatheringSegment(label: "Location", value: summaryValue(locationText, fallback: "Your place")),
+                GatheringSegment(label: "Weather", value: summaryValue(compactWeatherSummaryValue, fallback: "Taking shape")),
+                GatheringSegment(label: "Wind", value: summaryValue(compactWindSummaryValue, fallback: "—")),
+                GatheringSegment(label: "Air quality", value: summaryValue(compactAirQualityValue, fallback: "Being sensed")),
+                GatheringSegment(label: "PM2.5", value: summaryValue(compactPM25Value, fallback: "—")),
+                GatheringSegment(label: "Humidity", value: summaryValue(compactHumidityValue, fallback: "—")),
+                GatheringSegment(label: "Pressure", value: summaryValue(compactPressureValue, fallback: "—")),
+                GatheringSegment(label: "Water", value: summaryValue(compactWaterValue, fallback: "—")),
+                GatheringSegment(label: "Green", value: summaryValue(compactGreenValue, fallback: "—")),
+                GatheringSegment(label: "Built", value: summaryValue(compactBuiltValue, fallback: "—"))
+            ]
+        ]
+    }
+
+    private var personalSummaryRows: [[GatheringSegment]] {
+        var rows: [[GatheringSegment]] = [
+            [
+                GatheringSegment(label: "Mood", value: summaryValue(normalizedSelection(mood), fallback: "Open")),
+                GatheringSegment(label: "Stress", value: summaryValue(normalizedSelection(stress), fallback: "—")),
+                GatheringSegment(label: "Sleep", value: summaryValue(normalizedSelection(sleep), fallback: "—")),
+                GatheringSegment(label: "Source", value: summaryValue(normalizedSelection(source), fallback: "—"))
+            ]
         ]
 
         let noteText = personalNotes.trimmingCharacters(in: .whitespacesAndNewlines)
         if !noteText.isEmpty {
-            lines.append(String(noteText.prefix(70)))
+            rows.append([
+                GatheringSegment(label: "Notes", value: String(noteText.prefix(72)))
+            ])
         }
-
-        let compactLines = lines.compactMap { summaryLine($0) }
-        return compactLines.isEmpty ? ["Open to what feels true today."] : compactLines
+        return rows
     }
 
     private var compactConditionSummary: String {
@@ -1240,9 +1281,75 @@ struct LoadingView: View {
         return text.isEmpty || text == "Air quality —" ? "Air quality is being sensed." : text
     }
 
+    private var compactWeatherSummaryValue: String {
+        compactConditionSummary
+            .components(separatedBy: "·")
+            .first?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            ?? compactConditionSummary
+    }
+
+    private var compactWindSummaryValue: String? {
+        if let speed = placeWindSpeed {
+            return "\(Int(speed.rounded())) mph"
+        }
+        return compactConditionSummary
+            .components(separatedBy: "·")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first(where: { $0.contains("mph") })
+            .map { segment in
+                if let range = segment.range(of: #"(\d+)\s*mph"#, options: .regularExpression) {
+                    return String(segment[range]).trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                return segment.replacingOccurrences(of: "Wind dir", with: "")
+                    .replacingOccurrences(of: "Wind", with: "")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+    }
+
+    private var compactAirQualityValue: String {
+        metricValue(in: compactAirQualitySummary, prefix: "Air quality")
+            ?? compactAirQualitySummary
+    }
+
+    private var compactPM25Value: String? {
+        metricValue(in: compactAirQualitySummary, prefix: "PM2.5")
+    }
+
+    private var compactHumidityValue: String? {
+        metricValue(in: compactConditionSummary, prefix: "Humidity")
+    }
+
+    private var compactPressureValue: String? {
+        metricValue(in: compactConditionSummary, prefix: "Pressure")
+    }
+
     private var compactDensitySummary: String {
         let text = placeDensityText.trimmingCharacters(in: .whitespacesAndNewlines)
         return text.isEmpty || text == "Water — · Green — · Built —" ? "Landscape signals are being gathered." : text
+    }
+
+    private var compactWaterValue: String? {
+        metricValue(in: compactDensitySummary, prefix: "Water")
+    }
+
+    private var compactGreenValue: String? {
+        metricValue(in: compactDensitySummary, prefix: "Green")
+    }
+
+    private var compactBuiltValue: String? {
+        metricValue(in: compactDensitySummary, prefix: "Built")
+    }
+
+    private func metricValue(in source: String, prefix: String) -> String? {
+        source
+            .components(separatedBy: "·")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first(where: { $0.localizedCaseInsensitiveContains(prefix) })
+            .map { metric in
+                metric.replacingOccurrences(of: prefix, with: "", options: [.caseInsensitive])
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+            }
     }
 
     private func summaryLine(_ text: String?, placeholder: String? = nil) -> String? {
@@ -1253,34 +1360,38 @@ struct LoadingView: View {
         return trimmed
     }
 
-    private func gatheringCard(title: String, iconName: String, lines: [String]) -> some View {
+    private func summaryValue(_ text: String?, fallback: String) -> String {
+        summaryLine(text, placeholder: fallback) ?? fallback
+    }
+
+    private func gatheringCard(title: String, iconName: String, rows: [[GatheringSegment]]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 Image(systemName: iconName)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(themeManager.primaryText.opacity(0.88))
-                    .frame(width: 22, height: 22)
+                    .frame(width: 24, height: 24)
                     .background(Color.white.opacity(0.05))
                     .clipShape(Circle())
 
                 Text(title)
-                    .font(.custom("Merriweather-Bold", size: 13))
+                    .font(.custom("Merriweather-Bold", size: 14))
                     .foregroundColor(themeManager.primaryText)
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(Array(lines.prefix(4)).indices, id: \.self) { index in
-                    Text(lines[index])
-                        .font(.custom("Merriweather-Regular", size: 11))
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(Array(rows.prefix(3)).indices, id: \.self) { index in
+                    summarySegmentsText(rows[index])
                         .foregroundColor(themeManager.descriptionText.opacity(0.9))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.9)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .background(Color.white.opacity(0.03))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -1288,6 +1399,17 @@ struct LoadingView: View {
         )
         .cornerRadius(12)
         .padding(.horizontal, 6)
+    }
+
+    private func summarySegmentsText(_ segments: [GatheringSegment]) -> Text {
+        segments.enumerated().reduce(Text("")) { partial, entry in
+            let separator = entry.offset == 0 ? Text("") : Text(" · ").font(.custom("Merriweather-Regular", size: 12))
+            let segment = Text("\(entry.element.label) ")
+                .font(.custom("Merriweather-Bold", size: 12))
+            + Text(entry.element.value)
+                .font(.custom("Merriweather-Regular", size: 12))
+            return partial + separator + segment
+        }
     }
 
     private var generatingOverlay: some View {
@@ -1341,6 +1463,11 @@ struct LoadingView: View {
         withAnimation(.easeInOut(duration: 0.3)) {
             stage = .gathering
         }
+    }
+
+    private func handleNotNow() {
+        showMainGenerationOverlay = false
+        completePersonal()
     }
 
     private func beginGenerationOverlay() {
@@ -1891,6 +2018,24 @@ private extension LoadingView {
             _autoSkipSecondsRemaining = State(initialValue: 3)
         }
     }
+
+    init(previewGatheringSeeded: Bool) {
+        self.init(onStartLoading: nil, onPersonalComplete: nil, fixedMessageIndex: 0, forceFullLoading: true)
+        _stage = State(initialValue: .gathering)
+        _sunText = State(initialValue: "Virgo")
+        _moonText = State(initialValue: "Pisces")
+        _risingText = State(initialValue: "Libra")
+        _locationText = State(initialValue: "Brooklyn")
+        _conditionText = State(initialValue: "Cool, rainy · 61°F")
+        _airQualityText = State(initialValue: "Air quality AQI 42 · PM2.5 9")
+        _placeDensityText = State(initialValue: "Water 18% · Green 41% · Built 36%")
+        _mood = State(initialValue: "Calm")
+        _stress = State(initialValue: "Med")
+        _sleep = State(initialValue: "OK")
+        _source = State(initialValue: "Work")
+        _personalNotes = State(initialValue: "Need steadier pacing and less noise today.")
+        _didInteractPersonal = State(initialValue: true)
+    }
 }
 
 private struct LoadingViewPreviewContainer: View {
@@ -1933,6 +2078,16 @@ private struct LoadingViewPreviewContainer: View {
 
 #Preview("Loading Gathering") {
     LoadingViewPreviewContainer(stage: .gathering)
+}
+
+#Preview("Loading Gathering Filled") {
+    LoadingView(previewGatheringSeeded: true)
+        .environmentObject(StarAnimationManager())
+        .environmentObject({
+            let manager = ThemeManager()
+            manager.selected = .day
+            return manager
+        }())
 }
 
 #Preview("Loading Night") {
