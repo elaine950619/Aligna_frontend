@@ -4064,6 +4064,10 @@ private extension ProfileView {
             viewModel.dailyMantra = ""
             viewModel.reasoningSummary = ""
             viewModel.howToEngage = [:]
+            viewModel.checkInMood = nil
+            viewModel.checkInStress = nil
+            viewModel.checkInSleep = nil
+            viewModel.checkInNotes = ""
             viewModel.scent_dislike = []
             viewModel.act_prefer = []
             viewModel.color_dislike = []

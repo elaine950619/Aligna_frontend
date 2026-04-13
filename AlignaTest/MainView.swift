@@ -1500,6 +1500,12 @@ struct MainView: View {
             if let v = viewModel.waterPercent                         { payload["water_percent"]       = v }
             if let v = viewModel.greenPercent                         { payload["green_percent"]       = v }
             if let v = viewModel.builtPercent                         { payload["built_percent"]       = v }
+            if let v = viewModel.checkInMood                          { payload["mood"]                = v }
+            if let v = viewModel.checkInStress                        { payload["stress"]              = v }
+            if let v = viewModel.checkInSleep                         { payload["sleep"]               = v }
+
+            let trimmedNotes = viewModel.checkInNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmedNotes.isEmpty                                  { payload["personal_notes"]      = trimmedNotes }
 
             guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
                 showFocusAlert(message: "Unable to start the focus mantra request right now.")
@@ -3878,6 +3884,12 @@ struct MainView: View {
         if let v = viewModel.waterPercent                         { payload["water_percent"]       = v }
         if let v = viewModel.greenPercent                         { payload["green_percent"]       = v }
         if let v = viewModel.builtPercent                         { payload["built_percent"]       = v }
+        if let v = viewModel.checkInMood                          { payload["mood"]                = v }
+        if let v = viewModel.checkInStress                        { payload["stress"]              = v }
+        if let v = viewModel.checkInSleep                         { payload["sleep"]               = v }
+
+        let trimmedNotes = viewModel.checkInNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedNotes.isEmpty                                  { payload["personal_notes"]      = trimmedNotes }
 
         print("[PayloadOut] place_signals → current_place=\(viewModel.currentPlace) condition=\(viewModel.weatherCondition ?? "nil") temp=\(viewModel.temperature.map { String($0) } ?? "nil") wind=\(viewModel.windDirection ?? "nil")@\(viewModel.windSpeed.map { String($0) } ?? "nil") humidity=\(viewModel.humidity.map { String($0) } ?? "nil") pressure=\(viewModel.pressure.map { String($0) } ?? "nil")")
 
@@ -4101,6 +4113,12 @@ struct MainView: View {
                         recommendationData["createdAt"] = today
                         recommendationData["mantra"] = mantra
                         recommendationData["generatedPlace"] = lastRecommendationPlace// ✅ NEW
+                        recommendationData["check_in_inputs"] = [
+                            "mood": viewModel.checkInMood ?? "",
+                            "stress": viewModel.checkInStress ?? "",
+                            "sleep": viewModel.checkInSleep ?? "",
+                            "personal_notes": viewModel.checkInNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+                        ]
 
                         // ✅ Write reasoning into Firestore only when backend provides it.
                         // Avoid overwriting with placeholders, so missing reasoning is obvious.
@@ -4357,6 +4375,10 @@ struct MainView: View {
             var fetchedReasoning = ""
             var reasoningMap: [String: String] = [:]
             var fetchedHowToEngage: [String: String] = [:]
+            var fetchedMood: String? = nil
+            var fetchedStress: String? = nil
+            var fetchedSleep: String? = nil
+            var fetchedNotes = ""
 
             let fetchedPlace = (data["generatedPlace"] as? String ?? "")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -4383,6 +4405,19 @@ struct MainView: View {
                     guard !resolvedKey.isEmpty else { continue }
                     fetchedHowToEngage[resolvedKey] = s
                 }
+            }
+
+            if let rawCheckIn = data["check_in_inputs"] as? [String: Any] {
+                func nonEmptyText(_ key: String) -> String? {
+                    let raw = rawCheckIn[key] as? String ?? ""
+                    let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+                    return trimmed.isEmpty ? nil : trimmed
+                }
+
+                fetchedMood = nonEmptyText("mood")
+                fetchedStress = nonEmptyText("stress")
+                fetchedSleep = nonEmptyText("sleep")
+                fetchedNotes = nonEmptyText("personal_notes") ?? ""
             }
 
             for (key, value) in data {
@@ -4428,6 +4463,10 @@ struct MainView: View {
 
                 self.viewModel.recommendations = recs
                 self.viewModel.howToEngage = fetchedHowToEngage
+                self.viewModel.checkInMood = fetchedMood
+                self.viewModel.checkInStress = fetchedStress
+                self.viewModel.checkInSleep = fetchedSleep
+                self.viewModel.checkInNotes = fetchedNotes
 
                 // ✅ 只有在 Firestore 真有 mantra 时才覆盖；避免把已有 UI 文本刷成空
                 let mantraTrim = fetchedMantra.trimmingCharacters(in: .whitespacesAndNewlines)

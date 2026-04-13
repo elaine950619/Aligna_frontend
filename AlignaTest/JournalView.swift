@@ -15,7 +15,6 @@ struct JournalView: View {
     @State private var mood: String? = nil
     @State private var stress: String? = nil
     @State private var sleep: String? = nil
-    @State private var emotionalSource: String? = nil
     @State private var keyboardHeight: CGFloat = 0
     @State private var keyboardShowObserver: NSObjectProtocol?
     @State private var keyboardHideObserver: NSObjectProtocol?
@@ -83,12 +82,6 @@ struct JournalView: View {
                         selection: $sleep
                     )
 
-                    compactRow(
-                        title: "Emotional Source",
-                        options: [("briefcase.fill", "Work"), ("person.2.fill", "People"), ("heart.fill", "Health"), ("dollarsign.circle.fill", "Money")],
-                        selection: $emotionalSource
-                    )
-
                     sectionTitle("Notes")
                     sectionCard {
                         Button {
@@ -115,7 +108,7 @@ struct JournalView: View {
                 }
                 .padding(.horizontal, 24)
 
-                let hasSelections = mood != nil || stress != nil || sleep != nil || emotionalSource != nil
+                let hasSelections = mood != nil || stress != nil || sleep != nil
                 let disableActions = (!hasSelections && text.trimmed().isEmpty) || isSaving
 
                 HStack(spacing: 12) {
@@ -213,9 +206,6 @@ struct JournalView: View {
         .onChange(of: sleep, initial: false) { _, _ in
             saveSelectionSnapshotIfPossible()
         }
-        .onChange(of: emotionalSource, initial: false) { _, _ in
-            saveSelectionSnapshotIfPossible()
-        }
         }
     }
 
@@ -269,7 +259,6 @@ struct JournalView: View {
         mood = nil
         stress = nil
         sleep = nil
-        emotionalSource = nil
     }
 
     private func normalizedSelection(_ value: String?) -> String? {
@@ -281,8 +270,7 @@ struct JournalView: View {
         let prefixes = [
             "Mood:",
             "Stress:",
-            "Sleep:",
-            "Emotional Source:"
+            "Sleep:"
         ]
         let lines = value.components(separatedBy: .newlines)
         let filtered = lines.filter { line in
@@ -302,7 +290,6 @@ struct JournalView: View {
         mood = nonEmptyString("mood")
         stress = nonEmptyString("stress")
         sleep = nonEmptyString("sleep")
-        emotionalSource = nonEmptyString("emotionalSource")
     }
 
     private func saveSelectionSnapshotIfPossible() {
@@ -312,7 +299,6 @@ struct JournalView: View {
             "mood": normalizedSelection(mood) ?? "",
             "stress": normalizedSelection(stress) ?? "",
             "sleep": normalizedSelection(sleep) ?? "",
-            "emotionalSource": normalizedSelection(emotionalSource) ?? "",
             "updatedAt": Timestamp()
         ]
 
@@ -442,7 +428,7 @@ struct JournalView: View {
     @MainActor
     private func saveEntryAndClose() async {
         let sanitizedText = sanitizeNotesText(text)
-        let hasSelections = mood != nil || stress != nil || sleep != nil || emotionalSource != nil
+        let hasSelections = mood != nil || stress != nil || sleep != nil
         guard !sanitizedText.trimmed().isEmpty || hasSelections else { return }
         isSaving = true; defer { isSaving = false }
         guard let userId = Auth.auth().currentUser?.uid else { return }
@@ -453,8 +439,7 @@ struct JournalView: View {
         let selectionPayload: [String: Any] = [
             "mood": normalizedSelection(mood) ?? "",
             "stress": normalizedSelection(stress) ?? "",
-            "sleep": normalizedSelection(sleep) ?? "",
-            "emotionalSource": normalizedSelection(emotionalSource) ?? ""
+            "sleep": normalizedSelection(sleep) ?? ""
         ]
 
         // Small helper: return to previous screen after saving

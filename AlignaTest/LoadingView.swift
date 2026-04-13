@@ -440,7 +440,7 @@ struct LoadingView: View {
     }
 
     private var anyPersonalSelection: Bool {
-        mood != nil || stress != nil || sleep != nil || source != nil
+        mood != nil || stress != nil || sleep != nil
     }
 
     private var shouldAutoSkipPersonal: Bool {
@@ -700,11 +700,6 @@ struct LoadingView: View {
                 title: "Sleep",
                 options: [("bed.double.fill", "Poor"), ("moon.zzz.fill", "OK"), ("sun.max.fill", "Great"), ("zzz", "Rest")],
                 selection: $sleep
-            )
-            compactRow(
-                title: "Emotional Source",
-                options: [("briefcase.fill", "Work"), ("person.2.fill", "People"), ("heart.fill", "Health"), ("dollarsign.circle.fill", "Money")],
-                selection: $source
             )
 
             VStack(alignment: .leading, spacing: 4) {
@@ -1092,16 +1087,34 @@ struct LoadingView: View {
         return trimmed.isEmpty ? nil : trimmed
     }
 
+    private func syncPersonalSelectionsToViewModel() {
+        viewModel.checkInMood = normalizedSelection(mood)
+        viewModel.checkInStress = normalizedSelection(stress)
+        viewModel.checkInSleep = normalizedSelection(sleep)
+        viewModel.checkInNotes = personalNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func currentCheckInPayload() -> [String: Any] {
+        [
+            "mood": normalizedSelection(mood) ?? "",
+            "stress": normalizedSelection(stress) ?? "",
+            "sleep": normalizedSelection(sleep) ?? "",
+            "personal_notes": personalNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+        ]
+    }
+
     private func savePersonalSelections() {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         let ds = dateStringForQuery
         let db = Firestore.firestore()
 
+        syncPersonalSelectionsToViewModel()
+
         let payload: [String: Any] = [
             "mood": normalizedSelection(mood) ?? "",
             "stress": normalizedSelection(stress) ?? "",
             "sleep": normalizedSelection(sleep) ?? "",
-            "emotionalSource": normalizedSelection(source) ?? "",
+            "personal_notes": personalNotes.trimmingCharacters(in: .whitespacesAndNewlines),
             "updatedAt": Timestamp()
         ]
 
@@ -1111,6 +1124,11 @@ struct LoadingView: View {
             .limit(to: 1)
             .getDocuments { snapshot, _ in
                 if let recDoc = snapshot?.documents.first {
+                    recDoc.reference.setData([
+                        "check_in_inputs": currentCheckInPayload(),
+                        "updatedAt": Timestamp()
+                    ], merge: true)
+
                     let recID = recDoc.documentID
                     let journalsRef = db.collection("daily_recommendation")
                         .document(recID)
@@ -1150,7 +1168,8 @@ struct LoadingView: View {
             mood = nonEmptyString("mood")
             stress = nonEmptyString("stress")
             sleep = nonEmptyString("sleep")
-            source = nonEmptyString("emotionalSource")
+            personalNotes = nonEmptyString("personal_notes") ?? nonEmptyString("text") ?? ""
+            syncPersonalSelectionsToViewModel()
         }
 
         db.collection("daily_recommendation")
@@ -1999,6 +2018,7 @@ struct LoadingView: View {
         autoSkipTimer?.invalidate()
         autoSkipSecondsRemaining = 0
         personalCompleted = true
+        syncPersonalSelectionsToViewModel()
 
         let didModify = didInteractPersonal
         if didModify {

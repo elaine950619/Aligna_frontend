@@ -484,8 +484,7 @@ struct TimelineView: View {
         let prefixes = [
             "Mood:",
             "Stress:",
-            "Sleep:",
-            "Emotional Source:"
+            "Sleep:"
         ]
         let lines = value.components(separatedBy: .newlines)
         let filtered = lines.filter { line in

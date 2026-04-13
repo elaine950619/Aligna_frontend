@@ -21,6 +21,10 @@ class OnboardingViewModel: ObservableObject {
     @Published var dailyMantra: String = ""
     @Published var reasoningSummary: String = ""
     @Published var howToEngage: [String: String] = [:]
+    @Published var checkInMood: String? = nil
+    @Published var checkInStress: String? = nil
+    @Published var checkInSleep: String? = nil
+    @Published var checkInNotes: String = ""
 
     
     // ✅ 新增：Step3 的五个答案
@@ -1675,6 +1679,12 @@ struct OnboardingStep3: View {
                         recommendationData["uid"] = userId
                         recommendationData["createdAt"] = createdAt
                         recommendationData["mantra"] = mantraText
+                        recommendationData["check_in_inputs"] = [
+                            "mood": viewModel.checkInMood ?? "",
+                            "stress": viewModel.checkInStress ?? "",
+                            "sleep": viewModel.checkInSleep ?? "",
+                            "personal_notes": viewModel.checkInNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+                        ]
 
                         if !rawReasoning.isEmpty {
                             recommendationData["reasoning"] = rawReasoning
@@ -2540,6 +2550,12 @@ struct OnboardingFinalStep: View {
                         recommendationData["uid"] = userId
                         recommendationData["createdAt"] = createdAt
                         recommendationData["mantra"] = mantraText
+                        recommendationData["check_in_inputs"] = [
+                            "mood": viewModel.checkInMood ?? "",
+                            "stress": viewModel.checkInStress ?? "",
+                            "sleep": viewModel.checkInSleep ?? "",
+                            "personal_notes": viewModel.checkInNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+                        ]
                         
                         
                         if !rawReasoning.isEmpty {
@@ -2618,6 +2634,14 @@ private func buildRecommendationPayload(
     if let value = viewModel.waterPercent       { payload["water_percent"] = value }
     if let value = viewModel.greenPercent       { payload["green_percent"] = value }
     if let value = viewModel.builtPercent       { payload["built_percent"] = value }
+    if let value = viewModel.checkInMood        { payload["mood"] = value }
+    if let value = viewModel.checkInStress      { payload["stress"] = value }
+    if let value = viewModel.checkInSleep       { payload["sleep"] = value }
+
+    let trimmedNotes = viewModel.checkInNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+    if !trimmedNotes.isEmpty {
+        payload["personal_notes"] = trimmedNotes
+    }
 
     return payload
 }
