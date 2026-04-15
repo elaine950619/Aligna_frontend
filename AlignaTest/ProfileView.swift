@@ -1455,6 +1455,9 @@ struct ProfileView: View {
     @State private var refreshAlertTitle = ""
     @State private var refreshAlertMessage = ""
 
+    // 星盘说明弹窗
+    @State private var showZodiacInfoDialog = false
+
     private var isPreviewMode: Bool {
         ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
     }
@@ -1592,6 +1595,17 @@ struct ProfileView: View {
                             },
                             dismissButtonTitle: "Not Now",
                             onDismiss: { showNotificationSettingsAlert = false }
+                        )
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                        .zIndex(20)
+                    } else if showZodiacInfoDialog {
+                        AlynnaActionDialog(
+                            title: String(localized: "profile.zodiac_info_title"),
+                            message: String(localized: "profile.zodiac_info_message"),
+                            symbol: "sparkles",
+                            tone: .info,
+                            dismissButtonTitle: String(localized: "profile.zodiac_info_dismiss"),
+                            onDismiss: { showZodiacInfoDialog = false }
                         )
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
                         .zIndex(20)
@@ -1861,12 +1875,23 @@ private extension ProfileView {
                 }
             }
 
-            ZodiacInlineRow(
-                sunText:  isZodiacReady ? sunSignDisplay : "...",
-                moonText: isZodiacReady ? moonSignDisplay : "...",
-                ascText:  isZodiacReady ? ascSignDisplay : "..."
-            )
-            .environmentObject(themeManager)
+            Button {
+                showZodiacInfoDialog = true
+            } label: {
+                HStack(spacing: 6) {
+                    ZodiacInlineRow(
+                        sunText:  isZodiacReady ? sunSignDisplay : "...",
+                        moonText: isZodiacReady ? moonSignDisplay : "...",
+                        ascText:  isZodiacReady ? ascSignDisplay : "..."
+                    )
+                    .environmentObject(themeManager)
+
+                    Image(systemName: "info.circle")
+                        .font(AlynnaTypography.font(.footnote))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.55))
+                }
+            }
+            .buttonStyle(.plain)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 16)

@@ -2994,6 +2994,54 @@
         }
       }
     },
+    "profile.zodiac_info_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Three Signs"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的三大星盘"
+          }
+        }
+      }
+    },
+    "profile.zodiac_info_message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "☀︎ Sun — your core self and life energy\n\n☽ Moon — your emotional world and inner needs\n\n↗ Rising — your outward presence and how you are perceived"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "☀︎ 太阳星座 — 你的核心自我与生命能量\n\n☽ 月亮星座 — 你的情感世界与内在需求\n\n↗ 上升星座 — 你的外在形象与他人对你的感知"
+          }
+        }
+      }
+    },
+    "profile.zodiac_info_dismiss" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Got it"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "知道了"
+          }
+        }
+      }
+    },
     "profile.language_dialog_ok" : {
       "localizations" : {
         "en" : {
