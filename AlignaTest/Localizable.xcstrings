@@ -524,6 +524,9 @@
     "Almost there" : {
 
     },
+    "Alynna" : {
+
+    },
     "Ascendant" : {
 
     },
@@ -534,7 +537,14 @@
 
     },
     "Cancel" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消"
+          }
+        }
+      }
     },
     "category.activity" : {
       "localizations" : {
@@ -1365,12 +1375,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mood"
+            "value" : "状态"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "心情"
           }
         }
@@ -1382,12 +1392,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Anger"
+            "value" : "生气"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "愤怒"
           }
         }
@@ -1399,12 +1409,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Calm"
+            "value" : "平静"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "平静"
           }
         }
@@ -1416,12 +1426,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Grief"
+            "value" : "悲伤"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "悲伤"
           }
         }
@@ -1433,12 +1443,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Joy"
+            "value" : "开心"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "喜悦"
           }
         }
@@ -1449,12 +1459,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not Now"
+            "value" : "暂缓"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "暂不"
           }
         }
@@ -1465,12 +1475,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Notes"
+            "value" : "备注"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "备注"
           }
         }
@@ -2994,54 +3004,6 @@
         }
       }
     },
-    "profile.zodiac_info_title" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your Three Signs"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "你的三大星盘"
-          }
-        }
-      }
-    },
-    "profile.zodiac_info_message" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "☀︎ Sun — your core self and life energy\n\n☽ Moon — your emotional world and inner needs\n\n↗ Rising — your outward presence and how you are perceived"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "☀︎ 太阳星座 — 你的核心自我与生命能量\n\n☽ 月亮星座 — 你的情感世界与内在需求\n\n↗ 上升星座 — 你的外在形象与他人对你的感知"
-          }
-        }
-      }
-    },
-    "profile.zodiac_info_dismiss" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Got it"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "知道了"
-          }
-        }
-      }
-    },
     "profile.language_dialog_ok" : {
       "localizations" : {
         "en" : {
@@ -3299,6 +3261,54 @@
         }
       }
     },
+    "profile.zodiac_info_dismiss" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Got it"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "知道了"
+          }
+        }
+      }
+    },
+    "profile.zodiac_info_message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "☀︎ Sun — your core self and life energy\n\n☽ Moon — your emotional world and inner needs\n\n↗ Rising — your outward presence and how you are perceived"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "☀︎ 太阳星座 — 你的核心自我与生命能量\n\n☽ 月亮星座 — 你的情感世界与内在需求\n\n↗ 上升星座 — 你的外在形象与他人对你的感知"
+          }
+        }
+      }
+    },
+    "profile.zodiac_info_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Three Signs"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的三大星盘"
+          }
+        }
+      }
+    },
     "Reasoning summary bubble" : {
 
     },
@@ -3324,6 +3334,9 @@
 
     },
     "Send a notification" : {
+
+    },
+    "Share" : {
 
     },
     "Show personal information" : {
@@ -3396,8 +3409,8 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Zodiac: Sun %1$@, Moon %2$@, Ascendant %3$@"
+            "state" : "translated",
+            "value" : "星盘: 太阳 %1$@, 月亮 %2$@, 上升 %3$@"
           }
         }
       }
@@ -3408,12 +3421,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Moon"
+            "value" : "月亮星座"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "月亮"
           }
         }
@@ -3425,12 +3438,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rising"
+            "value" : "上升星座"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "上升"
           }
         }
@@ -3442,12 +3455,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sun"
+            "value" : "太阳星座"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "太阳"
           }
         }

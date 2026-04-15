@@ -378,6 +378,7 @@ struct MainView: View {
     @State private var isDefaultRecommendation = false
     @State private var pendingGenerationToast = false
     @State private var showReasoningSheet = false
+    @State private var showWallpaperPreview = false
     @State private var showFocusManagerSheet = false
     @State private var showFocusHint = false
     @State private var showNewFocusForm = false
@@ -2261,13 +2262,19 @@ struct MainView: View {
                             let actionButtonSize: CGFloat = 32
                             HStack(spacing: 12) {
                                 Button {
-                                    presentMantraShareSheet()
+                                    showWallpaperPreview = true
                                 } label: {
                                     Image(systemName: "square.and.arrow.up")
                                         .font(AlynnaTypography.font(.footnote))
                                         .foregroundColor(themeManager.primaryText)
                                         .frame(width: actionButtonSize, height: actionButtonSize)
                                         .contentShape(Rectangle())
+                                }
+                                .sheet(isPresented: $showWallpaperPreview) {
+                                    WallpaperPreviewView(
+                                        mantra: viewModel.dailyMantra,
+                                        colorHex: todayColorHex() ?? "#CBBBA0"
+                                    )
                                 }
 
                                 Button {
@@ -2318,28 +2325,6 @@ struct MainView: View {
                                     .presentationCornerRadius(24)
                                 }
 
-                                let colorDoc = viewModel.recommendations["Color"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                                let colorHex = todayColorHex() ?? "#CBBBA0"
-                                Button {
-                                    if !colorDoc.isEmpty {
-                                        mainNavigationPath.append(RecCategory.Color)
-                                    }
-                                } label: {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 4)
-                                            .fill(Color(hex: colorHex))
-                                            .frame(width: 18, height: 18)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 6)
-                                                    .stroke(Color.white.opacity(0.25), lineWidth: 1)
-                                            )
-                                    }
-                                    .frame(width: actionButtonSize, height: actionButtonSize)
-                                    .contentShape(Rectangle())
-                                    .opacity(colorDoc.isEmpty ? 0.4 : 1)
-                                }
-                                .buttonStyle(.plain)
-                                .disabled(colorDoc.isEmpty)
                             }
                             .padding(.top, 8)
                             .transition(.opacity)
@@ -2347,51 +2332,7 @@ struct MainView: View {
                         }
                         // ✅ 当 mantra 更新（新的一天/重新拉取）时，自动收起回 “...”
                         
-                        if !isMantraExpanded {
-                            let totalH = geometry.size.height
-                            let mantraToGridGap = totalH * 0.12
-                            let gridToFooterGap = totalH * 0.14
-                            let footerHeight: CGFloat = 32
-                            let gridSpacing = min(geometry.size.width, geometry.size.height) * 0.018
-                            let availableGridHeight = max(0, totalH - mantraToGridGap - gridToFooterGap - footerHeight)
-                            let gridHeight = min(availableGridHeight, totalH * 0.30)
 
-                            VStack(spacing: 0) {
-                                Spacer(minLength: mantraToGridGap)
-
-                                VStack(spacing: gridSpacing) {
-                                    let columns = [
-                                        GridItem(.flexible(), spacing: gridSpacing, alignment: .center),
-                                        GridItem(.flexible(), spacing: gridSpacing, alignment: .center)
-                                    ]
-
-                                    let gridItems = [
-                                        "Place",
-                                        "Gemstone",
-                                        "Color",
-                                        "Scent",
-                                        "Activity",
-                                        "Sound",
-                                        "Career",
-                                        "Relationship"
-                                    ]
-
-                                    LazyVGrid(columns: columns,
-                                              spacing: gridSpacing) {
-                                        ForEach(Array(gridItems.enumerated()), id: \.offset) { index, title in
-                                            navItemView(title: title, geometry: geometry, index: index)
-                                        }
-                                    }
-                                    .frame(height: gridHeight)
-                                    .padding(.horizontal, geometry.size.width * 0.05)
-                                }
-
-                                Spacer(minLength: gridToFooterGap)
-                            }
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .animation(.easeInOut(duration: 0.55), value: isMantraExpanded)
-                            .animation(.easeInOut(duration: 0.6), value: isMantraExpanded)
-                        }
                     }
                     .padding(.top, 16)
                     .frame(width: geometry.size.width,
@@ -2416,6 +2357,39 @@ struct MainView: View {
                     }
                     .coordinateSpace(name: "HomeSpace")
                     .overlay(alignment: .topLeading) { }
+                    .overlay(alignment: .top) {
+                        if !isMantraExpanded {
+                            let totalH = geometry.size.height
+                            let gridSpacing = minLength * 0.018
+                            // geometry.size.height 已扣除 safeAreaInset footer，无需额外 clearance
+                            // grid 从屏幕 40% 处开始（mantra 约在 38% 处结束，留 2% 间距）
+                            let gridTopOffset = totalH * 0.28
+                            // 底部保留 12pt 视觉间距，其余全部给 grid
+                            let gridAvailableH = totalH - gridTopOffset - 12
+                            // 4 行卡片，3 个行间距
+                            let cellHeight = max(56, (gridAvailableH - gridSpacing * 3) / 4)
+
+                            let columns = [
+                                GridItem(.flexible(), spacing: gridSpacing, alignment: .center),
+                                GridItem(.flexible(), spacing: gridSpacing, alignment: .center)
+                            ]
+                            let gridItems = [
+                                "Place", "Gemstone", "Color", "Scent",
+                                "Activity", "Sound", "Career", "Relationship"
+                            ]
+
+                            LazyVGrid(columns: columns, spacing: gridSpacing) {
+                                ForEach(Array(gridItems.enumerated()), id: \.offset) { index, title in
+                                    navItemView(title: title, geometry: geometry,
+                                                index: index, cellHeight: cellHeight)
+                                }
+                            }
+                            .padding(.horizontal, geometry.size.width * 0.05)
+                            .padding(.top, gridTopOffset)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                            .animation(.easeInOut(duration: 0.55), value: isMantraExpanded)
+                        }
+                    }
                 }
             }
             // ✅ 只作用在首页这个 ZStack 上，push 新页面后不会带过去
@@ -2842,9 +2816,351 @@ struct MainView: View {
         }
     }
 
+    // MARK: - WallpaperPreviewView
+
+    /// Full-screen wallpaper preview sheet.
+    /// Displays today's color as a gradient background with the mantra in the lower third
+    /// and the Alynna brand mark at the bottom.
+    private struct WallpaperPreviewView: View {
+        let mantra: String
+        let colorHex: String
+
+        @Environment(\.dismiss) private var dismiss
+
+        @State private var saveMessage: String = ""
+        @State private var showSaveMessage = false
+        @State private var isSaving = false
+
+        // Always warm white — matches widget text style regardless of color
+        private let textColor = Color(hex: "#F7F3EC")
+
+        var body: some View {
+            GeometryReader { geo in
+                ZStack(alignment: .bottom) {
+                    // Widget-style background
+                    WallpaperBackground(hex: colorHex)
+                        .ignoresSafeArea()
+
+                    // Mantra — left-aligned, anchored in lower-center area
+                    VStack(spacing: 0) {
+                        // top spacer pushes mantra to ~55% down
+                        Spacer(minLength: geo.size.height * 0.52)
+
+                        Text(mantra)
+                            .font(.system(size: 20, weight: .semibold, design: .serif))
+                            .italic()
+                            .lineSpacing(9)
+                            .multilineTextAlignment(.leading)
+                            .foregroundColor(textColor)
+                            .padding(.leading, geo.size.width * 0.10)
+                            .padding(.trailing, geo.size.width * 0.18)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    // Brand mark — very bottom, icon color matches text
+                    HStack(spacing: 6) {
+                        if UIImage(named: "alignaSymbol") != nil {
+                            Image("alignaSymbol")
+                                .resizable()
+                                .renderingMode(.template)
+                                .scaledToFit()
+                                .frame(width: 16, height: 16)
+                                .foregroundColor(textColor.opacity(0.65))
+                        }
+                        Text("Alynna")
+                            .font(.system(size: 12, weight: .bold, design: .default))
+                            .tracking(1.8)
+                            .foregroundColor(textColor.opacity(0.65))
+                    }
+                    .padding(.bottom, geo.safeAreaInsets.bottom + 26)
+
+                    // Dismiss chevron — top left
+                    VStack {
+                        HStack {
+                            Button { dismiss() } label: {
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(textColor.opacity(0.7))
+                                    .frame(width: 40, height: 40)
+                                    .background(Color.white.opacity(0.12))
+                                    .clipShape(Circle())
+                            }
+                            .padding(.leading, 20)
+                            .padding(.top, geo.safeAreaInsets.top + 12)
+                            Spacer()
+                        }
+                        Spacer()
+                    }
+                    .ignoresSafeArea()
+
+                    // Save / Share buttons
+                    VStack {
+                        Spacer()
+                        HStack(spacing: 16) {
+                            Button {
+                                saveToPhotos(geo: geo)
+                            } label: {
+                                HStack(spacing: 6) {
+                                    if isSaving {
+                                        ProgressView()
+                                            .progressViewStyle(.circular)
+                                            .scaleEffect(0.75)
+                                            .tint(textColor)
+                                    } else {
+                                        Image(systemName: "square.and.arrow.down")
+                                            .font(.system(size: 15, weight: .medium))
+                                    }
+                                    Text("Save")
+                                        .font(.system(size: 15, weight: .medium))
+                                }
+                                .foregroundColor(textColor)
+                                .padding(.horizontal, 22)
+                                .padding(.vertical, 12)
+                                .background(Color.white.opacity(0.18))
+                                .clipShape(Capsule())
+                            }
+                            .disabled(isSaving)
+
+                            Button {
+                                shareWallpaper(geo: geo)
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.system(size: 15, weight: .medium))
+                                    Text("Share")
+                                        .font(.system(size: 15, weight: .medium))
+                                }
+                                .foregroundColor(textColor)
+                                .padding(.horizontal, 22)
+                                .padding(.vertical, 12)
+                                .background(Color.white.opacity(0.18))
+                                .clipShape(Capsule())
+                            }
+                        }
+                        .padding(.bottom, geo.safeAreaInsets.bottom + 80)
+                    }
+                }
+                .overlay(alignment: .bottom) {
+                    if showSaveMessage {
+                        Text(saveMessage)
+                            .font(.system(size: 13))
+                            .foregroundColor(textColor.opacity(0.85))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.white.opacity(0.16))
+                            .clipShape(Capsule())
+                            .padding(.bottom, geo.safeAreaInsets.bottom + 52)
+                            .transition(.opacity)
+                    }
+                }
+            }
+            .ignoresSafeArea()
+        }
+
+        // MARK: Render wallpaper image at native screen scale
+
+        private func renderWallpaperImage(geo: GeometryProxy) -> UIImage? {
+            let screenSize = geo.size
+            // Use the device's native scale so the saved image is full resolution
+            let scale = UIScreen.main.scale
+            let renderSize = CGSize(width: screenSize.width * scale, height: screenSize.height * scale)
+
+            let wallpaperView = WallpaperRenderView(
+                mantra: mantra,
+                colorHex: colorHex,
+                size: screenSize
+            )
+
+            let controller = UIHostingController(rootView: wallpaperView)
+            controller.view.bounds = CGRect(origin: .zero, size: renderSize)
+            controller.view.frame = CGRect(origin: .zero, size: renderSize)
+            controller.view.backgroundColor = .clear
+            controller.view.setNeedsLayout()
+            controller.view.layoutIfNeeded()
+
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 1  // renderSize already incorporates screen scale
+            let renderer = UIGraphicsImageRenderer(size: renderSize, format: format)
+            return renderer.image { _ in
+                controller.view.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: true)
+            }
+        }
+
+        private func saveToPhotos(geo: GeometryProxy) {
+            isSaving = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                guard let image = renderWallpaperImage(geo: geo) else {
+                    isSaving = false
+                    showFeedback("Failed to generate wallpaper.")
+                    return
+                }
+                UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                isSaving = false
+                showFeedback("Saved to Photos")
+            }
+        }
+
+        private func shareWallpaper(geo: GeometryProxy) {
+            guard let image = renderWallpaperImage(geo: geo) else {
+                showFeedback("Failed to generate wallpaper.")
+                return
+            }
+            guard let scene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }),
+                  let root = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController else {
+                return
+            }
+            // Walk the presented chain to find the topmost VC (this sheet is already presented)
+            var presenter: UIViewController = root
+            while let next = presenter.presentedViewController {
+                presenter = next
+            }
+            let activity = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+            if let popover = activity.popoverPresentationController {
+                popover.sourceView = presenter.view
+                popover.sourceRect = CGRect(x: presenter.view.bounds.midX,
+                                           y: presenter.view.bounds.maxY,
+                                           width: 0, height: 0)
+                popover.permittedArrowDirections = []
+            }
+            presenter.present(activity, animated: true)
+        }
+
+        private func showFeedback(_ msg: String) {
+            saveMessage = msg
+            withAnimation { showSaveMessage = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                withAnimation { showSaveMessage = false }
+            }
+        }
+    }
+
+    // MARK: - WallpaperBackground (shared widget-style background)
+
+    private struct WallpaperBackground: View {
+        let hex: String
+
+        var body: some View {
+            GeometryReader { geo in
+                // Widget-style: desaturated + darkened base, linear top→bottom gradient,
+                // topLeading highlight, bottom vignette, subtle grain
+                let top    = Self.adjusted(hex, darken: 0.10, desaturate: 0.10)
+                let bottom = Self.adjusted(hex, darken: 0.28, desaturate: 0.18)
+                let base   = Self.adjusted(hex, darken: 0.18, desaturate: 0.14)
+                let minDim = min(geo.size.width, geo.size.height)
+
+                ZStack {
+                    base
+                    LinearGradient(colors: [top, bottom], startPoint: .top, endPoint: .bottom)
+                    // topLeading soft highlight
+                    RadialGradient(
+                        gradient: Gradient(colors: [Color.white.opacity(0.08), Color.clear]),
+                        center: .topLeading,
+                        startRadius: 0,
+                        endRadius: minDim * 1.1
+                    )
+                    // bottom vignette
+                    RadialGradient(
+                        gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.28)]),
+                        center: .center,
+                        startRadius: minDim * 0.3,
+                        endRadius: max(geo.size.width, geo.size.height) * 0.95
+                    )
+                    // grain texture
+                    Canvas { ctx, canvasSize in
+                        for i in 0..<160 {
+                            let x = unit(Double(i) * 12.9898) * canvasSize.width
+                            let y = unit(Double(i) * 78.233) * canvasSize.height
+                            let r = 0.4 + unit(Double(i) * 45.164) * 0.9
+                            ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: r, height: r)),
+                                     with: .color(Color.white.opacity(0.07)))
+                        }
+                    }
+                    .blendMode(.softLight)
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
+            }
+        }
+
+        private static func adjusted(_ hex: String, darken: Double, desaturate: Double) -> Color {
+            let h = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+            var int: UInt64 = 0
+            Scanner(string: h).scanHexInt64(&int)
+            guard h.count == 6 else { return Color(hex: hex) }
+            let r = Double(int >> 16) / 255
+            let g = Double((int >> 8) & 0xFF) / 255
+            let b = Double(int & 0xFF) / 255
+            let avg = (r + g + b) / 3.0
+            let dr = (r * (1 - desaturate) + avg * desaturate) * max(0, 1 - darken)
+            let dg = (g * (1 - desaturate) + avg * desaturate) * max(0, 1 - darken)
+            let db = (b * (1 - desaturate) + avg * desaturate) * max(0, 1 - darken)
+            return Color(.sRGB, red: min(dr, 1), green: min(dg, 1), blue: min(db, 1), opacity: 1)
+        }
+
+        private func unit(_ seed: Double) -> Double {
+            let v = abs(sin(seed) * 43758.5453)
+            return v - floor(v)
+        }
+    }
+
+    // MARK: - WallpaperRenderView (off-screen render target, no safe area)
+
+    private struct WallpaperRenderView: View {
+        let mantra: String
+        let colorHex: String
+        let size: CGSize
+
+        private let textColor = Color(hex: "#F7F3EC")
+
+        var body: some View {
+            ZStack(alignment: .bottom) {
+                WallpaperBackground(hex: colorHex)
+                    .frame(width: size.width, height: size.height)
+
+                // Mantra — left-aligned at ~55% down
+                VStack(spacing: 0) {
+                    Spacer(minLength: size.height * 0.52)
+                    Text(mantra)
+                        .font(.system(size: 20, weight: .semibold, design: .serif))
+                        .italic()
+                        .lineSpacing(9)
+                        .multilineTextAlignment(.leading)
+                        .foregroundColor(textColor)
+                        .padding(.leading, size.width * 0.10)
+                        .padding(.trailing, size.width * 0.18)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Spacer()
+                }
+                .frame(width: size.width, height: size.height)
+
+                // Brand mark
+                HStack(spacing: 6) {
+                    if UIImage(named: "alignaSymbol") != nil {
+                        Image("alignaSymbol")
+                            .resizable()
+                            .renderingMode(.template)
+                            .scaledToFit()
+                            .frame(width: 16, height: 16)
+                            .foregroundColor(textColor.opacity(0.65))
+                    }
+                    Text("Alynna")
+                        .font(.system(size: 12, weight: .bold, design: .default))
+                        .tracking(1.8)
+                        .foregroundColor(textColor.opacity(0.65))
+                }
+                .padding(.bottom, 40)
+            }
+            .frame(width: size.width, height: size.height)
+        }
+    }
+
 
     
-    // 冷启动只看“是否已登录 + 本地标记”来分流；不再在这里查 Firestore 决定是否强拉 Onboarding。
+    // 冷启动只看"是否已登录 + 本地标记"来分流；不再在这里查 Firestore 决定是否强拉 Onboarding。
     // === 替换你原来的 startInitialLoad()（整段替换） ===
     private func startInitialLoad() {
         isMantraReady = false
@@ -4283,7 +4599,7 @@ struct MainView: View {
     
     
     
-    private func navItemView(title: String, geometry: GeometryProxy, index: Int) -> some View {
+    private func navItemView(title: String, geometry: GeometryProxy, index: Int, cellHeight: CGFloat = 90) -> some View {
         let documentName = viewModel.recommendations[title] ?? ""
         let startCat = RecCategory(rawValue: title) // "Place" -> .Place
         return Group {
@@ -4323,7 +4639,7 @@ struct MainView: View {
                     }
                     .padding(.vertical, 8)
                     .frame(maxWidth: .infinity)
-                    .frame(maxHeight: .infinity)
+                    .frame(height: cellHeight)
                     .background(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .fill(themeManager.panelFill.opacity(0.55))
@@ -4338,7 +4654,7 @@ struct MainView: View {
             } else {
                 Color.clear
                     .frame(maxWidth: .infinity)
-                    .frame(maxHeight: .infinity)
+                    .frame(height: cellHeight)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .didDeleteAccount)) { _ in
