@@ -272,7 +272,7 @@ struct FirestoreDetailView<Extra: View>: View {
                     extra(item)
                 }
             } else {
-                ProgressView("Loading...")
+                ProgressView(String(localized: "detail.loading"))
                     .padding(.top, 100)
             }
         }
@@ -309,7 +309,7 @@ struct ReasoningSheet: View {
     @Environment(\.colorScheme) private var colorScheme
 
     private var isDark: Bool { colorScheme == .dark }
-    private var modalTitle: String { "Why This for You Today?" }
+    private var modalTitle: String { String(localized: "detail.reasoning_title") }
 
     var body: some View {
         DetailSheetShell(themeManager: themeManager) {
@@ -397,7 +397,7 @@ private struct DetailSheetCloseButton: View {
 
     var body: some View {
         Button(role: .cancel, action: action) {
-            Text("Close")
+            Text("detail.close")
                 .font(.system(size: 16, weight: .regular))
                 .padding(.vertical, 6)
                 .padding(.bottom, 8)
@@ -1015,7 +1015,7 @@ struct PlayerPopup: View {
     var body: some View {
         DetailSheetShell(themeManager: themeManager) {
             VStack(spacing: 18) {
-                Text("Now Playing")
+                Text("detail.now_playing")
                     .font(.custom("Merriweather-Regular", size: 18))
                     .foregroundColor(themeManager.primaryText.opacity(0.82))
 
@@ -1026,7 +1026,7 @@ struct PlayerPopup: View {
                     Text(documentName.replacingOccurrences(of: "_", with: " ").capitalized)
                         .font(.custom("Merriweather-Bold", size: 20))
                         .foregroundColor(Color(hex:"#E6D7C3"))
-                    Text("White Noise • Nature Sounds")
+                    Text("detail.white_noise")
                         .font(.custom("Merriweather-Light", size: 13))
                         .foregroundColor(themeManager.primaryText.opacity(0.72))
                 }
@@ -1563,7 +1563,7 @@ struct GemLinkSheet: View {
     @Environment(\.colorScheme) private var colorScheme
 
     private var isDark: Bool { colorScheme == .dark }
-    private var modalTitle: String { "Why This for You Today?" }
+    private var modalTitle: String { String(localized: "detail.reasoning_title") }
 
     var body: some View {
         DetailSheetShell(themeManager: themeManager) {
@@ -1596,7 +1596,7 @@ struct GemLinkSheet: View {
                             } label: {
                                 HStack(spacing: 8) {
                                     Image(systemName: "circle.hexagongrid")
-                                    Text("Shop Bracelet")
+                                    Text("detail.shop_bracelet")
                                 }
                             }
                             .buttonStyle(GradientButtonStyle())
@@ -1610,7 +1610,7 @@ struct GemLinkSheet: View {
                             } label: {
                                 HStack(spacing: 8) {
                                     Image(systemName: "sparkles")
-                                    Text("Shop Gemstone")
+                                    Text("detail.shop_gemstone")
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
@@ -1768,7 +1768,7 @@ struct SetColorButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text("Set as Today’s Color")
+            Text("detail.set_todays_color")
                 .font(.system(size: 14, weight: .medium))
                 .frame(maxWidth: .infinity)
                 .frame(height: 53)
@@ -1876,7 +1876,7 @@ struct ScentLinkSheet: View {
     @Environment(\.colorScheme) private var colorScheme
 
     private var isDark: Bool { colorScheme == .dark }
-    private var modalTitle: String { "Why This for You Today?" }
+    private var modalTitle: String { String(localized: "detail.reasoning_title") }
 
     var body: some View {
         DetailSheetShell(themeManager: themeManager) {
@@ -1904,7 +1904,7 @@ struct ScentLinkSheet: View {
                         } label: {
                             HStack(spacing: 8) {
                                 Image(systemName: "drop.fill")
-                                Text("Shop Essential Oil")
+                                Text("detail.shop_essential_oil")
                             }
                         }
                         .buttonStyle(GradientButtonStyle())
@@ -1918,7 +1918,7 @@ struct ScentLinkSheet: View {
                         } label: {
                             HStack(spacing: 8) {
                                 Image(systemName: "flame.fill")
-                                Text("Shop Candle")
+                                Text("detail.shop_candle")
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
@@ -1939,7 +1939,7 @@ struct ScentLinkSheet: View {
                     }
 
                     if let notice = noticeText, !notice.isEmpty {
-                        (Text("Usage Note: ")
+                        (Text("detail.usage_note")
                             .font(.custom("Merriweather-Bold", size: 12))
                             .foregroundColor(Color(hex: "#B85A1B"))
                         + Text(notice)

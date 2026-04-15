@@ -564,13 +564,13 @@ struct MainView: View {
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
         if p.isEmpty {
-            return "Updated on \(dateText)"
+            return "\(String(localized: "main.updated_on")) \(dateText)"
         } else {
-            return "Updated on \(dateText), \(p)"
+            return "\(String(localized: "main.updated_on")) \(dateText), \(p)"
         }
     }
     private var updatedOnFooterText: String {
-        updatedOnText.replacingOccurrences(of: "Updated on", with: "updated on")
+        updatedOnText.replacingOccurrences(of: String(localized: "main.updated_on"), with: String(localized: "main.updated_on").lowercased())
     }
 
     private var todaySoundKey: String {
@@ -593,7 +593,7 @@ struct MainView: View {
         HStack(spacing: 6) {
             Image(systemName: "speaker.slash.fill")
                 .font(.system(size: 12, weight: .semibold))
-            Text("No sound today")
+            Text("detail.no_sound")
                 .font(.custom("Merriweather-Regular", size: 12))
         }
         .foregroundColor(themeManager.primaryText.opacity(0.9))
@@ -614,16 +614,16 @@ struct MainView: View {
             return "Generating your \(focus.name) focus mantra."
         }
         if isUsingPreviousResult {
-            return "Showing previous result. Generating today’s mantra and rhythm."
+            return String(localized: "focus.previous_result")
         }
         return showGenerationStrongHint
-            ? "Still generating today’s mantra and rhythm."
-            : "Generating today’s mantra and rhythm."
+            ? String(localized: "loading.generating_mantra_progress")
+            : String(localized: "loading.generating_mantra")
     }
 
     private var focusHelperText: String {
         return !hasDismissedFocusHelper
-            ? "Choose up to 3 life focuses for what this mantra should pay attention to."
+            ? String(localized: "focus.choose_focuses")
             : ""
     }
 
@@ -735,7 +735,7 @@ struct MainView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Why this mantra")
+        .accessibilityLabel(String(localized: "main.why_mantra"))
         .disabled(viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         .opacity(viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.4 : 1)
     }
@@ -1768,12 +1768,12 @@ struct MainView: View {
             List {
                 Section {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("How Focuses Work")
+                        Text("main.focus_how_it_works")
                             .font(.custom("Merriweather-Bold", size: 13))
                             .foregroundColor(themeManager.primaryText.opacity(0.92))
                             .padding(.bottom, 2)
 
-                        Text("A focus helps Alynna shape the mantra around a specific part of your life, so the guidance feels more relevant to what you want support with today.")
+                        Text("main.focus_explanation")
                             .font(.custom("Merriweather-Regular", size: 12))
                             .foregroundColor(themeManager.descriptionText.opacity(0.72))
                             .fixedSize(horizontal: false, vertical: true)
@@ -1869,7 +1869,7 @@ struct MainView: View {
                             .multilineTextAlignment(.leading)
                     }
                     if customFocuses.isEmpty {
-                        Text("No custom focuses yet.")
+                        Text("main.no_custom_focuses")
                             .font(.custom("Merriweather-Regular", size: 14))
                             .foregroundColor(themeManager.descriptionText.opacity(0.72))
                     } else {
@@ -1927,11 +1927,11 @@ struct MainView: View {
                     if showNewFocusForm {
                         VStack(alignment: .leading, spacing: 12) {
                             VStack(alignment: .leading, spacing: 3) {
-                                Text("Be precise")
+                                Text("main.be_precise")
                                     .font(.custom("Merriweather-Bold", size: 12))
                                     .foregroundColor(themeManager.primaryText.opacity(0.9))
 
-                                Text("For custom focuses, a clear name and precise description help Alynna generate more relevant guidance.")
+                                Text("main.focus_precision_hint")
                                     .font(.custom("Merriweather-Regular", size: 12))
                                     .foregroundColor(themeManager.descriptionText.opacity(0.72))
                                     .fixedSize(horizontal: false, vertical: true)
@@ -1946,7 +1946,7 @@ struct MainView: View {
                                     focusedFocusFormField = .description
                                 }
 
-                            Text("Use no more than 2 words.")
+                            Text("main.focus_name_hint")
                                 .font(.custom("Merriweather-Regular", size: 11))
                                 .foregroundColor(themeManager.descriptionText.opacity(0.7))
 
@@ -1970,7 +1970,7 @@ struct MainView: View {
                                 Button {
                                     saveFocusFromButtonTap()
                                 } label: {
-                                    Text("Save Focus")
+                                    Text("main.save_focus")
                                         .frame(minWidth: 96, minHeight: 36)
                                         .contentShape(Rectangle())
                                 }
@@ -2119,7 +2119,7 @@ struct MainView: View {
                         }
 
                         VStack(spacing: 4) {
-                            Text("Today's Rhythm")
+                            Text("main.todays_rhythm")
                                 .font(.custom("Merriweather-SemiBold", size: 34))
                                 .lineSpacing(AlignaType.logoLineSpacing)
                                 .foregroundColor(themeManager.primaryText)
@@ -2178,7 +2178,7 @@ struct MainView: View {
                                                 .frame(width: textWidth)
 
                                             if shouldShowMantraGuidanceHint {
-                                                Text("Tap the mantra above to reveal today’s rhythm guidance.")
+                                                Text("main.mantra_expand_hint")
                                                     .font(.custom("Merriweather-Regular", size: 11))
                                                     .foregroundColor(themeManager.descriptionText.opacity(0.68))
                                                     .multilineTextAlignment(.center)
@@ -2422,7 +2422,7 @@ struct MainView: View {
             .safeAreaInset(edge: .bottom) {
                 if !isMantraExpanded {
                     (
-                        Text("The daily rhythms above are derived from integrated modeling of Earth observation, climate, air-quality, physiological, and astrological data.")
+                        Text("main.attribution")
                     )
                     .font(.custom("Merriweather-Regular", size: 10))
                     .multilineTextAlignment(.center)
@@ -2567,7 +2567,7 @@ struct MainView: View {
         var body: some View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Why This Mantra for You Today?")
+                    Text("detail.reasoning_title")
                         .font(.custom("Merriweather-Bold", size: 18))
                         .foregroundColor(themeManager.primaryText)
 
@@ -4314,7 +4314,7 @@ struct MainView: View {
 
                         
                         // 类别标题（和上面稍微拉开）
-                        Text(title)
+                        Text(categoryDisplayName(for: title))
                             .font(AlignaType.gridCategoryTitle())
                             .lineSpacing(34 - 28) // 6
                             .foregroundColor(themeManager.primaryText)

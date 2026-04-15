@@ -311,7 +311,7 @@ private struct OnboardingCaptionStyle: ViewModifier {
     }
 }
 
-private let onboardingPrivacyNote = "We securely save your gender, relationship status, birth date, and birth time only to calculate your zodiac and birth chart details."
+private var onboardingPrivacyNote: String { String(localized: "onboarding.privacy_note") }
 
 private struct OnboardingPrimaryButtonStyle: ViewModifier {
     let isEnabled: Bool
@@ -420,20 +420,20 @@ struct OnboardingStep0: View {
                         AlignaTopHeader(minLength: minLength, show: $showIntro)
                             .staggered(0, show: $showIntro)
 
-                        Text("Your Daily Rhythm")
+                        Text("onboarding.step0.title")
                             .onboardingTitleStyle()
                             .padding(.top, 6)
                             .staggered(1, show: $showIntro)
 
-                        Text("A personal guide shaped by Earth, sky, and body signals, tuned to each day and your current context.")
+                        Text("onboarding.step0.description")
                             .onboardingCaptionStyle()
                             .padding(.horizontal, 28)
                             .staggered(2, show: $showIntro)
 
                         VStack(spacing: 12) {
-                            FeatureRow(symbol: "sparkles", text: "Daily recommendations across eight life domains, refreshed each day.")
-                            FeatureRow(symbol: "location.north.line", text: "Personalized to your time, place, and physiology, not a generic profile.")
-                            FeatureRow(symbol: "heart.circle", text: "Built to support clarity, balance, and follow-through, without overload.")
+                            FeatureRow(symbol: "sparkles", text: String(localized: "onboarding.step0.feature1"))
+                            FeatureRow(symbol: "location.north.line", text: String(localized: "onboarding.step0.feature2"))
+                            FeatureRow(symbol: "heart.circle", text: String(localized: "onboarding.step0.feature3"))
                         }
                         .padding(.horizontal, 14)
                         .padding(.vertical, 16)
@@ -451,7 +451,7 @@ struct OnboardingStep0: View {
                                 .environmentObject(themeManager)
                                 .environmentObject(starManager)
                         ) {
-                            Text("Continue")
+                            Text("onboarding.step0.continue")
                                 .onboardingPrimaryButtonStyle()
                         }
                         .padding(.horizontal)
@@ -546,7 +546,7 @@ struct OnboardingStep1: View {
                         // 顶部
                         AlignaTopHeader(minLength: minLength)
 
-                        Text("Tell us about yourself")
+                        Text("onboarding.step1.title")
                             .onboardingTitleStyle()
                             .padding(.top, 6)
 
@@ -554,11 +554,11 @@ struct OnboardingStep1: View {
                         Group {
                             // Nickname
                             VStack(alignment: .center, spacing: 10) {
-                                Text("Your Nickname")
+                                Text("onboarding.step1.nickname")
                                     .onboardingQuestionStyle()
 
                                 Group {
-                                    TextField("Enter your nickname", text: $viewModel.nickname)
+                                    TextField(String(localized: "onboarding.step1.nickname_placeholder"), text: $viewModel.nickname)
                                         .padding()
                                         .background(panelBG)
                                         .overlay(
@@ -578,7 +578,7 @@ struct OnboardingStep1: View {
 
                             // Gender
                             VStack(alignment: .center, spacing: 10) {
-                                Text("Gender")
+                                Text("onboarding.step1.gender")
                                     .onboardingQuestionStyle()
 
                                 HStack(spacing: 10) {
@@ -587,7 +587,7 @@ struct OnboardingStep1: View {
                                             viewModel.gender = gender
                                         } label: {
                                             let selected = viewModel.gender == gender
-                                            Text(gender)
+                                            Text(gender == "Male" ? "onboarding.step1.male" : gender == "Female" ? "onboarding.step1.female" : "onboarding.step1.other")
                                                 .font(.custom(selected ? "Merriweather-Bold" : "Merriweather-Regular", size: 16))
                                                 .frame(maxWidth: .infinity)
                                                 .padding()
@@ -605,7 +605,7 @@ struct OnboardingStep1: View {
 
                             // Relationship
                             VStack(alignment: .center, spacing: 10) {
-                                Text("Status")
+                                Text("onboarding.step1.status")
                                     .onboardingQuestionStyle()
 
                                 GeometryReader { geo in
@@ -634,11 +634,11 @@ struct OnboardingStep1: View {
 
                         // 出生地
                         VStack(alignment: .center, spacing: 12) {
-                            Text("Place of Birth")
+                            Text("onboarding.step1.birthplace")
                                 .onboardingQuestionStyle()
 
                             Group {
-                                TextField("Your Birth Place", text: $birthSearch)
+                                TextField(String(localized: "onboarding.step1.birthplace_placeholder"), text: $birthSearch)
                                     .padding()
                                     .background(panelBG)
                                     .overlay(
@@ -662,7 +662,7 @@ struct OnboardingStep1: View {
                             .animation(nil, value: step1Focus)
 
                             if !viewModel.birthPlace.isEmpty {
-                                Text("✓ Selected: \(viewModel.birthPlace)")
+                                Text("\(String(localized: "onboarding.step1.birthplace_selected")) \(viewModel.birthPlace)")
                                     .onboardingLabelStyle()
                                     .foregroundColor(.green)
                                     .multilineTextAlignment(.center)
@@ -712,7 +712,7 @@ struct OnboardingStep1: View {
                             destination: OnboardingStep2(viewModel: viewModel)
                                 .environmentObject(themeManager)
                         ) {
-                            Text("Continue")
+                            Text("onboarding.step0.continue")
                                 .onboardingPrimaryButtonStyle(isEnabled: isFormComplete)
                         }
                         .padding(.horizontal)
@@ -754,7 +754,7 @@ struct OnboardingStep1: View {
         Button {
             viewModel.relationshipStatus = status
         } label: {
-            Text(status)
+            Text(status == "Single" ? "onboarding.step1.single" : status == "In a relationship" ? "onboarding.step1.in_relationship" : "onboarding.step1.other")
                 .font(.custom(selected ? "Merriweather-Bold" : "Merriweather-Regular", size: 16))
                 .lineLimit(1)
                 .minimumScaleFactor(0.95)
@@ -831,12 +831,12 @@ struct OnboardingStep2: View {
                     VStack(spacing: minLength * 0.045) {
                         AlignaTopHeader(minLength: minLength)
 
-                        Text("When were you born?")
+                        Text("onboarding.step2.title")
                             .onboardingTitleStyle()
                             .padding(.top, 6)
 
                         VStack(spacing: 15) {
-                            Text("Birthday")
+                            Text("onboarding.step2.birthday")
                                 .onboardingQuestionStyle()
 
                             Button {
@@ -859,7 +859,7 @@ struct OnboardingStep2: View {
                         .padding(.horizontal)
 
                         VStack(spacing: 15) {
-                            Text("Time of Your Birth")
+                            Text("onboarding.step2.birth_time")
                                 .onboardingQuestionStyle()
 
                             Button {
@@ -891,7 +891,7 @@ struct OnboardingStep2: View {
                         NavigationLink(
                             destination: OnboardingStep3(viewModel: viewModel)
                         ) {
-                            Text("Continue")
+                            Text("onboarding.step0.continue")
                                 .onboardingPrimaryButtonStyle()
                         }
                         .padding(.horizontal)
@@ -976,7 +976,7 @@ struct OnboardingStep2: View {
         VStack(spacing: 12) {
             HStack {
                 Spacer()
-                Button("Done", action: done)
+                Button(String(localized: "onboarding.step2.done"), action: done)
                     .font(.custom("Merriweather-Bold", size: 16))
                     .foregroundColor(themeManager.onboardingPrimaryText)
                     .padding(.horizontal, 14)

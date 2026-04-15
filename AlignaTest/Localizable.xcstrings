@@ -1,940 +1,3408 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "about.align_description" : {
+    "" : {
+
+    },
+    " " : {
+
+    },
+    " · " : {
+
+    },
+    "%@ " : {
+
+    },
+    "%@ %@" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alynna helps you align your inner rhythm with the world around you, guided by context, not just intuition. A personalized rhythm card each day offers a short message with clear, actionable guidance to help you adjust your day." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Alynna 帮助你将内在节奏与周围世界对齐，由背景指导，而不仅仅是直觉。每天的个性化节奏卡提供简短信息和明确的可操作指导，帮助你调整你的一天。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        }
       }
     },
-    "about.align_inner_rhythm" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Align Your Inner Rhythm" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "调整你的内在节奏" } }
-      }
+    "%lld" : {
+
+    },
+    "•" : {
+
+    },
+    "⚠️ Unknown Category" : {
+
+    },
+    "✦ Daily Anchor ✦" : {
+
+    },
+    "🔒" : {
+
     },
     "about.activity" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Activity" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "活动" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activity"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "活动"
+          }
+        }
       }
     },
     "about.activity_desc" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Take actions that match your current energy level, such as focus, slow down, or reset." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "采取与你当前能量水平相匹配的行动，如专注、放慢或重置。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take actions that match your current energy level, such as focus, slow down, or reset."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "采取与你当前能量水平相匹配的行动，如专注、放慢或重置。"
+          }
+        }
+      }
+    },
+    "about.align_description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alynna helps you align your inner rhythm with the world around you, guided by context, not just intuition. A personalized rhythm card each day offers a short message with clear, actionable guidance to help you adjust your day."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alynna 帮助你将内在节奏与周围世界对齐，由背景指导，而不仅仅是直觉。每天的个性化节奏卡提供简短信息和明确的可操作指导，帮助你调整你的一天。"
+          }
+        }
+      }
+    },
+    "about.align_inner_rhythm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Align Your Inner Rhythm"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "调整你的内在节奏"
+          }
+        }
       }
     },
     "about.career" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Career" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "职业" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Career"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "职业"
+          }
+        }
       }
     },
     "about.career_desc" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Align your work style with the day, such as deep work, planning, or lighter tasks." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "将你的工作风格与当天对齐，如深度工作、规划或轻松的任务。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Align your work style with the day, such as deep work, planning, or lighter tasks."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将你的工作风格与当天对齐，如深度工作、规划或轻松的任务。"
+          }
+        }
       }
     },
     "about.color" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Color" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "颜色" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "颜色"
+          }
+        }
       }
     },
     "about.color_desc" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Use specific colors to stabilize mood and support attention." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "使用特定颜色来稳定情绪并支持注意力。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use specific colors to stabilize mood and support attention."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用特定颜色来稳定情绪并支持注意力。"
+          }
+        }
       }
     },
     "about.copyright" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "© 2026 Alynna. Made with cosmic intention" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "© 2026 Alynna. 以宇宙之意创作" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "© 2026 Alynna. Made with cosmic intention"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "© 2026 Alynna. 以宇宙之意创作"
+          }
+        }
       }
     },
     "about.eight_areas" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Eight Areas of Daily Support" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "八个日常支持领域" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eight Areas of Daily Support"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "八个日常支持领域"
+          }
+        }
       }
     },
     "about.gemstone" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Gemstone" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "宝石" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemstone"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "宝石"
+          }
+        }
       }
     },
     "about.gemstone_desc" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Use symbolic objects as simple anchors for focus and steadiness." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "使用象征性物品作为专注和稳定的简单锚点。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use symbolic objects as simple anchors for focus and steadiness."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用象征性物品作为专注和稳定的简单锚点。"
+          }
+        }
       }
     },
     "about.gentle_description" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alynna is not about prediction or pressure. It helps you make small, practical adjustments so you can move through the day with more clarity, balance, and ease." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Alynna 不关乎预测或压力。它帮助你做出小的实用调整，让你能以更清晰、平衡和从容的方式度过每一天。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alynna is not about prediction or pressure. It helps you make small, practical adjustments so you can move through the day with more clarity, balance, and ease."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alynna 不关乎预测或压力。它帮助你做出小的实用调整，让你能以更清晰、平衡和从容的方式度过每一天。"
+          }
+        }
       }
     },
     "about.gentle_way" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "A Gentle Way to Move Through the Day" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "温和地度过每一天" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Gentle Way to Move Through the Day"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "温和地度过每一天"
+          }
+        }
       }
     },
     "about.place" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Place" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "地点" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Place"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "地点"
+          }
+        }
       }
     },
     "about.place_desc" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose or adjust your environment to improve focus, rest, or recovery." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "选择或调整你的环境以改善专注、休息或恢复。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose or adjust your environment to improve focus, rest, or recovery."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择或调整你的环境以改善专注、休息或恢复。"
+          }
+        }
       }
     },
     "about.privacy_chart" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Birth chart information remains private and secure" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "出生图表信息保持私密和安全" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Birth chart information remains private and secure"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "出生图表信息保持私密和安全"
+          }
+        }
       }
     },
     "about.privacy_control" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "You have full control over your data and can delete it anytime" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你完全掌控自己的数据，可以随时删除" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You have full control over your data and can delete it anytime"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你完全掌控自己的数据，可以随时删除"
+          }
+        }
       }
     },
     "about.privacy_description" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your privacy is paramount. All sensor data is processed locally on your device. We do not collect, store, or share your personal information or location data." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你的隐私至关重要。所有传感器数据均在你的设备上本地处理。我们不收集、存储或共享你的个人信息或位置数据。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your privacy is paramount. All sensor data is processed locally on your device. We do not collect, store, or share your personal information or location data."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的隐私至关重要。所有传感器数据均在你的设备上本地处理。我们不收集、存储或共享你的个人信息或位置数据。"
+          }
+        }
       }
     },
     "about.privacy_location" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Location data is used only for local weather and cosmic calculations" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "位置数据仅用于本地天气和宇宙计算" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location data is used only for local weather and cosmic calculations"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "位置数据仅用于本地天气和宇宙计算"
+          }
+        }
       }
     },
     "about.privacy_title" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Data & Privacy" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "数据与隐私" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data & Privacy"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "数据与隐私"
+          }
+        }
       }
     },
     "about.privacy_transmission" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No personal data is transmitted to external servers" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有个人数据传输至外部服务器" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No personal data is transmitted to external servers"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有个人数据传输至外部服务器"
+          }
+        }
       }
     },
     "about.relationship" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Relationship" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关系" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Relationship"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关系"
+          }
+        }
       }
     },
     "about.relationship_desc" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Adjust how you engage with others, such as connect, hold space, or set boundaries." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "调整你与他人互动的方式，如连接、给予空间或设定边界。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjust how you engage with others, such as connect, hold space, or set boundaries."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "调整你与他人互动的方式，如连接、给予空间或设定边界。"
+          }
+        }
       }
     },
     "about.scent" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Scent" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "香气" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scent"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "香气"
+          }
+        }
       }
     },
     "about.scent_desc" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Use scent to reset mood and support transitions, like work to rest." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "使用香气重置情绪并支持过渡，如从工作到休息。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use scent to reset mood and support transitions, like work to rest."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用香气重置情绪并支持过渡，如从工作到休息。"
+          }
+        }
       }
     },
     "about.sound" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sound" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "声音" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sound"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "声音"
+          }
+        }
       }
     },
     "about.sound_desc" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reduce distractions and create a calmer mental space." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "减少干扰，创造更平静的心理空间。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reduce distractions and create a calmer mental space."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "减少干扰，创造更平静的心理空间。"
+          }
+        }
       }
     },
     "about.tagline" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "\"Before you wake up, Alynna has already sensed the rhythm of your day.\"" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "\"在你醒来之前，Alynna 已经感知到了你一天的节奏。\"" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"Before you wake up, Alynna has already sensed the rhythm of your day.\""
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"在你醒来之前，Alynna 已经感知到了你一天的节奏。\""
+          }
+        }
       }
     },
     "about.title" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alynna" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Alynna" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alynna"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alynna"
+          }
+        }
       }
+    },
+    "Allow Access" : {
+
+    },
+    "Almost there" : {
+
+    },
+    "Ascendant" : {
+
+    },
+    "Astrology (approximate)" : {
+
+    },
+    "Birth Place" : {
+
+    },
+    "Cancel" : {
+
     },
     "category.activity" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Activity" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "活动" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activity"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "活动"
+          }
+        }
       }
     },
     "category.career" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Career" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "职业" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Career"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "职业"
+          }
+        }
       }
     },
     "category.color" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Color" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "颜色" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "颜色"
+          }
+        }
       }
     },
     "category.gemstone" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Gemstone" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "宝石" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemstone"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "宝石"
+          }
+        }
       }
     },
     "category.place" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Place" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "地点" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Place"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "地点"
+          }
+        }
       }
     },
     "category.relationship" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Relationship" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关系" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Relationship"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关系"
+          }
+        }
       }
     },
     "category.scent" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Scent" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "香气" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scent"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "香气"
+          }
+        }
       }
     },
     "category.sound" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sound" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "声音" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sound"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "声音"
+          }
+        }
       }
+    },
+    "Checking verification…" : {
+
+    },
+    "Choose when a new daily rhythm begins." : {
+
+    },
+    "Close" : {
+
+    },
+    "Confirm" : {
+
+    },
+    "Confirm Password" : {
+
+    },
+    "Confirm your information" : {
+
+    },
+    "Continue" : {
+
+    },
+    "Create Account" : {
+
+    },
+    "Create An Account" : {
+
+    },
+    "Create Your Space" : {
+
+    },
+    "Creating..." : {
+
+    },
+    "Current Focus" : {
+
+    },
+    "Custom Focuses" : {
+
+    },
+    "Customize appearance" : {
+
+    },
+    "Daily Rhythm Update" : {
+
+    },
+    "Danger Zone" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete \"%@\" Focus" : {
+
+    },
+    "Delete Account?" : {
+
+    },
+    "Delete Focus?" : {
+
     },
     "detail.close" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Close" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关闭" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭"
+          }
+        }
       }
     },
     "detail.loading" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading..." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "加载中..." } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading..."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加载中..."
+          }
+        }
       }
     },
     "detail.no_sound" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No sound today" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今天没有声音" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No sound today"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天没有声音"
+          }
+        }
+      }
+    },
+    "detail.now_playing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Now Playing"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在播放"
+          }
+        }
       }
     },
     "detail.reasoning_title" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Why This for You Today?" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "为什么今天为你推荐这个？" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why This for You Today?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为什么今天为你推荐这个？"
+          }
+        }
       }
+    },
+    "detail.set_todays_color" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set as Today's Color"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设为今日颜色"
+          }
+        }
+      }
+    },
+    "detail.shop_bracelet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shop Bracelet"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "购买手链"
+          }
+        }
+      }
+    },
+    "detail.shop_candle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shop Candle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "购买蜡烛"
+          }
+        }
+      }
+    },
+    "detail.shop_essential_oil" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shop Essential Oil"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "购买精油"
+          }
+        }
+      }
+    },
+    "detail.shop_gemstone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shop Gemstone"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "购买宝石"
+          }
+        }
+      }
+    },
+    "detail.usage_note" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usage Note: "
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用说明："
+          }
+        }
+      }
+    },
+    "detail.white_noise" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "White Noise • Nature Sounds"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "白噪音 · 自然声音"
+          }
+        }
+      }
+    },
+    "Don't have an account?" : {
+
+    },
+    "Enter your email" : {
+
+    },
+    "Enter your password" : {
+
+    },
+    "Error" : {
+
+    },
+    "focus" : {
+
+    },
+    "Focus name" : {
+
     },
     "focus.choose_focuses" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose up to 3 life focuses for what this mantra should pay attention to." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最多选择 3 个生活焦点，指定这个心咒应关注的方向。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose up to 3 life focuses for what this mantra should pay attention to."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最多选择 3 个生活焦点，指定这个心咒应关注的方向。"
+          }
+        }
       }
     },
     "focus.focus_request_hint" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Focus mantra requests can take up to a minute." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "焦点心咒请求最多可能需要一分钟。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus mantra requests can take up to a minute."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焦点心咒请求最多可能需要一分钟。"
+          }
+        }
       }
     },
     "focus.previous_result" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Showing previous result. Generating today's mantra and rhythm." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示上次结果。正在生成今天的心咒和节奏。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Showing previous result. Generating today's mantra and rhythm."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示上次结果。正在生成今天的心咒和节奏。"
+          }
+        }
       }
+    },
+    "Focuses" : {
+
+    },
+    "For security reasons, please enter your password to delete your account." : {
+
+    },
+    "Forgot Password?" : {
+
     },
     "frontpage.disclaimer" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Begin with what this day is holding." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "从这一天正在承载的事开始。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Begin with what this day is holding."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从这一天正在承载的事开始。"
+          }
+        }
       }
     },
     "frontpage.login" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Log In" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "登录" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log In"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录"
+          }
+        }
       }
     },
     "frontpage.signup" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign Up" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "注册" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign Up"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "注册"
+          }
+        }
       }
     },
     "frontpage.tagline" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your daily rhythm companion" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你的每日节奏伴侣" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your daily rhythm companion"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的每日节奏伴侣"
+          }
+        }
       }
+    },
+    "Hide personal information" : {
+
+    },
+    "Improves your rhythm and mantra guidance" : {
+
     },
     "journal.cancel" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "取消" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消"
+          }
+        }
       }
     },
     "journal.check_in" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Check-in" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今日记录" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check-in"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日记录"
+          }
+        }
       }
     },
     "journal.reset" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reset" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重置" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重置"
+          }
+        }
       }
     },
     "journal.reset_confirm_message" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "This will clear the current text. It won't delete anything saved previously." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这将清除当前文本，不会删除之前保存的内容。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This will clear the current text. It won't delete anything saved previously."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这将清除当前文本，不会删除之前保存的内容。"
+          }
+        }
       }
     },
     "journal.reset_confirm_title" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reset entry?" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重置条目？" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset entry?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重置条目？"
+          }
+        }
       }
     },
     "journal.submit" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Submit" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提交" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Submit"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "提交"
+          }
+        }
       }
     },
     "journal.tap_true" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap what feels true right now." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点击现在感觉真实的选项。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap what feels true right now."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击现在感觉真实的选项。"
+          }
+        }
       }
+    },
+    "Last entry" : {
+
+    },
+    "Loading %@…" : {
+
+    },
+    "Loading…" : {
+
     },
     "loading.cosmic" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reading the cosmos" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "读取宇宙信号" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading the cosmos"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "读取宇宙信号"
+          }
+        }
       }
     },
     "loading.cosmic_footer" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Chart data is derived from your current cosmic conditions." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "图表数据来自你当前的宇宙条件。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chart data is derived from your current cosmic conditions."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "图表数据来自你当前的宇宙条件。"
+          }
+        }
       }
     },
     "loading.from_cosmos" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "From the Cosmos" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "来自宇宙" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From the Cosmos"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "来自宇宙"
+          }
+        }
       }
     },
     "loading.from_environment" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "From Your Environment" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "来自你的环境" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From Your Environment"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "来自你的环境"
+          }
+        }
       }
     },
     "loading.from_within" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "From Within" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "来自内心" } }
-      }
-    },
-    "loading.generate_mantra" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Generate Today's Mantra" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "生成今天的心咒" } }
-      }
-    },
-    "loading.generating_mantra" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Generating your mantra" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在生成你的心咒" } }
-      }
-    },
-    "loading.generating_mantra_progress" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Still generating today's mantra and rhythm." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仍在生成今天的心咒和节奏。" } }
-      }
-    },
-    "loading.initial" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "加载中" } }
-      }
-    },
-    "loading.measuring_air_quality" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Measuring air quality…" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在测量空气质量…" } }
-      }
-    },
-    "loading.mood" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mood" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "心情" } }
-      }
-    },
-    "loading.mood_anger" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Anger" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "愤怒" } }
-      }
-    },
-    "loading.mood_calm" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Calm" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "平静" } }
-      }
-    },
-    "loading.mood_grief" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Grief" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "悲伤" } }
-      }
-    },
-    "loading.mood_joy" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Joy" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "喜悦" } }
-      }
-    },
-    "loading.not_now" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Not Now" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂不" } }
-      }
-    },
-    "loading.notes" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Notes" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "备注" } }
-      }
-    },
-    "loading.personal" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Personal check-in" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "个人状态" } }
-      }
-    },
-    "loading.personal_logged" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Logged for today." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已为今天记录。" } }
-      }
-    },
-    "loading.personal_subtitle" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap what feels true right now." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点击现在感觉真实的选项。" } }
-      }
-    },
-    "loading.place" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reading your place" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "读取你的地点" } }
-      }
-    },
-    "loading.place_footer" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Place signals are derived from local environment and weather." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "地点信号来自本地环境和天气。" } }
-      }
-    },
-    "loading.preparing_next" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Preparing the next step…" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在准备下一步…" } }
-      }
-    },
-    "loading.sampling_air" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sampling the air…" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在采集空气样本…" } }
-      }
-    },
-    "loading.see_mantra" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "See Today's Mantra" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "查看今天的心咒" } }
-      }
-    },
-    "loading.sensing_place" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "I'm sensing your place…" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在感知你的地点…" } }
-      }
-    },
-    "loading.signals_privacy" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "These signals are used only to shape your experience here, and nowhere else." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这些信号仅用于塑造你在这里的体验，不会用于其他任何地方。" } }
-      }
-    },
-    "loading.sleep" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sleep" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "睡眠" } }
-      }
-    },
-    "loading.sleep_great" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Great" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "很好" } }
-      }
-    },
-    "loading.sleep_ok" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "OK" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "还好" } }
-      }
-    },
-    "loading.sleep_poor" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Poor" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "较差" } }
-      }
-    },
-    "loading.sleep_rest" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rest" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "休息" } }
-      }
-    },
-    "loading.stress" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Stress" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "压力" } }
-      }
-    },
-    "loading.stress_high" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "High" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "高" } }
-      }
-    },
-    "loading.stress_low" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Low" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "低" } }
-      }
-    },
-    "loading.stress_med" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Med" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "中" } }
-      }
-    },
-    "loading.stress_peak" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Peak" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "峰值" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From Within"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "来自内心"
+          }
+        }
       }
     },
     "loading.gathering" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your signals are in place" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你的信号已就位" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your signals are in place"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的信号已就位"
+          }
+        }
+      }
+    },
+    "loading.generate_mantra" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generate Today's Mantra"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生成今天的心咒"
+          }
+        }
+      }
+    },
+    "loading.generating_mantra" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generating your mantra"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在生成你的心咒"
+          }
+        }
+      }
+    },
+    "loading.generating_mantra_progress" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Still generating today's mantra and rhythm."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仍在生成今天的心咒和节奏。"
+          }
+        }
+      }
+    },
+    "loading.initial" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加载中"
+          }
+        }
+      }
+    },
+    "loading.measuring_air_quality" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Measuring air quality…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在测量空气质量…"
+          }
+        }
+      }
+    },
+    "loading.mood" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mood"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "心情"
+          }
+        }
+      }
+    },
+    "loading.mood_anger" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anger"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "愤怒"
+          }
+        }
+      }
+    },
+    "loading.mood_calm" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calm"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平静"
+          }
+        }
+      }
+    },
+    "loading.mood_grief" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grief"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "悲伤"
+          }
+        }
+      }
+    },
+    "loading.mood_joy" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Joy"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "喜悦"
+          }
+        }
+      }
+    },
+    "loading.not_now" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Now"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂不"
+          }
+        }
+      }
+    },
+    "loading.notes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "备注"
+          }
+        }
+      }
+    },
+    "loading.personal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personal check-in"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "个人状态"
+          }
+        }
+      }
+    },
+    "loading.personal_logged" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logged for today."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已为今天记录。"
+          }
+        }
+      }
+    },
+    "loading.personal_subtitle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap what feels true right now."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击现在感觉真实的选项。"
+          }
+        }
+      }
+    },
+    "loading.place" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading your place"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "读取你的地点"
+          }
+        }
+      }
+    },
+    "loading.place_footer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Place signals are derived from local environment and weather."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "地点信号来自本地环境和天气。"
+          }
+        }
+      }
+    },
+    "loading.preparing_next" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing the next step…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在准备下一步…"
+          }
+        }
+      }
+    },
+    "loading.sampling_air" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sampling the air…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在采集空气样本…"
+          }
+        }
+      }
+    },
+    "loading.see_mantra" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See Today's Mantra"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看今天的心咒"
+          }
+        }
+      }
+    },
+    "loading.sensing_place" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I'm sensing your place…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在感知你的地点…"
+          }
+        }
+      }
+    },
+    "loading.signals_privacy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These signals are used only to shape your experience here, and nowhere else."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这些信号仅用于塑造你在这里的体验，不会用于其他任何地方。"
+          }
+        }
+      }
+    },
+    "loading.sleep" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "睡眠"
+          }
+        }
+      }
+    },
+    "loading.sleep_great" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Great"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "很好"
+          }
+        }
+      }
+    },
+    "loading.sleep_ok" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "还好"
+          }
+        }
+      }
+    },
+    "loading.sleep_poor" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Poor"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "较差"
+          }
+        }
+      }
+    },
+    "loading.sleep_rest" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rest"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "休息"
+          }
+        }
+      }
+    },
+    "loading.stress" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stress"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "压力"
+          }
+        }
+      }
+    },
+    "loading.stress_high" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高"
+          }
+        }
+      }
+    },
+    "loading.stress_low" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "低"
+          }
+        }
+      }
+    },
+    "loading.stress_med" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Med"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中"
+          }
+        }
+      }
+    },
+    "loading.stress_peak" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Peak"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "峰值"
+          }
+        }
       }
     },
     "loading.tap_to_edit_notes" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap to edit notes" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点击编辑备注" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to edit notes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击编辑备注"
+          }
+        }
       }
     },
     "loading.warming_up" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Warming up your space…" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在为你的空间预热…" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warming up your space…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在为你的空间预热…"
+          }
+        }
       }
     },
     "loading.weaving_signals" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "We're weaving together your cosmic, environmental, and personal signals." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "我们正在汇聚你的宇宙、环境和个人信号。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We're weaving together your cosmic, environmental, and personal signals."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我们正在汇聚你的宇宙、环境和个人信号。"
+          }
+        }
+      }
+    },
+    "Location Access" : {
+
+    },
+    "Location access is off. Tap to review details or open Settings." : {
+
+    },
+    "Log In" : {
+
+    },
+    "Logging in…" : {
+
+    },
+    "main.attribution" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The daily rhythms above are derived from integrated modeling of Earth observation, climate, air-quality, physiological, and astrological data."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "以上每日节奏来源于地球观测、气候、空气质量、生理和占星数据的综合建模。"
+          }
+        }
+      }
+    },
+    "main.be_precise" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Be precise"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "精确描述"
+          }
+        }
+      }
+    },
+    "main.focus_explanation" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A focus helps Alynna shape the mantra around a specific part of your life, so the guidance feels more relevant to what you want support with today."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焦点帮助 Alynna 围绕你生活的某个特定部分塑造心咒，使指引更贴近你今天希望获得支持的方向。"
+          }
+        }
+      }
+    },
+    "main.focus_how_it_works" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How Focuses Work"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焦点如何运作"
+          }
+        }
+      }
+    },
+    "main.focus_name_hint" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use no more than 2 words."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请使用不超过 2 个词。"
+          }
+        }
+      }
+    },
+    "main.focus_precision_hint" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For custom focuses, a clear name and precise description help Alynna generate more relevant guidance."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "对于自定义焦点，清晰的名称和精确的描述有助于 Alynna 生成更相关的指引。"
+          }
+        }
+      }
+    },
+    "main.focus_request_hint" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus mantra requests can take up to a minute."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焦点心咒请求最多可能需要一分钟。"
+          }
+        }
+      }
+    },
+    "main.mantra_expand_hint" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the mantra above to reveal today's rhythm guidance."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击上方心咒以展开今日节奏指引。"
+          }
+        }
       }
     },
     "main.new_recommendation" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "new recommendation" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "新建议" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "new recommendation"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建议"
+          }
+        }
+      }
+    },
+    "main.no_custom_focuses" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No custom focuses yet."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚无自定义焦点。"
+          }
+        }
+      }
+    },
+    "main.save_focus" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save Focus"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存焦点"
+          }
+        }
+      }
+    },
+    "main.todays_rhythm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's Rhythm"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日节奏"
+          }
+        }
       }
     },
     "main.updated_on" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Updated on" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "更新于" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updated on"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新于"
+          }
+        }
       }
     },
     "main.why_mantra" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Why this mantra" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "为什么是这个心咒" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why this mantra"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为什么是这个心咒"
+          }
+        }
       }
+    },
+    "Moon sign" : {
+
     },
     "moon_phase.first_quarter" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "First Quarter" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "上弦月" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "First Quarter"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上弦月"
+          }
+        }
       }
     },
     "moon_phase.full_moon" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Full Moon" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "满月" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Full Moon"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "满月"
+          }
+        }
       }
     },
     "moon_phase.new_moon" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "New Moon" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "新月" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Moon"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新月"
+          }
+        }
       }
     },
     "moon_phase.third_quarter" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Third Quarter" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "下弦月" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Third Quarter"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下弦月"
+          }
+        }
       }
     },
     "moon_phase.waning_crescent" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Waning Crescent" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "残月" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waning Crescent"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "残月"
+          }
+        }
       }
     },
     "moon_phase.waning_gibbous" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Waning Gibbous" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "亏凸月" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waning Gibbous"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "亏凸月"
+          }
+        }
       }
     },
     "moon_phase.waxing_crescent" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Waxing Crescent" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "峨眉月" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waxing Crescent"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "峨眉月"
+          }
+        }
       }
     },
     "moon_phase.waxing_gibbous" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Waxing Gibbous" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "盈凸月" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waxing Gibbous"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "盈凸月"
+          }
+        }
       }
+    },
+    "New Custom Focus" : {
+
+    },
+    "Nickname" : {
+
+    },
+    "No data available for this day" : {
+
+    },
+    "No entry yet." : {
+
+    },
+    "No mantra for this day." : {
+
+    },
+    "No sound recommendation" : {
+
+    },
+    "Not Now" : {
+
+    },
+    "Note: Lightweight astronomical approximations; values near sign cusps may vary slightly." : {
+
+    },
+    "Notifications are off. Tap to enable in Settings." : {
+
+    },
+    "OK" : {
+
     },
     "onboarding.privacy_note" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "We securely save your gender, relationship status, birth date, and birth time only to calculate your zodiac and birth chart details." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "我们安全保存你的性别、关系状态、出生日期和出生时间，仅用于计算你的星座和出生图表详情。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We securely save your gender, relationship status, birth date, and birth time only to calculate your zodiac and birth chart details."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我们安全保存你的性别、关系状态、出生日期和出生时间，仅用于计算你的星座和出生图表详情。"
+          }
+        }
       }
     },
     "onboarding.step0.continue" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "继续" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续"
+          }
+        }
       }
     },
     "onboarding.step0.description" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "A personal guide shaped by Earth, sky, and body signals, tuned to each day and your current context." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "由地球、天空和身体信号塑造的个人指南，针对每一天和你当前的处境量身调整。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A personal guide shaped by Earth, sky, and body signals, tuned to each day and your current context."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "由地球、天空和身体信号塑造的个人指南，针对每一天和你当前的处境量身调整。"
+          }
+        }
       }
     },
     "onboarding.step0.feature1" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Daily recommendations across eight life domains, refreshed each day." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "跨越八个生活领域的每日建议，每天更新。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daily recommendations across eight life domains, refreshed each day."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "跨越八个生活领域的每日建议，每天更新。"
+          }
+        }
       }
     },
     "onboarding.step0.feature2" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Personalized to your time, place, and physiology, not a generic profile." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "根据你的时间、地点和生理状况个性化，而非通用档案。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personalized to your time, place, and physiology, not a generic profile."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "根据你的时间、地点和生理状况个性化，而非通用档案。"
+          }
+        }
       }
     },
     "onboarding.step0.feature3" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Built to support clarity, balance, and follow-through, without overload." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "旨在支持清晰、平衡和坚持，不会造成负担。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Built to support clarity, balance, and follow-through, without overload."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "旨在支持清晰、平衡和坚持，不会造成负担。"
+          }
+        }
       }
     },
     "onboarding.step0.title" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your Daily Rhythm" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你的每日节奏" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Daily Rhythm"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的每日节奏"
+          }
+        }
       }
     },
     "onboarding.step1.birthplace" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Place of Birth" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "出生地" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Place of Birth"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "出生地"
+          }
+        }
       }
     },
     "onboarding.step1.birthplace_placeholder" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your Birth Place" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你的出生地" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Birth Place"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的出生地"
+          }
+        }
       }
     },
     "onboarding.step1.birthplace_selected" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "✓ Selected:" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "✓ 已选择：" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✓ Selected:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✓ 已选择："
+          }
+        }
       }
     },
     "onboarding.step1.female" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Female" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "女性" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Female"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "女性"
+          }
+        }
       }
     },
     "onboarding.step1.gender" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Gender" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "性别" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gender"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "性别"
+          }
+        }
       }
     },
     "onboarding.step1.in_relationship" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "In a relationship" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "恋爱中" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In a relationship"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恋爱中"
+          }
+        }
       }
     },
     "onboarding.step1.male" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Male" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "男性" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Male"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "男性"
+          }
+        }
       }
     },
     "onboarding.step1.nickname" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your Nickname" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你的昵称" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Nickname"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的昵称"
+          }
+        }
       }
     },
     "onboarding.step1.nickname_placeholder" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter your nickname" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "输入你的昵称" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter your nickname"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入你的昵称"
+          }
+        }
       }
     },
     "onboarding.step1.other" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Other" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "其他" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "其他"
+          }
+        }
       }
     },
     "onboarding.step1.single" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Single" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "单身" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Single"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单身"
+          }
+        }
       }
     },
     "onboarding.step1.status" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Status" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关系状态" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关系状态"
+          }
+        }
       }
     },
     "onboarding.step1.title" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tell us about yourself" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "告诉我们关于你的信息" } }
-      }
-    },
-    "onboarding.step2.birthday" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Birthday" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "生日" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell us about yourself"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "告诉我们关于你的信息"
+          }
+        }
       }
     },
     "onboarding.step2.birth_time" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Time of Your Birth" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你的出生时间" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time of Your Birth"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的出生时间"
+          }
+        }
+      }
+    },
+    "onboarding.step2.birthday" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Birthday"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生日"
+          }
+        }
       }
     },
     "onboarding.step2.done" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Done" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "完成" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成"
+          }
+        }
       }
     },
     "onboarding.step2.title" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "When were you born?" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你什么时候出生的？" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When were you born?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你什么时候出生的？"
+          }
+        }
       }
+    },
+    "Open Settings" : {
+
+    },
+    "Or with" : {
+
+    },
+    "Password" : {
+
+    },
+    "Permanently delete your account" : {
+
+    },
+    "Personal Information" : {
+
     },
     "preferences.activity_question" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Activity preference?" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "活动偏好？" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activity preference?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "活动偏好？"
+          }
+        }
       }
     },
     "preferences.allergies_question" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Any allergies we should know about?" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "有我们应该知道的过敏情况吗？" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Any allergies we should know about?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "有我们应该知道的过敏情况吗？"
+          }
+        }
       }
     },
     "preferences.color_question" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Any color that don't feel right?" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "有任何感觉不对的颜色吗？" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Any color that don't feel right?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "有任何感觉不对的颜色吗？"
+          }
+        }
       }
     },
     "preferences.error_title" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Error" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "错误" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Error"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "错误"
+          }
+        }
       }
     },
     "preferences.music_question" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Any sound that don't feel right?" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "有任何感觉不对的声音吗？" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Any sound that don't feel right?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "有任何感觉不对的声音吗？"
+          }
+        }
       }
     },
     "preferences.save" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存"
+          }
+        }
       }
     },
     "preferences.saved_message" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your preferences have been saved." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你的偏好已保存。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your preferences have been saved."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的偏好已保存。"
+          }
+        }
       }
     },
     "preferences.saved_title" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Saved" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已保存" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已保存"
+          }
+        }
       }
     },
     "preferences.saving" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Saving…" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在保存…" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saving…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在保存…"
+          }
+        }
       }
     },
     "preferences.scent_question" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Any scent that don't feel right?" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "有任何感觉不对的香气吗？" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Any scent that don't feel right?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "有任何感觉不对的香气吗？"
+          }
+        }
       }
     },
     "preferences.title" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Preferences" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "偏好设置" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preferences"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "偏好设置"
+          }
+        }
       }
+    },
+    "Preparing your profile…" : {
+
+    },
+    "Preset Focuses" : {
+
     },
     "profile.continue_google" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue with Google" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "使用 Google 继续" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue with Google"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 Google 继续"
+          }
+        }
       }
     },
     "profile.create_account" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create Account" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "创建账户" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create Account"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建账户"
+          }
+        }
       }
     },
     "profile.email_placeholder" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter your email" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "输入你的电子邮件" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter your email"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入你的电子邮件"
+          }
+        }
       }
     },
     "profile.forgot_password" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Forgot Password?" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "忘记密码？" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forgot Password?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "忘记密码？"
+          }
+        }
+      }
+    },
+    "profile.language" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Language"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "语言"
+          }
+        }
+      }
+    },
+    "profile.language_chinese" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "简体中文"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "简体中文"
+          }
+        }
+      }
+    },
+    "profile.language_coming_soon_badge" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coming soon"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "即将推出"
+          }
+        }
+      }
+    },
+    "profile.language_coming_soon_message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This language is currently under development. Stay tuned for future updates!"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "该语言目前正在开发中，敬请期待后续更新！"
+          }
+        }
+      }
+    },
+    "profile.language_coming_soon_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coming Soon"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "即将推出"
+          }
+        }
+      }
+    },
+    "profile.language_dialog_cancel" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消"
+          }
+        }
+      }
+    },
+    "profile.language_dialog_ok" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Got it"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "知道了"
+          }
+        }
+      }
+    },
+    "profile.language_english" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "English"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "英文"
+          }
+        }
+      }
+    },
+    "profile.language_partial_badge" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partial support"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "部分支持"
+          }
+        }
+      }
+    },
+    "profile.language_partial_confirm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch Anyway"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仍要切换"
+          }
+        }
+      }
+    },
+    "profile.language_partial_message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simplified Chinese is currently partially supported. Some content may still appear in English. Would you like to switch anyway?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "简体中文目前仅部分支持，部分内容可能仍以英文显示。是否仍要切换？"
+          }
+        }
+      }
+    },
+    "profile.language_partial_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partial Support"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "部分支持"
+          }
+        }
+      }
+    },
+    "profile.language_restart_message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please restart the app for the language change to take effect."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请重启应用以使语言更改生效。"
+          }
+        }
+      }
+    },
+    "profile.language_restart_ok" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Got it"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "知道了"
+          }
+        }
+      }
+    },
+    "profile.language_restart_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restart Required"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要重启"
+          }
+        }
+      }
+    },
+    "profile.language_subtitle" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose display language"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择显示语言"
+          }
+        }
       }
     },
     "profile.no_account" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Don't have an account?" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "还没有账户？" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don't have an account?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "还没有账户？"
+          }
+        }
       }
     },
     "profile.or_continue" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Or continue with" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "或继续使用" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Or continue with"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "或继续使用"
+          }
+        }
       }
     },
     "profile.password_placeholder" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter your password" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "输入你的密码" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter your password"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入你的密码"
+          }
+        }
       }
     },
     "profile.signing_in" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Signing in..." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在登录..." } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signing in..."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在登录..."
+          }
+        }
       }
     },
     "profile.welcome_back" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Welcome Back" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "欢迎回来" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome Back"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "欢迎回来"
+          }
+        }
       }
     },
     "profile.welcome_subtitle" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Return to your journal, your rituals, and today's guidance." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "回到你的日记、仪式和今天的指引。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Return to your journal, your rituals, and today's guidance."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "回到你的日记、仪式和今天的指引。"
+          }
+        }
+      }
+    },
+    "Reasoning summary bubble" : {
+
+    },
+    "Refresh" : {
+
+    },
+    "Refresh %@" : {
+
+    },
+    "Retry" : {
+
+    },
+    "Rhythm Update" : {
+
+    },
+    "Save" : {
+
+    },
+    "Search and choose a location to update your birth coordinates." : {
+
+    },
+    "Select Birth Place" : {
+
+    },
+    "Send a notification" : {
+
+    },
+    "Show personal information" : {
+
+    },
+    "Shows why this mantra was chosen" : {
+
+    },
+    "Sign in with Google" : {
+
+    },
+    "Sign up with Google" : {
+
+    },
+    "Signing in..." : {
+
+    },
+    "Signing up…" : {
+
+    },
+    "Skip for now" : {
+
+    },
+    "Sound Key" : {
+
+    },
+    "Still working—hang tight." : {
+
+    },
+    "Sun sign" : {
+
+    },
+    "Tap the lock to reveal the details." : {
+
+    },
+    "Theme" : {
+
+    },
+    "This deletes %@ everywhere it appears and clears its cached focused mantra." : {
+
+    },
+    "This helps us personalize your daily rhythms" : {
+
+    },
+    "This may take a few seconds." : {
+
+    },
+    "This may take around a minute." : {
+
+    },
+    "This will permanently remove your profile and all related data. If you signed up with Google or Apple, you may be asked to confirm sign-in one more time before deletion completes." : {
+
+    },
+    "Toggle Widget Sound" : {
+
+    },
+    "Update time" : {
+
+    },
+    "Welcome Back" : {
+
+    },
+    "What should this focus hold space for?" : {
+
+    },
+    "Your preferences" : {
+
+    },
+    "Zodiac: Sun %@, Moon %@, Ascendant %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Zodiac: Sun %1$@, Moon %2$@, Ascendant %3$@"
+          }
+        }
       }
     },
     "zodiac.moon" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Moon" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "月亮" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moon"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "月亮"
+          }
+        }
       }
     },
     "zodiac.rising" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rising" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "上升" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rising"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上升"
+          }
+        }
       }
     },
     "zodiac.sun" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sun" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "太阳" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sun"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "太阳"
+          }
+        }
       }
     }
   },

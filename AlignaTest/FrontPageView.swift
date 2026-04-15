@@ -40,7 +40,7 @@ struct FrontPageView: View {
                                 letterSpacing: minLength * 0.005
                             )
 
-                            Text("Your daily rhythm companion")
+                            Text("frontpage.tagline")
                                 .font(AlynnaTypography.font(.subheadline))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                                 .multilineTextAlignment(.center)
@@ -60,7 +60,7 @@ struct FrontPageView: View {
                                 .environmentObject(starManager)
                                 .environmentObject(themeManager)
                                 .environmentObject(viewModel)) {
-                                    Text("Sign Up")
+                                    Text("frontpage.signup")
                                         .font(AlynnaTypography.font(.headline).weight(.semibold))
                                         .frame(maxWidth: .infinity)
                                         .padding()
@@ -74,7 +74,7 @@ struct FrontPageView: View {
                                 .environmentObject(starManager)
                                 .environmentObject(themeManager)
                                 .environmentObject(viewModel)) {
-                                    Text("Log In")
+                                    Text("frontpage.login")
                                         .font(AlynnaTypography.font(.headline).weight(.semibold))
                                         .frame(maxWidth: .infinity)
                                         .padding()
@@ -88,7 +88,7 @@ struct FrontPageView: View {
                                 }
                                 .staggered(5, show: $showIntro)
 
-                            Text("Begin with what this day is holding.")
+                            Text("frontpage.disclaimer")
                                 .font(AlynnaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextTertiary)
                                 .padding(.top, 6)

@@ -55,7 +55,7 @@ struct AboutView: View {
                         }
                         .padding(.top, 6)
 
-                        Text("Alynna")
+                        Text("about.title")
                             .font(AlynnaTypography.font(.title2))
                             .foregroundColor(titleColor)
 
@@ -78,7 +78,7 @@ struct AboutView: View {
                     .padding(.top, 10)
 
                     card {
-                        Text("“Before you wake up, Alynna has already sensed the rhythm of your day.”")
+                        Text("about.tagline")
                             .font(.custom("Merriweather-Italic", size: 18))
                             .foregroundColor(titleColor.opacity(0.88))
                             .multilineTextAlignment(.center)
@@ -87,15 +87,11 @@ struct AboutView: View {
 
                     card {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("Align Your Inner Rhythm")
+                            Text("about.align_inner_rhythm")
                                 .font(AlynnaTypography.font(.headline))
                                 .foregroundColor(titleColor)
 
-                            Text("""
-Alynna helps you align your inner rhythm with the world around you, guided by context, not just intuition.
-
-A personalized rhythm card each day offers a short message with clear, actionable guidance to help you adjust your day.
-""")
+                            Text("about.align_description")
                             .font(AlynnaTypography.font(.subheadline))
                             .foregroundColor(bodyColor)
                             .lineSpacing(3)
@@ -104,71 +100,67 @@ A personalized rhythm card each day offers a short message with clear, actionabl
 
                     card {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Eight Areas of Daily Support")
+                            Text("about.eight_areas")
                                 .font(AlynnaTypography.font(.headline))
                                 .foregroundColor(titleColor)
 
                             featureRow(
                                 emoji: "📍",
-                                title: "Place",
-                                desc: "Choose or adjust your environment to improve focus, rest, or recovery."
+                                title: String(localized: "about.place"),
+                                desc: String(localized: "about.place_desc")
                             )
 
                             featureRow(
                                 emoji: "🎨",
-                                title: "Color",
-                                desc: "Use specific colors to stabilize mood and support attention."
+                                title: String(localized: "about.color"),
+                                desc: String(localized: "about.color_desc")
                             )
 
                             featureRow(
                                 emoji: "🎧",
-                                title: "Sound",
-                                desc: "Reduce distractions and create a calmer mental space."
+                                title: String(localized: "about.sound"),
+                                desc: String(localized: "about.sound_desc")
                             )
 
                             featureRow(
                                 emoji: "🕯️",
-                                title: "Scent",
-                                desc: "Use scent to reset mood and support transitions, like work to rest."
+                                title: String(localized: "about.scent"),
+                                desc: String(localized: "about.scent_desc")
                             )
 
                             featureRow(
                                 emoji: "🚶",
-                                title: "Activity",
-                                desc: "Take actions that match your current energy level, such as focus, slow down, or reset."
+                                title: String(localized: "about.activity"),
+                                desc: String(localized: "about.activity_desc")
                             )
 
                             featureRow(
                                 emoji: "🤝",
-                                title: "Relationship",
-                                desc: "Adjust how you engage with others, such as connect, hold space, or set boundaries."
+                                title: String(localized: "about.relationship"),
+                                desc: String(localized: "about.relationship_desc")
                             )
 
                             featureRow(
                                 emoji: "💼",
-                                title: "Career",
-                                desc: "Align your work style with the day, such as deep work, planning, or lighter tasks."
+                                title: String(localized: "about.career"),
+                                desc: String(localized: "about.career_desc")
                             )
 
                             featureRow(
                                 emoji: "💎",
-                                title: "Gemstone",
-                                desc: "Use symbolic objects as simple anchors for focus and steadiness."
+                                title: String(localized: "about.gemstone"),
+                                desc: String(localized: "about.gemstone_desc")
                             )
                         }
                     }
 
                     card {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("A Gentle Way to Move Through the Day")
+                            Text("about.gentle_way")
                                 .font(AlynnaTypography.font(.headline))
                                 .foregroundColor(titleColor)
 
-                            Text("""
-Alynna is not about prediction or pressure.
-
-It helps you make small, practical adjustments so you can move through the day with more clarity, balance, and ease.
-""")
+                            Text("about.gentle_description")
                             .font(AlynnaTypography.font(.subheadline))
                             .foregroundColor(bodyColor)
                             .lineSpacing(3)
@@ -180,30 +172,28 @@ It helps you make small, practical adjustments so you can move through the day w
                             HStack(spacing: 10) {
                                 Text("🔒")
                                     .font(.system(size: 20))
-                                Text("Data & Privacy")
+                                Text("about.privacy_title")
                                     .font(AlynnaTypography.font(.headline))
                                     .foregroundColor(titleColor)
                             }
 
-                            Text("""
-Your privacy is paramount. All sensor data is processed locally on your device. We do not collect, store, or share your personal information or location data.
-""")
+                            Text("about.privacy_description")
                             .font(AlynnaTypography.font(.subheadline))
                             .foregroundColor(bodyColor)
                             .lineSpacing(3)
 
                             VStack(alignment: .leading, spacing: 10) {
-                                bullet("Location data is used only for local weather and cosmic calculations")
-                                bullet("Birth chart information remains private and secure")
-                                bullet("No personal data is transmitted to external servers")
-                                bullet("You have full control over your data and can delete it anytime")
+                                bullet(String(localized: "about.privacy_location"))
+                                bullet(String(localized: "about.privacy_chart"))
+                                bullet(String(localized: "about.privacy_transmission"))
+                                bullet(String(localized: "about.privacy_control"))
                             }
                             .padding(.top, 2)
                         }
                     }
 
                     VStack(spacing: 6) {
-                        Text("© 2026 Alynna. Made with cosmic intention")
+                        Text("about.copyright")
                             .font(AlynnaTypography.font(.subheadline))
                             .foregroundColor(bodyColor.opacity(0.75))
                     }

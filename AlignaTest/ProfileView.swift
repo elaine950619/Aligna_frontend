@@ -346,10 +346,10 @@ struct ProfileLoginView: View {
                         )
 
                         VStack(spacing: 6) {
-                            Text("Welcome Back")
+                            Text("profile.welcome_back")
                                 .font(AlynnaTypography.font(.title3))
                                 .foregroundColor(themeManager.fixedNightTextPrimary)
-                            Text("Return to your journal, your rituals, and today's guidance.")
+                            Text("profile.welcome_subtitle")
                                 .font(AlynnaTypography.font(.subheadline))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                         }
@@ -375,7 +375,7 @@ struct ProfileLoginView: View {
                                 .cornerRadius(14)
                                 .foregroundColor(themeManager.fixedNightTextPrimary)
                                 .placeholder(when: email.isEmpty) {
-                                    Text("Enter your email")
+                                    Text("profile.email_placeholder")
                                         .foregroundColor(themeManager.fixedNightTextSecondary)
                                         .padding(.leading, 16)
                                 }
@@ -401,7 +401,7 @@ struct ProfileLoginView: View {
                                 .cornerRadius(14)
                                 .foregroundColor(themeManager.fixedNightTextPrimary)
                                 .placeholder(when: password.isEmpty) {
-                                    Text("Enter your password")
+                                    Text("profile.password_placeholder")
                                         .foregroundColor(themeManager.fixedNightTextSecondary)
                                         .padding(.leading, 16)
                                 }
@@ -420,7 +420,7 @@ struct ProfileLoginView: View {
                         // Forgot Password
                         HStack {
                             Spacer()
-                            Button("Forgot Password?") {
+                            Button(String(localized: "profile.forgot_password")) {
                                 guard !authBusy else { return }
                                 if email.isEmpty {
                                     alertMessage = "Enter your email first."
@@ -486,7 +486,7 @@ struct ProfileLoginView: View {
                                 )
                             }
                         }) {
-                            Text(authBusy ? "Signing in..." : "Log In")
+                            Text(authBusy ? String(localized: "profile.signing_in") : String(localized: "frontpage.login"))
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(themeManager.fixedNightTextPrimary)
@@ -499,7 +499,7 @@ struct ProfileLoginView: View {
                         // 分隔线
                         HStack {
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
-                            Text("Or continue with")
+                            Text("profile.or_continue")
                                 .font(AlynnaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
@@ -535,7 +535,7 @@ struct ProfileLoginView: View {
                                     Image("googleIcon")
                                         .resizable()
                                         .frame(width: 20, height: 20)
-                                    Text("Continue with Google")
+                                    Text("profile.continue_google")
                                         .font(.system(size: 14))
                                 }
                                 .foregroundColor(themeManager.fixedNightTextPrimary)
@@ -593,7 +593,7 @@ struct ProfileLoginView: View {
 
                         // 去注册
                         HStack {
-                            Text("Don't have an account?")
+                            Text("profile.no_account")
                                 .font(AlynnaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             NavigationLink(
@@ -602,7 +602,7 @@ struct ProfileLoginView: View {
                                     .environmentObject(themeManager)
                                     .environmentObject(viewModel)
                             ) {
-                            Text("Create Account")
+                            Text("profile.create_account")
                                     .font(AlynnaTypography.font(.footnote))
                                     .foregroundColor(themeManager.fixedNightTextPrimary)
                                     .underline()
@@ -1057,6 +1057,178 @@ func isProfileComplete(_ d: [String: Any]) -> Bool {
 
 
 import SwiftUI
+
+// MARK: - Language Selection Sheet
+
+struct LanguageSelectionView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
+    @Environment(\.dismiss) private var dismiss
+
+    @Binding var currentLanguage: String
+    @Binding var showRestartAlert: Bool
+    @Binding var showComingSoonDialog: Bool
+    @Binding var showPartialDialog: Bool
+
+    // Language options: (code, displayName, flag emoji, isAvailable)
+    private let languages: [(code: String, name: String, flag: String, status: LanguageStatus)] = [
+        ("en",      "English",    "🇺🇸", .available),
+        ("zh-Hans", "简体中文",    "🇨🇳", .partial),
+        ("zh-Hant", "繁體中文",    "🇹🇼", .comingSoon),
+        ("ja",      "日本語",      "🇯🇵", .comingSoon),
+        ("ko",      "한국어",      "🇰🇷", .comingSoon),
+        ("fr",      "Français",   "🇫🇷", .comingSoon),
+        ("es",      "Español",    "🇪🇸", .comingSoon),
+        ("de",      "Deutsch",    "🇩🇪", .comingSoon),
+    ]
+
+    @State private var pendingComingSoon: String = ""
+    @State private var showComingSoon = false
+    @State private var showPartial = false
+
+    enum LanguageStatus { case available, partial, comingSoon }
+
+    var body: some View {
+        ZStack {
+            Color.clear.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Text(String(localized: "profile.language"))
+                        .font(AlynnaTypography.font(.title3))
+                        .fontWeight(.semibold)
+                        .foregroundColor(themeManager.primaryText)
+                    Spacer()
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 22))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.7))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 28)
+                .padding(.bottom, 20)
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 10) {
+                        ForEach(languages, id: \.code) { lang in
+                            languageRow(lang)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 36)
+                }
+            }
+
+            // Dialogs
+            if showComingSoon {
+                AlynnaActionDialog(
+                    title: String(localized: "profile.language_coming_soon_title"),
+                    message: String(localized: "profile.language_coming_soon_message"),
+                    symbol: "clock.badge.fill",
+                    tone: .info,
+                    dismissButtonTitle: String(localized: "profile.language_dialog_ok"),
+                    onDismiss: { showComingSoon = false }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .zIndex(20)
+            }
+
+            if showPartial {
+                AlynnaActionDialog(
+                    title: String(localized: "profile.language_partial_title"),
+                    message: String(localized: "profile.language_partial_message"),
+                    symbol: "globe.badge.chevron.backward",
+                    tone: .warning,
+                    primaryButtonTitle: String(localized: "profile.language_partial_confirm"),
+                    primaryAction: {
+                        currentLanguage = "zh-Hans"
+                        UserDefaults.standard.set(["zh-Hans"], forKey: "AppleLanguages")
+                        UserDefaults.standard.synchronize()
+                        showRestartAlert = true
+                        dismiss()
+                    },
+                    dismissButtonTitle: String(localized: "profile.language_dialog_cancel"),
+                    onDismiss: { showPartial = false }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .zIndex(20)
+            }
+        }
+        .animation(.easeInOut(duration: 0.22), value: showComingSoon)
+        .animation(.easeInOut(duration: 0.22), value: showPartial)
+    }
+
+    @ViewBuilder
+    private func languageRow(_ lang: (code: String, name: String, flag: String, status: LanguageStatus)) -> some View {
+        let isSelected = currentLanguage == lang.code
+        Button {
+            switch lang.status {
+            case .available:
+                if currentLanguage != lang.code {
+                    currentLanguage = lang.code
+                    UserDefaults.standard.set([lang.code], forKey: "AppleLanguages")
+                    UserDefaults.standard.synchronize()
+                    showRestartAlert = true
+                    dismiss()
+                }
+            case .partial:
+                showPartial = true
+            case .comingSoon:
+                showComingSoon = true
+            }
+        } label: {
+            HStack(spacing: 14) {
+                Text(lang.flag)
+                    .font(.system(size: 26))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(lang.name)
+                        .font(AlynnaTypography.font(.headline))
+                        .foregroundColor(themeManager.primaryText)
+
+                    if lang.status == .comingSoon {
+                        Text(String(localized: "profile.language_coming_soon_badge"))
+                            .font(AlynnaTypography.font(.caption1))
+                            .foregroundColor(themeManager.descriptionText)
+                    } else if lang.status == .partial {
+                        Text(String(localized: "profile.language_partial_badge"))
+                            .font(AlynnaTypography.font(.caption1))
+                            .foregroundColor(themeManager.accent.opacity(0.85))
+                    }
+                }
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(themeManager.accent)
+                        .font(.system(size: 20))
+                } else if lang.status == .comingSoon {
+                    Image(systemName: "clock")
+                        .foregroundColor(themeManager.descriptionText.opacity(0.6))
+                        .font(.system(size: 16))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(isSelected
+                          ? themeManager.accent.opacity(0.12)
+                          : Color.white.opacity(themeManager.isNight ? 0.06 : 0.08))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(isSelected ? themeManager.accent : Color.white.opacity(0.15),
+                            lineWidth: isSelected ? 1 : 0.8)
+            )
+        }
+        .buttonStyle(.plain)
+        .opacity(lang.status == .comingSoon ? 0.65 : 1.0)
+    }
+}
 import FirebaseAuth
 import FirebaseFirestore
 
@@ -1243,6 +1415,12 @@ struct ProfileView: View {
 
     // 主题偏好
     @AppStorage("themePreference") private var themePreferenceRaw: String = ThemePreference.auto.rawValue
+    // 语言偏好
+    @AppStorage("appLanguage") private var appLanguage: String = "en"
+    @State private var showLanguageRestartAlert = false
+    @State private var showLanguageComingSoonDialog = false
+    @State private var showLanguagePartialDialog = false
+    @State private var showLanguageSelectionSheet = false
     @AppStorage("dailyMantraNotificationEnabled") private var dailyMantraNotificationEnabled: Bool = true
     @AppStorage("dailyMantraNotificationHour") private var dailyMantraNotificationHour: Int = 7
     @AppStorage("dailyMantraNotificationMinute") private var dailyMantraNotificationMinute: Int = 10
@@ -1359,6 +1537,7 @@ struct ProfileView: View {
                             dailyRhythmUpdateCard
                             locationAccessCard
                             themeCard
+                            languageCard
                             aboutCard
                             signOutCard
                             deleteAccountCard
@@ -2197,6 +2376,38 @@ private extension ProfileView {
         }
         .padding()
         .alignaCard()
+    }
+
+    var languageCard: some View {
+        Button { showLanguageSelectionSheet = true } label: {
+            rowCard(
+                icon: "globe",
+                title: String(localized: "profile.language"),
+                subtitle: languageCurrentDisplayName
+            )
+        }
+        .sheet(isPresented: $showLanguageSelectionSheet) {
+            LanguageSelectionView(
+                currentLanguage: $appLanguage,
+                showRestartAlert: $showLanguageRestartAlert,
+                showComingSoonDialog: $showLanguageComingSoonDialog,
+                showPartialDialog: $showLanguagePartialDialog
+            )
+            .environmentObject(themeManager)
+            .environmentObject(starManager)
+        }
+        .alert(String(localized: "profile.language_restart_title"), isPresented: $showLanguageRestartAlert) {
+            Button(String(localized: "profile.language_restart_ok"), role: .cancel) { }
+        } message: {
+            Text(String(localized: "profile.language_restart_message"))
+        }
+    }
+
+    private var languageCurrentDisplayName: String {
+        switch appLanguage {
+        case "zh-Hans": return String(localized: "profile.language_chinese")
+        default:        return String(localized: "profile.language_english")
+        }
     }
 
     var aboutCard: some View {

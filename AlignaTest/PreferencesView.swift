@@ -41,7 +41,7 @@ struct PreferencesView: View {
                         headerCard
 
                         preferenceSection(
-                            "Any scent that don’t feel right?",
+                            String(localized: "preferences.scent_question"),
                             content: chips(
                                 options: scentOptions,
                                 isSelected: { scentDislikeDraft.contains($0) },
@@ -52,7 +52,7 @@ struct PreferencesView: View {
                         )
 
                         preferenceSection(
-                            "Activity preference?",
+                            String(localized: "preferences.activity_question"),
                             content: chips(
                                 options: actOptions,
                                 isSelected: { actPreferDraft.contains($0) },
@@ -61,7 +61,7 @@ struct PreferencesView: View {
                         )
 
                         preferenceSection(
-                            "Any color that don’t feel right?",
+                            String(localized: "preferences.color_question"),
                             content: chips(
                                 options: colorOptions,
                                 isSelected: { colorDislikeDraft.contains($0) },
@@ -70,7 +70,7 @@ struct PreferencesView: View {
                         )
 
                         preferenceSection(
-                            "Any allergies we should know about?",
+                            String(localized: "preferences.allergies_question"),
                             content: chips(
                                 options: allergyOpts,
                                 isSelected: { allergiesDraft.contains($0) },
@@ -79,7 +79,7 @@ struct PreferencesView: View {
                         )
 
                         preferenceSection(
-                            "Any sound that don’t feel right?",
+                            String(localized: "preferences.music_question"),
                             content: chips(
                                 options: musicOptions,
                                 isSelected: { musicDislikeDraft.contains($0) },
@@ -88,7 +88,7 @@ struct PreferencesView: View {
                         )
 
                         Button(action: savePreferences) {
-                            Text(isSaving ? "Saving…" : "Save")
+                            Text(isSaving ? String(localized: "preferences.saving") : String(localized: "preferences.save"))
                                 .font(AlynnaTypography.font(.body))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 8)
@@ -129,7 +129,7 @@ struct PreferencesView: View {
 
                 if let errorMessage {
                     AlynnaActionDialog(
-                        title: "Error",
+                        title: String(localized: "preferences.error_title"),
                         message: errorMessage,
                         symbol: "exclamationmark.circle",
                         tone: .error,
@@ -140,8 +140,8 @@ struct PreferencesView: View {
                     .zIndex(20)
                 } else if showSavedAlert {
                     AlynnaActionDialog(
-                        title: "Saved",
-                        message: "Your preferences have been saved.",
+                        title: String(localized: "preferences.saved_title"),
+                        message: String(localized: "preferences.saved_message"),
                         symbol: "checkmark.circle",
                         tone: .success,
                         dismissButtonTitle: "OK",
@@ -169,7 +169,7 @@ struct PreferencesView: View {
     }
 
     private var headerCard: some View {
-        Text("Preferences")
+        Text("preferences.title")
             .font(TimelineType.title34GloockBlack())
             .lineSpacing(TimelineType.title34LineSpacing)
             .foregroundColor(themeManager.primaryText)

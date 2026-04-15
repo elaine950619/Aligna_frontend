@@ -223,7 +223,7 @@ private struct LoadingNotesEditorSheet: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
 
-                Text("Notes")
+                Text("loading.notes")
                     .font(.custom("Merriweather-Bold", size: 22))
                     .foregroundColor(themeManager.primaryText)
 
@@ -567,21 +567,21 @@ struct LoadingView: View {
                     .frame(height: headerHeight + contentHeight, alignment: .top)
 
             case .cosmic:
-                stageHeader(title: "Reading the cosmos",
+                stageHeader(title: String(localized: "loading.cosmic"),
                             subtitle: cosmicSubtitleView,
                             iconName: cosmicIcons[cosmicEmojiIndex],
                             topPadding: 0)
                     .frame(height: headerHeight + contentHeight, alignment: .top)
 
             case .place:
-                stageHeader(title: "Reading your place",
+                stageHeader(title: String(localized: "loading.place"),
                             subtitle: placeSubtitleView,
                             iconName: placeIcons[placeEmojiIndex],
                             topPadding: 0)
                     .frame(height: headerHeight + contentHeight, alignment: .top)
 
             case .personal:
-                stageHeader(title: "Personal check-in",
+                stageHeader(title: String(localized: "loading.personal"),
                             subtitle: personalSubtitleText,
                             iconName: personalIcons[personalIconIndex],
                             topPadding: 6)
@@ -593,7 +593,7 @@ struct LoadingView: View {
                 .padding(.top, 28)
 
             case .gathering:
-                stageHeader(title: "Your signals are in place",
+                stageHeader(title: String(localized: "loading.gathering"),
                             subtitle: EmptyView(),
                             iconName: "sparkles.rectangle.stack.fill",
                             topPadding: 6)
@@ -627,7 +627,7 @@ struct LoadingView: View {
 
     private var initialHeader: some View {
         VStack(spacing: 20) {
-            Text("Loading")
+            Text("loading.initial")
                 .font(.custom("Merriweather-Bold", size: 20))
                 .foregroundColor(themeManager.primaryText)
             logoView(size: 56)
@@ -703,7 +703,7 @@ struct LoadingView: View {
             )
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Notes")
+                Text("loading.notes")
                     .font(.custom("Merriweather-Bold", size: 13))
                     .foregroundColor(themeManager.primaryText.opacity(0.9))
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -714,7 +714,7 @@ struct LoadingView: View {
                 } label: {
                     ZStack(alignment: .topLeading) {
                         if personalNotes.isEmpty {
-                            Text("Tap to edit notes")
+                            Text("loading.tap_to_edit_notes")
                                 .font(.custom("Merriweather-Regular", size: 11))
                                 .foregroundColor(themeManager.descriptionText.opacity(0.85))
                                 .padding(.top, 5)
@@ -753,7 +753,7 @@ struct LoadingView: View {
                             .tint(themeManager.isNight ? Color.black : Color.white)
                             .scaleEffect(0.75)
                     }
-                    Text(isProcessingPersonal ? "Preparing the next step…" : primaryActionLabel)
+                    Text(isProcessingPersonal ? String(localized: "loading.preparing_next") : primaryActionLabel)
                 }
                 .font(.custom("Merriweather-Bold", size: 13))
                 .foregroundColor(themeManager.isNight ? Color.black : Color.white)
@@ -770,24 +770,24 @@ struct LoadingView: View {
     private var gatheringSummary: some View {
         VStack(spacing: 10) {
             gatheringCard(
-                title: "From the Cosmos",
+                title: String(localized: "loading.from_cosmos"),
                 iconName: "moon.stars.fill",
                 rows: cosmosSummaryRows
             )
 
             gatheringCard(
-                title: "From Your Environment",
+                title: String(localized: "loading.from_environment"),
                 iconName: "cloud.sun.fill",
                 rows: environmentSummaryRows
             )
 
             gatheringCard(
-                title: "From Within",
+                title: String(localized: "loading.from_within"),
                 iconName: "person.fill",
                 rows: personalSummaryRows
             )
 
-            Text("These signals are used only to shape your experience here, and nowhere else.")
+            Text("loading.signals_privacy")
                 .font(AlignaType.helperSmall())
                 .foregroundColor(themeManager.descriptionText.opacity(0.82))
                 .multilineTextAlignment(.center)
@@ -799,7 +799,7 @@ struct LoadingView: View {
                 Button {
                     handleNotNow()
                 } label: {
-                    Text("Not Now")
+                    Text("loading.not_now")
                         .font(.custom("Merriweather-Bold", size: 13))
                         .foregroundColor(themeManager.primaryText)
                         .padding(.vertical, 9)
@@ -896,9 +896,9 @@ struct LoadingView: View {
         case .initial:
             return nil
         case .cosmic:
-            return "Chart data is derived from your current cosmic conditions."
+            return String(localized: "loading.cosmic_footer")
         case .place:
-            return "Place signals are derived from local environment and weather."
+            return String(localized: "loading.place_footer")
         case .personal:
             return nil
         case .gathering:
@@ -940,9 +940,9 @@ struct LoadingView: View {
         let airQuality = airQualityText.trimmingCharacters(in: .whitespacesAndNewlines)
         let density = placeDensityText.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let locationLine = location.isEmpty || location == "Your Current Location" ? "I’m sensing your place…" : "I’m sensing \(location)."
-        let conditionLine = condition.isEmpty || condition == "Cloud · Wind · Rain" ? "Sampling the air…" : condition
-        let airQualityLine = airQuality.isEmpty || airQuality == "Air quality —" ? "Measuring air quality…" : airQuality
+        let locationLine = location.isEmpty || location == "Your Current Location" ? String(localized: "loading.sensing_place") : "I'm sensing \(location)."
+        let conditionLine = condition.isEmpty || condition == "Cloud · Wind · Rain" ? String(localized: "loading.sampling_air") : condition
+        let airQualityLine = airQuality.isEmpty || airQuality == "Air quality —" ? String(localized: "loading.measuring_air_quality") : airQuality
         let densityLine = density.isEmpty ? "Water — · Green — · Built —" : density
 
         return VStack(spacing: 6) {
@@ -957,14 +957,14 @@ struct LoadingView: View {
     }
 
     private var personalSubtitleText: Text {
-        let text = isProcessingPersonal ? "Logged for today." : "Tap what feels true right now."
+        let text = isProcessingPersonal ? String(localized: "loading.personal_logged") : String(localized: "loading.personal_subtitle")
         return Text(text)
             .font(AlignaType.helperSmall())
             .foregroundColor(themeManager.descriptionText.opacity(0.85))
     }
 
     private var initialSubtitleText: Text {
-        Text("Warming up your space…")
+        Text("loading.warming_up")
             .font(AlignaType.helperSmall())
     }
 
@@ -1444,11 +1444,11 @@ struct LoadingView: View {
                     .scaleEffect(iconVisible ? 1.0 : 0.94)
                     .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: iconVisible)
 
-                Text("Generating your mantra")
+                Text("loading.generating_mantra")
                     .font(.custom("Merriweather-Bold", size: 18))
                     .foregroundColor(themeManager.primaryText)
 
-                Text("We're weaving together your cosmic, environmental, and personal signals.")
+                Text("loading.weaving_signals")
                     .font(.custom("Merriweather-Regular", size: 12))
                     .foregroundColor(themeManager.descriptionText.opacity(0.88))
                     .multilineTextAlignment(.center)
@@ -1505,7 +1505,7 @@ struct LoadingView: View {
         if isGeneratingOverlayVisible {
             return "Generating your mantra..."
         }
-        return shouldGenerateTodayReading ? "Generate Today's Mantra" : "See Today's Mantra"
+        return shouldGenerateTodayReading ? String(localized: "loading.generate_mantra") : String(localized: "loading.see_mantra")
     }
 
     private func fetchPlaceAndWeather(for coord: CLLocationCoordinate2D) {

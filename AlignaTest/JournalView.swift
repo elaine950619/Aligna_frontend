@@ -51,12 +51,12 @@ struct JournalView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
                 VStack(spacing: 4) {
-                    Text("Check-in")
+                    Text("journal.check_in")
                         .font(.custom("Merriweather-Bold", size: 26))
                         .foregroundStyle(themeManager.primaryText)
                         .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 2)
 
-                    Text("Tap what feels true right now.")
+                    Text("journal.tap_true")
                         .multilineTextAlignment(.center)
                         .font(.custom("Merriweather-Regular", size: 14))
                         .foregroundStyle(themeManager.descriptionText)
@@ -82,14 +82,14 @@ struct JournalView: View {
                         selection: $sleep
                     )
 
-                    sectionTitle("Notes")
+                    sectionTitle(String(localized: "loading.notes"))
                     sectionCard {
                         Button {
                             showNotesEditor = true
                         } label: {
                             ZStack(alignment: .topLeading) {
                                 if text.isEmpty {
-                                    Text("Tap to edit notes")
+                                    Text("loading.tap_to_edit_notes")
                                         .foregroundStyle(themeManager.descriptionText.opacity(0.85))
                                         .padding(.top, 1)
                                         .padding(.horizontal, 1)
@@ -115,7 +115,7 @@ struct JournalView: View {
                     Button {
                         showResetConfirm = true
                     } label: {
-                        Text("Reset")
+                        Text("journal.reset")
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -129,7 +129,7 @@ struct JournalView: View {
                     Button {
                         Task { await saveEntryAndClose() }
                     } label: {
-                        Text("Submit")
+                        Text("journal.submit")
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -172,13 +172,13 @@ struct JournalView: View {
         .overlay {
             if showResetConfirm {
                 AlynnaActionDialog(
-                    title: "Reset entry?",
-                    message: "This will clear the current text. It won’t delete anything saved previously.",
+                    title: String(localized: "journal.reset_confirm_title"),
+                    message: String(localized: "journal.reset_confirm_message"),
                     symbol: "arrow.counterclockwise.circle",
                     tone: .destructive,
-                    primaryButtonTitle: "Reset",
+                    primaryButtonTitle: String(localized: "journal.reset"),
                     primaryAction: resetCurrentEntry,
-                    dismissButtonTitle: "Cancel",
+                    dismissButtonTitle: String(localized: "journal.cancel"),
                     onDismiss: { showResetConfirm = false }
                 )
                 .transition(.opacity.combined(with: .scale(scale: 0.96)))
@@ -537,7 +537,7 @@ private struct NotesEditorSheet: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
 
-                Text("Notes")
+                Text("loading.notes")
                     .font(.custom("Merriweather-Bold", size: 22))
                     .foregroundColor(themeManager.primaryText)
 
