@@ -1497,6 +1497,7 @@ struct MainView: View {
                 "focus_description": focus.description,
                 "focus_mode": "personal"
             ]
+            attachRecommendationLanguage(to: &payload)
 
             if !viewModel.currentPlace.isEmpty                        { payload["current_place"]      = viewModel.currentPlace }
             if let v = viewModel.weatherCondition                     { payload["weather_condition"]   = v }
@@ -4266,6 +4267,7 @@ struct MainView: View {
             "latitude": coord.latitude,
             "longitude": coord.longitude
         ]
+        attachRecommendationLanguage(to: &payload)
 
         // Attach place signals captured during the loading screen, if available
         if !viewModel.currentPlace.isEmpty                        { payload["current_place"]      = viewModel.currentPlace }

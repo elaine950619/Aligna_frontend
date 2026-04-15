@@ -1,5 +1,30 @@
 import Foundation
 
+func currentRecommendationLanguageCode() -> String {
+    let storedLanguage = (UserDefaults.standard.string(forKey: "appLanguage") ?? "")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        .lowercased()
+
+    if storedLanguage.hasPrefix("zh") {
+        return "zh-Hans"
+    }
+
+    let preferredLanguage = (Locale.preferredLanguages.first ?? "")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        .lowercased()
+
+    if preferredLanguage.hasPrefix("zh") {
+        return "zh-Hans"
+    }
+
+    return "en"
+}
+
+func attachRecommendationLanguage(to payload: inout [String: Any]) {
+    payload["language_code"] = currentRecommendationLanguageCode()
+    payload["locale_identifier"] = Locale.current.identifier
+}
+
 // MARK: - Category Display Names
 // Maps the English API key (used in recommendations dict) to a localized display name.
 func categoryDisplayName(for key: String) -> String {

@@ -2619,6 +2619,7 @@ private func buildRecommendationPayload(
         "latitude": latitude,
         "longitude": longitude
     ]
+    attachRecommendationLanguage(to: &payload)
 
     let currentPlace = viewModel.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines)
 

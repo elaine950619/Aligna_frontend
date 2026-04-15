@@ -272,7 +272,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                 "birth_time": birthTimeStr,
                 "latitude": data["birthLat"] ?? 0.0,
                 "longitude": data["birthLng"] ?? 0.0,
-                "source": "background_refresh"
+                "source": "background_refresh",
+                "language_code": currentRecommendationLanguageCode(),
+                "locale_identifier": Locale.current.identifier
             ]
             request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
 
