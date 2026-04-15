@@ -1117,12 +1117,14 @@ struct MainView: View {
         } else if let dailyEntry = focusEntry(for: dailyFocusID) {
             displayRecommendations = dailyEntry.recommendations
             displayReasoningSummary = dailyEntry.reasoningSummary
-            displayHowToEngage = entry.howToEngage.isEmpty ? dailyEntry.howToEngage : entry.howToEngage
+            // howToEngage 始终使用 daily 的，切换 focus 不影响 8 大类的 how to engage
+            displayHowToEngage = dailyEntry.howToEngage
             displayLocationName = dailyEntry.locationName
         } else {
             displayRecommendations = viewModel.recommendations
             displayReasoningSummary = viewModel.reasoningSummary
-            displayHowToEngage = entry.howToEngage.isEmpty ? viewModel.howToEngage : entry.howToEngage
+            // 没有 daily 缓存时也保持当前 viewModel 的 howToEngage（daily 来源）
+            displayHowToEngage = viewModel.howToEngage
             displayLocationName = lastRecommendationPlace
         }
 
