@@ -519,22 +519,64 @@
       }
     },
     "Allow Access" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允许访问"
+          }
+        }
+      }
     },
     "Almost there" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快好了"
+          }
+        }
+      }
     },
     "Alynna" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alynna"
+          }
+        }
+      }
     },
     "Ascendant" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上升星座"
+          }
+        }
+      }
     },
     "Astrology (approximate)" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "占星（近似值）"
+          }
+        }
+      }
     },
     "Birth Place" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "出生地"
+          }
+        }
+      }
     },
     "Cancel" : {
       "localizations" : {
@@ -675,64 +717,204 @@
       }
     },
     "Checking verification…" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在验证…"
+          }
+        }
+      }
     },
     "Choose when a new daily rhythm begins." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择每日节奏的更新时间。"
+          }
+        }
+      }
     },
     "Close" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭"
+          }
+        }
+      }
     },
     "Confirm" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确认"
+          }
+        }
+      }
     },
     "Confirm Password" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确认密码"
+          }
+        }
+      }
     },
     "Confirm your information" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确认你的信息"
+          }
+        }
+      }
     },
     "Continue" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续"
+          }
+        }
+      }
     },
     "Create Account" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建账户"
+          }
+        }
+      }
     },
     "Create An Account" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建账户"
+          }
+        }
+      }
     },
     "Create Your Space" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建你的空间"
+          }
+        }
+      }
     },
     "Creating..." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建中..."
+          }
+        }
+      }
     },
     "Current Focus" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前焦点"
+          }
+        }
+      }
     },
     "Custom Focuses" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自定义焦点"
+          }
+        }
+      }
     },
     "Customize appearance" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自定义外观"
+          }
+        }
+      }
     },
     "Daily Rhythm Update" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每日节奏更新"
+          }
+        }
+      }
     },
     "Danger Zone" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "危险区域"
+          }
+        }
+      }
     },
     "Delete" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除"
+          }
+        }
+      }
     },
     "Delete \"%@\" Focus" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除「%@」焦点"
+          }
+        }
+      }
     },
     "Delete Account?" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除账户？"
+          }
+        }
+      }
     },
     "Delete Focus?" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除焦点？"
+          }
+        }
+      }
     },
     "detail.close" : {
       "localizations" : {
@@ -927,22 +1109,75 @@
       }
     },
     "Don't have an account?" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "还没有账户？"
+          }
+        }
+      }
     },
     "Enter your email" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入你的电子邮件"
+          }
+        }
+      }
     },
     "Enter your password" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入你的密码"
+          }
+        }
+      }
     },
     "Error" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "错误"
+          }
+        }
+      }
+    },
+    "Failed to generate wallpaper." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法生成壁纸。"
+          }
+        }
+      }
     },
     "focus" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焦点"
+          }
+        }
+      }
     },
     "Focus name" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焦点名称"
+          }
+        }
+      }
     },
     "focus.choose_focuses" : {
       "localizations" : {
@@ -994,13 +1229,34 @@
       }
     },
     "Focuses" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焦点"
+          }
+        }
+      }
     },
     "For security reasons, please enter your password to delete your account." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "出于安全原因，请输入密码以删除你的账户。"
+          }
+        }
+      }
     },
     "Forgot Password?" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "忘记密码？"
+          }
+        }
+      }
     },
     "frontpage.disclaimer" : {
       "localizations" : {
@@ -1067,10 +1323,24 @@
       }
     },
     "Hide personal information" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隐藏个人信息"
+          }
+        }
+      }
     },
     "Improves your rhythm and mantra guidance" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "提升你的节奏与心咒指引"
+          }
+        }
+      }
     },
     "journal.cancel" : {
       "localizations" : {
@@ -1185,13 +1455,34 @@
       }
     },
     "Last entry" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上次记录"
+          }
+        }
+      }
     },
     "Loading %@…" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在加载 %@…"
+          }
+        }
+      }
     },
     "Loading…" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加载中…"
+          }
+        }
+      }
     },
     "loading.cosmic" : {
       "localizations" : {
@@ -1375,7 +1666,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "状态"
+            "value" : "Mood"
           }
         },
         "zh-Hans" : {
@@ -1392,7 +1683,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "生气"
+            "value" : "Anger"
           }
         },
         "zh-Hans" : {
@@ -1409,7 +1700,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "平静"
+            "value" : "Calm"
           }
         },
         "zh-Hans" : {
@@ -1426,7 +1717,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "悲伤"
+            "value" : "Grief"
           }
         },
         "zh-Hans" : {
@@ -1443,7 +1734,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "开心"
+            "value" : "Joy"
           }
         },
         "zh-Hans" : {
@@ -1459,7 +1750,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "暂缓"
+            "value" : "Not Now"
           }
         },
         "zh-Hans" : {
@@ -1475,7 +1766,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "备注"
+            "value" : "Notes"
           }
         },
         "zh-Hans" : {
@@ -1799,23 +2090,6 @@
         }
       }
     },
-    "loading.stress_peak" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Peak"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "峰值"
-          }
-        }
-      }
-    },
     "loading.tap_to_edit_notes" : {
       "localizations" : {
         "en" : {
@@ -1865,16 +2139,44 @@
       }
     },
     "Location Access" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "位置访问"
+          }
+        }
+      }
     },
     "Location access is off. Tap to review details or open Settings." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "位置访问已关闭。点击查看详情或打开设置。"
+          }
+        }
+      }
     },
     "Log In" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录"
+          }
+        }
+      }
     },
     "Logging in…" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在登录…"
+          }
+        }
+      }
     },
     "main.attribution" : {
       "localizations" : {
@@ -2103,7 +2405,14 @@
       }
     },
     "Moon sign" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "月亮星座"
+          }
+        }
+      }
     },
     "moon_phase.first_quarter" : {
       "localizations" : {
@@ -2234,34 +2543,104 @@
       }
     },
     "New Custom Focus" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建自定义焦点"
+          }
+        }
+      }
     },
     "Nickname" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "昵称"
+          }
+        }
+      }
     },
     "No data available for this day" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天没有可用数据"
+          }
+        }
+      }
     },
     "No entry yet." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无记录。"
+          }
+        }
+      }
     },
     "No mantra for this day." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天没有心咒。"
+          }
+        }
+      }
     },
     "No sound recommendation" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无声音推荐"
+          }
+        }
+      }
     },
     "Not Now" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂不"
+          }
+        }
+      }
     },
     "Note: Lightweight astronomical approximations; values near sign cusps may vary slightly." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "注：轻量级天文近似值；靠近星座分界点的数值可能略有偏差。"
+          }
+        }
+      }
     },
     "Notifications are off. Tap to enable in Settings." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通知已关闭。点击在设置中启用。"
+          }
+        }
+      }
     },
     "OK" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "好的"
+          }
+        }
+      }
     },
     "onboarding.privacy_note" : {
       "localizations" : {
@@ -2648,19 +3027,54 @@
       }
     },
     "Open Settings" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开设置"
+          }
+        }
+      }
     },
     "Or with" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "或使用"
+          }
+        }
+      }
     },
     "Password" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "密码"
+          }
+        }
+      }
     },
     "Permanently delete your account" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "永久删除你的账户"
+          }
+        }
+      }
     },
     "Personal Information" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "个人信息"
+          }
+        }
+      }
     },
     "preferences.activity_question" : {
       "localizations" : {
@@ -2839,10 +3253,24 @@
       }
     },
     "Preparing your profile…" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在准备你的档案…"
+          }
+        }
+      }
     },
     "Preset Focuses" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预设焦点"
+          }
+        }
+      }
     },
     "profile.continue_google" : {
       "localizations" : {
@@ -3310,107 +3738,342 @@
       }
     },
     "Reasoning summary bubble" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "推理摘要气泡"
+          }
+        }
+      }
     },
     "Refresh" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刷新"
+          }
+        }
+      }
     },
     "Refresh %@" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刷新 %@"
+          }
+        }
+      }
     },
     "Retry" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重试"
+          }
+        }
+      }
     },
     "Rhythm Update" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "节奏更新"
+          }
+        }
+      }
     },
     "Save" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存"
+          }
+        }
+      }
+    },
+    "Saved to Photos" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已保存到相册"
+          }
+        }
+      }
     },
     "Search and choose a location to update your birth coordinates." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索并选择一个位置以更新你的出生坐标。"
+          }
+        }
+      }
     },
     "Select Birth Place" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择出生地"
+          }
+        }
+      }
     },
     "Send a notification" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "发送通知"
+          }
+        }
+      }
     },
     "Share" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分享"
+          }
+        }
+      }
     },
     "Show personal information" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示个人信息"
+          }
+        }
+      }
     },
     "Shows why this mantra was chosen" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示选择此心咒的原因"
+          }
+        }
+      }
     },
     "Sign in with Google" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 Google 登录"
+          }
+        }
+      }
     },
     "Sign up with Google" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 Google 注册"
+          }
+        }
+      }
     },
     "Signing in..." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在登录..."
+          }
+        }
+      }
     },
     "Signing up…" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在注册…"
+          }
+        }
+      }
     },
     "Skip for now" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂时跳过"
+          }
+        }
+      }
     },
     "Sound Key" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "声音关键词"
+          }
+        }
+      }
     },
     "Still working—hang tight." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "还在处理中，请稍候。"
+          }
+        }
+      }
     },
     "Sun sign" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "太阳星座"
+          }
+        }
+      }
     },
     "Tap the lock to reveal the details." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击锁图标以查看详情。"
+          }
+        }
+      }
     },
     "Theme" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "主题"
+          }
+        }
+      }
     },
     "This deletes %@ everywhere it appears and clears its cached focused mantra." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这将删除所有出现 %@ 的地方，并清除其缓存的焦点心咒。"
+          }
+        }
+      }
     },
     "This helps us personalize your daily rhythms" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这有助于我们为你的每日节奏进行个性化"
+          }
+        }
+      }
     },
     "This may take a few seconds." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这可能需要几秒钟。"
+          }
+        }
+      }
     },
     "This may take around a minute." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这可能需要大约一分钟。"
+          }
+        }
+      }
     },
     "This will permanently remove your profile and all related data. If you signed up with Google or Apple, you may be asked to confirm sign-in one more time before deletion completes." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这将永久删除你的档案和所有相关数据。如果你使用 Google 或 Apple 注册，在删除完成前可能需要再次确认登录。"
+          }
+        }
+      }
     },
     "Toggle Widget Sound" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "切换小组件声音"
+          }
+        }
+      }
     },
     "Update time" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新时间"
+          }
+        }
+      }
     },
     "Welcome Back" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "欢迎回来"
+          }
+        }
+      }
     },
     "What should this focus hold space for?" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这个焦点应该关注什么？"
+          }
+        }
+      }
     },
     "Your preferences" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的偏好"
+          }
+        }
+      }
     },
     "Zodiac: Sun %@, Moon %@, Ascendant %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "星盘: 太阳 %1$@, 月亮 %2$@, 上升 %3$@"
+            "value" : "Zodiac: Sun %1$@, Moon %2$@, Rising %3$@"
           }
         }
       }
@@ -3421,7 +4084,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "月亮星座"
+            "value" : "moon"
           }
         },
         "zh-Hans" : {
@@ -3438,7 +4101,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "上升星座"
+            "value" : "rising"
           }
         },
         "zh-Hans" : {
@@ -3455,7 +4118,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "太阳星座"
+            "value" : "sun"
           }
         },
         "zh-Hans" : {
