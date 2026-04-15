@@ -300,6 +300,7 @@ struct MainView: View {
     @EnvironmentObject var soundPlayer: SoundPlayer
     @EnvironmentObject var reasoningStore: DailyReasoningStore
     @EnvironmentObject var locationPermissionCoordinator: LocationPermissionCoordinator
+    @Environment(\.scenePhase) private var scenePhase
     
     @AppStorage("lastRecommendationDate") var lastRecommendationDate: String = ""
     @AppStorage("lastRecommendationPlace") var lastRecommendationPlace: String = ""   // ✅ NEW
@@ -335,6 +336,8 @@ struct MainView: View {
     @AppStorage("mantraActiveFocusStorage") private var mantraActiveFocusStorage: String = ""
     @AppStorage("mantraFocusUsageStorage") private var mantraFocusUsageStorage: String = ""
     @AppStorage("hasDismissedFocusHelper") private var hasDismissedFocusHelper: Bool = false
+    // legacy focus 迁移只执行一次的标记
+    @AppStorage("hasCompletedLegacyFocusMigration") private var hasCompletedLegacyFocusMigration: Bool = false
     @State private var isFetchingToday: Bool = false
     
     @State private var isMantraExpanded: Bool = false
@@ -421,8 +424,9 @@ struct MainView: View {
 
     private var hasRecentRecommendation: Bool {
         guard lastRecommendationHasFullSet else { return false }
-        let age = Date().timeIntervalSince1970 - lastRecommendationTimestamp
-        return age >= 0 && age < 24 * 60 * 60
+        guard !isDefaultRecommendation else { return false }
+        let recDay = effectiveDayString(for: Date(timeIntervalSince1970: lastRecommendationTimestamp))
+        return recDay == todayString()
     }
 
     private var isPrivilegedUser: Bool {
@@ -723,21 +727,21 @@ struct MainView: View {
             showReasoningSheet = true
         } label: {
             Image(systemName: "info.circle")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 14, weight: .regular))
                 .foregroundColor(themeManager.primaryText)
-                .opacity(0.8)
+                .opacity(0.72)
+                // 扩大点击区域，确保易于点击
+                .padding(8)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Why this mantra")
         .disabled(viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-        .opacity(viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.98 : 1)
+        .opacity(viewModel.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.4 : 1)
     }
 
     private var expandedMantraInfoBadge: some View {
         infoIconButton
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundColor(themeManager.primaryText)
-            .contentShape(Rectangle())
             .accessibilityHint("Shows why this mantra was chosen")
     }
 
@@ -975,43 +979,36 @@ struct MainView: View {
 
         ensureDefaultFocusSetupForToday()
         pruneInvalidFocusSelectionsAndPersist()
+        // 每次启动都回到 daily focus，daily 是主 focus
+        mantraActiveFocusByDay[currentFocusSelectionKey] = dailyFocusID
         persistMantraFocuses()
     }
 
     private func persistMantraFocuses() {
+        // encoding 失败时保留原有存储，不清空
         if let data = try? JSONEncoder().encode(mantraFocuses),
            let string = String(data: data, encoding: .utf8) {
             mantraTagLibraryStorage = string
-        } else {
-            mantraTagLibraryStorage = ""
         }
 
         if let data = try? JSONEncoder().encode(mantraFocusSelections),
            let string = String(data: data, encoding: .utf8) {
             mantraTagSelectionsStorage = string
-        } else {
-            mantraTagSelectionsStorage = ""
         }
 
         if let data = try? JSONEncoder().encode(mantraFocusCache),
            let string = String(data: data, encoding: .utf8) {
             mantraFocusCacheStorage = string
-        } else {
-            mantraFocusCacheStorage = ""
         }
 
         if let data = try? JSONEncoder().encode(mantraActiveFocusByDay),
            let string = String(data: data, encoding: .utf8) {
             mantraActiveFocusStorage = string
-        } else {
-            mantraActiveFocusStorage = ""
         }
 
         if let data = try? JSONEncoder().encode(mantraFocusUsageByDay),
            let string = String(data: data, encoding: .utf8) {
             mantraFocusUsageStorage = string
-        } else {
-            mantraFocusUsageStorage = ""
         }
     }
 
@@ -1023,20 +1020,25 @@ struct MainView: View {
             mantraFocusSelections[day] = defaultIDs
         } else {
             var merged = existing.filter { mantraFocusLookup[$0] != nil }
-            let legacyDefaultSets = [
-                [dailyFocusID, fertilityFocusID, connectionFocusID],
-                [dailyFocusID, connectionFocusID, clarityFocusID],
-                [dailyFocusID, fertilityFocusID, clarityFocusID]
-            ]
-            let legacyFocusNames = Set(["dating", "money", "career", "friendship", "health", "vacation", "purpose"])
-            let isLegacyNameSet = merged.count == maxAppliedFocuses && merged.allSatisfy { focusID in
-                guard let focus = mantraFocusLookup[focusID] else { return false }
-                return legacyFocusNames.contains(focus.name.lowercased())
+
+            // legacy 迁移：只在第一次启动时执行一次，之后不再检查，避免误覆盖用户选择
+            if !hasCompletedLegacyFocusMigration {
+                let legacyDefaultSets = [
+                    [dailyFocusID, fertilityFocusID, connectionFocusID],
+                    [dailyFocusID, connectionFocusID, clarityFocusID],
+                    [dailyFocusID, fertilityFocusID, clarityFocusID]
+                ]
+                let legacyFocusNames = Set(["dating", "money", "career", "friendship", "health", "vacation", "purpose"])
+                let isLegacyNameSet = merged.count == maxAppliedFocuses && merged.allSatisfy { focusID in
+                    guard let focus = mantraFocusLookup[focusID] else { return false }
+                    return legacyFocusNames.contains(focus.name.lowercased())
+                }
+                if legacyDefaultSets.contains(merged) || isLegacyNameSet {
+                    merged = defaultIDs
+                }
+                hasCompletedLegacyFocusMigration = true
             }
 
-            if legacyDefaultSets.contains(merged) || isLegacyNameSet {
-                merged = defaultIDs
-            }
             if !merged.contains(dailyFocusID) {
                 merged.insert(dailyFocusID, at: 0)
             }
@@ -1053,20 +1055,25 @@ struct MainView: View {
         var pruned: [String: [String]] = [:]
 
         for (key, ids) in mantraFocusSelections {
-            let filtered = ids.filter { validIDs.contains($0) }
-            if !filtered.isEmpty {
-                var normalized = Array(filtered.prefix(maxAppliedFocuses))
-                if !normalized.contains(dailyFocusID), validIDs.contains(dailyFocusID) {
-                    normalized.insert(dailyFocusID, at: 0)
-                    normalized = Array(normalized.prefix(maxAppliedFocuses))
-                }
-                pruned[key] = normalized
+            var normalized = ids.filter { validIDs.contains($0) }
+            // daily 永远保留在首位；即使所有其他 focus 都失效，也用 daily 兜底
+            if !normalized.contains(dailyFocusID), validIDs.contains(dailyFocusID) {
+                normalized.insert(dailyFocusID, at: 0)
             }
+            // 确保 daily 永远在首位
+            if normalized.first != dailyFocusID, normalized.contains(dailyFocusID) {
+                normalized.removeAll { $0 == dailyFocusID }
+                normalized.insert(dailyFocusID, at: 0)
+            }
+            pruned[key] = Array(normalized.prefix(maxAppliedFocuses))
         }
 
         mantraFocusSelections = pruned
-        mantraActiveFocusByDay = mantraActiveFocusByDay.filter { key, value in
-            validIDs.contains(value) && mantraFocusSelections[key] != nil
+        // active focus 若失效则回退到 daily
+        mantraActiveFocusByDay = mantraActiveFocusByDay.mapValues { value in
+            validIDs.contains(value) ? value : dailyFocusID
+        }.filter { key, _ in
+            mantraFocusSelections[key] != nil
         }
     }
 
@@ -2183,10 +2190,12 @@ struct MainView: View {
                                         }
 
                                         if let lastLineRect {
+                                            // 紧跟句尾，垂直居中于最后一行
+                                            // x: 句尾右端 + 小间距（icon 自带 padding=8，.position 按中心定位，无需额外补偿）
                                             expandedMantraInfoBadge
                                                 .position(
-                                                    x: min(lastLineRect.maxX + 10, textWidth - 8),
-                                                    y: max(lastLineRect.maxY - 15, 8)
+                                                    x: min(lastLineRect.maxX + 16, textWidth - 2),
+                                                    y: lastLineRect.midY
                                                 )
                                         }
                                     }
@@ -3023,6 +3032,66 @@ struct MainView: View {
     }
 
 
+    /// 每次 app 进入前台时调用，检测当前内容是否需要通过 LoadingView 补救更新。
+    /// 规则：
+    ///   1. isDefault mantra → 立即走 LoadingView（最高优先级）
+    ///   2. 更新时间之后 + 内容是昨天的 → 走 LoadingView
+    ///   3. 更新时间之前 + 内容是昨天的 → 不处理（正常，还没到更新时间）
+    ///   4. 内容是今天的且非 default → 不处理
+    private func evaluateOnLaunch() {
+        // 只在已进入主界面后才评估
+        guard bootPhase == .main else { return }
+        guard Auth.auth().currentUser != nil else { return }
+
+        let today = todayString()
+
+        // 情况 1：当前是 default mantra，立即补救
+        if isDefaultRecommendation {
+            print("🔄 evaluateOnLaunch: 检测到 default mantra，触发 LoadingView 补救")
+            triggerRemedialLoading()
+            return
+        }
+
+        // 情况 2：内容日期不是今天（且当前时间已过更新时间）
+        let recDay = lastRecommendationHasFullSet
+            ? effectiveDayString(for: Date(timeIntervalSince1970: lastRecommendationTimestamp))
+            : ""
+        if recDay != today {
+            // 检查当前时间是否已过更新时间
+            let now = Date()
+            let cal = Calendar.current
+            let comps = cal.dateComponents([.hour, .minute], from: now)
+            let currentMinutes = (comps.hour ?? 0) * 60 + (comps.minute ?? 0)
+            let updateMinutes = dailyRhythmUpdateHour * 60 + dailyRhythmUpdateMinute
+            if currentMinutes >= updateMinutes {
+                print("🔄 evaluateOnLaunch: 内容是昨天的且已过更新时间，触发 LoadingView 补救")
+                triggerRemedialLoading()
+            } else {
+                print("ℹ️ evaluateOnLaunch: 内容是昨天的但还未到更新时间，跳过")
+            }
+        }
+    }
+
+    /// 触发补救性 LoadingView 更新（不计入 manual refresh 配额）
+    private func triggerRemedialLoading() {
+        guard !isFetchingToday else {
+            print("ℹ️ triggerRemedialLoading: 已有请求在途，跳过")
+            return
+        }
+        // 重置 watchdog 以允许新一轮重试
+        let today = todayString()
+        if watchdogDay != today {
+            watchdogDay = today
+            todayAutoRefetchAttempts = 0
+            todayAutoRefetchDone = ""
+            todayFetchLock = ""
+        }
+        isManualRefreshFlow = false
+        didCompletePersonalCheckIn = false
+        isMantraReady = false
+        withAnimation(.easeInOut) { bootPhase = .loading }
+    }
+
     // 原先 startInitialLoad 的主体逻辑移到这里（不修改其内容）
     private func proceedNormalBoot() {
         let group = DispatchGroup()
@@ -3484,6 +3553,9 @@ struct MainView: View {
                             bootPhase = .loading
                         }
 
+                        // 修订3：冷启动后也执行跨天/default 检测
+                        evaluateOnLaunch()
+
                         if shouldCollapseMantraOnReturn {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 isMantraExpanded = false
@@ -3546,6 +3618,12 @@ struct MainView: View {
                     .onChange(of: locationPermissionCoordinator.settingsReturnCount) { _, _ in
                         if showMainViewDialog, mainViewDialogIsLocationPermission {
                             dismissMainViewDialog()
+                        }
+                    }
+                    // 修订3：监听 app 从后台进入前台，执行跨天/default 检测
+                    .onChange(of: scenePhase) { _, phase in
+                        if phase == .active {
+                            evaluateOnLaunch()
                         }
                     }
                 }

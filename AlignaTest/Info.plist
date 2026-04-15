@@ -58,9 +58,14 @@
 	<string>We need to obtain your current location to generate personalized recommendations.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Save your mantra screenshot to Photos.</string>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.aligna.dailymantrarefresh</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
+		<string>processing</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
