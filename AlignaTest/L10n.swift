@@ -25,6 +25,37 @@ func attachRecommendationLanguage(to payload: inout [String: Any]) {
     payload["locale_identifier"] = Locale.current.identifier
 }
 
+// MARK: - Seeded Focus Display Names
+// Maps the English focus name key to a localized display name and description.
+// The raw `name` (e.g. "daily") is kept as-is for the backend focus_tag payload.
+func focusLocalizedName(for nameKey: String) -> String {
+    switch nameKey.lowercased() {
+    case "daily":       return String(localized: "focus.name.daily")
+    case "fertility":   return String(localized: "focus.name.fertility")
+    case "connection":  return String(localized: "focus.name.connection")
+    case "transition":  return String(localized: "focus.name.transition")
+    case "caregiving":  return String(localized: "focus.name.caregiving")
+    case "recovery":    return String(localized: "focus.name.recovery")
+    case "clarity":     return String(localized: "focus.name.clarity")
+    case "grief":       return String(localized: "focus.name.grief")
+    default:            return nameKey
+    }
+}
+
+func focusLocalizedDescription(for nameKey: String, fallback: String) -> String {
+    switch nameKey.lowercased() {
+    case "daily":       return String(localized: "focus.desc.daily")
+    case "fertility":   return String(localized: "focus.desc.fertility")
+    case "connection":  return String(localized: "focus.desc.connection")
+    case "transition":  return String(localized: "focus.desc.transition")
+    case "caregiving":  return String(localized: "focus.desc.caregiving")
+    case "recovery":    return String(localized: "focus.desc.recovery")
+    case "clarity":     return String(localized: "focus.desc.clarity")
+    case "grief":       return String(localized: "focus.desc.grief")
+    default:            return fallback
+    }
+}
+
 // MARK: - Category Display Names
 // Maps the English API key (used in recommendations dict) to a localized display name.
 func categoryDisplayName(for key: String) -> String {

@@ -338,6 +338,9 @@ struct RootRouter: View {
     @AppStorage("shouldShowBootLoading") private var shouldShowBootLoading: Bool = false
     private let isPreviewMode: Bool
 
+    // 字体大小锁定提示
+    @State private var showFontSizeLockedDialog = false
+
     init() {
         self.isPreviewMode = false
     }
@@ -483,6 +486,22 @@ struct RootRouter: View {
                 self.authStateListenerHandle = nil
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIContentSizeCategory.didChangeNotification)) { _ in
+            showFontSizeLockedDialog = true
+        }
+        .overlay {
+            if showFontSizeLockedDialog {
+                AlynnaActionDialog(
+                    title: String(localized: "font_size_locked_title"),
+                    message: String(localized: "font_size_locked_message"),
+                    symbol: "textformat.size",
+                    tone: .info,
+                    dismissButtonTitle: String(localized: "font_size_locked_dismiss"),
+                    onDismiss: { showFontSizeLockedDialog = false }
+                )
+                .environmentObject(themeManager)
+            }
+        }
 
     }
 }
@@ -520,6 +539,7 @@ struct AlignaTestApp: App {
     var body: some Scene {
         WindowGroup {
             RootRouter()
+                .dynamicTypeSize(.large)
         }
     }
 }

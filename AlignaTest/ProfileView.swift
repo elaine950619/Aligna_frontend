@@ -172,6 +172,126 @@ struct ZodiacInlineRow: View {
     }
 }
 
+// MARK: - Zodiac Info Dialog
+
+/// Custom dialog that shows the user's three sign values using the same
+/// Merriweather-Regular italic font as ZodiacInlineRow, plus a short description
+/// for each sign. Visual shell mirrors AlynnaActionDialog.
+struct ZodiacInfoDialog: View {
+    @EnvironmentObject private var themeManager: ThemeManager
+
+    let sunText: String
+    let moonText: String
+    let ascText: String
+    let onDismiss: () -> Void
+
+    /// Font matching ZodiacInlineRow's sign text
+    private let signFont = Font.custom("Merriweather-Regular",
+                                       size: UIFont.preferredFont(forTextStyle: .callout).pointSize,
+                                       relativeTo: .callout)
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(themeManager.isNight ? 0.48 : 0.26)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture { onDismiss() }
+
+            VStack(spacing: 16) {
+                // Icon — matches the sparkles icon used previously
+                Image(systemName: "sparkles")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundColor(themeManager.primaryText.opacity(0.92))
+                    .frame(width: 44, height: 44)
+                    .background(
+                        Circle()
+                            .fill(themeManager.isNight
+                                  ? Color(hex: "#182033").opacity(0.96)
+                                  : Color.white.opacity(0.98))
+                    )
+                    .overlay(
+                        Circle()
+                            .stroke(themeManager.panelStrokeHi.opacity(0.8), lineWidth: 1)
+                    )
+
+                // Title
+                Text(String(localized: "profile.zodiac_info_title"))
+                    .font(.custom("Merriweather-Bold", size: 18))
+                    .foregroundColor(themeManager.primaryText.opacity(0.94))
+
+                // Sign rows — sign name uses Merriweather-Regular italic (same as ZodiacInlineRow)
+                VStack(alignment: .leading, spacing: 14) {
+                    signRow(icon: "sun.max.fill",  signName: sunText,  description: String(localized: "profile.zodiac_sun_desc"))
+                    signRow(icon: "moon.fill",      signName: moonText, description: String(localized: "profile.zodiac_moon_desc"))
+                    signRow(icon: "arrow.up.right", signName: ascText,  description: String(localized: "profile.zodiac_asc_desc"))
+                }
+                .padding(.horizontal, 4)
+
+                // Dismiss button
+                Button { onDismiss() } label: {
+                    Text(String(localized: "profile.zodiac_info_dismiss"))
+                        .font(.custom("Merriweather-Regular", size: 14))
+                        .foregroundColor(themeManager.primaryText.opacity(0.95))
+                        .frame(minWidth: 92)
+                        .padding(.vertical, 10)
+                        .background(
+                            Capsule()
+                                .fill(themeManager.isNight
+                                      ? Color(hex: "#202A40").opacity(0.98)
+                                      : Color.white.opacity(0.98))
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(themeManager.panelStrokeHi.opacity(0.7), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 26)
+            .frame(maxWidth: 332)
+            .background(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(themeManager.isNight
+                          ? Color(hex: "#0F1726").opacity(0.98)
+                          : Color(hex: "#F5E6C8").opacity(0.98))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .stroke(themeManager.panelStrokeHi.opacity(0.9), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(themeManager.isNight ? 0.35 : 0.16),
+                    radius: 24, x: 0, y: 14)
+            .padding(.horizontal, 28)
+        }
+    }
+
+    @ViewBuilder
+    private func signRow(icon: String, signName: String, description: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon)
+                .imageScale(.small)
+                .foregroundColor(themeManager.primaryText.opacity(0.7))
+                .frame(width: 18)
+                .padding(.top, 2)
+
+            VStack(alignment: .leading, spacing: 3) {
+                // Sign name — italic Merriweather, same as ZodiacInlineRow
+                Text(signName)
+                    .font(signFont)
+                    .italic()
+                    .foregroundColor(themeManager.primaryText)
+
+                // Description — smaller, subdued
+                Text(description)
+                    .font(.custom("Merriweather-Regular", size: 12))
+                    .foregroundColor(themeManager.descriptionText.opacity(0.84))
+                    .lineSpacing(3)
+            }
+        }
+    }
+}
+
 enum BirthTimeUtils {
     static let displayFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -423,7 +543,7 @@ struct ProfileLoginView: View {
                             Button(String(localized: "profile.forgot_password")) {
                                 guard !authBusy else { return }
                                 if email.isEmpty {
-                                    alertMessage = "Enter your email first."
+                                    alertMessage = String(localized: "profile.enter_email_first")
                                     showAlert = true
                                     return
                                 }
@@ -433,7 +553,7 @@ struct ProfileLoginView: View {
                                     if let error = error {
                                         alertMessage = error.localizedDescription
                                     } else {
-                                        alertMessage = "Password reset email sent."
+                                        alertMessage = String(localized: "profile.password_reset_sent")
                                     }
                                     showAlert = true
                                 }
@@ -448,7 +568,7 @@ struct ProfileLoginView: View {
                         Button(action: {
                             guard !authBusy else { return }
                             if email.isEmpty || password.isEmpty {
-                                alertMessage = "Please enter both email and password."
+                                alertMessage = String(localized: "profile.enter_email_and_password")
                                 showAlert = true
                                 return
                             }
@@ -458,10 +578,10 @@ struct ProfileLoginView: View {
                                 if let error = error {
                                     if let code = AuthErrorCode(rawValue: (error as NSError).code) {
                                         switch code {
-                                        case .wrongPassword: alertMessage = "Incorrect password. Please try again."
-                                        case .invalidEmail: alertMessage = "Invalid email address."
-                                        case .userDisabled: alertMessage = "This account has been disabled."
-                                        case .userNotFound: alertMessage = "No account found with this email."
+                                        case .wrongPassword: alertMessage = String(localized: "profile.error_wrong_password")
+                                        case .invalidEmail: alertMessage = String(localized: "profile.error_invalid_email")
+                                        case .userDisabled: alertMessage = String(localized: "profile.error_user_disabled")
+                                        case .userNotFound: alertMessage = String(localized: "profile.error_user_not_found")
                                         default: alertMessage = error.localizedDescription
                                         }
                                     } else {
@@ -475,7 +595,7 @@ struct ProfileLoginView: View {
                                         navigateToHome = true
                                     },
                                     onSuccessToOnboarding: {
-                                        infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
+                                        infoMessage = String(localized: "profile.account_incomplete")
                                         dismissAfterInfo = true
                                         showInfoAlert = true
                                     },
@@ -520,7 +640,7 @@ struct ProfileLoginView: View {
                                     },
                                     onSuccessToOnboarding: {
                                         authBusy = false
-                                        infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
+                                        infoMessage = String(localized: "profile.account_incomplete")
                                         dismissAfterInfo = true
                                         showInfoAlert = true
                                     },
@@ -557,7 +677,7 @@ struct ProfileLoginView: View {
                                 onCompletion: { result in
                                     guard !authBusy else { return }
                                     guard let raw = currentNonce, !raw.isEmpty else {
-                                        alertMessage = "Missing nonce. Please try again."
+                                        alertMessage = String(localized: "profile.missing_nonce")
                                         showAlert = true
                                         return
                                     }
@@ -572,7 +692,7 @@ struct ProfileLoginView: View {
                                         },
                                         onSuccessToOnboarding: {
                                             authBusy = false
-                                            infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
+                                            infoMessage = String(localized: "profile.account_incomplete")
                                             dismissAfterInfo = true
                                             showInfoAlert = true
                                         },
@@ -632,13 +752,13 @@ struct ProfileLoginView: View {
             .onDisappear { showIntro = false }
             .alert(isPresented: $showAlert) {
                 Alert(
-                    title: Text("Error"),
+                    title: Text(String(localized: "profile.alert_error_title")),
                     message: Text(alertMessage),
-                    dismissButton: .default(Text("OK"))
+                    dismissButton: .default(Text(String(localized: "profile.alert_ok")))
                 )
             }
-            .alert("Almost there", isPresented: $showInfoAlert) {
-                Button("Continue") {
+            .alert(String(localized: "profile.almost_there"), isPresented: $showInfoAlert) {
+                Button(String(localized: "profile.continue")) {
                     if dismissAfterInfo {
                         dismissAfterInfo = false
                         dismiss()
@@ -1277,9 +1397,9 @@ enum ThemePreference: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .light: return "Dawn"
-        case .dark:  return "Dust"
-        case .auto:  return "Adaptive"
+        case .light: return String(localized: "profile.theme_dawn")
+        case .dark:  return String(localized: "profile.theme_dusk")
+        case .auto:  return String(localized: "profile.theme_adaptive")
         }
     }
     var icon: String  {
@@ -1561,11 +1681,11 @@ struct ProfileView: View {
                         locationInfoDialog
                     } else if let errorMessage {
                         AlynnaActionDialog(
-                            title: "Error",
+                            title: String(localized: "profile.alert_error_title"),
                             message: errorMessage,
                             symbol: "exclamationmark.circle",
                             tone: .error,
-                            dismissButtonTitle: "OK",
+                            dismissButtonTitle: String(localized: "profile.alert_ok"),
                             onDismiss: { self.errorMessage = nil }
                         )
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
@@ -1576,37 +1696,36 @@ struct ProfileView: View {
                             message: refreshAlertMessage,
                             symbol: "location.circle",
                             tone: .info,
-                            dismissButtonTitle: "OK",
+                            dismissButtonTitle: String(localized: "profile.alert_ok"),
                             onDismiss: { showRefreshAlert = false }
                         )
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
                         .zIndex(20)
                     } else if showNotificationSettingsAlert {
                         AlynnaActionDialog(
-                            title: "Enable Notifications",
-                            message: "Allow notifications to receive your daily mantra reminder.",
+                            title: String(localized: "profile.enable_notifications_title"),
+                            message: String(localized: "profile.enable_notifications_message"),
                             symbol: "bell.badge",
                             tone: .warning,
-                            primaryButtonTitle: "Open Settings",
+                            primaryButtonTitle: String(localized: "profile.open_settings"),
                             primaryAction: {
                                 if let url = URL(string: UIApplication.openSettingsURLString) {
                                     UIApplication.shared.open(url)
                                 }
                             },
-                            dismissButtonTitle: "Not Now",
+                            dismissButtonTitle: String(localized: "profile.not_now"),
                             onDismiss: { showNotificationSettingsAlert = false }
                         )
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
                         .zIndex(20)
                     } else if showZodiacInfoDialog {
-                        AlynnaActionDialog(
-                            title: String(localized: "profile.zodiac_info_title"),
-                            message: String(localized: "profile.zodiac_info_message"),
-                            symbol: "sparkles",
-                            tone: .info,
-                            dismissButtonTitle: String(localized: "profile.zodiac_info_dismiss"),
+                        ZodiacInfoDialog(
+                            sunText:  isZodiacReady ? sunSignDisplay : "...",
+                            moonText: isZodiacReady ? moonSignDisplay : "...",
+                            ascText:  isZodiacReady ? ascSignDisplay : "...",
                             onDismiss: { showZodiacInfoDialog = false }
                         )
+                        .environmentObject(themeManager)
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
                         .zIndex(20)
                     }
@@ -1653,18 +1772,18 @@ struct ProfileView: View {
                 }
             }
         }
-        .alert("Delete Account?", isPresented: $showDeleteAlert) {
-            Button("Delete", role: .destructive) { deleteAccount() }
-            Button("Cancel", role: .cancel) { }
+        .alert(String(localized: "profile.delete_account_title"), isPresented: $showDeleteAlert) {
+            Button(String(localized: "profile.delete_button"), role: .destructive) { deleteAccount() }
+            Button(String(localized: "profile.cancel_button"), role: .cancel) { }
         } message: {
-            Text("This will permanently remove your profile and all related data. If you signed up with Google or Apple, you may be asked to confirm sign-in one more time before deletion completes.")
+            Text(String(localized: "profile.delete_account_message"))
         }
-        .alert("Confirm Password", isPresented: $showReauthPasswordAlert) {
-            SecureField("Password", text: $reauthPassword)
-            Button("Cancel", role: .cancel) { reauthPassword = "" }
-            Button("Confirm", role: .destructive) { handlePasswordReauthAndDelete() }
+        .alert(String(localized: "profile.confirm_password_title"), isPresented: $showReauthPasswordAlert) {
+            SecureField(String(localized: "profile.password_placeholder"), text: $reauthPassword)
+            Button(String(localized: "profile.cancel_button"), role: .cancel) { reauthPassword = "" }
+            Button(String(localized: "profile.confirm_button"), role: .destructive) { handlePasswordReauthAndDelete() }
         } message: {
-            Text("For security reasons, please enter your password to delete your account.")
+            Text(String(localized: "profile.confirm_password_message"))
         }
         .sheet(isPresented: $showDailyRhythmUpdateSheet) {
             dailyRhythmUpdateSheet
@@ -1835,7 +1954,7 @@ private extension ProfileView {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
                 if editingNickname {
-                    TextField("Nickname", text: $nickname)
+                    TextField(String(localized: "profile.nickname_placeholder"), text: $nickname)
                         .multilineTextAlignment(.center)
                         .font(.custom("Merriweather-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
@@ -1905,12 +2024,12 @@ private extension ProfileView {
                     .foregroundColor(themeManager.accent)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Personal Information")
+                    Text(String(localized: "profile.personal_info_title"))
                         .font(AlynnaTypography.font(.headline))
                         .foregroundColor(themeManager.primaryText)
 
                     HStack(spacing: 6) {
-                        Text("Tap the lock to reveal the details.")
+                        Text(String(localized: "profile.personal_info_subtitle"))
                             .font(AlynnaTypography.font(.subheadline))
                             .foregroundColor(themeManager.descriptionText)
 
@@ -1926,14 +2045,14 @@ private extension ProfileView {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel(isPersonalInfoVisible ? "Hide personal information" : "Show personal information")
+                        .accessibilityLabel(isPersonalInfoVisible ? String(localized: "profile.hide_personal_info") : String(localized: "profile.show_personal_info"))
                     }
                 }
             }
 
             HStack(spacing: 12) {
                 infoRow(
-                    title: "Birthday",
+                    title: String(localized: "profile.field_birthday"),
                     value: hasLoadedProfileData ? (isPersonalInfoVisible ? Self.birthDateDisplayFormatter.string(from: birthday) : personalInfoMaskText) : "—",
                     editable: hasLoadedProfileData
                 ) {
@@ -1944,7 +2063,7 @@ private extension ProfileView {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .sheet(isPresented: $showBirthdaySheet) {
                     pickerSheet(
-                        title: "Birthday",
+                        title: String(localized: "profile.field_birthday"),
                         picker: AnyView(
                             DatePicker("", selection: $birthdayDraft, displayedComponents: .date)
                                 .datePickerStyle(.wheel)
@@ -1961,7 +2080,7 @@ private extension ProfileView {
                 }
 
                 infoRow(
-                    title: "Birth Time",
+                    title: String(localized: "profile.field_birth_time"),
                     value: hasLoadedProfileData ? (isPersonalInfoVisible ? BirthTimeUtils.displayFormatter.string(from: birthTime).lowercased() : personalInfoMaskText) : "—",
                     editable: hasLoadedProfileData
                 ) {
@@ -1972,7 +2091,7 @@ private extension ProfileView {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .sheet(isPresented: $showBirthTimeSheet) {
                     pickerSheet(
-                        title: "Birth Time",
+                        title: String(localized: "profile.field_birth_time"),
                         picker: AnyView(
                             DatePicker("", selection: $birthTimeDraft, displayedComponents: .hourAndMinute)
                                 .datePickerStyle(.wheel)
@@ -1997,7 +2116,7 @@ private extension ProfileView {
                 }
 
                 infoRowWithTrailingButton(
-                    title: "Current Place",
+                    title: String(localized: "profile.field_current_place"),
                     value: currentPlace.isEmpty ? "—" : (isPersonalInfoVisible ? currentPlace : personalInfoMaskText),
                     systemImage: "arrow.clockwise",
                     onTap: { refreshCurrentPlace() }
@@ -2007,21 +2126,21 @@ private extension ProfileView {
 
             HStack(spacing: 12) {
                 infoRow(
-                    title: "Gender",
+                    title: String(localized: "profile.field_gender"),
                     value: gender.isEmpty ? "—" : (isPersonalInfoVisible ? gender : personalInfoMaskText),
                     editable: hasLoadedProfileData
                 ) {
                     guard hasLoadedProfileData else { return }
-                    genderDraft = gender.isEmpty ? "Male" : gender
+                    genderDraft = gender.isEmpty ? String(localized: "profile.gender_male") : gender
                     showGenderSheet = true
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .sheet(isPresented: $showGenderSheet) {
                     pickerSheet(
-                        title: "Gender",
+                        title: String(localized: "profile.field_gender"),
                         picker: AnyView(
                             optionPicker(
-                                options: ["Male", "Female", "Other"],
+                                options: [String(localized: "profile.gender_male"), String(localized: "profile.gender_female"), String(localized: "profile.gender_other")],
                                 selection: $genderDraft
                             )
                         ),
@@ -2038,21 +2157,21 @@ private extension ProfileView {
                 }
 
                 infoRow(
-                    title: "Relationship",
+                    title: String(localized: "profile.field_relationship"),
                     value: relationshipStatus.isEmpty ? "—" : (isPersonalInfoVisible ? relationshipStatus : personalInfoMaskText),
                     editable: hasLoadedProfileData
                 ) {
                     guard hasLoadedProfileData else { return }
-                    relationshipDraft = relationshipStatus.isEmpty ? "Single" : relationshipStatus
+                    relationshipDraft = relationshipStatus.isEmpty ? String(localized: "profile.relationship_single") : relationshipStatus
                     showRelationshipSheet = true
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .sheet(isPresented: $showRelationshipSheet) {
                     pickerSheet(
-                        title: "Relationship",
+                        title: String(localized: "profile.field_relationship"),
                         picker: AnyView(
                             optionPicker(
-                                options: ["Single", "In a relationship", "Other"],
+                                options: [String(localized: "profile.relationship_single"), String(localized: "profile.relationship_in_relationship"), String(localized: "profile.gender_other")],
                                 selection: $relationshipDraft
                             )
                         ),
@@ -2085,8 +2204,8 @@ private extension ProfileView {
         } label: {
             rowCard(
                 icon: "slider.horizontal.3",
-                title: "Preferences",
-                subtitle: "Update your scent, color & more"
+                title: String(localized: "profile.preferences_title"),
+                subtitle: String(localized: "profile.preferences_subtitle")
             )
         }
     }
@@ -2098,13 +2217,13 @@ private extension ProfileView {
                 .environmentObject(themeManager)
                 .environmentObject(viewModel)
         } label: {
-            rowCard(icon: "calendar", title: "Timeline", subtitle: "View your rhythm journey")
+            rowCard(icon: "calendar", title: String(localized: "profile.timeline_title"), subtitle: String(localized: "profile.timeline_subtitle"))
         }
     }
 
     private var dailyRhythmUpdateStatusText: String {
         let time = BirthTimeUtils.displayFormatter.string(from: dailyRhythmUpdateTimeBinding.wrappedValue)
-        return "Daily rhythm begins at \(time)."
+        return String(format: String(localized: "profile.rhythm_update_status"), time)
     }
 
     private var personalInfoMaskText: String {
@@ -2112,8 +2231,7 @@ private extension ProfileView {
     }
 
     private var locationInfoDialogMessage: String {
-        let settingsPath = "If iOS opens the app settings page first, go to Location, then choose While Using the App or Always."
-        return "Location helps us understand your local context, including weather, humidity, pressure, and nearby environmental patterns such as greenery and built surroundings.\n\nWe store this information only to support your recommendations and continuity across the app. We do not share your location with other users or third parties.\n\n\(settingsPath)"
+        String(localized: "profile.location_dialog_message")
     }
 
     private var locationStatusTitle: String {
@@ -2161,7 +2279,7 @@ private extension ProfileView {
                         .foregroundColor(themeManager.accent)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Rhythm Update")
+                        Text(String(localized: "profile.rhythm_update_title"))
                             .font(AlynnaTypography.font(.headline))
                             .foregroundColor(themeManager.primaryText)
 
@@ -2185,7 +2303,7 @@ private extension ProfileView {
                 Spacer()
                     .frame(width: 24)
 
-                Text("Send a notification")
+                Text(String(localized: "profile.send_notification"))
                     .font(AlynnaTypography.font(.subheadline))
                     .foregroundColor(themeManager.descriptionText)
 
@@ -2206,7 +2324,7 @@ private extension ProfileView {
                     HStack(spacing: 8) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundColor(Color.orange.opacity(0.9))
-                        Text("Notifications are off. Tap to enable in Settings.")
+                        Text(String(localized: "profile.notifications_off_hint"))
                             .font(AlynnaTypography.font(.footnote))
                             .foregroundColor(themeManager.descriptionText.opacity(0.85))
                     }
@@ -2229,7 +2347,7 @@ private extension ProfileView {
                     .foregroundColor(themeManager.accent)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Location Access")
+                    Text(String(localized: "profile.location_access_title"))
                         .font(AlynnaTypography.font(.headline))
                         .foregroundColor(themeManager.primaryText)
 
@@ -2239,7 +2357,7 @@ private extension ProfileView {
                         }
                     } label: {
                         HStack(spacing: 8) {
-                            Text("Improves your rhythm and mantra guidance")
+                            Text(String(localized: "profile.location_access_subtitle"))
                                 .font(AlynnaTypography.font(.subheadline))
                                 .foregroundColor(themeManager.descriptionText)
                                 .multilineTextAlignment(.leading)
@@ -2261,7 +2379,7 @@ private extension ProfileView {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(locationStatusColor)
-                    Text("Location access is off. Tap to review details or open Settings.")
+                    Text(String(localized: "profile.location_off_hint"))
                         .font(AlynnaTypography.font(.footnote))
                         .foregroundColor(themeManager.descriptionText.opacity(0.85))
                 }
@@ -2298,7 +2416,7 @@ private extension ProfileView {
                     )
 
                 VStack(spacing: 10) {
-                    Text("Location Access")
+                    Text(String(localized: "profile.location_dialog_title"))
                         .font(.custom("Merriweather-Bold", size: 18))
                         .foregroundColor(themeManager.primaryText.opacity(0.94))
 
@@ -2318,7 +2436,7 @@ private extension ProfileView {
                             }
                             requestLocationAccess()
                         } label: {
-                            Text("Allow Access")
+                            Text(String(localized: "profile.allow_access"))
                                 .font(.custom("Merriweather-Regular", size: 14))
                                 .foregroundColor(themeManager.primaryText.opacity(0.95))
                                 .frame(minWidth: 116)
@@ -2338,7 +2456,7 @@ private extension ProfileView {
                     Button {
                         locationPermissionCoordinator.openAppSettings()
                     } label: {
-                        Text("Open Settings")
+                        Text(String(localized: "profile.open_settings"))
                             .font(.custom("Merriweather-Regular", size: 14))
                             .foregroundColor(themeManager.primaryText.opacity(0.95))
                             .frame(minWidth: 116)
@@ -2360,7 +2478,7 @@ private extension ProfileView {
                         showLocationInfoAlert = false
                     }
                 } label: {
-                    Text("Not Now")
+                    Text(String(localized: "profile.not_now"))
                         .font(.custom("Merriweather-Regular", size: 13))
                         .foregroundColor(themeManager.descriptionText.opacity(0.9))
                 }
@@ -2389,10 +2507,10 @@ private extension ProfileView {
             HStack(spacing: 10) {
                 Image(systemName: "sparkles").foregroundColor(themeManager.accent)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Theme")
+                    Text(String(localized: "profile.theme_title"))
                         .font(AlynnaTypography.font(.headline))
                         .foregroundColor(themeManager.primaryText)
-                    Text("Customize appearance")
+                    Text(String(localized: "profile.theme_subtitle"))
                         .font(AlynnaTypography.font(.subheadline))
                         .foregroundColor(themeManager.descriptionText)
                 }
@@ -2441,8 +2559,8 @@ private extension ProfileView {
         } label: {
             rowCard(
                 icon: "info.circle",
-                title: "About",
-                subtitle: "More about the app & privacy"
+                title: String(localized: "profile.about_title"),
+                subtitle: String(localized: "profile.about_subtitle")
             )
         }
     }
@@ -2457,8 +2575,8 @@ private extension ProfileView {
             }
         } label: {
             rowCard(icon: "rectangle.portrait.and.arrow.right",
-                    title: "Sign out",
-                    subtitle: "Sign out of your account")
+                    title: String(localized: "profile.sign_out_title"),
+                    subtitle: String(localized: "profile.sign_out_subtitle"))
         }
     }
 
@@ -2469,11 +2587,11 @@ private extension ProfileView {
                     .foregroundColor(Color.red.opacity(themeManager.isNight ? 0.92 : 0.78))
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Danger Zone")
+                    Text(String(localized: "profile.danger_zone_title"))
                         .font(AlynnaTypography.font(.headline))
                         .foregroundColor(Color.red.opacity(themeManager.isNight ? 0.92 : 0.78))
 
-                    Text("Permanently delete your account")
+                    Text(String(localized: "profile.danger_zone_subtitle"))
                         .font(AlynnaTypography.font(.subheadline))
                         .foregroundColor(themeManager.descriptionText)
                         .multilineTextAlignment(.leading)
@@ -2750,7 +2868,7 @@ private extension ProfileView {
 
     var birthPlaceInfoRow: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Birth Place")
+            Text(String(localized: "profile.field_birth_place"))
                 .font(AlynnaTypography.font(.caption1))
                 .foregroundColor(themeManager.descriptionText)
 
@@ -2768,10 +2886,10 @@ private extension ProfileView {
                 .padding(.top, 8)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Daily Rhythm Update")
+                Text(String(localized: "profile.rhythm_update_sheet_title"))
                     .font(AlynnaTypography.font(.title3))
                     .foregroundColor(themeManager.primaryText)
-                Text("Choose when a new daily rhythm begins.")
+                Text(String(localized: "profile.rhythm_update_sheet_subtitle"))
                     .font(AlynnaTypography.font(.subheadline))
                     .foregroundColor(themeManager.descriptionText)
             }
@@ -2793,7 +2911,7 @@ private extension ProfileView {
                 Button(action: {
                     showDailyRhythmUpdateSheet = false
                 }) {
-                    Text("Save")
+                    Text(String(localized: "profile.save_button"))
                         .font(AlynnaTypography.font(.body))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -2803,7 +2921,7 @@ private extension ProfileView {
                 Button(action: {
                     showDailyRhythmUpdateSheet = false
                 }) {
-                    Text("Close")
+                    Text(String(localized: "profile.close_button"))
                         .font(AlynnaTypography.font(.body))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -2830,15 +2948,15 @@ private extension ProfileView {
                 .padding(.top, 8)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Select Birth Place")
+                Text(String(localized: "profile.birth_place_sheet_title"))
                     .font(AlynnaTypography.font(.title3))
                     .foregroundColor(themeManager.primaryText)
-                Text("Search and choose a location to update your birth coordinates.")
+                Text(String(localized: "profile.birth_place_sheet_subtitle"))
                     .font(AlynnaTypography.font(.subheadline))
                     .foregroundColor(themeManager.descriptionText)
             }
 
-            TextField("Birth Place", text: $birthPlace)
+            TextField(String(localized: "profile.field_birth_place"), text: $birthPlace)
                 .textInputAutocapitalization(.words)
                 .disableAutocorrection(true)
                 .tint(themeManager.accent)
@@ -2870,7 +2988,7 @@ private extension ProfileView {
 
             HStack(spacing: 10) {
                 Button(action: cancelBirthPlaceEditing) {
-                    Text("Close")
+                    Text(String(localized: "profile.close_button"))
                         .font(AlynnaTypography.font(.body))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -2878,7 +2996,7 @@ private extension ProfileView {
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 Button(action: saveBirthPlaceSelection) {
-                    Text("Save")
+                    Text(String(localized: "profile.save_button"))
                         .font(AlynnaTypography.font(.body))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -3054,10 +3172,10 @@ private extension ProfileView {
             picker.tint(themeManager.accent)
 
             HStack {
-                Button("Close", action: onCancel)
+                Button(String(localized: "profile.close_button"), action: onCancel)
                     .font(AlynnaTypography.font(.body))
                 Spacer()
-                Button("Save", action: onSave)
+                Button(String(localized: "profile.save_button"), action: onSave)
                     .font(AlynnaTypography.font(.body))
             }
             .foregroundColor(themeManager.accent)
@@ -3162,8 +3280,8 @@ private extension ProfileView {
             timedOut = true
             self.isBusy = false
             self.activeLocationFetcher = nil
-            self.refreshAlertTitle = "Location Timeout"
-            self.refreshAlertMessage = "Exceed 10 seconds, please try again."
+            self.refreshAlertTitle = String(localized: "profile.location_timeout_title")
+            self.refreshAlertMessage = String(localized: "profile.location_timeout_message")
             self.showRefreshAlert = true
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 10, execute: watchdog)
@@ -3184,7 +3302,7 @@ private extension ProfileView {
                     guard !timedOut else { return } // 已经被看门狗处理
                     self.isBusy = false
                     self.activeLocationFetcher = nil
-                    self.refreshAlertTitle = "Location Error"
+                    self.refreshAlertTitle = String(localized: "profile.location_error_title")
                     self.refreshAlertMessage = err.localizedDescription
                     self.showRefreshAlert = true
                 }
@@ -3220,10 +3338,10 @@ private extension ProfileView {
                             let changed = previous.lowercased() != placeToShow.lowercased()
 
                             if changed {
-                                self.refreshAlertTitle = "Location Updated"
-                                self.refreshAlertMessage = "Updated to：\(placeToShow)"
+                                self.refreshAlertTitle = String(localized: "profile.location_updated_title")
+                                self.refreshAlertMessage = String(format: String(localized: "profile.location_updated_message"), placeToShow)
                             } else {
-                                self.refreshAlertTitle = "Location unchanged.（Still at：\(placeToShow)）"
+                                self.refreshAlertTitle = String(format: String(localized: "profile.location_unchanged_title"), placeToShow)
                             }
                             self.showRefreshAlert = true
                         }
@@ -3234,7 +3352,7 @@ private extension ProfileView {
                                     // 写库失败也要结束 loading，并提示
                                     self.isBusy = false
                                     self.activeLocationFetcher = nil
-                                    self.refreshAlertTitle = "Save Failed"
+                                    self.refreshAlertTitle = String(localized: "profile.location_save_failed_title")
                                     self.refreshAlertMessage = err.localizedDescription
                                     self.showRefreshAlert = true
                                 } else {

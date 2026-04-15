@@ -241,6 +241,14 @@ private struct MantraFocus: Identifiable, Codable, Hashable {
     var createdAt: Date
 }
 
+private func focusDisplayName(for focus: MantraFocus) -> String {
+    focusLocalizedName(for: focus.name)
+}
+
+private func focusDisplayDescription(for focus: MantraFocus) -> String {
+    focusLocalizedDescription(for: focus.name, fallback: focus.description)
+}
+
 private struct FocusedMantraEntry: Codable, Hashable {
     var mantra: String
     var recommendations: [String: String]
@@ -1503,7 +1511,7 @@ struct MainView: View {
 
         focusGenerationTagID = focus.id.uuidString
         showMainGenerationOverlay = true
-        configureFocusGenerationOverlay(for: focus.name)
+        configureFocusGenerationOverlay(for: focusDisplayName(for: focus))
         beginGenerationFlow()
 
         func request(using coord: CLLocationCoordinate2D) {
@@ -1739,7 +1747,7 @@ struct MainView: View {
                 Button {
                     selectFocus(focus)
                 } label: {
-                    Text(focus.name)
+                    Text(focusDisplayName(for: focus))
                         .font(.custom("Merriweather-Regular", size: 12))
                         .foregroundColor(isActive ? Color.black.opacity(0.78) : themeManager.primaryText.opacity(0.88))
                         .padding(.horizontal, 12)
@@ -1819,10 +1827,10 @@ struct MainView: View {
                 Section(String(localized: "Current Focus")) {
                     if let activeFocus {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(activeFocus.name)
+                            Text(focusDisplayName(for: activeFocus))
                                 .font(.custom("Merriweather-Bold", size: 14))
                                 .foregroundColor(themeManager.primaryText)
-                            Text(activeFocus.description)
+                            Text(focusDisplayDescription(for: activeFocus))
                                 .font(.custom("Merriweather-Regular", size: 12))
                                 .foregroundColor(themeManager.descriptionText.opacity(0.74))
                         }
@@ -1841,10 +1849,10 @@ struct MainView: View {
                                 }
                             } label: {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(focus.name)
+                                    Text(focusDisplayName(for: focus))
                                         .font(.custom("Merriweather-Bold", size: 14))
                                         .foregroundColor(themeManager.primaryText)
-                                    Text(focus.description)
+                                    Text(focusDisplayDescription(for: focus))
                                         .font(.custom("Merriweather-Regular", size: 12))
                                         .foregroundColor(themeManager.descriptionText.opacity(0.74))
                                         .multilineTextAlignment(.leading)
@@ -2040,7 +2048,7 @@ struct MainView: View {
                 titleVisibility: .visible
             ) {
                 if let focus = pendingFocusDeletion {
-                    Button(String(format: String(localized: "Delete \"%@\" Focus"), focus.name), role: .destructive) {
+                    Button(String(format: String(localized: "Delete \"%@\" Focus"), focusDisplayName(for: focus)), role: .destructive) {
                         deleteFocus(focus)
                     }
                 }
@@ -2049,7 +2057,7 @@ struct MainView: View {
                 }
             } message: {
                 if let focus = pendingFocusDeletion {
-                    Text(String(format: String(localized: "This deletes %@ everywhere it appears and clears its cached focused mantra."), focus.name))
+                    Text(String(format: String(localized: "This deletes %@ everywhere it appears and clears its cached focused mantra."), focusDisplayName(for: focus)))
                 }
             }
         }
@@ -2992,9 +3000,6 @@ struct MainView: View {
 
         private func renderWallpaperImage(geo: GeometryProxy) -> UIImage? {
             let screenSize = geo.size
-            // Use the device's native scale so the saved image is full resolution
-            let scale = UIScreen.main.scale
-            let renderSize = CGSize(width: screenSize.width * scale, height: screenSize.height * scale)
 
             let wallpaperView = WallpaperRenderView(
                 mantra: mantra,
@@ -3003,15 +3008,17 @@ struct MainView: View {
             )
 
             let controller = UIHostingController(rootView: wallpaperView)
-            controller.view.bounds = CGRect(origin: .zero, size: renderSize)
-            controller.view.frame = CGRect(origin: .zero, size: renderSize)
+            // Suppress the safe area insets so content starts at (0,0) with no status-bar gap
+            controller._disableSafeArea = true
+            controller.view.bounds = CGRect(origin: .zero, size: screenSize)
+            controller.view.frame = CGRect(origin: .zero, size: screenSize)
             controller.view.backgroundColor = .clear
             controller.view.setNeedsLayout()
             controller.view.layoutIfNeeded()
 
-            let format = UIGraphicsImageRendererFormat()
-            format.scale = 1  // renderSize already incorporates screen scale
-            let renderer = UIGraphicsImageRenderer(size: renderSize, format: format)
+            // UIGraphicsImageRenderer uses UIScreen.main.scale by default,
+            // so the output image is at native resolution (screenSize * scale).
+            let renderer = UIGraphicsImageRenderer(size: screenSize)
             return renderer.image { _ in
                 controller.view.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: true)
             }
