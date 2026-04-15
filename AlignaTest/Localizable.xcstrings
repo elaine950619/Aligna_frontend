@@ -38,6 +38,16 @@
     "🔒" : {
 
     },
+    "A focus mantra is already generating. Please wait a moment." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焦点心咒正在生成中，请稍候。"
+          }
+        }
+      }
+    },
     "about.activity" : {
       "localizations" : {
         "en" : {
@@ -518,6 +528,16 @@
         }
       }
     },
+    "Add a short description for this focus." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请为该焦点添加简短描述。"
+          }
+        }
+      }
+    },
     "Allow Access" : {
       "localizations" : {
         "zh-Hans" : {
@@ -786,6 +806,36 @@
         }
       }
     },
+    "Could not capture the screenshot." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法截取截图。"
+          }
+        }
+      }
+    },
+    "Could not generate the %@ mantra:" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法生成 %@ 心咒："
+          }
+        }
+      }
+    },
+    "Could not read the %@ mantra response." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法读取 %@ 心咒响应。"
+          }
+        }
+      }
+    },
     "Create Account" : {
       "localizations" : {
         "zh-Hans" : {
@@ -866,6 +916,26 @@
         }
       }
     },
+    "Daily stays pinned and cannot be deleted." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「每日」已固定，无法删除。"
+          }
+        }
+      }
+    },
+    "Daily stays pinned so you can always return to the daily mantra." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「每日」已固定，可随时返回今日心咒。"
+          }
+        }
+      }
+    },
     "Danger Zone" : {
       "localizations" : {
         "zh-Hans" : {
@@ -891,7 +961,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "删除「%@」焦点"
+            "value" : "删除焦点「%@」"
           }
         }
       }
@@ -1118,6 +1188,16 @@
         }
       }
     },
+    "Each focus name can use up to 2 words." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焦点名称最多可使用 2 个词。"
+          }
+        }
+      }
+    },
     "Enter your email" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1169,12 +1249,63 @@
         }
       }
     },
+    "Focus deleted." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焦点已删除。"
+          }
+        }
+      }
+    },
+    "Focus Limit Reached" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已达焦点限制"
+          }
+        }
+      }
+    },
     "Focus name" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "焦点名称"
+          }
+        }
+      }
+    },
+    "Focus saved and added below the mantra." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焦点已保存并添加到心咒下方。"
+          }
+        }
+      }
+    },
+    "Focus saved. Remove one current focus if you want to show it under the mantra." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焦点已保存。如需显示在心咒下方，请先移除一个当前焦点。"
+          }
+        }
+      }
+    },
+    "Focus Update" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焦点更新"
           }
         }
       }
@@ -1234,6 +1365,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "焦点"
+          }
+        }
+      }
+    },
+    "For now, non-daily focuses can be refreshed up to 2 times per day, and each selected focus can only be updated once per day. If you want to explore more, please choose carefully and come back tomorrow. We're also working on a subscription plan with more access. Thank you for your patience." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目前，非每日焦点每天最多可刷新 2 次，每个已选焦点每天只能更新一次。如需探索更多，请谨慎选择，明天再来。我们也在努力推出订阅计划以提供更多使用次数，感谢你的耐心等待。"
           }
         }
       }
@@ -1322,12 +1463,82 @@
         }
       }
     },
+    "Generating today's mantra" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在生成今日心咒"
+          }
+        }
+      }
+    },
+    "Generating today's mantra and rhythm" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在生成今日心咒与节奏"
+          }
+        }
+      }
+    },
+    "Generating your focus mantra" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在生成你的焦点心咒"
+          }
+        }
+      }
+    },
+    "Health note" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "健康提示"
+          }
+        }
+      }
+    },
     "Hide personal information" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "隐藏个人信息"
+          }
+        }
+      }
+    },
+    "Holding tight. Focus mantra requests can take up to a minute." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请稍候，焦点心咒请求最多需要一分钟。"
+          }
+        }
+      }
+    },
+    "Holding tight. Generating today's mantra can take up to a minute." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请稍候，生成今日心咒最多需要一分钟。"
+          }
+        }
+      }
+    },
+    "If a focus relates to your physical or mental health, treat Alynna as supportive guidance only and continue to follow professional medical advice." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "若某个焦点涉及你的身体或心理健康，请将 Alynna 仅作为辅助指引，并继续遵循专业医疗建议。"
           }
         }
       }
@@ -2154,6 +2365,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "位置访问已关闭。点击查看详情或打开设置。"
+          }
+        }
+      }
+    },
+    "Location Access Matters" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要位置权限"
+          }
+        }
+      }
+    },
+    "Location is taking too long. Try the %@ mantra again in a moment." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "获取位置耗时过长，请稍后再试 %@ 心咒。"
           }
         }
       }
@@ -3798,7 +4029,6 @@
       }
     },
     "Saved to Photos" : {
-      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3848,12 +4078,32 @@
         }
       }
     },
+    "Share Failed" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分享失败"
+          }
+        }
+      }
+    },
     "Show personal information" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "显示个人信息"
+          }
+        }
+      }
+    },
+    "Show up to 3 focuses under the mantra. Remove one first to add another." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "心咒下方最多显示 3 个焦点，请先移除一个再添加。"
           }
         }
       }
@@ -3958,6 +4208,36 @@
         }
       }
     },
+    "That focus already exists." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "该焦点已存在。"
+          }
+        }
+      }
+    },
+    "The %@ mantra request did not finish successfully." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 心咒请求未能成功完成。"
+          }
+        }
+      }
+    },
+    "The %@ mantra response was incomplete." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 心咒响应不完整。"
+          }
+        }
+      }
+    },
     "Theme" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4018,6 +4298,16 @@
         }
       }
     },
+    "To keep each refresh intentional, the next one will be available 12 hours later. We're actively developing a subscription option with expanded access. Thank you for your patience." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为保持每次刷新的用心程度，下次刷新将在 12 小时后开放。我们正在积极开发提供更多使用次数的订阅选项，感谢你的耐心等待。"
+          }
+        }
+      }
+    },
     "Toggle Widget Sound" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4028,12 +4318,92 @@
         }
       }
     },
+    "Turn on Location Access in Settings. Alynna uses weather, humidity, pressure, and nearby conditions to calculate your mantra and rhythm." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请在设置中开启位置访问权限。Alynna 会利用天气、湿度、气压及周边环境状况来计算你的心咒与节奏。"
+          }
+        }
+      }
+    },
+    "Turn on Location Access in Settings. Alynna uses weather, humidity, pressure, and nearby conditions to shape your %@ mantra." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请在设置中开启位置访问权限。Alynna 会利用天气、湿度、气压及周边环境状况来塑造你的 %@ 心咒。"
+          }
+        }
+      }
+    },
+    "Unable to prepare this focus mantra request." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法准备此焦点心咒请求。"
+          }
+        }
+      }
+    },
+    "Unable to start the focus mantra request right now." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前无法发起焦点心咒请求。"
+          }
+        }
+      }
+    },
     "Update time" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "更新时间"
+          }
+        }
+      }
+    },
+    "Update Unavailable" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无法更新"
+          }
+        }
+      }
+    },
+    "Updated for today" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已更新今日内容"
+          }
+        }
+      }
+    },
+    "We're shaping a mantra around %@ and today's signals." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在围绕「%@」和今日信号塑造心咒。"
+          }
+        }
+      }
+    },
+    "We're weaving together your cosmic, environmental, and personal signals." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在整合你的星象、环境与个人信号。"
           }
         }
       }
@@ -4054,6 +4424,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "这个焦点应该关注什么？"
+          }
+        }
+      }
+    },
+    "Your last rhythm update was at %@. To keep each refresh intentional, the next one will be available 12 hours later. We're actively developing a subscription option with expanded access. Thank you for your patience." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你上次的节奏更新于 %@。为保持每次刷新的用心程度，下次刷新将在 12 小时后开放。我们正在积极开发提供更多使用次数的订阅选项，感谢你的耐心等待。"
           }
         }
       }

@@ -659,13 +659,13 @@ struct MainView: View {
     }
 
     private func configureDailyGenerationOverlay() {
-        mainGenerationOverlayTitle = "Generating today's mantra"
-        mainGenerationOverlayMessage = "We're weaving together your cosmic, environmental, and personal signals."
+        mainGenerationOverlayTitle = String(localized: "Generating today's mantra")
+        mainGenerationOverlayMessage = String(localized: "We're weaving together your cosmic, environmental, and personal signals.")
     }
 
     private func configureFocusGenerationOverlay(for focusName: String) {
-        mainGenerationOverlayTitle = "Generating your focus mantra"
-        mainGenerationOverlayMessage = "We're shaping a mantra around \(focusName) and today's signals."
+        mainGenerationOverlayTitle = String(localized: "Generating your focus mantra")
+        mainGenerationOverlayMessage = String(format: String(localized: "We're shaping a mantra around %@ and today's signals."), focusName)
     }
 
     private func scheduleGenerationOverlayHints() {
@@ -677,8 +677,8 @@ struct MainView: View {
             guard generationOverlaySequence == sequence, isGenerationInProgress else { return }
             showGenerationStrongHint = true
             mainGenerationOverlayMessage = isFocusGeneration
-                ? "Holding tight. Focus mantra requests can take up to a minute."
-                : "Holding tight. Generating today's mantra can take up to a minute."
+                ? String(localized: "Holding tight. Focus mantra requests can take up to a minute.")
+                : String(localized: "Holding tight. Generating today's mantra can take up to a minute.")
         }
     }
 
@@ -1253,15 +1253,15 @@ struct MainView: View {
     private func presentLocationPermissionRequiredAlert(for focusName: String? = nil) {
         let message: String
         if let focusName {
-            message = "Turn on Location Access in Settings. Alynna uses weather, humidity, pressure, and nearby conditions to shape your \(focusName) mantra."
+            message = String(format: String(localized: "Turn on Location Access in Settings. Alynna uses weather, humidity, pressure, and nearby conditions to shape your %@ mantra."), focusName)
         } else {
-            message = "Turn on Location Access in Settings. Alynna uses weather, humidity, pressure, and nearby conditions to calculate your mantra and rhythm."
+            message = String(localized: "Turn on Location Access in Settings. Alynna uses weather, humidity, pressure, and nearby conditions to calculate your mantra and rhythm.")
         }
         presentMainViewDialog(
-            title: "Location Access Matters",
+            title: String(localized: "Location Access Matters"),
             message: message,
             symbol: "location.slash.circle",
-            primaryButtonTitle: "Open Settings",
+            primaryButtonTitle: String(localized: "Open Settings"),
             primaryAction: openAppSettings,
             isLocationPermissionDialog: true,
             tone: .warning
@@ -1280,7 +1280,7 @@ struct MainView: View {
     }
 
     private func nonDailyFocusLimitMessage() -> String {
-        "For now, non-daily focuses can be refreshed up to 2 times per day, and each selected focus can only be updated once per day. If you want to explore more, please choose carefully and come back tomorrow. We’re also working on a subscription plan with more access. Thank you for your patience."
+        String(localized: "For now, non-daily focuses can be refreshed up to 2 times per day, and each selected focus can only be updated once per day. If you want to explore more, please choose carefully and come back tomorrow. We're also working on a subscription plan with more access. Thank you for your patience.")
     }
 
     private func nonDailyUsageCount(for day: String? = nil) -> Int {
@@ -1337,12 +1337,12 @@ struct MainView: View {
 
         if focusID != dailyFocusID {
             if hasGeneratedNonDailyFocusToday(focusID) {
-                showFocusAlert(title: "Focus Limit Reached", message: nonDailyFocusLimitMessage())
+                showFocusAlert(title: String(localized: "Focus Limit Reached"), message: nonDailyFocusLimitMessage())
                 return
             }
 
             if nonDailyUsageCount() >= maxNonDailyFocusUpdatesPerDay {
-                showFocusAlert(title: "Focus Limit Reached", message: nonDailyFocusLimitMessage())
+                showFocusAlert(title: String(localized: "Focus Limit Reached"), message: nonDailyFocusLimitMessage())
                 return
             }
         }
@@ -1365,7 +1365,7 @@ struct MainView: View {
 
         if let index = ids.firstIndex(of: focusID) {
             if focusID == dailyFocusID {
-                setFocusManagerMessage("Daily stays pinned so you can always return to the daily mantra.", isError: true)
+                setFocusManagerMessage(String(localized: "Daily stays pinned so you can always return to the daily mantra."), isError: true)
                 return
             }
             dismissFocusHelperIfNeeded()
@@ -1386,7 +1386,7 @@ struct MainView: View {
         }
 
         guard ids.count < maxAppliedFocuses else {
-            setFocusManagerMessage("Show up to 3 focuses under the mantra. Remove one first to add another.", isError: true)
+            setFocusManagerMessage(String(localized: "Show up to 3 focuses under the mantra. Remove one first to add another."), isError: true)
             return
         }
 
@@ -1406,17 +1406,17 @@ struct MainView: View {
         guard !name.isEmpty else { return }
 
         guard focusWordCount(for: name) <= 2 else {
-            setFocusManagerMessage("Each focus name can use up to 2 words.", isError: true)
+            setFocusManagerMessage(String(localized: "Each focus name can use up to 2 words."), isError: true)
             return
         }
 
         guard !description.isEmpty else {
-            setFocusManagerMessage("Add a short description for this focus.", isError: true)
+            setFocusManagerMessage(String(localized: "Add a short description for this focus."), isError: true)
             return
         }
 
         guard !isDuplicateFocusName(name) else {
-            setFocusManagerMessage("That focus already exists.", isError: true)
+            setFocusManagerMessage(String(localized: "That focus already exists."), isError: true)
             return
         }
 
@@ -1433,9 +1433,9 @@ struct MainView: View {
             ids.append(newFocus.id.uuidString)
             updateAppliedMantraFocusIDs(ids)
             selectFocus(newFocus)
-            setFocusManagerMessage("Focus saved and added below the mantra.")
+            setFocusManagerMessage(String(localized: "Focus saved and added below the mantra."))
         } else {
-            setFocusManagerMessage("Focus saved. Remove one current focus if you want to show it under the mantra.")
+            setFocusManagerMessage(String(localized: "Focus saved. Remove one current focus if you want to show it under the mantra."))
         }
 
         persistMantraFocuses()
@@ -1443,7 +1443,7 @@ struct MainView: View {
 
     private func deleteFocus(_ focus: MantraFocus) {
         guard focus.id.uuidString != dailyFocusID else {
-            setFocusManagerMessage("Daily stays pinned and cannot be deleted.", isError: true)
+            setFocusManagerMessage(String(localized: "Daily stays pinned and cannot be deleted."), isError: true)
             pendingFocusDeletion = nil
             return
         }
@@ -1472,7 +1472,7 @@ struct MainView: View {
             }
         }
         pendingFocusDeletion = nil
-        setFocusManagerMessage("Focus deleted.")
+        setFocusManagerMessage(String(localized: "Focus deleted."))
         persistMantraFocuses()
     }
 
@@ -1497,7 +1497,7 @@ struct MainView: View {
 
     private func generateFocusedMantra(for focus: MantraFocus) {
         guard focusGenerationTagID == nil || focusGenerationTagID == focus.id.uuidString else {
-            showFocusAlert(message: "A focus mantra is already generating. Please wait a moment.")
+            showFocusAlert(message: String(localized: "A focus mantra is already generating. Please wait a moment."))
             return
         }
 
@@ -1546,7 +1546,7 @@ struct MainView: View {
             if !trimmedNotes.isEmpty                                  { payload["personal_notes"]      = trimmedNotes }
 
             guard let url = URL(string: "https://aligna-api-16639733048.us-central1.run.app/recommend/") else {
-                showFocusAlert(message: "Unable to start the focus mantra request right now.")
+                showFocusAlert(message: String(localized: "Unable to start the focus mantra request right now."))
                 completeGenerationIfNeeded(isDefault: true)
                 restorePreviousFocusAfterFailure()
                 return
@@ -1560,7 +1560,7 @@ struct MainView: View {
             do {
                 request.httpBody = try JSONSerialization.data(withJSONObject: payload)
             } catch {
-                showFocusAlert(message: "Unable to prepare this focus mantra request.")
+                showFocusAlert(message: String(localized: "Unable to prepare this focus mantra request."))
                 completeGenerationIfNeeded(isDefault: true)
                 restorePreviousFocusAfterFailure()
                 return
@@ -1569,7 +1569,7 @@ struct MainView: View {
             URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error = error {
                     DispatchQueue.main.async {
-                        self.showFocusAlert(message: "Could not generate the \(focus.name) mantra: \(error.localizedDescription)")
+                        self.showFocusAlert(message: "\(String(format: String(localized: "Could not generate the %@ mantra:"), focus.name)) \(error.localizedDescription)")
                         self.completeGenerationIfNeeded(isDefault: true)
                         self.restorePreviousFocusAfterFailure()
                     }
@@ -1578,7 +1578,7 @@ struct MainView: View {
 
                 guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode), let data = data else {
                     DispatchQueue.main.async {
-                        self.showFocusAlert(message: "The \(focus.name) mantra request did not finish successfully.")
+                        self.showFocusAlert(message: String(format: String(localized: "The %@ mantra request did not finish successfully."), focus.name))
                         self.completeGenerationIfNeeded(isDefault: true)
                         self.restorePreviousFocusAfterFailure()
                     }
@@ -1589,7 +1589,7 @@ struct MainView: View {
                     guard let parsed = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                           let mantra = parsed["mantra"] as? String else {
                         DispatchQueue.main.async {
-                            self.showFocusAlert(message: "The \(focus.name) mantra response was incomplete.")
+                            self.showFocusAlert(message: String(format: String(localized: "The %@ mantra response was incomplete."), focus.name))
                             self.completeGenerationIfNeeded(isDefault: true)
                             self.restorePreviousFocusAfterFailure()
                         }
@@ -1675,7 +1675,7 @@ struct MainView: View {
                     }
                 } catch {
                     DispatchQueue.main.async {
-                        self.showFocusAlert(message: "Could not read the \(focus.name) mantra response.")
+                        self.showFocusAlert(message: String(format: String(localized: "Could not read the %@ mantra response."), focus.name))
                         self.completeGenerationIfNeeded(isDefault: true)
                         self.restorePreviousFocusAfterFailure()
                     }
@@ -1721,7 +1721,7 @@ struct MainView: View {
                 return
             }
             if Date().timeIntervalSince(start) > timeout {
-                showFocusAlert(message: "Location is taking too long. Try the \(focus.name) mantra again in a moment.")
+                showFocusAlert(message: String(format: String(localized: "Location is taking too long. Try the %@ mantra again in a moment."), focus.name))
                 completeGenerationIfNeeded(isDefault: true)
                 restorePreviousFocusAfterFailure()
                 return
@@ -1809,14 +1809,14 @@ struct MainView: View {
 
                         focusGuidanceRow(
                             symbol: "heart.text.square",
-                            title: "Health note",
-                            body: "If a focus relates to your physical or mental health, treat Alynna as supportive guidance only and continue to follow professional medical advice."
+                            title: String(localized: "Health note"),
+                            body: String(localized: "If a focus relates to your physical or mental health, treat Alynna as supportive guidance only and continue to follow professional medical advice.")
                         )
                     }
                     .padding(.vertical, 4)
                 }
 
-                Section("Current Focus") {
+                Section(String(localized: "Current Focus")) {
                     if let activeFocus {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(activeFocus.name)
@@ -1829,7 +1829,7 @@ struct MainView: View {
                     }
                 }
 
-                Section("Preset Focuses") {
+                Section(String(localized: "Preset Focuses")) {
                     ForEach(seededMantraFocuses) { focus in
                         let isVisible = appliedMantraFocusIDs.contains(focus.id.uuidString)
                         HStack(alignment: .top, spacing: 12) {
@@ -1885,7 +1885,7 @@ struct MainView: View {
                     }
                 }
 
-                Section("Custom Focuses") {
+                Section(String(localized: "Custom Focuses")) {
                     let customFocuses = mantraFocuses.filter { !seededFocusIDs.contains($0.id.uuidString) }
                     if !focusManagerMessage.isEmpty {
                         Text(focusManagerMessage)
@@ -1966,7 +1966,7 @@ struct MainView: View {
                                     .fixedSize(horizontal: false, vertical: true)
                             }
 
-                            TextField("Focus name", text: $newFocusName)
+                            TextField(String(localized: "Focus name"), text: $newFocusName)
                                 .textInputAutocapitalization(.words)
                                 .autocorrectionDisabled()
                                 .focused($focusedFocusFormField, equals: .name)
@@ -1979,7 +1979,7 @@ struct MainView: View {
                                 .font(.custom("Merriweather-Regular", size: 11))
                                 .foregroundColor(themeManager.descriptionText.opacity(0.7))
 
-                            TextField("What should this focus hold space for?", text: $newFocusDescription, axis: .vertical)
+                            TextField(String(localized: "What should this focus hold space for?"), text: $newFocusDescription, axis: .vertical)
                                 .lineLimit(3...5)
                                 .textInputAutocapitalization(.sentences)
                                 .focused($focusedFocusFormField, equals: .description)
@@ -1989,7 +1989,7 @@ struct MainView: View {
                                 }
 
                             HStack {
-                                Button("Cancel") {
+                                Button(String(localized: "Cancel")) {
                                     resetNewFocusForm()
                                 }
                                 .foregroundColor(themeManager.descriptionText.opacity(0.85))
@@ -2013,7 +2013,7 @@ struct MainView: View {
                             clearFocusManagerMessage()
                             showNewFocusForm = true
                         } label: {
-                            Label("New Custom Focus", systemImage: "plus")
+                            Label(String(localized: "New Custom Focus"), systemImage: "plus")
                                 .font(.custom("Merriweather-Regular", size: 14))
                         }
                     }
@@ -2021,18 +2021,18 @@ struct MainView: View {
             }
             .scrollContentBackground(.hidden)
             .background(themeManager.panelFill.opacity(themeManager.isNight ? 0.95 : 0.9))
-            .navigationTitle("Focuses")
+            .navigationTitle(String(localized: "Focuses"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Close") {
+                    Button(String(localized: "Close")) {
                         showFocusManagerSheet = false
                     }
                     .foregroundColor(themeManager.primaryText)
                 }
             }
             .confirmationDialog(
-                "Delete Focus?",
+                String(localized: "Delete Focus?"),
                 isPresented: Binding(
                     get: { pendingFocusDeletion != nil },
                     set: { if !$0 { pendingFocusDeletion = nil } }
@@ -2040,16 +2040,16 @@ struct MainView: View {
                 titleVisibility: .visible
             ) {
                 if let focus = pendingFocusDeletion {
-                    Button("Delete \"\(focus.name)\" Focus", role: .destructive) {
+                    Button(String(format: String(localized: "Delete \"%@\" Focus"), focus.name), role: .destructive) {
                         deleteFocus(focus)
                     }
                 }
-                Button("Cancel", role: .cancel) {
+                Button(String(localized: "Cancel"), role: .cancel) {
                     pendingFocusDeletion = nil
                 }
             } message: {
                 if let focus = pendingFocusDeletion {
-                    Text("This deletes \(focus.name) everywhere it appears and clears its cached focused mantra.")
+                    Text(String(format: String(localized: "This deletes %@ everywhere it appears and clears its cached focused mantra."), focus.name))
                 }
             }
         }
@@ -2637,9 +2637,9 @@ struct MainView: View {
 
     private func presentMantraShareSheet() {
         guard let image = captureMantraImage() else {
-            mantraSaveMessage = "Could not capture the screenshot."
+            mantraSaveMessage = String(localized: "Could not capture the screenshot.")
             presentMainViewDialog(
-                title: "Share Failed",
+                title: String(localized: "Share Failed"),
                 message: mantraSaveMessage,
                 symbol: "square.and.arrow.up.badge.exclamationmark"
             )
@@ -3027,7 +3027,7 @@ struct MainView: View {
                 }
                 UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
                 isSaving = false
-                showFeedback("Saved to Photos")
+                showFeedback(String(localized: "Saved to Photos"))
             }
         }
 
@@ -3604,7 +3604,7 @@ struct MainView: View {
                 didShowStrongHint = true
                 if isGenerationInProgress {
                     showGenerationStrongHint = true
-                    showCenterToast("Generating today’s mantra and rhythm", duration: 2.6, includeTime: false)
+                    showCenterToast(String(localized: "Generating today's mantra and rhythm"), duration: 2.6, includeTime: false)
                 }
             }
             if elapsed > timeout {
@@ -3639,7 +3639,7 @@ struct MainView: View {
         guard manualRefreshAllowed() else {
             refreshCooldownMessage = refreshCooldownText()
             presentMainViewDialog(
-                title: "Update Unavailable",
+                title: String(localized: "Update Unavailable"),
                 message: refreshCooldownMessage,
                 symbol: "clock.badge.exclamationmark"
             )
@@ -3659,7 +3659,7 @@ struct MainView: View {
 
     private func refreshCooldownText() -> String {
         guard lastManualRefreshTimestamp > 0 else {
-            return "To keep each refresh intentional, the next one will be available 12 hours later. We’re actively developing a subscription option with expanded access. Thank you for your patience."
+            return String(localized: "To keep each refresh intentional, the next one will be available 12 hours later. We're actively developing a subscription option with expanded access. Thank you for your patience.")
         }
         let last = Date(timeIntervalSince1970: lastManualRefreshTimestamp)
         let formatter = DateFormatter()
@@ -3667,7 +3667,7 @@ struct MainView: View {
         formatter.timeStyle = .short
         formatter.dateStyle = .none
         let lastText = formatter.string(from: last)
-        return "Your last rhythm update was at \(lastText). To keep each refresh intentional, the next one will be available 12 hours later. We’re actively developing a subscription option with expanded access. Thank you for your patience."
+        return String(format: String(localized: "Your last rhythm update was at %@. To keep each refresh intentional, the next one will be available 12 hours later. We're actively developing a subscription option with expanded access. Thank you for your patience."), lastText)
     }
 
     private func expandMantraIfNeeded() {
@@ -3731,7 +3731,7 @@ struct MainView: View {
         if !isDefault {
             if bootPhase == .main {
                 triggerGenerationHapticIfNeeded()
-                showCenterToast("Updated for today", duration: 2.2, includeTime: false)
+                showCenterToast(String(localized: "Updated for today"), duration: 2.2, includeTime: false)
             } else {
                 pendingGenerationToast = true
             }
@@ -4713,10 +4713,10 @@ struct MainView: View {
             if pendingGenerationToast {
                 pendingGenerationToast = false
                 triggerGenerationHapticIfNeeded()
-                showCenterToast("Updated for today", duration: 2.2, includeTime: false)
+                showCenterToast(String(localized: "Updated for today"), duration: 2.2, includeTime: false)
             }
             if showGenerationStrongHint && isGenerationInProgress {
-                showCenterToast("Generating today’s mantra and rhythm", duration: 2.6, includeTime: false)
+                showCenterToast(String(localized: "Generating today's mantra and rhythm"), duration: 2.6, includeTime: false)
             }
         }
     }
