@@ -959,7 +959,7 @@ private func widgetMantra(_ raw: String) -> String {
         .filter { !$0.isEmpty }
 
     if let first = sentences.first, first.count <= 84 {
-        return first + "."
+        return first
     }
 
     let words = cleaned.split(separator: " ")

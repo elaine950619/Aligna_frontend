@@ -12,7 +12,8 @@ enum FontRegistrar {
         "Gloock-Regular",
         "CormorantGaramond-Bold",
         "CormorantGaramond-SemiBold",
-        "PlayfairDisplay-Bold"
+        "PlayfairDisplay-Bold",
+        "SourceHanSerifSCVF-ExtraLight"
     ]
 
     static func registerAllFonts() {

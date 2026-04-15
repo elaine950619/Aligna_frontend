@@ -50,6 +50,8 @@
 		B9B23F482F21A19200E620E2 /* Merriweather-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F442F21A19200E620E2 /* Merriweather-Light.ttf */; };
 		F2B9748E2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748C2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf */; };
 		F2B9748F2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748D2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf */; };
+		F2DAEAD62F8FD77C00A6A19A /* SourceHanSerifSC-VF.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2DAEAD52F8FD77C00A6A19A /* SourceHanSerifSC-VF.ttf */; };
+		F2DAEAD72F8FD77C00A6A19A /* SourceHanSerifSC-VF.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2DAEAD52F8FD77C00A6A19A /* SourceHanSerifSC-VF.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -98,6 +100,7 @@
 		B9B23F442F21A19200E620E2 /* Merriweather-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Merriweather-Light.ttf"; sourceTree = "<group>"; };
 		F2B9748C2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf"; sourceTree = "<group>"; };
 		F2B9748D2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Merriweather-VariableFont_opsz,wdth,wght.ttf"; sourceTree = "<group>"; };
+		F2DAEAD52F8FD77C00A6A19A /* SourceHanSerifSC-VF.ttf */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SourceHanSerifSC-VF.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -236,6 +239,7 @@
 				B9B23F442F21A19200E620E2 /* Merriweather-Light.ttf */,
 				54DE58DF2DC2A05F008BE4B8 /* PlayfairDisplay-VariableFont_wght.ttf */,
 				54DE58DA2DC2A04A008BE4B8 /* Inter-VariableFont_opsz,wght.ttf */,
+				F2DAEAD52F8FD77C00A6A19A /* SourceHanSerifSC-VF.ttf */,
 			);
 			path = Fonts;
 			sourceTree = "<group>";
@@ -353,6 +357,7 @@
 				B9B23F052F2199CC00E620E2 /* Gloock-Regular.ttf in Resources */,
 				54C65B912E6E12AD00A41F9A /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
 				B9B23F372F219F1900E620E2 /* Merriweather-LightItalic.ttf in Resources */,
+				F2DAEAD62F8FD77C00A6A19A /* SourceHanSerifSC-VF.ttf in Resources */,
 				B9B23EFC2F2199B300E620E2 /* CormorantGaramond-Bold.ttf in Resources */,
 				B9B23F2F2F219EB800E620E2 /* Merriweather-Black.ttf in Resources */,
 				54C65B922E6E12AD00A41F9A /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
@@ -379,6 +384,7 @@
 				6E3988D12F64F01B00A8E2A1 /* Inter-VariableFont_opsz,wght.ttf in Resources */,
 				6E3988D22F64F01B00A8E2A1 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */,
 				6E3988D32F64F01B00A8E2A1 /* Merriweather-Regular.ttf in Resources */,
+				F2DAEAD72F8FD77C00A6A19A /* SourceHanSerifSC-VF.ttf in Resources */,
 				6E3988D42F64F01B00A8E2A1 /* PlayfairDisplay-Italic-VariableFont_wght.ttf in Resources */,
 				6E3988D52F64F01B00A8E2A1 /* PlayfairDisplay-Bold.ttf in Resources */,
 				6E3988D62F64F01B00A8E2A1 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf in Resources */,

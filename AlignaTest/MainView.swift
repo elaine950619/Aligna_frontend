@@ -169,6 +169,23 @@ enum AlignaType {
     static func brandTitle() -> Font { .custom("Merriweather-Black", size: 34) }
     static func expandedMantraBoldItalic() -> Font { .custom("Merriweather-Bold", size: 23) }
 
+    // Language-aware mantra fonts: use Source Han Serif SC for Chinese, Merriweather for Latin
+    static func expandedMantraFont() -> Font {
+        currentRecommendationLanguageCode() == "zh-Hans"
+            ? .custom("Source Han Serif SC VF", size: 22).weight(.bold)
+            : .custom("Merriweather-Bold", size: 23)
+    }
+    static func homeMantraFont() -> Font {
+        currentRecommendationLanguageCode() == "zh-Hans"
+            ? .custom("Source Han Serif SC VF", size: 18).weight(.bold)
+            : .custom("Merriweather-Italic", size: 18)
+    }
+    static func wallpaperMantraFont() -> Font {
+        currentRecommendationLanguageCode() == "zh-Hans"
+            ? .custom("Source Han Serif SC VF", size: 20).weight(.bold)
+            : .system(size: 20, weight: .semibold, design: .serif)
+    }
+
     static func homeSubtitle() -> Font { .custom("Merriweather-Italic", size: 18) }
 
     static func gridCategoryTitle() -> Font { .custom("Merriweather-Bold", size: 18) }
@@ -762,7 +779,17 @@ struct MainView: View {
     }
 
     private func expandedMantraLastLineRect(for text: String, width: CGFloat) -> CGRect? {
-        let font = UIFont(name: "Merriweather-Bold", size: 23) ?? UIFont.systemFont(ofSize: 23, weight: .bold)
+        let font: UIFont
+        if currentRecommendationLanguageCode() == "zh-Hans" {
+            // Source Han Serif SC VF is a variable font; use descriptor with bold weight
+            let descriptor = UIFontDescriptor(fontAttributes: [
+                .name: "SourceHanSerifSCVF-ExtraLight",
+                kCTFontVariationAttribute as UIFontDescriptor.AttributeName: [2003265652: 700] // wght axis = Bold
+            ])
+            font = UIFont(descriptor: descriptor, size: 22)
+        } else {
+            font = UIFont(name: "Merriweather-Bold", size: 23) ?? UIFont.systemFont(ofSize: 23, weight: .bold)
+        }
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .center
         paragraphStyle.lineBreakMode = .byWordWrapping
@@ -2170,7 +2197,7 @@ struct MainView: View {
                                     ZStack(alignment: .topLeading) {
                                         VStack(spacing: 1) {
                                             Text(viewModel.dailyMantra)
-                                                .font(AlignaType.expandedMantraBoldItalic())
+                                                .font(AlignaType.expandedMantraFont())
                                                 .lineSpacing(12)
                                                 .multilineTextAlignment(.center)
                                                 .foregroundColor(
@@ -2217,7 +2244,7 @@ struct MainView: View {
                                     toggleMantraExpansion()
                                 } label: {
                                     Text(viewModel.dailyMantra)
-                                        .font(AlignaType.homeSubtitle())
+                                        .font(AlignaType.homeMantraFont())
                                         .lineSpacing(AlignaType.descLineSpacing)
                                         .multilineTextAlignment(.center)
                                         .foregroundColor(themeManager.descriptionText.opacity(0.72))
@@ -2690,7 +2717,7 @@ struct MainView: View {
                     }
 
                     Text(mantra)
-                        .font(AlignaType.expandedMantraBoldItalic())
+                        .font(AlignaType.expandedMantraFont())
                         .lineSpacing(12)
                         .multilineTextAlignment(.center)
                         .foregroundColor(
@@ -2848,8 +2875,8 @@ struct MainView: View {
                         Spacer(minLength: geo.size.height * 0.52)
 
                         Text(mantra)
-                            .font(.system(size: 20, weight: .semibold, design: .serif))
-                            .italic()
+                            .font(AlignaType.wallpaperMantraFont())
+                            .italic(currentRecommendationLanguageCode() != "zh-Hans")
                             .lineSpacing(9)
                             .multilineTextAlignment(.leading)
                             .foregroundColor(textColor)
@@ -3126,8 +3153,8 @@ struct MainView: View {
                 VStack(spacing: 0) {
                     Spacer(minLength: size.height * 0.52)
                     Text(mantra)
-                        .font(.system(size: 20, weight: .semibold, design: .serif))
-                        .italic()
+                        .font(AlignaType.wallpaperMantraFont())
+                        .italic(currentRecommendationLanguageCode() != "zh-Hans")
                         .lineSpacing(9)
                         .multilineTextAlignment(.leading)
                         .foregroundColor(textColor)
