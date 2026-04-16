@@ -22,7 +22,11 @@ enum FontRegistrar {
         // 霞鹜文楷（标题/mantra 强化）
         "LXGWWenKaiTC-Regular",
         "LXGWWenKaiTC-Light",
-        "LXGWWenKaiTC-Bold"
+        "LXGWWenKaiTC-Bold",
+        // 展库文艺体
+        "zcoolwenyiti",
+        // 爱点峰雅黑
+        "AidianFengYaHei"
     ]
 
     static func registerAllFonts() {

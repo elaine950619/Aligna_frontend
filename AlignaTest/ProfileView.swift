@@ -1266,6 +1266,7 @@ struct LanguageSelectionView: View {
                         currentLanguage = "zh-Hans"
                         UserDefaults.standard.set(["zh-Hans"], forKey: "AppleLanguages")
                         UserDefaults.standard.synchronize()
+                        UserDefaults(suiteName: "group.martinyuan.AlynnaTest")?.set("zh-Hans", forKey: "appLanguage")
                         showRestartAlert = true
                         dismiss()
                     },
@@ -1290,6 +1291,7 @@ struct LanguageSelectionView: View {
                     currentLanguage = lang.code
                     UserDefaults.standard.set([lang.code], forKey: "AppleLanguages")
                     UserDefaults.standard.synchronize()
+                    UserDefaults(suiteName: "group.martinyuan.AlynnaTest")?.set(lang.code, forKey: "appLanguage")
                     showRestartAlert = true
                     dismiss()
                 }
@@ -1542,8 +1544,6 @@ struct ProfileView: View {
     @State private var showLanguagePartialDialog = false
     @State private var showLanguageSelectionSheet = false
     @AppStorage("dailyMantraNotificationEnabled") private var dailyMantraNotificationEnabled: Bool = true
-    @AppStorage("dailyMantraNotificationHour") private var dailyMantraNotificationHour: Int = 7
-    @AppStorage("dailyMantraNotificationMinute") private var dailyMantraNotificationMinute: Int = 10
     @AppStorage("dailyRhythmUpdateHour") private var dailyRhythmUpdateHour: Int = 7
     @AppStorage("dailyRhythmUpdateMinute") private var dailyRhythmUpdateMinute: Int = 0
     @AppStorage("cachedDailyMantra") private var cachedDailyMantra: String = ""
@@ -1658,6 +1658,7 @@ struct ProfileView: View {
                             preferencesCard
                             timelineCard
                             dailyRhythmUpdateCard
+                            notificationCard
                             locationAccessCard
                             themeCard
                             languageCard
@@ -1726,6 +1727,17 @@ struct ProfileView: View {
                             onDismiss: { showZodiacInfoDialog = false }
                         )
                         .environmentObject(themeManager)
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                        .zIndex(20)
+                    } else if showLanguageRestartAlert {
+                        AlynnaActionDialog(
+                            title: String(localized: "profile.language_restart_title"),
+                            message: String(localized: "profile.language_restart_message"),
+                            symbol: "arrow.counterclockwise.circle",
+                            tone: .info,
+                            dismissButtonTitle: String(localized: "profile.language_restart_ok"),
+                            onDismiss: { showLanguageRestartAlert = false }
+                        )
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
                         .zIndex(20)
                     }
@@ -1834,7 +1846,7 @@ struct ProfileView: View {
                     requestDailyMantraNotifications()
                 } else {
                     dailyMantraNotificationEnabled = false
-                    MantraNotificationManager.cancelDaily()
+                    MantraNotificationManager.cancelFixed()
                 }
             }
         )
@@ -1852,10 +1864,6 @@ struct ProfileView: View {
                 let components = BirthTimeUtils.hourMinute(from: newValue)
                 dailyRhythmUpdateHour = components.hour
                 dailyRhythmUpdateMinute = components.minute
-                syncNotificationTimeToRhythmUpdate()
-                if dailyMantraNotificationEnabled {
-                    scheduleDailyMantraNotification()
-                }
             }
         )
     }
@@ -1866,7 +1874,7 @@ struct ProfileView: View {
                 notificationAuthStatus = settings.authorizationStatus
                 if settings.authorizationStatus == .denied {
                     dailyMantraNotificationEnabled = false
-                    MantraNotificationManager.cancelDaily()
+                    MantraNotificationManager.cancelFixed()
                 }
             }
         }
@@ -1879,7 +1887,7 @@ struct ProfileView: View {
                 DispatchQueue.main.async {
                     dailyMantraNotificationEnabled = true
                     notificationAuthStatus = settings.authorizationStatus
-                    scheduleDailyMantraNotification()
+                    scheduleFixedNotifications()
                 }
             case .notDetermined:
                 UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
@@ -1887,7 +1895,7 @@ struct ProfileView: View {
                         dailyMantraNotificationEnabled = granted
                         updateNotificationAuthStatus()
                         if granted {
-                            scheduleDailyMantraNotification()
+                            scheduleFixedNotifications()
                         } else {
                             showNotificationSettingsAlert = true
                         }
@@ -1927,24 +1935,14 @@ struct ProfileView: View {
         }
     }
 
-    private func scheduleDailyMantraNotification() {
+    private func scheduleFixedNotifications() {
         let liveMantra = viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !liveMantra.isEmpty {
-            cachedDailyMantra = liveMantra
-        }
+        if !liveMantra.isEmpty { cachedDailyMantra = liveMantra }
         let mantraText = liveMantra.isEmpty ? cachedDailyMantra : liveMantra
-        syncNotificationTimeToRhythmUpdate()
-        MantraNotificationManager.scheduleDaily(
+        MantraNotificationManager.scheduleFixed(
             mantra: mantraText,
-            hour: dailyMantraNotificationHour,
-            minute: dailyMantraNotificationMinute
+            isChinese: currentRecommendationLanguageCode() == "zh-Hans"
         )
-    }
-
-    private func syncNotificationTimeToRhythmUpdate() {
-        let totalMinutes = (dailyRhythmUpdateHour * 60 + dailyRhythmUpdateMinute + 10) % (24 * 60)
-        dailyMantraNotificationHour = totalMinutes / 60
-        dailyMantraNotificationMinute = totalMinutes % 60
     }
 }
 
@@ -2270,58 +2268,66 @@ private extension ProfileView {
     }
 
     var dailyRhythmUpdateCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Button {
-                showDailyRhythmUpdateSheet = true
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .foregroundColor(themeManager.accent)
+        Button {
+            showDailyRhythmUpdateSheet = true
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .foregroundColor(themeManager.accent)
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(String(localized: "profile.rhythm_update_title"))
-                            .font(AlynnaTypography.font(.headline))
-                            .foregroundColor(themeManager.primaryText)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(localized: "profile.rhythm_update_title"))
+                        .font(AlynnaTypography.font(.headline))
+                        .foregroundColor(themeManager.primaryText)
 
-                        Text(dailyRhythmUpdateStatusText)
-                            .font(AlynnaTypography.font(.subheadline))
-                            .foregroundColor(themeManager.descriptionText)
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-
-                    Spacer()
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(themeManager.descriptionText.opacity(0.75))
+                    Text(dailyRhythmUpdateStatusText)
+                        .font(AlynnaTypography.font(.subheadline))
+                        .foregroundColor(themeManager.descriptionText)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-            }
-            .buttonStyle(.plain)
 
-            HStack(spacing: 8) {
                 Spacer()
-                    .frame(width: 24)
 
-                Text(String(localized: "profile.send_notification"))
-                    .font(AlynnaTypography.font(.subheadline))
-                    .foregroundColor(themeManager.descriptionText)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(themeManager.descriptionText.opacity(0.75))
+            }
+        }
+        .buttonStyle(.plain)
+        .padding()
+        .alignaCard()
+    }
+
+    var notificationCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "bell.badge")
+                    .foregroundColor(themeManager.accent)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(localized: "profile.notification_title"))
+                        .font(AlynnaTypography.font(.headline))
+                        .foregroundColor(themeManager.primaryText)
+
+                    Text(String(localized: "profile.notification_subtitle"))
+                        .font(AlynnaTypography.font(.subheadline))
+                        .foregroundColor(themeManager.descriptionText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
 
                 Spacer(minLength: 0)
 
                 Toggle("", isOn: notificationToggleBinding)
                     .labelsHidden()
                     .toggleStyle(SwitchToggleStyle(tint: themeManager.accent))
-                    .frame(maxHeight: .infinity, alignment: .center)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(minHeight: 44, alignment: .center)
 
             if notificationAuthStatus == .denied {
                 Button {
                     showNotificationSettingsAlert = true
                 } label: {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundColor(Color.orange.opacity(0.9))
                         Text(String(localized: "profile.notifications_off_hint"))
@@ -2330,11 +2336,6 @@ private extension ProfileView {
                     }
                 }
             }
-
-//            Text("We’ll send today’s mantra once a day. Tap to open it in full.")
-//                .font(AlynnaTypography.font(.footnote))
-//                .foregroundColor(themeManager.descriptionText.opacity(0.75))
-//                .fixedSize(horizontal: false, vertical: true)
         }
         .padding()
         .alignaCard()
@@ -2539,11 +2540,7 @@ private extension ProfileView {
             .environmentObject(themeManager)
             .environmentObject(starManager)
         }
-        .alert(String(localized: "profile.language_restart_title"), isPresented: $showLanguageRestartAlert) {
-            Button(String(localized: "profile.language_restart_ok"), role: .cancel) { }
-        } message: {
-            Text(String(localized: "profile.language_restart_message"))
-        }
+
     }
 
     private var languageCurrentDisplayName: String {

@@ -40,10 +40,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点心语正在生成中，请稍候。"
+            "value" : "主题心语正在生成中，请稍候。"
           }
         }
       }
+    },
+    "Aa" : {
+
     },
     "about.activity" : {
       "localizations" : {
@@ -530,7 +533,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "请为该焦点添加简短描述。"
+            "value" : "请为该主题添加简短描述。"
           }
         }
       }
@@ -915,7 +918,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "当前焦点"
+            "value" : "当前主题"
           }
         }
       }
@@ -925,7 +928,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "自定义焦点"
+            "value" : "自定义主题"
           }
         }
       }
@@ -947,7 +950,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "每日节奏更新"
+            "value" : "wo"
           }
         }
       }
@@ -999,7 +1002,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "删除焦点「%@」"
+            "value" : "删除主题「%@」"
           }
         }
       }
@@ -1020,7 +1023,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "删除焦点？"
+            "value" : "删除主题？"
           }
         }
       }
@@ -1409,7 +1412,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点名称最多可使用 2 个词。"
+            "value" : "主题名称最多可使用 2 个字。"
           }
         }
       }
@@ -1463,7 +1466,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点"
+            "value" : "主题"
           }
         }
       }
@@ -1473,7 +1476,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点已删除。"
+            "value" : "主题已删除。"
           }
         }
       }
@@ -1483,7 +1486,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已达焦点限制"
+            "value" : "已达主题限制"
           }
         }
       }
@@ -1493,7 +1496,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点名称"
+            "value" : "主题名称"
           }
         }
       }
@@ -1503,7 +1506,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点已保存并添加到心语下方。"
+            "value" : "主题已保存并添加到心语下方。"
           }
         }
       }
@@ -1513,7 +1516,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点已保存。如需显示在心语下方，请先移除一个当前焦点。"
+            "value" : "主题已保存。如需显示在心语下方，请先移除一个当前主题。"
           }
         }
       }
@@ -1524,7 +1527,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点更新"
+            "value" : "主题更新"
           }
         }
       }
@@ -1540,7 +1543,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "最多选择 3 个生活焦点，指定这个心语应关注的方向。"
+            "value" : "最多选择 3 个生活主题，指定这个心语应关注的方向。"
           }
         }
       }
@@ -1685,7 +1688,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点心语请求最多可能需要一分钟。"
+            "value" : "主题心语请求最多可能需要一分钟。"
           }
         }
       }
@@ -1839,7 +1842,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点"
+            "value" : "主题"
           }
         }
       }
@@ -1897,7 +1900,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "目前，非每日焦点每天最多可刷新 2 次，每个已选焦点每天只能更新一次。如需探索更多，请谨慎选择，明天再来。我们也在努力推出订阅计划以提供更多使用次数，感谢你的耐心等待。"
+            "value" : "目前，非每日主题每天最多可刷新 2 次，每个已选主题每天只能更新一次。如需探索更多，请谨慎选择，明天再来。我们也在努力推出订阅计划以提供更多使用次数，感谢你的耐心等待。"
           }
         }
       }
@@ -2013,7 +2016,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在生成你的焦点心语"
+            "value" : "正在生成你的主题心语"
           }
         }
       }
@@ -2044,7 +2047,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "请稍候，焦点心语请求最多需要一分钟。"
+            "value" : "请稍候，主题心语请求最多需要一分钟。"
           }
         }
       }
@@ -2064,7 +2067,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "若某个焦点涉及你的身体或心理健康，请将 Alynna 仅作为辅助指引，并继续遵循专业医疗建议。"
+            "value" : "若某个主题涉及你的身体或心理健康，请将 Alynna 仅作为辅助指引，并继续遵循专业医疗建议。"
           }
         }
       }
@@ -3721,7 +3724,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点帮助 Alynna 围绕你生活的某个特定部分塑造心语，使指引更贴近你今天希望获得支持的方向。"
+            "value" : "主题帮助 Alynna 围绕你生活的某个特定部分塑造心语，使指引更贴近你今天希望获得支持的方向。"
           }
         }
       }
@@ -3737,7 +3740,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点如何运作"
+            "value" : "主题如何运作"
           }
         }
       }
@@ -3769,7 +3772,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "对于自定义焦点，清晰的名称和精确的描述有助于 Alynna 生成更相关的指引。"
+            "value" : "对于自定义主题，清晰的名称和精确的描述有助于 Alynna 生成更相关的指引。"
           }
         }
       }
@@ -3786,7 +3789,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点心语请求最多可能需要一分钟。"
+            "value" : "主题心语请求最多可能需要一分钟。"
           }
         }
       }
@@ -3818,7 +3821,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在生成你的%@焦点心语。"
+            "value" : "正在生成你的%@主题心语。"
           }
         }
       }
@@ -3915,7 +3918,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "尚无自定义焦点。"
+            "value" : "尚无自定义主题。"
           }
         }
       }
@@ -3963,7 +3966,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "保存焦点"
+            "value" : "保存主题"
           }
         }
       }
@@ -4175,7 +4178,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "新建自定义焦点"
+            "value" : "新建自定义主题"
           }
         }
       }
@@ -6363,7 +6366,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "预设焦点"
+            "value" : "预设主题"
           }
         }
       }
@@ -7570,6 +7573,38 @@
         }
       }
     },
+    "profile.notification_subtitle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "9 AM & 8 PM · Today's mantra"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "早9点 · 晚8点 · 今日心语"
+          }
+        }
+      }
+    },
+    "profile.notification_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daily Reminders"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每日提醒"
+          }
+        }
+      }
+    },
     "profile.notifications_off_hint" : {
       "localizations" : {
         "en" : {
@@ -7844,6 +7879,7 @@
       }
     },
     "profile.send_notification" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8306,7 +8342,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "心语下方最多显示 3 个焦点，请先移除一个再添加。"
+            "value" : "心语下方最多显示 3 个主题，请先移除一个再添加。"
           }
         }
       }
@@ -8477,7 +8513,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "该焦点已存在。"
+            "value" : "该主题已存在。"
           }
         }
       }
@@ -8518,7 +8554,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "这将删除所有出现 %@ 的地方，并清除其缓存的焦点心语。"
+            "value" : "这将删除所有出现 %@ 的地方，并清除其缓存的主题心语。"
           }
         }
       }
@@ -8788,7 +8824,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无法准备此焦点心语请求。"
+            "value" : "无法准备此心语请求。"
           }
         }
       }
@@ -8798,7 +8834,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "当前无法发起焦点心语请求。"
+            "value" : "当前无法发起主题心语请求。"
           }
         }
       }
@@ -8869,7 +8905,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "这个焦点应该关注什么？"
+            "value" : "这个主题应该关注什么？"
           }
         }
       }

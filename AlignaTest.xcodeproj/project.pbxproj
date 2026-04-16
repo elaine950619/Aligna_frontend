@@ -56,6 +56,10 @@
 		F28F7F3C2F906F1A00CA28D8 /* LXGWWenKaiTC-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F28F7F362F906F1A00CA28D8 /* LXGWWenKaiTC-Bold.ttf */; };
 		F28F7F3D2F906F1A00CA28D8 /* LXGWWenKaiTC-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F28F7F372F906F1A00CA28D8 /* LXGWWenKaiTC-Light.ttf */; };
 		F28F7F3E2F906F1A00CA28D8 /* LXGWWenKaiTC-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F28F7F382F906F1A00CA28D8 /* LXGWWenKaiTC-Regular.ttf */; };
+		F28F7F402F90773F00CA28D8 /* ZhanKuWenYiTi.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F28F7F3F2F90773F00CA28D8 /* ZhanKuWenYiTi.ttf */; };
+		F28F7F412F90773F00CA28D8 /* ZhanKuWenYiTi.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F28F7F3F2F90773F00CA28D8 /* ZhanKuWenYiTi.ttf */; };
+		F28F7F432F9077DE00CA28D8 /* AiDianFengYaHei（ShangYongMianFei）.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F28F7F422F9077DE00CA28D8 /* AiDianFengYaHei（ShangYongMianFei）.ttf */; };
+		F28F7F442F9077DE00CA28D8 /* AiDianFengYaHei（ShangYongMianFei）.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F28F7F422F9077DE00CA28D8 /* AiDianFengYaHei（ShangYongMianFei）.ttf */; };
 		F2B9748E2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748C2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf */; };
 		F2B9748F2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2B9748D2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf */; };
 		F2DAEAD62F8FD77C00A6A19A /* SourceHanSerifSC-VF.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2DAEAD52F8FD77C00A6A19A /* SourceHanSerifSC-VF.ttf */; };
@@ -110,6 +114,8 @@
 		F28F7F362F906F1A00CA28D8 /* LXGWWenKaiTC-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "LXGWWenKaiTC-Bold.ttf"; sourceTree = "<group>"; };
 		F28F7F372F906F1A00CA28D8 /* LXGWWenKaiTC-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "LXGWWenKaiTC-Light.ttf"; sourceTree = "<group>"; };
 		F28F7F382F906F1A00CA28D8 /* LXGWWenKaiTC-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "LXGWWenKaiTC-Regular.ttf"; sourceTree = "<group>"; };
+		F28F7F3F2F90773F00CA28D8 /* ZhanKuWenYiTi.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = ZhanKuWenYiTi.ttf; sourceTree = "<group>"; };
+		F28F7F422F9077DE00CA28D8 /* AiDianFengYaHei（ShangYongMianFei）.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "AiDianFengYaHei（ShangYongMianFei）.ttf"; sourceTree = "<group>"; };
 		F2B9748C2F6261BB00522764 /* Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf"; sourceTree = "<group>"; };
 		F2B9748D2F6261BB00522764 /* Merriweather-VariableFont_opsz,wdth,wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Merriweather-VariableFont_opsz,wdth,wght.ttf"; sourceTree = "<group>"; };
 		F2DAEAD52F8FD77C00A6A19A /* SourceHanSerifSC-VF.ttf */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SourceHanSerifSC-VF.ttf"; sourceTree = "<group>"; };
@@ -256,6 +262,8 @@
 				F28F7F362F906F1A00CA28D8 /* LXGWWenKaiTC-Bold.ttf */,
 				F28F7F372F906F1A00CA28D8 /* LXGWWenKaiTC-Light.ttf */,
 				F28F7F382F906F1A00CA28D8 /* LXGWWenKaiTC-Regular.ttf */,
+				F28F7F3F2F90773F00CA28D8 /* ZhanKuWenYiTi.ttf */,
+				F28F7F422F9077DE00CA28D8 /* AiDianFengYaHei（ShangYongMianFei）.ttf */,
 			);
 			path = Fonts;
 			sourceTree = "<group>";
@@ -379,6 +387,8 @@
 				B9B23F2F2F219EB800E620E2 /* Merriweather-Black.ttf in Resources */,
 				F28F7F392F906F1A00CA28D8 /* LXGWWenKaiTC-Bold.ttf in Resources */,
 				F28F7F3A2F906F1A00CA28D8 /* LXGWWenKaiTC-Light.ttf in Resources */,
+				F28F7F432F9077DE00CA28D8 /* AiDianFengYaHei（ShangYongMianFei）.ttf in Resources */,
+				F28F7F412F90773F00CA28D8 /* ZhanKuWenYiTi.ttf in Resources */,
 				F28F7F3B2F906F1A00CA28D8 /* LXGWWenKaiTC-Regular.ttf in Resources */,
 				54C65B922E6E12AD00A41F9A /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
 				B9B23EF82F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf in Resources */,
@@ -396,6 +406,7 @@
 				6E3988C92F64F01B00A8E2A1 /* Merriweather-LightItalic.ttf in Resources */,
 				6E3988CA2F64F01B00A8E2A1 /* CormorantGaramond-Bold.ttf in Resources */,
 				6E3988CB2F64F01B00A8E2A1 /* Merriweather-Light.ttf in Resources */,
+				F28F7F442F9077DE00CA28D8 /* AiDianFengYaHei（ShangYongMianFei）.ttf in Resources */,
 				6E3988CC2F64F01B00A8E2A1 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
 				6E3988CD2F64F01B00A8E2A1 /* Gloock-Regular.ttf in Resources */,
 				F28F7F342F906F1000CA28D8 /* SourceHanSansSC-VF.ttf in Resources */,
@@ -404,6 +415,7 @@
 				6E3988D02F64F01B00A8E2A1 /* CormorantGaramond-SemiBold.ttf in Resources */,
 				6E3988D12F64F01B00A8E2A1 /* Inter-VariableFont_opsz,wght.ttf in Resources */,
 				6E3988D22F64F01B00A8E2A1 /* Merriweather-VariableFont_opsz,wdth,wght.ttf in Resources */,
+				F28F7F402F90773F00CA28D8 /* ZhanKuWenYiTi.ttf in Resources */,
 				F28F7F3C2F906F1A00CA28D8 /* LXGWWenKaiTC-Bold.ttf in Resources */,
 				F28F7F3D2F906F1A00CA28D8 /* LXGWWenKaiTC-Light.ttf in Resources */,
 				F28F7F3E2F906F1A00CA28D8 /* LXGWWenKaiTC-Regular.ttf in Resources */,
@@ -654,12 +666,14 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.16;
+				MARKETING_VERSION = 2.17;
 				PRODUCT_BUNDLE_IDENTIFIER = Aligna;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -691,12 +705,14 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.16;
+				MARKETING_VERSION = 2.17;
 				PRODUCT_BUNDLE_IDENTIFIER = Aligna;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;

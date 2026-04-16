@@ -1877,6 +1877,9 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         guard let last = locations.last else { return }
         DispatchQueue.main.async {
             self.currentLocation = last.coordinate
+            // Persist so MantraNotificationManager and rhythm-update defaults can read without live location
+            UserDefaults.standard.set(last.coordinate.latitude, forKey: "lastKnownLatitude")
+            UserDefaults.standard.set(last.coordinate.longitude, forKey: "lastKnownLongitude")
         }
     }
 

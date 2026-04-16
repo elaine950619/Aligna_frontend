@@ -360,8 +360,6 @@ struct MainView: View {
     @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
     @AppStorage("didDeleteAccount") private var didDeleteAccount: Bool = false
     @AppStorage("dailyMantraNotificationEnabled") private var dailyMantraNotificationEnabled: Bool = false
-    @AppStorage("dailyMantraNotificationHour") private var dailyMantraNotificationHour: Int = 7
-    @AppStorage("dailyMantraNotificationMinute") private var dailyMantraNotificationMinute: Int = 10
     @AppStorage("dailyRhythmUpdateHour") private var dailyRhythmUpdateHour: Int = 7
     @AppStorage("dailyRhythmUpdateMinute") private var dailyRhythmUpdateMinute: Int = 0
     @AppStorage("cachedDailyMantra") private var cachedDailyMantra: String = ""
@@ -589,6 +587,28 @@ struct MainView: View {
         return colorHexMapping[key]
     }
 
+    /// Sets dailyRhythmUpdateHour/Minute to the local sunrise time whenever a location is available.
+    /// Only overwrites if the value is still at the factory default (7:00) OR if this is the first
+    /// time a real location has been resolved.
+    private func applySunriseRhythmDefaultIfNeeded() {
+        let defaults = UserDefaults.standard
+        let storedLat = defaults.double(forKey: "lastKnownLatitude")
+        let storedLon = defaults.double(forKey: "lastKnownLongitude")
+        guard storedLat != 0 || storedLon != 0 else { return }
+
+        // Reuse the same NOAA calculation from MantraNotificationManager
+        let times = MantraNotificationManager.notificationTimes()
+        // notificationTimes() falls back to (9,0,20,0) — if we're still at that fallback,
+        // the location resolve didn't produce a valid sunrise, so skip.
+        let isAtDefault = dailyRhythmUpdateHour == 7 && dailyRhythmUpdateMinute == 0
+        let hadNoLocation = !defaults.bool(forKey: "hasPreviouslyAppliedSunriseRhythm")
+        guard isAtDefault || hadNoLocation else { return }
+
+        dailyRhythmUpdateHour = times.morningHour
+        dailyRhythmUpdateMinute = times.morningMinute
+        defaults.set(true, forKey: "hasPreviouslyAppliedSunriseRhythm")
+    }
+
     private func ensureDefaultsIfMissing() {
         // If nothing loaded yet, supply local demo content
         if viewModel.recommendations.isEmpty {
@@ -759,17 +779,6 @@ struct MainView: View {
         formatter.timeZone = .current
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: effectiveDate)
-    }
-
-    private var derivedNotificationTime: (hour: Int, minute: Int) {
-        let totalMinutes = (dailyRhythmUpdateHour * 60 + dailyRhythmUpdateMinute + 10) % (24 * 60)
-        return (totalMinutes / 60, totalMinutes % 60)
-    }
-
-    private func syncNotificationTimeToRhythmUpdate() {
-        let schedule = derivedNotificationTime
-        dailyMantraNotificationHour = schedule.hour
-        dailyMantraNotificationMinute = schedule.minute
     }
 
     private var infoIconButton: some View {
@@ -2887,8 +2896,147 @@ struct MainView: View {
         @State private var showSaveMessage = false
         @State private var isSaving = false
 
+        // Font picker state — default to first option
+        @State private var selectedFontIndex: Int = 0
+        @State private var showFontPicker: Bool = false
+
         // Always warm white — matches widget text style regardless of color
         private let textColor = Color(hex: "#F7F3EC")
+
+        private var isChinese: Bool { currentRecommendationLanguageCode() == "zh-Hans" }
+
+        // Available fonts depending on language
+        private var fontOptions: [(font: Font, psName: String)] {
+            if isChinese {
+                return [
+                    (.custom("LXGWWenKaiTC-Bold", size: 20),           "LXGWWenKaiTC-Bold"),
+                    (.custom("SourceHanSerifSCVF-ExtraLight", size: 20).weight(.semibold), "SourceHanSerifSCVF-ExtraLight"),
+                    (.custom("SourceHanSansSCVF-Medium", size: 20),    "SourceHanSansSCVF-Medium"),
+                    (.custom("zcoolwenyiti", size: 20),                 "zcoolwenyiti"),
+                    (.custom("AidianFengYaHei", size: 20),              "AidianFengYaHei"),
+                ]
+            } else {
+                return [
+                    (.custom("Merriweather-Regular", size: 20),         "Merriweather-Regular"),
+                    (.custom("Merriweather-Bold", size: 20),            "Merriweather-Bold"),
+                    (.custom("Merriweather-Italic", size: 20),          "Merriweather-Italic"),
+                    (.custom("Gloock-Regular", size: 20),               "Gloock-Regular"),
+                    (.custom("CormorantGaramond-SemiBold", size: 20),   "CormorantGaramond-SemiBold"),
+                    (.custom("PlayfairDisplay-Bold", size: 20),         "PlayfairDisplay-Bold"),
+                ]
+            }
+        }
+
+        private var selectedFont: Font { fontOptions[selectedFontIndex].font }
+        private var selectedPSName: String { fontOptions[selectedFontIndex].psName }
+
+        // Preview snippet — first ~8 chars for Chinese, first ~4 words for Latin
+        private var previewSnippet: String {
+            if isChinese {
+                return String(mantra.prefix(8))
+            } else {
+                let words = mantra.split(separator: " ").prefix(4)
+                return words.joined(separator: " ")
+            }
+        }
+
+        // Action buttons row (Aa + Save + Share)
+        @ViewBuilder
+        private func actionButtons(geo: GeometryProxy) -> some View {
+            VStack {
+                Spacer()
+                HStack(spacing: 12) {
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                            showFontPicker.toggle()
+                        }
+                    } label: {
+                        Text("Aa")
+                            .font(.custom("Merriweather-Bold", size: 15))
+                            .foregroundColor(textColor)
+                            .frame(width: 44, height: 44)
+                            .background(Color.white.opacity(showFontPicker ? 0.28 : 0.18))
+                            .clipShape(Circle())
+                            .overlay(Circle().stroke(Color.white.opacity(showFontPicker ? 0.5 : 0), lineWidth: 1))
+                    }
+
+                    Button { saveToPhotos(geo: geo) } label: {
+                        HStack(spacing: 6) {
+                            if isSaving {
+                                ProgressView().progressViewStyle(.circular).scaleEffect(0.75).tint(textColor)
+                            } else {
+                                Image(systemName: "square.and.arrow.down").font(.system(size: 15, weight: .medium))
+                            }
+                            Text(String(localized: "main.save")).font(.system(size: 15, weight: .medium))
+                        }
+                        .foregroundColor(textColor)
+                        .padding(.horizontal, 22).padding(.vertical, 12)
+                        .background(Color.white.opacity(0.18)).clipShape(Capsule())
+                    }
+                    .disabled(isSaving)
+
+                    Button { shareWallpaper(geo: geo) } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "square.and.arrow.up").font(.system(size: 15, weight: .medium))
+                            Text(String(localized: "main.share")).font(.system(size: 15, weight: .medium))
+                        }
+                        .foregroundColor(textColor)
+                        .padding(.horizontal, 22).padding(.vertical, 12)
+                        .background(Color.white.opacity(0.18)).clipShape(Capsule())
+                    }
+                }
+                .padding(.bottom, geo.safeAreaInsets.bottom + 80)
+            }
+        }
+
+        // Single font card in the picker popover
+        @ViewBuilder
+        private func fontCard(index i: Int) -> some View {
+            let isSelected = i == selectedFontIndex
+            Text(previewSnippet)
+                .font(fontOptions[i].font)
+                .italic(!isChinese && fontOptions[i].psName == "Merriweather-Bold")
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .foregroundColor(isSelected ? Color(hex: "#F7F3EC") : Color(hex: "#F7F3EC").opacity(0.6))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .frame(minWidth: 90)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.white.opacity(isSelected ? 0.22 : 0.10))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color.white.opacity(isSelected ? 0.6 : 0.0), lineWidth: 1)
+                )
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.22)) { selectedFontIndex = i }
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75).delay(0.18)) {
+                        showFontPicker = false
+                    }
+                }
+        }
+
+        // Font picker popover cards (horizontally scrollable)
+        @ViewBuilder
+        private var fontPickerPopover: some View {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(fontOptions.indices, id: \.self) { i in
+                        fontCard(index: i)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.black.opacity(0.35))
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            )
+            .transition(.scale(scale: 0.92, anchor: .bottom).combined(with: .opacity))
+        }
 
         var body: some View {
             GeometryReader { geo in
@@ -2903,14 +3051,15 @@ struct MainView: View {
                         Spacer(minLength: geo.size.height * 0.52)
 
                         Text(mantra)
-                            .font(AlignaType.wallpaperMantraFont())
-                            .italic(currentRecommendationLanguageCode() != "zh-Hans")
+                            .font(selectedFont)
+                            .italic(!isChinese && selectedPSName == "Merriweather-Bold")
                             .lineSpacing(9)
                             .multilineTextAlignment(.leading)
                             .foregroundColor(textColor)
                             .padding(.leading, geo.size.width * 0.10)
                             .padding(.trailing, geo.size.width * 0.18)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .animation(.easeInOut(duration: 0.25), value: selectedFontIndex)
 
                         Spacer()
                     }
@@ -2952,65 +3101,28 @@ struct MainView: View {
                     }
                     .ignoresSafeArea()
 
-                    // Save / Share buttons
-                    VStack {
-                        Spacer()
-                        HStack(spacing: 16) {
-                            Button {
-                                saveToPhotos(geo: geo)
-                            } label: {
-                                HStack(spacing: 6) {
-                                    if isSaving {
-                                        ProgressView()
-                                            .progressViewStyle(.circular)
-                                            .scaleEffect(0.75)
-                                            .tint(textColor)
-                                    } else {
-                                        Image(systemName: "square.and.arrow.down")
-                                            .font(.system(size: 15, weight: .medium))
-                                    }
-                                    Text(String(localized: "main.save"))
-                                        .font(.system(size: 15, weight: .medium))
-                                }
-                                .foregroundColor(textColor)
-                                .padding(.horizontal, 22)
-                                .padding(.vertical, 12)
-                                .background(Color.white.opacity(0.18))
-                                .clipShape(Capsule())
-                            }
-                            .disabled(isSaving)
-
-                            Button {
-                                shareWallpaper(geo: geo)
-                            } label: {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "square.and.arrow.up")
-                                        .font(.system(size: 15, weight: .medium))
-                                    Text(String(localized: "main.share"))
-                                        .font(.system(size: 15, weight: .medium))
-                                }
-                                .foregroundColor(textColor)
-                                .padding(.horizontal, 22)
-                                .padding(.vertical, 12)
-                                .background(Color.white.opacity(0.18))
-                                .clipShape(Capsule())
-                            }
-                        }
-                        .padding(.bottom, geo.safeAreaInsets.bottom + 80)
-                    }
+                    // Save / Share / Font buttons
+                    actionButtons(geo: geo)
                 }
                 .overlay(alignment: .bottom) {
-                    if showSaveMessage {
-                        Text(saveMessage)
-                            .font(.system(size: 13))
-                            .foregroundColor(textColor.opacity(0.85))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(Color.white.opacity(0.16))
-                            .clipShape(Capsule())
-                            .padding(.bottom, geo.safeAreaInsets.bottom + 52)
-                            .transition(.opacity)
+                    VStack(spacing: 12) {
+                        // Font picker popover — appears above buttons when Aa tapped
+                        if showFontPicker {
+                            fontPickerPopover
+                        }
+
+                        if showSaveMessage {
+                            Text(saveMessage)
+                                .font(.system(size: 13))
+                                .foregroundColor(textColor.opacity(0.85))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color.white.opacity(0.16))
+                                .clipShape(Capsule())
+                                .transition(.opacity)
+                        }
                     }
+                    .padding(.bottom, geo.safeAreaInsets.bottom + 140)
                 }
             }
             .ignoresSafeArea()
@@ -3024,7 +3136,9 @@ struct MainView: View {
             let wallpaperView = WallpaperRenderView(
                 mantra: mantra,
                 colorHex: colorHex,
-                size: screenSize
+                size: screenSize,
+                selectedFont: selectedFont,
+                isItalic: !isChinese && selectedPSName == "Merriweather-Bold"
             )
 
             let controller = UIHostingController(rootView: wallpaperView)
@@ -3168,6 +3282,8 @@ struct MainView: View {
         let mantra: String
         let colorHex: String
         let size: CGSize
+        var selectedFont: Font = AlignaType.wallpaperMantraFont()
+        var isItalic: Bool = (currentRecommendationLanguageCode() != "zh-Hans")
 
         private let textColor = Color(hex: "#F7F3EC")
 
@@ -3180,8 +3296,8 @@ struct MainView: View {
                 VStack(spacing: 0) {
                     Spacer(minLength: size.height * 0.52)
                     Text(mantra)
-                        .font(AlignaType.wallpaperMantraFont())
-                        .italic(currentRecommendationLanguageCode() != "zh-Hans")
+                        .font(selectedFont)
+                        .italic(isItalic)
                         .lineSpacing(9)
                         .multilineTextAlignment(.leading)
                         .foregroundColor(textColor)
@@ -3823,32 +3939,26 @@ struct MainView: View {
         }
     }
 
-    var body: some View {
+    // Extracted to avoid compiler type-check timeout on body
+    @ViewBuilder private var bootGroup: some View {
         Group {
             switch bootPhase {
             case .loading:
                 LoadingView(
                     onStartLoading: {
-                        if isManualRefreshFlow {
-                            return
-                        }
+                        if isManualRefreshFlow { return }
                         startInitialLoad()
                     },
                     onPersonalComplete: { didProvidePersonal in
                         if isManualRefreshFlow && showMainGenerationOverlay {
                             forceRefetchDailyIfNotLocked()
-                            if showMainGenerationOverlay {
-                                isBootDataReady = true
-                            }
+                            if showMainGenerationOverlay { isBootDataReady = true }
                         } else if isManualRefreshFlow && !showMainGenerationOverlay {
-                            // 用户在手动刷新流程中点了 Not Now，不生成，直接回主页
                             isManualRefreshFlow = false
                             isBootDataReady = true
                         } else if showMainGenerationOverlay && !hasRecentRecommendation {
                             forceRefetchDailyIfNotLocked()
-                            if showMainGenerationOverlay {
-                                isBootDataReady = true
-                            }
+                            if showMainGenerationOverlay { isBootDataReady = true }
                         } else if hasRecentRecommendation {
                             showMainGenerationOverlay = false
                             isBootDataReady = true
@@ -3867,17 +3977,15 @@ struct MainView: View {
                     locationManager: locationManager
                 )
                 .ignoresSafeArea()
-                        
+
             case .onboarding:
                 NavigationStack {
                     if shouldOnboardAfterSignIn {
-                        // 注册后正式进入引导：Step1
                         OnboardingStep0(viewModel: viewModel)
                             .environmentObject(starManager)
                             .environmentObject(themeManager)
                             .navigationBarBackButtonHidden(true)
                     } else {
-                        // 冷启动未登录：先到 OpeningPage（包含 Sign Up / Log In）
                         FrontPageView()
                             .environmentObject(starManager)
                             .environmentObject(themeManager)
@@ -3885,125 +3993,122 @@ struct MainView: View {
                     }
                 }
             case .main:
-                            mainContent // (extract your existing NavigationStack content into a computed var)
-                        }
-                    }
-                    .overlay {
-                        if bootPhase == .main && showMainGenerationOverlay {
-                            ZStack {
-                                Color.black.opacity(themeManager.isNight ? 0.34 : 0.18)
-                                    .ignoresSafeArea()
+                mainContent
+            }
+        }
+        .overlay {
+            if bootPhase == .main && showMainGenerationOverlay {
+                ZStack {
+                    Color.black.opacity(themeManager.isNight ? 0.34 : 0.18)
+                        .ignoresSafeArea()
+                    AlynnaGenerationOverlayCard(
+                        title: mainGenerationOverlayTitle,
+                        message: mainGenerationOverlayMessage,
+                        showDots: true
+                    )
+                    .environmentObject(themeManager)
+                }
+                .transition(.opacity)
+            }
+        }
+    }
 
-                                AlynnaGenerationOverlayCard(
-                                    title: mainGenerationOverlayTitle,
-                                    message: mainGenerationOverlayMessage,
-                                    showDots: true
-                                )
-                                .environmentObject(themeManager)
-                            }
-                            .transition(.opacity)
-                        }
-                    }
-                    .onAppear {
-                        // run once on cold start
-                        locationPermissionCoordinator.refreshAuthorizationStatus()
-                        if !didBootVisuals {
-                            didBootVisuals = true
-                            starManager.animateStar = true
-                            themeManager.appBecameActive()
-
-                            let trimmed = viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines)
-                            if !trimmed.isEmpty {
-                                cachedDailyMantra = trimmed
-                                if dailyMantraNotificationEnabled {
-                                    syncNotificationTimeToRhythmUpdate()
-                                    MantraNotificationManager.scheduleDaily(
-                                        mantra: trimmed,
-                                        hour: dailyMantraNotificationHour,
-                                        minute: dailyMantraNotificationMinute
-                                    )
-                                }
-                            }
-                        }
-
-                        if shouldShowBootLoading {
-                            bootPhase = .loading
-                        }
-
-                        // 修订3：冷启动后也执行跨天/default 检测
-                        evaluateOnLaunch()
-
-                        if shouldCollapseMantraOnReturn {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                isMantraExpanded = false
-                            }
-                            shouldCollapseMantraOnReturn = false
-                        }
-                    }
-                    .onChange(of: mainNavigationPath) { _, newValue in
-                        if newValue.isEmpty, shouldCollapseMantraOnReturn {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                isMantraExpanded = false
-                            }
-                            shouldCollapseMantraOnReturn = false
-                        }
-                    }
-                    .onChange(of: viewModel.dailyMantra) { _, newValue in
-                        cachedDailyMantra = newValue
+    // First half of observers — split to avoid type-check timeout
+    @ViewBuilder private var bootGroupWithCoreObservers: some View {
+        bootGroup
+            .onAppear {
+                locationPermissionCoordinator.refreshAuthorizationStatus()
+                if !didBootVisuals {
+                    didBootVisuals = true
+                    starManager.animateStar = true
+                    themeManager.appBecameActive()
+                    let trimmed = viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.isEmpty {
+                        cachedDailyMantra = trimmed
                         if dailyMantraNotificationEnabled {
-                            syncNotificationTimeToRhythmUpdate()
-                            MantraNotificationManager.scheduleDaily(
-                                mantra: newValue,
-                                hour: dailyMantraNotificationHour,
-                                minute: dailyMantraNotificationMinute
+                            MantraNotificationManager.scheduleFixed(
+                                mantra: trimmed,
+                                isChinese: currentRecommendationLanguageCode() == "zh-Hans"
                             )
                         }
                     }
-                    .onChange(of: isMantraExpanded) { _, expanded in
-                        if expanded {
-                            showGridItems = false
-                            triggerMantraExpansionHapticIfNeeded()
-                        } else {
-                            triggerGridIconAnimation()
-                        }
-                    }
-                    .onChange(of: viewModel.recommendations) { _, newValue in
-                        let key = (newValue["Sound"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !key.isEmpty, key != lastPrefetchedSoundKey {
-                            lastPrefetchedSoundKey = key
-                            soundPlayer.prefetch(named: key)
-                        }
-                        if !isMantraExpanded {
-                            triggerGridIconAnimation()
-                        }
-                    }
-                    .onChange(of: shouldExpandMantraFromNotification) { _, newValue in
-                        guard newValue else { return }
-                        mainNavigationPath = NavigationPath()
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            isMantraExpanded = true
-                        }
-                        shouldExpandMantraFromNotification = false
-                    }
-                    .onChange(of: locationPermissionCoordinator.authorizationStatus) { _, status in
-                        if (status == .authorizedAlways || status == .authorizedWhenInUse),
-                           showMainViewDialog,
-                           mainViewDialogIsLocationPermission {
-                            dismissMainViewDialog()
-                        }
-                    }
-                    .onChange(of: locationPermissionCoordinator.settingsReturnCount) { _, _ in
-                        if showMainViewDialog, mainViewDialogIsLocationPermission {
-                            dismissMainViewDialog()
-                        }
-                    }
-                    // 修订3：监听 app 从后台进入前台，执行跨天/default 检测
-                    .onChange(of: scenePhase) { _, phase in
-                        if phase == .active {
-                            evaluateOnLaunch()
-                        }
-                    }
                 }
+                if shouldShowBootLoading { bootPhase = .loading }
+                evaluateOnLaunch()
+                applySunriseRhythmDefaultIfNeeded()
+                if shouldCollapseMantraOnReturn {
+                    withAnimation(.easeInOut(duration: 0.2)) { isMantraExpanded = false }
+                    shouldCollapseMantraOnReturn = false
+                }
+            }
+            .onChange(of: mainNavigationPath) { _, newValue in
+                if newValue.isEmpty, shouldCollapseMantraOnReturn {
+                    withAnimation(.easeInOut(duration: 0.2)) { isMantraExpanded = false }
+                    shouldCollapseMantraOnReturn = false
+                }
+            }
+            .onChange(of: viewModel.dailyMantra) { _, newValue in
+                cachedDailyMantra = newValue
+                if dailyMantraNotificationEnabled {
+                    MantraNotificationManager.scheduleFixed(
+                        mantra: newValue,
+                        isChinese: currentRecommendationLanguageCode() == "zh-Hans"
+                    )
+                }
+            }
+            .onChange(of: locationManager.currentLocation.map { "\($0.latitude),\($0.longitude)" }) { _, _ in
+                applySunriseRhythmDefaultIfNeeded()
+                if dailyMantraNotificationEnabled {
+                    let mantra = viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let text = mantra.isEmpty ? cachedDailyMantra : mantra
+                    MantraNotificationManager.scheduleFixed(
+                        mantra: text,
+                        isChinese: currentRecommendationLanguageCode() == "zh-Hans"
+                    )
+                }
+            }
+            .onChange(of: isMantraExpanded) { _, expanded in
+                if expanded {
+                    showGridItems = false
+                    triggerMantraExpansionHapticIfNeeded()
+                } else {
+                    triggerGridIconAnimation()
+                }
+            }
+    }
+
+    var body: some View {
+        bootGroupWithCoreObservers
+            .onChange(of: viewModel.recommendations) { _, newValue in
+                let key = (newValue["Sound"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                if !key.isEmpty, key != lastPrefetchedSoundKey {
+                    lastPrefetchedSoundKey = key
+                    soundPlayer.prefetch(named: key)
+                }
+                if !isMantraExpanded { triggerGridIconAnimation() }
+            }
+            .onChange(of: shouldExpandMantraFromNotification) { _, newValue in
+                guard newValue else { return }
+                mainNavigationPath = NavigationPath()
+                withAnimation(.easeInOut(duration: 0.2)) { isMantraExpanded = true }
+                shouldExpandMantraFromNotification = false
+            }
+            .onChange(of: locationPermissionCoordinator.authorizationStatus) { _, status in
+                if (status == .authorizedAlways || status == .authorizedWhenInUse),
+                   showMainViewDialog,
+                   mainViewDialogIsLocationPermission {
+                    dismissMainViewDialog()
+                }
+            }
+            .onChange(of: locationPermissionCoordinator.settingsReturnCount) { _, _ in
+                if showMainViewDialog, mainViewDialogIsLocationPermission {
+                    dismissMainViewDialog()
+                }
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { evaluateOnLaunch() }
+            }
+    }
     private func fetchAllRecommendationTitles() {
         #if DEBUG
         if _isPreview { return }

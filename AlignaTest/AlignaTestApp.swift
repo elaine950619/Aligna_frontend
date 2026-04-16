@@ -527,6 +527,9 @@ struct AlignaTestApp: App {
     
     init() {
             FontRegistrar.registerAllFonts()
+            // Mirror appLanguage into App Group so the widget can read it on every launch
+            let lang = UserDefaults.standard.string(forKey: "appLanguage") ?? "en"
+            UserDefaults(suiteName: "group.martinyuan.AlynnaTest")?.set(lang, forKey: "appLanguage")
             let appearance = UINavigationBarAppearance()
             appearance.configureWithTransparentBackground()
             appearance.backgroundColor = .clear

@@ -140,6 +140,70 @@ private func widgetThumbnailImage(named name: String, maxPixelDimension: CGFloat
 
 private let widgetSnapshotKey = "alynna.widget.snapshot"
 private let widgetAppGroupID = "group.martinyuan.AlynnaTest"
+
+// MARK: - Language helpers (widget-local, no dependency on main app target)
+
+/// Returns true when the user has selected Chinese in the app or system language is Chinese.
+private func widgetIsChinese() -> Bool {
+    // First check the app-level language setting stored in the shared App Group defaults.
+    if let defaults = UserDefaults(suiteName: widgetAppGroupID),
+       let lang = defaults.string(forKey: "appLanguage"),
+       !lang.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        return lang.lowercased().hasPrefix("zh")
+    }
+    // Fall back to the system preferred language.
+    let preferred = (Locale.preferredLanguages.first ?? "").lowercased()
+    return preferred.hasPrefix("zh")
+}
+
+private func widgetCategoryLabel(_ english: String) -> String {
+    guard widgetIsChinese() else { return english }
+    switch english.lowercased() {
+    case "place":        return "地点"
+    case "gemstone":     return "宝石"
+    case "color":        return "色彩"
+    case "scent":        return "香气"
+    case "activity":     return "活动"
+    case "sound":        return "声音"
+    case "career":       return "事业"
+    case "relationship": return "关系"
+    default:             return english
+    }
+}
+
+private func widgetZodiacName(_ english: String) -> String {
+    guard widgetIsChinese() else { return english }
+    switch english.lowercased() {
+    case "aries":       return "白羊"
+    case "taurus":      return "金牛"
+    case "gemini":      return "双子"
+    case "cancer":      return "巨蟹"
+    case "leo":         return "狮子"
+    case "virgo":       return "处女"
+    case "libra":       return "天秤"
+    case "scorpio":     return "天蝎"
+    case "sagittarius": return "射手"
+    case "capricorn":   return "摩羯"
+    case "aquarius":    return "水瓶"
+    case "pisces":      return "双鱼"
+    default:            return english
+    }
+}
+
+private func widgetMoonPhaseName(_ english: String) -> String {
+    guard widgetIsChinese() else { return english }
+    switch english {
+    case "New Moon":        return "新月"
+    case "Waxing Crescent": return "娥眉月"
+    case "First Quarter":   return "上弦月"
+    case "Waxing Gibbous":  return "盈凸月"
+    case "Full Moon":       return "满月"
+    case "Waning Gibbous":  return "亏凸月"
+    case "Third Quarter":   return "下弦月"
+    case "Waning Crescent": return "残月"
+    default:                return english
+    }
+}
 private let widgetSmallCategoryOverrideKeyPrefix = "widgetSmallCategoryOverride."
 private let widgetSmallShowsBackKeyPrefix = "widgetSmallShowsBack."
 private let widgetMediumShowsBackKey = "widgetMediumShowsBack"
@@ -230,17 +294,17 @@ enum WidgetRecommendationCategory: String, AppEnum, CaseIterable {
     case career = "Career"
     case relationship = "Relationship"
 
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Recommendation Category"
+    static var typeDisplayRepresentation: TypeDisplayRepresentation = "推荐类别"
 
     static var caseDisplayRepresentations: [WidgetRecommendationCategory: DisplayRepresentation] = [
-        .place: "Place",
-        .gemstone: "Gemstone",
-        .color: "Color",
-        .scent: "Scent",
-        .activity: "Activity",
-        .sound: "Sound",
-        .career: "Career",
-        .relationship: "Relationship"
+        .place: "地点",
+        .gemstone: "宝石",
+        .color: "色彩",
+        .scent: "香气",
+        .activity: "活动",
+        .sound: "声音",
+        .career: "事业",
+        .relationship: "关系"
     ]
 
     var storageKeySuffix: String {
@@ -483,7 +547,7 @@ struct AlynnaWidgetEntryView: View {
         let secondaryTextColor = textColor.opacity(0.74)
         let displayMantra = widgetMantra(entry.snapshot.mantra)
         let topLine = widgetHeaderLine(date: entry.snapshot.savedAt, location: entry.snapshot.locationName)
-        let phaseText = moonPhaseLabel(for: entry.snapshot.savedAt)
+        let phaseText = widgetMoonPhaseName(moonPhaseLabel(for: entry.snapshot.savedAt))
         let airQualityText = widgetAirQualityText()
         let footerItems = widgetFooterItems(
             weather: entry.snapshot.weatherSummary,
@@ -495,8 +559,11 @@ struct AlynnaWidgetEntryView: View {
         let isSoundPlaying = audioState.isPlaying && audioState.currentSoundKey == entry.snapshot.soundKey
         let soundSymbol = soundSymbolName(for: entry.snapshot.soundKey, title: entry.snapshot.soundTitle)
         let soundArtworkName = soundArtworkAssetName(for: entry.snapshot.soundKey, title: entry.snapshot.soundTitle)
+        let reasoningFallback = widgetIsChinese()
+            ? "今天需要的是稳定，而非完美。让这些推荐支持你放慢节奏、做出清晰的选择，保持平静的状态。"
+            : "Today asks for steadiness over perfection. Let the recommendations support slower pacing, clearer choices, and a calmer nervous system."
         let reasoningSummary = entry.snapshot.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? "Today asks for steadiness over perfection. Let the recommendations support slower pacing, clearer choices, and a calmer nervous system."
+            ? reasoningFallback
             : entry.snapshot.reasoningSummary.trimmingCharacters(in: .whitespacesAndNewlines)
 
         return GeometryReader { geometry in
@@ -513,9 +580,9 @@ struct AlynnaWidgetEntryView: View {
                     Spacer(minLength: minSide * 0.014)
 
                     zodiacHeader(
-                        sun: entry.snapshot.sunSign,
-                        moon: entry.snapshot.moonSign,
-                        rising: entry.snapshot.risingSign,
+                        sun: widgetZodiacName(entry.snapshot.sunSign),
+                        moon: widgetZodiacName(entry.snapshot.moonSign),
+                        rising: widgetZodiacName(entry.snapshot.risingSign),
                         phase: phaseText,
                         color: secondaryTextColor,
                         size: minSide
@@ -530,7 +597,7 @@ struct AlynnaWidgetEntryView: View {
                             Spacer(minLength: minSide * 0.02)
 
                             (
-                                Text("Why this fits today? ")
+                                Text(widgetIsChinese() ? "为什么今天适合？" : "Why this fits today? ")
                                     .font(.custom("Merriweather-Bold", size: minSide * 0.088))
                                 +
                                 Text(reasoningSummary)
@@ -561,10 +628,10 @@ struct AlynnaWidgetEntryView: View {
 
                         Button(intent: ToggleMediumRecommendationFaceIntent()) {
                             ViewThatFits(in: .vertical) {
-                                mantraText(displayMantra, size: minSide * 0.128)
-                                mantraText(displayMantra, size: minSide * 0.12)
-                                mantraText(displayMantra, size: minSide * 0.112)
-                                mantraText(displayMantra, size: minSide * 0.104)
+                                mantraText(displayMantra, size: minSide * 0.128, isChinese: widgetIsChinese())
+                                mantraText(displayMantra, size: minSide * 0.12, isChinese: widgetIsChinese())
+                                mantraText(displayMantra, size: minSide * 0.112, isChinese: widgetIsChinese())
+                                mantraText(displayMantra, size: minSide * 0.104, isChinese: widgetIsChinese())
                             }
                         }
                         .buttonStyle(.plain)
@@ -642,23 +709,24 @@ private func smallRecommendationExplanation(
         return explanation
     }
 
+    let zh = widgetIsChinese()
     switch category {
     case .place:
-        return "This place was chosen to help you feel grounded and calm today."
+        return zh ? "今天推荐这个地方，帮助你感到脚踏实地。" : "This place was chosen to help you feel grounded and calm today."
     case .color:
-        return "This color supports balance and clarity based on your current day's tone."
+        return zh ? "这个色彩支持今天的平衡与清晰感。" : "This color supports balance and clarity based on your current day's tone."
     case .gemstone:
-        return "This gemstone was selected to encourage intuition and emotional steadiness."
+        return zh ? "这块宝石有助于增强直觉和情绪稳定。" : "This gemstone was selected to encourage intuition and emotional steadiness."
     case .scent:
-        return "This scent aims to relax your nervous system and reduce overstimulation."
+        return zh ? "这种香气有助于放松神经系统，减少过度刺激。" : "This scent aims to relax your nervous system and reduce overstimulation."
     case .sound:
-        return "This sound is meant to create a steady background for focus or rest."
+        return zh ? "这个声音为专注或休息创造稳定的背景氛围。" : "This sound is meant to create a steady background for focus or rest."
     case .activity:
-        return "This activity supports gentle reflection and mental reset."
+        return zh ? "这个活动支持温和的内省与精神重置。" : "This activity supports gentle reflection and mental reset."
     case .career:
-        return "This career cue emphasizes thoughtful decisions over impulsive action."
+        return zh ? "这个提示强调深思熟虑，而非冲动行动。" : "This career cue emphasizes thoughtful decisions over impulsive action."
     case .relationship:
-        return "This relationship cue encourages softer communication and connection."
+        return zh ? "这个提示鼓励更温柔的沟通与连结。" : "This relationship cue encourages softer communication and connection."
     }
 }
 
@@ -668,22 +736,22 @@ private func smallRecommendationContent(
 ) -> SmallRecommendationContent {
     switch category {
     case .place:
-        return SmallRecommendationContent(categoryLabel: "Place", title: snapshot.placeTitle, imageName: snapshot.placeKey, symbolName: "mappin.and.ellipse", usesColorSwatch: false)
+        return SmallRecommendationContent(categoryLabel: widgetCategoryLabel("Place"), title: snapshot.placeTitle, imageName: snapshot.placeKey, symbolName: "mappin.and.ellipse", usesColorSwatch: false)
     case .gemstone:
-        return SmallRecommendationContent(categoryLabel: "Gemstone", title: snapshot.gemstoneTitle, imageName: snapshot.gemstoneKey, symbolName: "sparkles", usesColorSwatch: false)
+        return SmallRecommendationContent(categoryLabel: widgetCategoryLabel("Gemstone"), title: snapshot.gemstoneTitle, imageName: snapshot.gemstoneKey, symbolName: "sparkles", usesColorSwatch: false)
     case .color:
-        return SmallRecommendationContent(categoryLabel: "Color", title: snapshot.colorTitle, imageName: nil, symbolName: "circle.lefthalf.filled", usesColorSwatch: true)
+        return SmallRecommendationContent(categoryLabel: widgetCategoryLabel("Color"), title: snapshot.colorTitle, imageName: nil, symbolName: "circle.lefthalf.filled", usesColorSwatch: true)
     case .scent:
-        return SmallRecommendationContent(categoryLabel: "Scent", title: snapshot.scentTitle, imageName: snapshot.scentKey, symbolName: "drop.fill", usesColorSwatch: false)
+        return SmallRecommendationContent(categoryLabel: widgetCategoryLabel("Scent"), title: snapshot.scentTitle, imageName: snapshot.scentKey, symbolName: "drop.fill", usesColorSwatch: false)
     case .activity:
-        return SmallRecommendationContent(categoryLabel: "Activity", title: snapshot.activityTitle, imageName: snapshot.activityKey, symbolName: "figure.walk", usesColorSwatch: false)
+        return SmallRecommendationContent(categoryLabel: widgetCategoryLabel("Activity"), title: snapshot.activityTitle, imageName: snapshot.activityKey, symbolName: "figure.walk", usesColorSwatch: false)
     case .sound:
         let artworkName = soundArtworkAssetName(for: snapshot.soundKey, title: snapshot.soundTitle)
-        return SmallRecommendationContent(categoryLabel: "Sound", title: snapshot.soundTitle, imageName: artworkName ?? snapshot.soundKey, symbolName: soundSymbolName(for: snapshot.soundKey, title: snapshot.soundTitle), usesColorSwatch: false)
+        return SmallRecommendationContent(categoryLabel: widgetCategoryLabel("Sound"), title: snapshot.soundTitle, imageName: artworkName ?? snapshot.soundKey, symbolName: soundSymbolName(for: snapshot.soundKey, title: snapshot.soundTitle), usesColorSwatch: false)
     case .career:
-        return SmallRecommendationContent(categoryLabel: "Career", title: snapshot.careerTitle, imageName: snapshot.careerKey, symbolName: "briefcase.fill", usesColorSwatch: false)
+        return SmallRecommendationContent(categoryLabel: widgetCategoryLabel("Career"), title: snapshot.careerTitle, imageName: snapshot.careerKey, symbolName: "briefcase.fill", usesColorSwatch: false)
     case .relationship:
-        return SmallRecommendationContent(categoryLabel: "Relationship", title: snapshot.relationshipTitle, imageName: snapshot.relationshipKey, symbolName: "heart.fill", usesColorSwatch: false)
+        return SmallRecommendationContent(categoryLabel: widgetCategoryLabel("Relationship"), title: snapshot.relationshipTitle, imageName: snapshot.relationshipKey, symbolName: "heart.fill", usesColorSwatch: false)
     }
 }
 
@@ -742,7 +810,7 @@ struct AlynnaSmallWidgetEntryView: View {
                     let visualScale = minSide * 0.98
 
                     VStack(spacing: 0) {
-                        Text("Today's \(content.categoryLabel)")
+                        Text(widgetIsChinese() ? "今日\(content.categoryLabel)" : "Today's \(content.categoryLabel)")
                             .font(.custom("Merriweather-Bold", size: minSide * 0.072))
                             .foregroundStyle(topLabelText)
                             .lineLimit(1)
@@ -824,9 +892,9 @@ private struct WidgetFooterItem: Hashable {
     let text: String
 }
 
-private func mantraText(_ text: String, size: CGFloat) -> some View {
+private func mantraText(_ text: String, size: CGFloat, isChinese: Bool = false) -> some View {
     Text(text)
-        .font(.custom("CormorantGaramond-SemiBold", size: size))
+        .font(.custom(isChinese ? "LXGWWenKaiTC-Bold" : "CormorantGaramond-SemiBold", size: size))
         .multilineTextAlignment(.leading)
         .lineLimit(4)
         .minimumScaleFactor(0.72)
@@ -1101,24 +1169,25 @@ private func widgetFooterItems(weather: String, weatherDetail: String, environme
             .trimmingCharacters(in: .whitespacesAndNewlines)
     )
 
+    let zh = widgetIsChinese()
     var items: [WidgetFooterItem] = []
     if !environmentText.isEmpty {
-        items.append(WidgetFooterItem(label: "Environment", text: environmentText))
+        items.append(WidgetFooterItem(label: zh ? "环境" : "Environment", text: environmentText))
     }
     if !weatherText.isEmpty {
-        items.append(WidgetFooterItem(label: "Weather", text: titleCase(weatherText)))
+        items.append(WidgetFooterItem(label: zh ? "天气" : "Weather", text: titleCase(weatherText)))
     }
     if !airText.isEmpty {
-        items.append(WidgetFooterItem(label: "Air", text: airText))
+        items.append(WidgetFooterItem(label: zh ? "空气" : "Air", text: airText))
     }
     if let windText = weatherBits.wind, !windText.isEmpty {
-        items.append(WidgetFooterItem(label: "Wind", text: windText))
+        items.append(WidgetFooterItem(label: zh ? "风速" : "Wind", text: windText))
     }
     if let humidityText = weatherBits.humidity, !humidityText.isEmpty {
-        items.append(WidgetFooterItem(label: "Humidity", text: humidityText))
+        items.append(WidgetFooterItem(label: zh ? "湿度" : "Humidity", text: humidityText))
     }
     if let pressureText = weatherBits.pressure, !pressureText.isEmpty {
-        items.append(WidgetFooterItem(label: "Pressure", text: pressureText))
+        items.append(WidgetFooterItem(label: zh ? "气压" : "Pressure", text: pressureText))
     }
     return items
 }
@@ -1127,13 +1196,14 @@ private func airQualityFeeling(_ raw: String) -> String {
     let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else { return "" }
 
+    let zh = widgetIsChinese()
     let lowered = trimmed.lowercased()
-    if lowered.contains("good") { return "Clean" }
-    if lowered.contains("moderate") { return "Fair" }
-    if lowered.contains("sensitive") { return "Sensitive" }
-    if lowered.contains("very unhealthy") { return "Very Poor" }
-    if lowered.contains("unhealthy") { return "Poor" }
-    if lowered.contains("hazardous") { return "Severe" }
+    if lowered.contains("good") { return zh ? "清新" : "Clean" }
+    if lowered.contains("moderate") { return zh ? "尚可" : "Fair" }
+    if lowered.contains("sensitive") { return zh ? "敏感" : "Sensitive" }
+    if lowered.contains("very unhealthy") { return zh ? "很差" : "Very Poor" }
+    if lowered.contains("unhealthy") { return zh ? "较差" : "Poor" }
+    if lowered.contains("hazardous") { return zh ? "危险" : "Severe" }
 
     return titleCase(trimmed)
 }
@@ -1206,15 +1276,16 @@ private func compactWeatherDetails(_ raw: String) -> (wind: String?, humidity: S
     let pressureRaw = parts.first(where: { $0.localizedCaseInsensitiveContains("pressure") })?
         .replacingOccurrences(of: "Pressure ", with: "")
 
+    let zh = widgetIsChinese()
     let wind = windRaw.flatMap { raw in
         if let value = Double(raw.filter { $0.isNumber || $0 == "." }) {
             switch value {
-            case ..<3: return "Calm"
-            case ..<8: return "Light"
-            case ..<15: return "Breezy"
-            case ..<22: return "Windy"
-            case ..<30: return "Blustery"
-            default: return "Gusty"
+            case ..<3: return zh ? "无风" : "Calm"
+            case ..<8: return zh ? "微风" : "Light"
+            case ..<15: return zh ? "清风" : "Breezy"
+            case ..<22: return zh ? "有风" : "Windy"
+            case ..<30: return zh ? "强风" : "Blustery"
+            default: return zh ? "大风" : "Gusty"
             }
         }
         return raw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1223,11 +1294,11 @@ private func compactWeatherDetails(_ raw: String) -> (wind: String?, humidity: S
     let humidity = humidityRaw.flatMap { raw in
         if let value = Double(raw.filter { $0.isNumber || $0 == "." }) {
             switch value {
-            case ..<30: return "Dry"
-            case ..<45: return "Comfortable"
-            case ..<60: return "Balanced"
-            case ..<75: return "Humid"
-            default: return "Muggy"
+            case ..<30: return zh ? "干燥" : "Dry"
+            case ..<45: return zh ? "舒适" : "Comfortable"
+            case ..<60: return zh ? "平衡" : "Balanced"
+            case ..<75: return zh ? "潮湿" : "Humid"
+            default: return zh ? "闷热" : "Muggy"
             }
         }
         return raw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1236,9 +1307,9 @@ private func compactWeatherDetails(_ raw: String) -> (wind: String?, humidity: S
     let pressure = pressureRaw.flatMap { raw in
         if let value = Double(raw.filter { $0.isNumber || $0 == "." }) {
             switch value {
-            case ..<1005: return "Heavy"
-            case ..<1019: return "Balanced"
-            default: return "Crisp"
+            case ..<1005: return zh ? "低压" : "Heavy"
+            case ..<1019: return zh ? "正常" : "Balanced"
+            default: return zh ? "高压" : "Crisp"
             }
         }
         return raw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1300,20 +1371,21 @@ private func weatherSymbol(for text: String) -> String {
 
 private func readableEnvironment(_ raw: String) -> String {
     let lowered = raw.lowercased()
+    let zh = widgetIsChinese()
     if lowered.contains("green") && lowered.contains("urban") {
-        return "Green / Urban"
+        return zh ? "绿植 / 城市" : "Green / Urban"
     }
     if lowered.contains("water") && lowered.contains("city") {
-        return "Water / City"
+        return zh ? "水岸 / 城市" : "Water / City"
     }
     if lowered.contains("green") && lowered.contains("water") {
-        return "Green / Water"
+        return zh ? "绿植 / 水岸" : "Green / Water"
     }
     if lowered.contains("green") {
-        return "Mostly Green"
+        return zh ? "绿植环境" : "Mostly Green"
     }
     if lowered.contains("urban") || lowered.contains("city") {
-        return "Mostly Urban"
+        return zh ? "城市环境" : "Mostly Urban"
     }
     let compact = compactEnvironment(raw, tighter: true)
     return titleCase(compact)
@@ -1337,8 +1409,14 @@ private func titleCase(_ raw: String) -> String {
 
 private func widgetHeaderLine(date: Date, location: String) -> String {
     let formatter = DateFormatter()
-    formatter.locale = Locale(identifier: "en_US_POSIX")
-    formatter.dateFormat = "EEE, MMM d"
+    let zh = widgetIsChinese()
+    if zh {
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "M月d日 EEE"
+    } else {
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "EEE, MMM d"
+    }
 
     let dateText = formatter.string(from: date)
     let trimmedLocation = location.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1346,7 +1424,7 @@ private func widgetHeaderLine(date: Date, location: String) -> String {
         return dateText
     }
 
-    return "\(dateText) at \(trimmedLocation)"
+    return zh ? "\(dateText) · \(trimmedLocation)" : "\(dateText) at \(trimmedLocation)"
 }
 
 private func moonPhaseLabel(for date: Date = Date()) -> String {
@@ -1456,8 +1534,8 @@ struct AlynnaMediumWidget: Widget {
         StaticConfiguration(kind: "AlynnaWidget", provider: AlynnaProvider()) { entry in
             AlynnaWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("Alynna Daily")
-        .description("Daily mantra with color, place, gemstone and scent.")
+        .configurationDisplayName("Alynna 每日")
+        .description("每日心语，含色彩、地点、宝石与香气推荐。")
         .supportedFamilies([.systemMedium])
     }
 }
@@ -1471,8 +1549,8 @@ struct AlynnaRecommendationWidget: Widget {
         ) { entry in
             AlynnaSmallWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("Alynna Focus")
-        .description("Highlight one of your eight daily recommendations in a square card.")
+        .configurationDisplayName("Alynna 焦点")
+        .description("在方形卡片中突出显示八项每日推荐之一。")
         .supportedFamilies([.systemSmall])
     }
 }
