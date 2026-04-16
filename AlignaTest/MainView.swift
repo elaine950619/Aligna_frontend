@@ -165,34 +165,58 @@ func isCoordinateLikeString(_ s: String) -> Bool {
 }
 
 enum AlignaType {
+    private static var isChinese: Bool { currentRecommendationLanguageCode() == "zh-Hans" }
+
     static func logo() -> Font { .custom("Merriweather-Black", size: 50) }
     static func brandTitle() -> Font { .custom("Merriweather-Black", size: 34) }
     static func expandedMantraBoldItalic() -> Font { .custom("Merriweather-Bold", size: 23) }
 
-    // Language-aware mantra fonts: use Source Han Serif SC for Chinese, Merriweather for Latin
+    // 展开态 mantra — 中文用霞鹜文楷（标题/强化），英文用 Merriweather-Bold
     static func expandedMantraFont() -> Font {
-        currentRecommendationLanguageCode() == "zh-Hans"
-            ? .custom("Source Han Serif SC VF", size: 22).weight(.bold)
+        isChinese
+            ? .custom("LXGWWenKaiTC-Bold", size: 22)
             : .custom("Merriweather-Bold", size: 23)
     }
+
+    // 首页收缩态 mantra — 中文用霞鹜文楷 Bold（与展开态一致），英文用 Merriweather-Italic
     static func homeMantraFont() -> Font {
-        currentRecommendationLanguageCode() == "zh-Hans"
-            ? .custom("Source Han Serif SC VF", size: 18).weight(.bold)
+        isChinese
+            ? .custom("LXGWWenKaiTC-Bold", size: 18)
             : .custom("Merriweather-Italic", size: 18)
     }
+
+    // 壁纸 mantra — 中文用霞鹜文楷（强化），英文用系统 serif
     static func wallpaperMantraFont() -> Font {
-        currentRecommendationLanguageCode() == "zh-Hans"
-            ? .custom("Source Han Serif SC VF", size: 20).weight(.bold)
+        isChinese
+            ? .custom("LXGWWenKaiTC-Bold", size: 20)
             : .system(size: 20, weight: .semibold, design: .serif)
     }
 
     static func homeSubtitle() -> Font { .custom("Merriweather-Italic", size: 18) }
 
-    static func gridCategoryTitle() -> Font { .custom("Merriweather-Bold", size: 18) }
-    static func gridItemName() -> Font { .custom("Merriweather-Light", size: 16) }
+    // UI 元素 — 中文用思源黑体（清晰），英文保持 Merriweather
+    static func gridCategoryTitle() -> Font {
+        isChinese
+            ? .custom("SourceHanSansSCVF-Medium", size: 18)
+            : .custom("Merriweather-Bold", size: 18)
+    }
+    static func gridItemName() -> Font {
+        isChinese
+            ? .custom("SourceHanSansSCVF-Light", size: 16)
+            : .custom("Merriweather-Light", size: 16)
+    }
 
-    static func loadingSubtitle() -> Font { .custom("Merriweather-Italic", size: 16) }
-    static func helperSmall() -> Font { .custom("Merriweather-Light", size: 14) }
+    // loading / helper — 中文用思源黑体 Light（清晰易读）
+    static func loadingSubtitle() -> Font {
+        isChinese
+            ? .custom("SourceHanSansSCVF-Light", size: 16)
+            : .custom("Merriweather-Italic", size: 16)
+    }
+    static func helperSmall() -> Font {
+        isChinese
+            ? .custom("SourceHanSansSCVF-Light", size: 14)
+            : .custom("Merriweather-Light", size: 14)
+    }
 
     static let logoLineSpacing: CGFloat = 44 - 38
     static let descLineSpacing: CGFloat = 26 - 18
@@ -789,12 +813,8 @@ struct MainView: View {
     private func expandedMantraLastLineRect(for text: String, width: CGFloat) -> CGRect? {
         let font: UIFont
         if currentRecommendationLanguageCode() == "zh-Hans" {
-            // Source Han Serif SC VF is a variable font; use descriptor with bold weight
-            let descriptor = UIFontDescriptor(fontAttributes: [
-                .name: "SourceHanSerifSCVF-ExtraLight",
-                kCTFontVariationAttribute as UIFontDescriptor.AttributeName: [2003265652: 700] // wght axis = Bold
-            ])
-            font = UIFont(descriptor: descriptor, size: 22)
+            // 展开态 mantra 用霞鹜文楷 Bold，与 AlignaType.expandedMantraFont() 一致
+            font = UIFont(name: "LXGWWenKaiTC-Bold", size: 22) ?? UIFont.systemFont(ofSize: 22, weight: .bold)
         } else {
             font = UIFont(name: "Merriweather-Bold", size: 23) ?? UIFont.systemFont(ofSize: 23, weight: .bold)
         }
@@ -2907,7 +2927,7 @@ struct MainView: View {
                                 .foregroundColor(textColor.opacity(0.65))
                         }
                         Text("Alynna")
-                            .font(.system(size: 12, weight: .bold, design: .default))
+                            .font(.custom("Merriweather-Regular", size: 12))
                             .tracking(1.8)
                             .foregroundColor(textColor.opacity(0.65))
                     }
@@ -3183,7 +3203,7 @@ struct MainView: View {
                             .foregroundColor(textColor.opacity(0.65))
                     }
                     Text("Alynna")
-                        .font(.system(size: 12, weight: .bold, design: .default))
+                        .font(.custom("Merriweather-Regular", size: 12))
                         .tracking(1.8)
                         .foregroundColor(textColor.opacity(0.65))
                 }

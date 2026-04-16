@@ -13,7 +13,16 @@ enum FontRegistrar {
         "CormorantGaramond-Bold",
         "CormorantGaramond-SemiBold",
         "PlayfairDisplay-Bold",
-        "SourceHanSerifSCVF-ExtraLight"
+        // 思源宋体（主文本/引导语）
+        "SourceHanSerifSCVF-ExtraLight",
+        // 思源黑体（UI/按钮/设置）
+        "SourceHanSansSCVF-Regular",
+        "SourceHanSansSCVF-Light",
+        "SourceHanSansSCVF-Medium",
+        // 霞鹜文楷（标题/mantra 强化）
+        "LXGWWenKaiTC-Regular",
+        "LXGWWenKaiTC-Light",
+        "LXGWWenKaiTC-Bold"
     ]
 
     static func registerAllFonts() {
