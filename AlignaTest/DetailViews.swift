@@ -209,7 +209,7 @@ struct DetailScaffold<MainContent: View>: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 20) {
                 // Section label
-                Text(section)
+                Text(categoryDisplayName(for: section))
                     .foregroundColor(themeManager.watermark)
                     .font(AlynnaType.sectionTitle30Black())
                     .lineSpacing(AlynnaType.sectionTitle30LineSpacing)
@@ -510,7 +510,7 @@ struct ClickableHeroImage: View {
                     onTap()
                 }
 
-            ClickHint(isVisible: .constant(showHint), label: "Click")
+            ClickHint(isVisible: .constant(showHint), label: String(localized: "detail.click_hint"))
                 .offset(x: 6, y: 6)
         }
     }
@@ -519,23 +519,23 @@ struct ClickableHeroImage: View {
 func defaultReasoning(for section: String) -> String {
     switch section {
     case "Place":
-        return "This place was chosen to help you feel grounded and calm today. Tap again later once the model reasoning is connected."
+        return String(localized: "detail.default_reasoning.place")
     case "Color":
-        return "This color supports balance and clarity based on your current day's tone."
+        return String(localized: "detail.default_reasoning.color")
     case "Gemstone":
-        return "This gemstone was selected to encourage intuition and emotional steadiness."
+        return String(localized: "detail.default_reasoning.gemstone")
     case "Scent":
-        return "This scent aims to relax your nervous system and reduce overstimulation."
+        return String(localized: "detail.default_reasoning.scent")
     case "Sound":
-        return "This sound is meant to create a steady background for focus or rest."
+        return String(localized: "detail.default_reasoning.sound")
     case "Activity":
-        return "This activity supports gentle reflection and mental reset."
+        return String(localized: "detail.default_reasoning.activity")
     case "Relationship":
-        return "This relationship cue encourages softer communication and connection."
+        return String(localized: "detail.default_reasoning.relationship")
     case "Career":
-        return "This career cue emphasizes thoughtful decisions over impulsive action."
+        return String(localized: "detail.default_reasoning.career")
     default:
-        return "Your recommendation reasoning will appear here once the model output is connected."
+        return String(localized: "detail.default_reasoning.default")
     }
 }
 
@@ -1252,7 +1252,7 @@ private struct SoundExtraContent: View {
                         .allowsHitTesting(showPlayButton)
                     }
                     .overlay(alignment: .bottomTrailing) {
-                        ClickHint(isVisible: .constant(showSoundClickHint), label: "Click")
+                        ClickHint(isVisible: .constant(showSoundClickHint), label: String(localized: "detail.click_hint"))
                             .offset(x: 6, y: 6)
                     }
             }
@@ -1408,7 +1408,7 @@ struct DailyAnchorView: View {
                     .blur(radius: 18)
                     .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: pulse)
 
-                Text("✦ Daily Anchor ✦")
+                Text(String(localized: "detail.daily_anchor"))
                     .font(.custom("Merriweather-Italic", size: 18))
                     .foregroundColor(themeManager.foregroundColor.opacity(0.9))
                     .shadow(color: themeManager.foregroundColor.opacity(0.25), radius: 12, x: 0, y: 0)
@@ -1696,7 +1696,7 @@ private struct GemstoneExtraContent: View {
                         showLinkSheet = true
                     }
 
-                ClickHint(isVisible: .constant(showGemClickHint), label: "Click")
+                ClickHint(isVisible: .constant(showGemClickHint), label: String(localized: "detail.click_hint"))
                     .offset(x: 6, y: 6)
             }
             .sheet(isPresented: $showLinkSheet) {
@@ -1834,7 +1834,7 @@ private struct ColorExtraContent: View {
                             showReasoning = true
                         }
 
-                    ClickHint(isVisible: .constant(showColorClickHint), label: "Click")
+                    ClickHint(isVisible: .constant(showColorClickHint), label: String(localized: "detail.click_hint"))
                         .offset(x: 6, y: 6)
                 }
             }
@@ -2017,7 +2017,7 @@ private struct ScentExtraContent: View {
                         showLinkSheet = true
                     }
 
-                ClickHint(isVisible: .constant(showScentClickHint), label: "Click")
+                ClickHint(isVisible: .constant(showScentClickHint), label: String(localized: "detail.click_hint"))
                     .offset(x: 6, y: 6)
             }
             .sheet(isPresented: $showLinkSheet) {

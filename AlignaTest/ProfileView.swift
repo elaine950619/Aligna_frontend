@@ -4518,13 +4518,16 @@ private extension ProfileView {
     }
 
     private var sunSignText: String {
-        chartSunSign.isEmpty ? fallbackSunSignText : chartSunSign
+        let raw = chartSunSign.isEmpty ? fallbackSunSignText : chartSunSign
+        return zodiacLocalizedName(for: raw)
     }
     private var moonSignText: String {
-        chartMoonSign.isEmpty ? fallbackMoonSignText : chartMoonSign
+        let raw = chartMoonSign.isEmpty ? fallbackMoonSignText : chartMoonSign
+        return zodiacLocalizedName(for: raw)
     }
     private var ascSignText: String {
-        chartAscSign.isEmpty ? fallbackAscSignText : chartAscSign
+        let raw = chartAscSign.isEmpty ? fallbackAscSignText : chartAscSign
+        return zodiacLocalizedName(for: raw)
     }
 
 }

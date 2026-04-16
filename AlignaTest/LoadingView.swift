@@ -48,6 +48,24 @@ func moonPhaseLabel(for date: Date = Date()) -> String {
     }
 }
 
+/// Localized display version of moon phase label (for UI only — not for API payloads).
+func localizedMoonPhaseLabel(for date: Date = Date()) -> String {
+    let key: String
+    let raw = moonPhaseLabel(for: date)
+    switch raw {
+    case "New Moon":       key = "loading.moon_phase.new"
+    case "Waxing Crescent": key = "loading.moon_phase.waxing_crescent"
+    case "First Quarter":  key = "loading.moon_phase.first_quarter"
+    case "Waxing Gibbous": key = "loading.moon_phase.waxing_gibbous"
+    case "Full Moon":      key = "loading.moon_phase.full"
+    case "Waning Gibbous": key = "loading.moon_phase.waning_gibbous"
+    case "Third Quarter":  key = "loading.moon_phase.third_quarter"
+    case "Waning Crescent": key = "loading.moon_phase.waning_crescent"
+    default:               key = "loading.moon_phase.new"
+    }
+    return String(localized: String.LocalizationValue(key))
+}
+
 enum BootPhase {
     case loading
     case onboarding   // ← 新增：需要走新手引导
@@ -59,18 +77,18 @@ func currentZodiacSign(for date: Date = Date()) -> String {
     let cal = Calendar(identifier: .gregorian)
     let (m, d) = (cal.component(.month, from: date), cal.component(.day, from: date))
     switch (m, d) {
-    case (3,21...31),(4,1...19):  return "♈️ Aries"
-    case (4,20...30),(5,1...20):  return "♉️ Taurus"
-    case (5,21...31),(6,1...20):  return "♊️ Gemini"
-    case (6,21...30),(7,1...22):  return "♋️ Cancer"
-    case (7,23...31),(8,1...22):  return "♌️ Leo"
-    case (8,23...31),(9,1...22):  return "♍️ Virgo"
-    case (9,23...30),(10,1...22): return "♎️ Libra"
-    case (10,23...31),(11,1...21):return "♏️ Scorpio"
-    case (11,22...30),(12,1...21):return "♐️ Sagittarius"
-    case (12,22...31),(1,1...19): return "♑️ Capricorn"
-    case (1,20...31),(2,1...18):  return "♒️ Aquarius"
-    default:                      return "♓️ Pisces"
+    case (3,21...31),(4,1...19):  return "♈️ \(zodiacLocalizedName(for: "Aries"))"
+    case (4,20...30),(5,1...20):  return "♉️ \(zodiacLocalizedName(for: "Taurus"))"
+    case (5,21...31),(6,1...20):  return "♊️ \(zodiacLocalizedName(for: "Gemini"))"
+    case (6,21...30),(7,1...22):  return "♋️ \(zodiacLocalizedName(for: "Cancer"))"
+    case (7,23...31),(8,1...22):  return "♌️ \(zodiacLocalizedName(for: "Leo"))"
+    case (8,23...31),(9,1...22):  return "♍️ \(zodiacLocalizedName(for: "Virgo"))"
+    case (9,23...30),(10,1...22): return "♎️ \(zodiacLocalizedName(for: "Libra"))"
+    case (10,23...31),(11,1...21):return "♏️ \(zodiacLocalizedName(for: "Scorpio"))"
+    case (11,22...30),(12,1...21):return "♐️ \(zodiacLocalizedName(for: "Sagittarius"))"
+    case (12,22...31),(1,1...19): return "♑️ \(zodiacLocalizedName(for: "Capricorn"))"
+    case (1,20...31),(2,1...18):  return "♒️ \(zodiacLocalizedName(for: "Aquarius"))"
+    default:                      return "♓️ \(zodiacLocalizedName(for: "Pisces"))"
     }
 }
 
@@ -208,12 +226,12 @@ private struct LoadingNotesEditorSheet: View {
 
             VStack(spacing: 16) {
                 HStack {
-                    Button("Close") { dismiss() }
+                    Button(String(localized: "loading.close")) { dismiss() }
                         .font(.custom("Merriweather-Regular", size: 16))
 
                     Spacer()
 
-                    Button("Save") {
+                    Button(String(localized: "loading.save")) {
                         onSave(draft)
                         dismiss()
                     }
@@ -684,20 +702,38 @@ struct LoadingView: View {
         .padding(.top, 2)
     }
 
+    private func localizedCheckInOptionLabel(_ value: String) -> String {
+        switch value {
+        case "Joy":   return String(localized: "loading.mood_joy")
+        case "Anger": return String(localized: "loading.mood_anger")
+        case "Grief": return String(localized: "loading.mood_grief")
+        case "Calm":  return String(localized: "loading.mood_calm")
+        case "Low":   return String(localized: "loading.stress_low")
+        case "Med":   return String(localized: "loading.stress_med")
+        case "High":  return String(localized: "loading.stress_high")
+        case "Peak":  return String(localized: "loading.stress_peak")
+        case "Poor":  return String(localized: "loading.sleep_poor")
+        case "OK":    return String(localized: "loading.sleep_ok")
+        case "Great": return String(localized: "loading.sleep_great")
+        case "Rest":  return String(localized: "loading.sleep_rest")
+        default:      return value
+        }
+    }
+
     private var personalCheckIn: some View {
         VStack(spacing: 4) {
             compactRow(
-                title: "Mood",
+                title: String(localized: "loading.mood"),
                 options: [("sun.max.fill", "Joy"), ("flame.fill", "Anger"), ("cloud.rain.fill", "Grief"), ("leaf.fill", "Calm")],
                 selection: $mood
             )
             compactRow(
-                title: "Stress",
+                title: String(localized: "loading.stress"),
                 options: [("minus.circle", "Low"), ("equal.circle", "Med"), ("plus.circle", "High"), ("bolt.circle", "Peak")],
                 selection: $stress
             )
             compactRow(
-                title: "Sleep",
+                title: String(localized: "loading.sleep"),
                 options: [("bed.double.fill", "Poor"), ("moon.zzz.fill", "OK"), ("sun.max.fill", "Great"), ("zzz", "Rest")],
                 selection: $sleep
             )
@@ -865,7 +901,7 @@ struct LoadingView: View {
                         VStack(spacing: 4) {
                             iconView(option.0, size: 13)
                                 .foregroundColor(themeManager.primaryText)
-                            Text(option.1)
+                            Text(localizedCheckInOptionLabel(option.1))
                                 .font(.custom("Merriweather-Bold", size: 9))
                                 .foregroundColor(themeManager.primaryText)
                                 .lineLimit(1)
@@ -916,12 +952,12 @@ struct LoadingView: View {
         let sun = clean(sunText)
         let moon = clean(moonText)
         let rising = clean(risingText)
-        let phaseName = moonPhaseLabel(for: Date()).trimmingCharacters(in: .whitespacesAndNewlines)
+        let phaseName = localizedMoonPhaseLabel(for: Date()).trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let sunLine = sun.map { "Sun in \($0)" } ?? "Sun in —"
-        let moonLine = moon.map { "Moon in \($0)" } ?? "Moon in —"
-        let risingLine = rising.map { "Rising in \($0)" } ?? "Rising in —"
-        let phaseLine = phaseName.isEmpty ? "Moon phase —" : "Moon phase \(phaseName)"
+        let sunLine = sun.map { String(format: String(localized: "loading.sun_in"), $0) } ?? String(localized: "loading.sun_in_dash")
+        let moonLine = moon.map { String(format: String(localized: "loading.moon_in"), $0) } ?? String(localized: "loading.moon_in_dash")
+        let risingLine = rising.map { String(format: String(localized: "loading.rising_in"), $0) } ?? String(localized: "loading.rising_in_dash")
+        let phaseLine = phaseName.isEmpty ? String(localized: "loading.moon_phase_dash") : String(format: String(localized: "loading.moon_phase_label"), phaseName)
 
         return VStack(spacing: 6) {
             Text(sunLine)
@@ -1228,12 +1264,12 @@ struct LoadingView: View {
 
     private var primaryActionLabel: String {
         if didInteractPersonal {
-            return "Continue"
+            return String(localized: "loading.continue")
         }
         if autoSkipSecondsRemaining > 0 {
-            return "Skip in \(autoSkipSecondsRemaining)s"
+            return String(format: String(localized: "loading.skip_in"), autoSkipSecondsRemaining)
         }
-        return "Continue"
+        return String(localized: "loading.continue")
     }
 
     private struct GatheringSegment: Hashable {
@@ -1244,12 +1280,12 @@ struct LoadingView: View {
     private var cosmosSummaryRows: [[GatheringSegment]] {
         [
             [
-                GatheringSegment(label: "Sun", value: summaryValue(sunText, fallback: "—")),
-                GatheringSegment(label: "Moon", value: summaryValue(moonText, fallback: "—")),
-                GatheringSegment(label: "Rising", value: summaryValue(risingText, fallback: "—"))
+                GatheringSegment(label: String(localized: "loading.segment.sun"), value: summaryValue(sunText, fallback: "—")),
+                GatheringSegment(label: String(localized: "loading.segment.moon"), value: summaryValue(moonText, fallback: "—")),
+                GatheringSegment(label: String(localized: "loading.segment.rising"), value: summaryValue(risingText, fallback: "—"))
             ],
             [
-                GatheringSegment(label: "Moon phase", value: summaryValue(moonPhaseLabel(for: Date()), fallback: "—"))
+                GatheringSegment(label: String(localized: "loading.segment.moon_phase"), value: summaryValue(localizedMoonPhaseLabel(for: Date()), fallback: "—"))
             ]
         ]
     }
@@ -1257,16 +1293,16 @@ struct LoadingView: View {
     private var environmentSummaryRows: [[GatheringSegment]] {
         [
             [
-                GatheringSegment(label: "Location", value: summaryValue(locationText, fallback: "Your place")),
-                GatheringSegment(label: "Weather", value: summaryValue(compactWeatherSummaryValue, fallback: "Taking shape")),
-                GatheringSegment(label: "Wind", value: summaryValue(compactWindSummaryValue, fallback: "—")),
-                GatheringSegment(label: "Air quality", value: summaryValue(compactAirQualityValue, fallback: "Being sensed")),
-                GatheringSegment(label: "PM2.5", value: summaryValue(compactPM25Value, fallback: "—")),
-                GatheringSegment(label: "Humidity", value: summaryValue(compactHumidityValue, fallback: "—")),
-                GatheringSegment(label: "Pressure", value: summaryValue(compactPressureValue, fallback: "—")),
-                GatheringSegment(label: "Water", value: summaryValue(compactWaterValue, fallback: "—")),
-                GatheringSegment(label: "Green", value: summaryValue(compactGreenValue, fallback: "—")),
-                GatheringSegment(label: "Built", value: summaryValue(compactBuiltValue, fallback: "—"))
+                GatheringSegment(label: String(localized: "loading.segment.location"), value: summaryValue(locationText, fallback: "—")),
+                GatheringSegment(label: String(localized: "loading.segment.weather"), value: summaryValue(compactWeatherSummaryValue, fallback: "—")),
+                GatheringSegment(label: String(localized: "loading.segment.wind"), value: summaryValue(compactWindSummaryValue, fallback: "—")),
+                GatheringSegment(label: String(localized: "loading.segment.air_quality"), value: summaryValue(compactAirQualityValue, fallback: "—")),
+                GatheringSegment(label: String(localized: "loading.segment.pm25"), value: summaryValue(compactPM25Value, fallback: "—")),
+                GatheringSegment(label: String(localized: "loading.segment.humidity"), value: summaryValue(compactHumidityValue, fallback: "—")),
+                GatheringSegment(label: String(localized: "loading.segment.pressure"), value: summaryValue(compactPressureValue, fallback: "—")),
+                GatheringSegment(label: String(localized: "loading.segment.water"), value: summaryValue(compactWaterValue, fallback: "—")),
+                GatheringSegment(label: String(localized: "loading.segment.green"), value: summaryValue(compactGreenValue, fallback: "—")),
+                GatheringSegment(label: String(localized: "loading.segment.built"), value: summaryValue(compactBuiltValue, fallback: "—"))
             ]
         ]
     }
@@ -1274,17 +1310,17 @@ struct LoadingView: View {
     private var personalSummaryRows: [[GatheringSegment]] {
         var rows: [[GatheringSegment]] = [
             [
-                GatheringSegment(label: "Mood", value: summaryValue(normalizedSelection(mood), fallback: "Open")),
-                GatheringSegment(label: "Stress", value: summaryValue(normalizedSelection(stress), fallback: "—")),
-                GatheringSegment(label: "Sleep", value: summaryValue(normalizedSelection(sleep), fallback: "—")),
-                GatheringSegment(label: "Source", value: summaryValue(normalizedSelection(source), fallback: "—"))
+                GatheringSegment(label: String(localized: "loading.segment.mood"), value: summaryValue(normalizedSelection(mood), fallback: "—")),
+                GatheringSegment(label: String(localized: "loading.segment.stress"), value: summaryValue(normalizedSelection(stress), fallback: "—")),
+                GatheringSegment(label: String(localized: "loading.segment.sleep"), value: summaryValue(normalizedSelection(sleep), fallback: "—")),
+                GatheringSegment(label: String(localized: "loading.segment.source"), value: summaryValue(normalizedSelection(source), fallback: "—"))
             ]
         ]
 
         let noteText = personalNotes.trimmingCharacters(in: .whitespacesAndNewlines)
         if !noteText.isEmpty {
             rows.append([
-                GatheringSegment(label: "Notes", value: String(noteText.prefix(72)))
+                GatheringSegment(label: String(localized: "loading.segment.notes"), value: String(noteText.prefix(72)))
             ])
         }
         return rows
@@ -1503,7 +1539,7 @@ struct LoadingView: View {
 
     private var buttonTitleForGathering: String {
         if isGeneratingOverlayVisible {
-            return "Generating your mantra..."
+            return String(localized: "loading.generating_mantra_now")
         }
         return shouldGenerateTodayReading ? String(localized: "loading.generate_mantra") : String(localized: "loading.see_mantra")
     }

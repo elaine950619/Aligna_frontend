@@ -637,7 +637,7 @@ struct MainView: View {
         guard isGenerationInProgress else { return nil }
         if let focusGenerationTagID,
            let focus = mantraFocusLookup[focusGenerationTagID] {
-            return "Generating your \(focus.name) focus mantra."
+            return String(format: String(localized: "main.generating_focus_mantra"), focusDisplayName(for: focus))
         }
         if isUsingPreviousResult {
             return String(localized: "focus.previous_result")
@@ -709,10 +709,10 @@ struct MainView: View {
             : (lastRecommendationTimeText ?? timeText(for: Date()))
 
         if locationText.isEmpty {
-            return "Last update: \(dateText), \(updateTimeText)"
+            return String(format: String(localized: "main.last_update"), dateText, updateTimeText)
         }
 
-        return "Last update: \(dateText), \(updateTimeText) at \(locationText)"
+        return String(format: String(localized: "main.last_update_at"), dateText, updateTimeText, locationText)
     }
 
     private func effectiveDayString(for date: Date) -> String {
@@ -779,7 +779,7 @@ struct MainView: View {
             tone: mainViewDialogTone,
             primaryButtonTitle: mainViewDialogPrimaryButtonTitle,
             primaryAction: mainViewDialogPrimaryAction,
-            dismissButtonTitle: mainViewDialogPrimaryButtonTitle == nil ? "OK" : "Cancel",
+            dismissButtonTitle: mainViewDialogPrimaryButtonTitle == nil ? String(localized: "main.ok") : String(localized: "main.cancel"),
             onDismiss: dismissMainViewDialog
         )
         .transition(.opacity.combined(with: .scale(scale: 0.96)))
@@ -2949,7 +2949,7 @@ struct MainView: View {
                                         Image(systemName: "square.and.arrow.down")
                                             .font(.system(size: 15, weight: .medium))
                                     }
-                                    Text("Save")
+                                    Text(String(localized: "main.save"))
                                         .font(.system(size: 15, weight: .medium))
                                 }
                                 .foregroundColor(textColor)
@@ -2966,7 +2966,7 @@ struct MainView: View {
                                 HStack(spacing: 6) {
                                     Image(systemName: "square.and.arrow.up")
                                         .font(.system(size: 15, weight: .medium))
-                                    Text("Share")
+                                    Text(String(localized: "main.share"))
                                         .font(.system(size: 15, weight: .medium))
                                 }
                                 .foregroundColor(textColor)
@@ -4493,7 +4493,7 @@ struct MainView: View {
 
                     let reasoningSummaryText = reasoningSummary?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                     let resolvedReasoningSummary = reasoningSummaryText.isEmpty
-                        ? "Generated from your current signals."
+                        ? String(localized: "main.generated_from_signals")
                         : reasoningSummaryText
 
                     print("🧠 FastAPI rawReasoning count:", rawReasoning.count, "keys:", rawReasoning.keys.sorted())
@@ -5315,7 +5315,7 @@ struct RecommendationPagerView: View {
                         } else {
                             VStack(spacing: 12) {
                                 ProgressView()
-                                Text("Loading \(cat.rawValue)…")
+                                Text(String(format: String(localized: "main.loading_category"), categoryDisplayName(for: cat.rawValue)))
                                     .foregroundColor(themeManager.descriptionText.opacity(0.7))
                             }
                         }

@@ -10,11 +10,7 @@ struct AboutView: View {
     private var accentFill: Color { themeManager.onboardingPrimaryText.opacity(themeManager.isNight ? 0.16 : 0.10) }
     private var versionText: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
-        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? version
-        if build == version {
-            return "Version \(version)"
-        }
-        return "Version \(version) (\(build))"
+        return "Version \(version)"
     }
 
     private var updatedText: String {

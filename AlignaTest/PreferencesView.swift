@@ -22,11 +22,43 @@ struct PreferencesView: View {
     @State private var allergiesDraft: Set<String> = []
     @State private var musicDislikeDraft: Set<String> = []
 
+    // Raw English values — used as Firestore data keys
     private let scentOptions  = ["Floral", "Strong", "Woody", "Citrus", "Spicy", "Other"]
     private let actOptions    = ["Static", "Dynamic", "No preference"]
     private let colorOptions  = ["Yellow", "Pink", "Green", "Orange", "Purple", "Other"]
     private let allergyOpts   = ["Pollen/Dust", "Food", "Pet", "Chemical", "Seasonal", "Other"]
     private let musicOptions  = ["Heavy metal", "Electronic", "Classical", "Jazz", "Ambient", "Other"]
+
+    /// Maps English data values to localized display names for chip labels.
+    private func localizedChipLabel(_ value: String) -> String {
+        switch value {
+        case "Floral":        return String(localized: "preferences.scent.floral")
+        case "Strong":        return String(localized: "preferences.scent.strong")
+        case "Woody":         return String(localized: "preferences.scent.woody")
+        case "Citrus":        return String(localized: "preferences.scent.citrus")
+        case "Spicy":         return String(localized: "preferences.scent.spicy")
+        case "Static":        return String(localized: "preferences.act.static")
+        case "Dynamic":       return String(localized: "preferences.act.dynamic")
+        case "No preference": return String(localized: "preferences.act.no_preference")
+        case "Yellow":        return String(localized: "preferences.color.yellow")
+        case "Pink":          return String(localized: "preferences.color.pink")
+        case "Green":         return String(localized: "preferences.color.green")
+        case "Orange":        return String(localized: "preferences.color.orange")
+        case "Purple":        return String(localized: "preferences.color.purple")
+        case "Pollen/Dust":   return String(localized: "preferences.allergy.pollen")
+        case "Food":          return String(localized: "preferences.allergy.food")
+        case "Pet":           return String(localized: "preferences.allergy.pet")
+        case "Chemical":      return String(localized: "preferences.allergy.chemical")
+        case "Seasonal":      return String(localized: "preferences.allergy.seasonal")
+        case "Heavy metal":   return String(localized: "preferences.music.heavy_metal")
+        case "Electronic":    return String(localized: "preferences.music.electronic")
+        case "Classical":     return String(localized: "preferences.music.classical")
+        case "Jazz":          return String(localized: "preferences.music.jazz")
+        case "Ambient":       return String(localized: "preferences.music.ambient")
+        case "Other":         return String(localized: "preferences.other")
+        default:              return value
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -133,7 +165,7 @@ struct PreferencesView: View {
                         message: errorMessage,
                         symbol: "exclamationmark.circle",
                         tone: .error,
-                        dismissButtonTitle: "OK",
+                        dismissButtonTitle: String(localized: "preferences.ok"),
                         onDismiss: { self.errorMessage = nil }
                     )
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
@@ -144,7 +176,7 @@ struct PreferencesView: View {
                         message: String(localized: "preferences.saved_message"),
                         symbol: "checkmark.circle",
                         tone: .success,
-                        dismissButtonTitle: "OK",
+                        dismissButtonTitle: String(localized: "preferences.ok"),
                         onDismiss: { showSavedAlert = false }
                     )
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
@@ -169,7 +201,7 @@ struct PreferencesView: View {
     }
 
     private var headerCard: some View {
-        Text("preferences.title")
+        Text(String(localized: "preferences.title"))
             .font(TimelineType.title34GloockBlack())
             .lineSpacing(TimelineType.title34LineSpacing)
             .foregroundColor(themeManager.primaryText)
@@ -206,7 +238,7 @@ struct PreferencesView: View {
                     toggle(opt)
                 } label: {
                     let selected = isSelected(opt)
-                    Text(opt)
+                    Text(localizedChipLabel(opt))
                         .font(.custom("Merriweather-Regular", size: 12))
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
@@ -235,7 +267,7 @@ struct PreferencesView: View {
 
     private func savePreferences() {
         guard let col = userCollection, let id = userDocID else {
-            errorMessage = "User document not found."
+            errorMessage = String(localized: "preferences.doc_not_found")
             return
         }
 

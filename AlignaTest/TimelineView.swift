@@ -21,7 +21,7 @@ struct NoDataMessage: View {
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundColor(themeManager.accent)
 
-            Text("No data available for this day")
+            Text(String(localized: "timeline.no_data"))
                 .font(AlynnaTypography.font(.headline))
                 .foregroundColor(themeManager.primaryText)
 
@@ -177,7 +177,7 @@ struct SuggestionRow: View {
 
                     Spacer(minLength: 12)
 
-                    Text(item.category)
+                    Text(categoryDisplayName(for: item.category))
                         .font(AlynnaTypography.font(.caption1))
                         .tracking(0.7)
                         .foregroundColor(themeManager.descriptionText.opacity(0.9))
@@ -223,7 +223,7 @@ private struct TimelineSuggestionDetailSheet: View {
 
     private var overviewText: String {
         let text = item.description.trimmingCharacters(in: .whitespacesAndNewlines)
-        return text.isEmpty ? "No overview available." : text
+        return text.isEmpty ? String(localized: "timeline.no_overview") : text
     }
 
     var body: some View {
@@ -249,7 +249,7 @@ private struct TimelineSuggestionDetailSheet: View {
             .padding(20)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text(item.category)
+                    Text(categoryDisplayName(for: item.category))
                         .font(AlynnaTypography.font(.headline))
                         .foregroundColor(themeManager.primaryText)
                 }
@@ -509,7 +509,7 @@ struct TimelineView: View {
     
     private var mantraText: String {
         dailyVM.mantra.isEmpty
-            ? "Your daily mantra will appear here."
+            ? String(localized: "timeline.mantra_placeholder")
             : dailyVM.mantra
     }
 
@@ -549,7 +549,7 @@ struct TimelineView: View {
         
                 
                 ScrollView(.vertical, showsIndicators: false) {
-                    TimelineHeader(title: "Timeline") { dismiss() }
+                    TimelineHeader(title: String(localized: "timeline.header_title")) { dismiss() }
                                             .padding(.bottom, 4)
                                             .foregroundColor(themeManager.foregroundColor)
                     
@@ -598,7 +598,7 @@ struct TimelineView: View {
                         }
                         .padding(.horizontal, 16)
                         
-                        sectionHeader(title: "Journal", systemName: "book.closed")
+                        sectionHeader(title: String(localized: "timeline.section_journal"), systemName: "book.closed")
 
                         NavigationLink {
                             JournalView(date: selectedDate)
@@ -609,7 +609,7 @@ struct TimelineView: View {
                             HStack(alignment: .center, spacing: 10) {
                                 VStack(alignment: .leading, spacing: 8) {
                                     HStack(alignment: .firstTextBaseline, spacing: 12) {
-                                        Text("Last entry")
+                                        Text(String(localized: "timeline.last_entry"))
                                             .font(AlynnaTypography.font(.headline))
                                             .foregroundColor(themeManager.primaryText)
                                             .lineLimit(1)
@@ -622,11 +622,11 @@ struct TimelineView: View {
                                     }
 
                                     if isLoadingJournal {
-                                        Text("Loading…")
+                                        Text(String(localized: "timeline.loading"))
                                             .font(AlynnaTypography.font(.subheadline))
                                             .foregroundColor(themeManager.descriptionText)
                                     } else if journalText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                        Text("No entry yet.")
+                                        Text(String(localized: "timeline.no_entry"))
                                             .font(AlynnaTypography.font(.subheadline))
                                             .foregroundColor(themeManager.descriptionText)
                                     } else {
@@ -657,11 +657,11 @@ struct TimelineView: View {
                         .buttonStyle(.plain)
                         .padding(.horizontal, 16)
 
-                        sectionHeader(title: "Mantra", systemName: "quote.bubble")
+                        sectionHeader(title: String(localized: "timeline.section_mantra"), systemName: "quote.bubble")
 
                         VStack(alignment: .leading, spacing: 8) {
                             if dailyVM.mantra.isEmpty {
-                                Text("No mantra for this day.")
+                                Text(String(localized: "timeline.no_mantra"))
                                     .font(AlynnaTypography.font(.subheadline))
                                     .foregroundColor(themeManager.descriptionText)
                             } else {
@@ -689,7 +689,7 @@ struct TimelineView: View {
                         )
                         .padding(.horizontal, 16)
 
-                        sectionHeader(title: "Rhythm", systemName: "waveform")
+                        sectionHeader(title: String(localized: "timeline.section_rhythm"), systemName: "waveform")
 
                         // Build an ordered list of items for the categories you care about
                         let dayItems: [SuggestionItem] = allCategories.compactMap { cat in

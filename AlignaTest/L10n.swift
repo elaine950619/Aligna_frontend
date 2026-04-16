@@ -72,6 +72,27 @@ func categoryDisplayName(for key: String) -> String {
     }
 }
 
+// MARK: - Zodiac Sign Display Names
+// Maps English zodiac sign names (as returned by AstroCalculator rawValues and server responses)
+// to localized display names. Input is case-insensitive.
+func zodiacLocalizedName(for sign: String) -> String {
+    switch sign.lowercased() {
+    case "aries":       return String(localized: "zodiac.aries")
+    case "taurus":      return String(localized: "zodiac.taurus")
+    case "gemini":      return String(localized: "zodiac.gemini")
+    case "cancer":      return String(localized: "zodiac.cancer")
+    case "leo":         return String(localized: "zodiac.leo")
+    case "virgo":       return String(localized: "zodiac.virgo")
+    case "libra":       return String(localized: "zodiac.libra")
+    case "scorpio":     return String(localized: "zodiac.scorpio")
+    case "sagittarius": return String(localized: "zodiac.sagittarius")
+    case "capricorn":   return String(localized: "zodiac.capricorn")
+    case "aquarius":    return String(localized: "zodiac.aquarius")
+    case "pisces":      return String(localized: "zodiac.pisces")
+    default:            return sign
+    }
+}
+
 // MARK: - Moon Phase Display Names
 // Maps the English moon phase string (returned by moonPhaseLabel()) to a localized name.
 func moonPhaseDisplayName(for phase: String) -> String {
