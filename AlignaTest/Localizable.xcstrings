@@ -1196,7 +1196,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "这种香气旨在放松你的神经系统，减少过度刺激。"
+            "value" : "这种气味旨在放松你的神经系统，减少过度刺激。"
           }
         }
       }
@@ -7661,7 +7661,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "点击锁图标以查看详情。"
+            "value" : "点击锁标以查看详情。"
           }
         }
       }
@@ -7693,7 +7693,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "更新你的香味、颜色等偏好"
+            "value" : "更新你的气味、颜色等偏好"
           }
         }
       }
@@ -7709,7 +7709,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "偏好设置"
+            "value" : "偏好"
           }
         }
       }
@@ -8467,7 +8467,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "点击锁图标以查看详情。"
+            "value" : "点击锁标查看详情。"
           }
         }
       }
