@@ -96,7 +96,7 @@ struct LoginView: View {
                         )
 
                         VStack(spacing: 6) {
-                            Text("Welcome Back")
+                            Text(String(localized: "login.welcome_back"))
                                 .font(AlynnaTypography.font(.subheadline))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                         }
@@ -138,7 +138,7 @@ struct LoginView: View {
                                         activeAuthAction = nil
                                         showAuthOverlay = false
                                         UserDefaults.standard.set("google.com", forKey: "lastAuthProvider")
-                                        infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
+                                        infoMessage = String(localized: "auth.account_incomplete_message")
                                         dismissAfterInfo = true
                                         showInfoAlert = true
                                     },
@@ -164,7 +164,7 @@ struct LoginView: View {
                                         .frame(width: 16, height: 16)
                                         .foregroundColor(.black)
                                         .frame(width: 24, height: 24)
-                                    Text("Sign in with Google")
+                                    Text(String(localized: "login.sign_in_google"))
                                         .font(AlynnaTypography.font(.headline).weight(.semibold))
                                 }
                                 .foregroundColor(.black)
@@ -186,7 +186,7 @@ struct LoginView: View {
                                 onCompletion: { result in
                                     guard !authBusy else { return }
                                     guard let raw = currentNonce, !raw.isEmpty else {
-                                        alertMessage = "Missing nonce. Please try again."
+                                        alertMessage = String(localized: "auth.missing_nonce")
                                         showAlert = true
                                         return
                                     }
@@ -215,7 +215,7 @@ struct LoginView: View {
                                             if let user = Auth.auth().currentUser {
                                                 viewModel.userId = user.uid
                                             }
-                                            infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
+                                            infoMessage = String(localized: "auth.account_incomplete_message")
                                             dismissAfterInfo = true
                                             showInfoAlert = true
                                         },
@@ -241,7 +241,7 @@ struct LoginView: View {
                         // 分隔线
                         HStack {
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
-                            Text("Or with")
+                            Text(String(localized: "auth.or_with"))
                                 .font(AlynnaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
@@ -260,7 +260,7 @@ struct LoginView: View {
                                 .cornerRadius(14)
                                 .foregroundColor(themeManager.fixedNightTextPrimary)
                                 .placeholder(when: email.isEmpty) {
-                                    Text("Enter your email")
+                                    Text(String(localized: "auth.email_placeholder"))
                                         .foregroundColor(themeManager.fixedNightTextSecondary)
                                         .padding(.leading, 16)
                                 }
@@ -287,7 +287,7 @@ struct LoginView: View {
                                 .cornerRadius(14)
                                 .foregroundColor(themeManager.fixedNightTextPrimary)
                                 .placeholder(when: password.isEmpty) {
-                                    Text("Enter your password")
+                                    Text(String(localized: "auth.password_placeholder"))
                                         .foregroundColor(themeManager.fixedNightTextSecondary)
                                         .padding(.leading, 16)
                                 }
@@ -308,10 +308,10 @@ struct LoginView: View {
                         // Forgot Password
                         HStack {
                             Spacer()
-                            Button("Forgot Password?") {
+                            Button(String(localized: "login.forgot_password")) {
                                 guard !authBusy else { return }
                                 if email.isEmpty {
-                                    alertMessage = "Enter your email first."
+                                    alertMessage = String(localized: "login.enter_email_first")
                                     showAuthOverlay = false
                                     showAlert = true
                                     return
@@ -324,7 +324,7 @@ struct LoginView: View {
                                     if let error = error {
                                         alertMessage = error.localizedDescription
                                     } else {
-                                        alertMessage = "Password reset email sent."
+                                        alertMessage = String(localized: "login.reset_email_sent")
                                     }
                                     showAlert = true
                                 }
@@ -339,7 +339,7 @@ struct LoginView: View {
                         Button(action: {
                             guard !authBusy else { return }
                             if email.isEmpty || password.isEmpty {
-                                alertMessage = "Please enter both email and password."
+                                alertMessage = String(localized: "login.email_password_required")
                                 showAlert = true
                                 return
                             }
@@ -355,10 +355,10 @@ struct LoginView: View {
                                 if let error = error {
                                     if let code = AuthErrorCode(rawValue: (error as NSError).code) {
                                         switch code {
-                                        case .wrongPassword: alertMessage = "Incorrect password. Please try again."
-                                        case .invalidEmail: alertMessage = "Invalid email address."
-                                        case .userDisabled: alertMessage = "This account has been disabled."
-                                        case .userNotFound: alertMessage = "No account found with this email."
+                                        case .wrongPassword: alertMessage = String(localized: "login.error_wrong_password")
+                                        case .invalidEmail: alertMessage = String(localized: "login.error_invalid_email")
+                                        case .userDisabled: alertMessage = String(localized: "login.error_user_disabled")
+                                        case .userNotFound: alertMessage = String(localized: "login.error_user_not_found")
                                         default: alertMessage = error.localizedDescription
                                         }
                                     } else {
@@ -373,7 +373,7 @@ struct LoginView: View {
                                     user.sendEmailVerification(completion: nil)
                                     try? Auth.auth().signOut()
                                     showAuthOverlay = false
-                                    alertMessage = "Please verify your email before continuing. We just sent you a new verification email."
+                                    alertMessage = String(localized: "login.error_verify_email")
                                     showAlert = true
                                     return
                                 }
@@ -393,7 +393,7 @@ struct LoginView: View {
                                         if let user = Auth.auth().currentUser {
                                             viewModel.userId = user.uid
                                         }
-                                        infoMessage = "We found your account, but a few details are missing. Let’s finish setup."
+                                        infoMessage = String(localized: "auth.account_incomplete_message")
                                         dismissAfterInfo = true
                                         showInfoAlert = true
                                     },
@@ -413,7 +413,7 @@ struct LoginView: View {
                                         .tint(.black)
                                         .scaleEffect(0.75)
                                 }
-                                Text(isActive(.emailLogin) ? "Signing in..." : "Log In")
+                                Text(isActive(.emailLogin) ? String(localized: "login.signing_in") : String(localized: "login.log_in"))
                             }
                             .font(AlynnaTypography.font(.headline).weight(.semibold))
                             .frame(maxWidth: .infinity)
@@ -427,7 +427,7 @@ struct LoginView: View {
 
                         // 去注册
                         HStack {
-                            Text("Don't have an account?")
+                            Text(String(localized: "login.no_account"))
                                 .font(AlynnaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextSecondary)
                             NavigationLink(
@@ -436,7 +436,7 @@ struct LoginView: View {
                                     .environmentObject(themeManager)
                                     .environmentObject(viewModel)
                             ) {
-                                Text("Create An Account")
+                                Text(String(localized: "login.create_account"))
                                     .font(AlynnaTypography.font(.footnote).weight(.semibold))
                                     .foregroundColor(themeManager.fixedNightTextPrimary)
                                     .underline()
@@ -502,7 +502,7 @@ struct LoginView: View {
                                 .progressViewStyle(.circular)
                                 .tint(themeManager.fixedNightTextPrimary)
                                 .scaleEffect(1.05)
-                            Text("Logging in…")
+                            Text(String(localized: "login.logging_in_overlay"))
                                 .font(AlynnaTypography.font(.footnote))
                                 .foregroundColor(themeManager.fixedNightTextPrimary)
                         }
@@ -516,22 +516,22 @@ struct LoginView: View {
             .overlay {
                 if showAlert {
                     AlynnaActionDialog(
-                        title: "Error",
+                        title: String(localized: "auth.dialog_error_title"),
                         message: alertMessage,
                         symbol: "exclamationmark.circle",
                         tone: .error,
-                        dismissButtonTitle: "OK",
+                        dismissButtonTitle: String(localized: "auth.dialog_ok"),
                         onDismiss: { showAlert = false }
                     )
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
                     .zIndex(20)
                 } else if showInfoAlert {
                     AlynnaActionDialog(
-                        title: "Almost there",
+                        title: String(localized: "login.almost_there_title"),
                         message: infoMessage,
                         symbol: "person.crop.circle.badge.exclamationmark",
                         tone: .info,
-                        dismissButtonTitle: "Continue",
+                        dismissButtonTitle: String(localized: "auth.dialog_continue"),
                         onDismiss: {
                             showInfoAlert = false
                     if dismissAfterInfo {

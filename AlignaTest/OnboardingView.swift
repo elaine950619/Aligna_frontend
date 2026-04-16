@@ -1083,43 +1083,43 @@ struct OnboardingStep3: View {
 
                         AlignaTopHeader(minLength: minLength)
 
-                        Text("Your preferences")
+                        Text(String(localized: "onboarding.step3.title"))
                             .onboardingTitleStyle()
                             .padding(.top, 6)
 
-                        Text("This helps us personalize your daily rhythms")
+                        Text(String(localized: "onboarding.step3.subtitle"))
                             .onboardingCaptionStyle()
 
                         preferenceSection(
-                            "Any scent that don’t feel right?",
+                            String(localized: "onboarding.step3.scent_question"),
                             content: chips(options: scentOptions,
                                            isSelected: { viewModel.scent_dislike.contains($0) },
                                            toggle: { toggleSet(&viewModel.scent_dislike, $0) })
                         )
 
                         preferenceSection(
-                            "Activity preference?",
+                            String(localized: "onboarding.step3.activity_question"),
                             content: chips(options: actOptions,
                                            isSelected: { viewModel.act_prefer.contains($0) },
                                            toggle: { toggleSet(&viewModel.act_prefer, $0) })
                         )
 
                         preferenceSection(
-                            "Any color that don’t feel right?",
+                            String(localized: "onboarding.step3.color_question"),
                             content: chips(options: colorOptions,
                                            isSelected: { viewModel.color_dislike.contains($0) },
                                            toggle: { toggleSet(&viewModel.color_dislike, $0) })
                         )
 
                         preferenceSection(
-                            "Any allergies we should know about?",
+                            String(localized: "onboarding.step3.allergy_question"),
                             content: chips(options: allergyOpts,
                                            isSelected: { viewModel.allergies.contains($0) },
                                            toggle: { toggleSet(&viewModel.allergies, $0) })
                         )
 
                         preferenceSection(
-                            "Any sound that don’t feel right?",
+                            String(localized: "onboarding.step3.sound_question"),
                             content: chips(options: musicOptions,
                                            isSelected: { viewModel.music_dislike.contains($0) },
                                            toggle: { toggleSet(&viewModel.music_dislike, $0) })
@@ -1135,7 +1135,7 @@ struct OnboardingStep3: View {
                                 showLongWaitHint = false
                                 ensureAuthenticatedThenUpload()
                             } label: {
-                                Text(hasAnySelection ? "Continue" : "Skip for now")
+                                Text(hasAnySelection ? String(localized: "onboarding.step3.continue") : String(localized: "onboarding.step3.skip"))
                                     .onboardingPrimaryButtonStyle(isEnabled: !isLoading)
                             }
                             .disabled(isLoading)
@@ -1158,7 +1158,7 @@ struct OnboardingStep3: View {
         .preferredColorScheme(themeManager.preferredColorScheme)
         .onAppear {
             didAttemptReverseGeocode = false
-            locationMessage = "Requesting location permission..."
+            locationMessage = String(localized: "onboarding.location.requesting")
             locationManager.requestLocation()
         }
         .onDisappear {
@@ -1180,12 +1180,12 @@ struct OnboardingStep3: View {
                     if let place = place, !place.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         viewModel.currentPlace = place
                         viewModel.currentCoordinate = coord
-                        locationMessage = "✓ Current Place detected: \(place)"
+                        locationMessage = String(format: String(localized: "onboarding.location.detected"), place)
                     } else {
                         viewModel.currentCoordinate = coord
                         let coordText = String(format: "%.4f, %.4f", coord.latitude, coord.longitude)
                         viewModel.currentPlace = coordText
-                        locationMessage = "Location acquired, resolving address failed."
+                        locationMessage = String(localized: "onboarding.location.resolve_failed")
 
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                             didAttemptReverseGeocode = false
@@ -1197,7 +1197,7 @@ struct OnboardingStep3: View {
         .onReceive(locationManager.$locationStatus.compactMap { $0 }) { status in
             switch status {
             case .denied, .restricted:
-                locationMessage = "Location permission denied. Current place will be left blank."
+                locationMessage = String(localized: "onboarding.location.denied")
             default:
                 break
             }
@@ -1240,7 +1240,7 @@ struct OnboardingStep3: View {
                     toggle(opt)
                 } label: {
                     let selected = isSelected(opt)
-                    Text(opt)
+                    Text(localizedOnboardingOptionLabel(opt))
                         .font(.custom(selected ? "Merriweather-Bold" : "Merriweather-Regular", size: 14))
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
@@ -1263,13 +1263,43 @@ struct OnboardingStep3: View {
         if set.contains(value) { set.remove(value) } else { set.insert(value) }
     }
 
+    private func localizedOnboardingOptionLabel(_ value: String) -> String {
+        switch value {
+        case "Floral":        return String(localized: "onboarding.option.floral")
+        case "Strong":        return String(localized: "onboarding.option.strong")
+        case "Woody":         return String(localized: "onboarding.option.woody")
+        case "Citrus":        return String(localized: "onboarding.option.citrus")
+        case "Spicy":         return String(localized: "onboarding.option.spicy")
+        case "Static":        return String(localized: "onboarding.option.static")
+        case "Dynamic":       return String(localized: "onboarding.option.dynamic")
+        case "No preference": return String(localized: "onboarding.option.no_preference")
+        case "Yellow":        return String(localized: "onboarding.option.yellow")
+        case "Pink":          return String(localized: "onboarding.option.pink")
+        case "Green":         return String(localized: "onboarding.option.green")
+        case "Orange":        return String(localized: "onboarding.option.orange")
+        case "Purple":        return String(localized: "onboarding.option.purple")
+        case "Pollen/Dust":   return String(localized: "onboarding.option.pollen_dust")
+        case "Food":          return String(localized: "onboarding.option.food")
+        case "Pet":           return String(localized: "onboarding.option.pet")
+        case "Chemical":      return String(localized: "onboarding.option.chemical")
+        case "Seasonal":      return String(localized: "onboarding.option.seasonal")
+        case "Heavy metal":   return String(localized: "onboarding.option.heavy_metal")
+        case "Classical":     return String(localized: "onboarding.option.classical")
+        case "Electronic":    return String(localized: "onboarding.option.electronic")
+        case "Country":       return String(localized: "onboarding.option.country")
+        case "Jazz":          return String(localized: "onboarding.option.jazz")
+        case "Other":         return String(localized: "onboarding.option.other")
+        default:              return value
+        }
+    }
+
     private var loadingOverlay: some View {
         ZStack {
             Color.black.opacity(0.55)
                 .ignoresSafeArea()
 
             VStack(spacing: 14) {
-                Text("Preparing your profile…")
+                Text(String(localized: "onboarding.loading.preparing"))
                     .font(.custom("Merriweather-Bold", size: 17))
                     .foregroundColor(themeManager.onboardingPrimaryText)
 
@@ -1287,7 +1317,7 @@ struct OnboardingStep3: View {
                         .multilineTextAlignment(.center)
 
                     HStack(spacing: 12) {
-                        Button("Close") {
+                        Button(String(localized: "onboarding.error.close")) {
                             showLoadingOverlay = false
                             loadingErrorMessage = nil
                         }
@@ -1298,7 +1328,7 @@ struct OnboardingStep3: View {
                         .background(Color.white.opacity(0.12))
                         .cornerRadius(10)
 
-                        Button("Retry") {
+                        Button(String(localized: "onboarding.error.retry")) {
                             loadingErrorMessage = nil
                             isLoading = true
                             loadingStageIndex = 0
@@ -1313,7 +1343,7 @@ struct OnboardingStep3: View {
                         .cornerRadius(10)
                     }
                 } else {
-                    Text("This may take around a minute.")
+                    Text(String(localized: "onboarding.loading.wait_minute"))
                         .font(AlynnaTypography.font(.footnote))
                         .foregroundColor(themeManager.onboardingSecondaryText.opacity(0.75))
 
@@ -1322,7 +1352,7 @@ struct OnboardingStep3: View {
                         .foregroundColor(themeManager.onboardingSecondaryText.opacity(0.75))
 
                     if showLongWaitHint {
-                        Text("Still working—hang tight.")
+                        Text(String(localized: "onboarding.loading.hang_tight"))
                             .font(AlynnaTypography.font(.footnote))
                             .foregroundColor(themeManager.onboardingSecondaryText.opacity(0.75))
                     }
@@ -1342,9 +1372,9 @@ struct OnboardingStep3: View {
 
     private var loadingStageText: String {
         let stages = [
-            "Saving your preferences…",
-            "Personalizing your profile…",
-            "Finalizing recommendations…"
+            String(localized: "onboarding.loading.saving"),
+            String(localized: "onboarding.loading.personalizing"),
+            String(localized: "onboarding.loading.finalizing")
         ]
         if stages.isEmpty { return "" }
         return stages[min(loadingStageIndex, stages.count - 1)]
@@ -1538,7 +1568,7 @@ struct OnboardingStep3: View {
             isLoading = false
             loadingStageIndex = 0
             showLongWaitHint = false
-            loadingErrorMessage = "Couldn’t reach the server. Please try again."
+            loadingErrorMessage = String(localized: "onboarding.error.server_unreachable")
             return
         }
 
@@ -1552,7 +1582,7 @@ struct OnboardingStep3: View {
             isLoading = false
             loadingStageIndex = 0
             showLongWaitHint = false
-            loadingErrorMessage = "Couldn’t prepare your data. Please try again."
+            loadingErrorMessage = String(localized: "onboarding.error.data_prepare_failed")
             return
         }
 
@@ -1563,7 +1593,7 @@ struct OnboardingStep3: View {
                     isLoading = false
                     loadingStageIndex = 0
                     showLongWaitHint = false
-                    loadingErrorMessage = "Network error. Please try again."
+                    loadingErrorMessage = String(localized: "onboarding.error.network")
                 }
                 return
             }
@@ -1575,7 +1605,7 @@ struct OnboardingStep3: View {
                     isLoading = false
                     loadingStageIndex = 0
                     showLongWaitHint = false
-                    loadingErrorMessage = "No response from server. Please try again."
+                    loadingErrorMessage = String(localized: "onboarding.error.no_response")
                 }
                 return
             }
@@ -1719,7 +1749,7 @@ struct OnboardingStep3: View {
                         isLoading = false
                         loadingStageIndex = 0
                         showLongWaitHint = false
-                        loadingErrorMessage = "Something went wrong. Please try again."
+                        loadingErrorMessage = String(localized: "onboarding.error.something_wrong")
                     }
                 }
             } catch {
@@ -1728,7 +1758,7 @@ struct OnboardingStep3: View {
                     isLoading = false
                     loadingStageIndex = 0
                     showLongWaitHint = false
-                    loadingErrorMessage = "Couldn’t read the server response. Please try again."
+                    loadingErrorMessage = String(localized: "onboarding.error.parse_failed")
                 }
             }
         }.resume()
@@ -1919,28 +1949,28 @@ struct OnboardingFinalStep: View {
 
                         AlignaTopHeader(minLength: minL)
 
-                        Text("Confirm your information")
+                        Text(String(localized: "onboarding.confirm.title"))
                             .onboardingTitleStyle()
                             .padding(.top, 6)
                             .staggered(1, show: $showIntro)
 
                         VStack(spacing: 7) {
-                            finalInfoCard(title: "Nickname", value: viewModel.nickname)
+                            finalInfoCard(title: String(localized: "onboarding.confirm.nickname"), value: viewModel.nickname)
                                 .staggered(2, show: $showIntro)
-                            finalInfoCard(title: "Gender", value: viewModel.gender)
+                            finalInfoCard(title: String(localized: "onboarding.confirm.gender"), value: viewModel.gender)
                                 .staggered(3, show: $showIntro)
                             finalInfoCard(
-                                title: "Birthday",
+                                title: String(localized: "onboarding.confirm.birthday"),
                                 value: viewModel.birth_date.formatted(.dateTime.year().month().day())
                             )
                             .staggered(4, show: $showIntro)
                             finalInfoCard(
-                                title: "Time of Birth",
+                                title: String(localized: "onboarding.confirm.birth_time"),
                                 value: viewModel.birth_time.formatted(date: .omitted, time: .shortened)
                             )
                             .staggered(5, show: $showIntro)
                             finalInfoCard(
-                                title: "Your Current Location",
+                                title: String(localized: "onboarding.confirm.location"),
                                 value: viewModel.currentPlace.isEmpty ? locationMessage : viewModel.currentPlace
                             )
                             .staggered(6, show: $showIntro)
@@ -1963,7 +1993,7 @@ struct OnboardingFinalStep: View {
                                 ensureAuthenticatedThenUpload()
                             } label: {
                                 ZStack {
-                                    Text("Confirm")
+                                    Text(String(localized: "onboarding.confirm.button"))
                                         .onboardingPrimaryButtonStyle(isEnabled: !isLoading)
                                         .opacity(isLoading ? 0.0 : 1.0)
 
@@ -1973,7 +2003,7 @@ struct OnboardingFinalStep: View {
                                                 .progressViewStyle(.circular)
                                                 .tint(.black)
                                                 .scaleEffect(0.8)
-                                            Text("Preparing your profile…")
+                                            Text(String(localized: "onboarding.loading.preparing"))
                                                 .font(.custom("Merriweather-Bold", size: 17))
                                                 .foregroundColor(themeManager.onboardingPrimaryText)
                                         }
@@ -1985,7 +2015,7 @@ struct OnboardingFinalStep: View {
                             .staggered(8, show: $showIntro)
 
                             if isLoading {
-                                Text("This may take a few seconds.")
+                                Text(String(localized: "onboarding.loading.wait_seconds"))
                                     .font(AlynnaTypography.font(.footnote))
                                     .foregroundColor(themeManager.fixedNightTextSecondary)
                                     .padding(.top, 6)
@@ -1998,7 +2028,7 @@ struct OnboardingFinalStep: View {
                                     .transition(.opacity)
 
                                 if showLongWaitHint {
-                                    Text("Still working—hang tight.")
+                                    Text(String(localized: "onboarding.loading.hang_tight"))
                                         .font(AlynnaTypography.font(.footnote))
                                         .foregroundColor(themeManager.fixedNightTextSecondary)
                                         .padding(.top, 2)
@@ -2021,13 +2051,13 @@ struct OnboardingFinalStep: View {
 
                 if showLocationAccessDialog {
                     AlynnaActionDialog(
-                        title: "Location Access Matters",
-                        message: "Turn on Location Access in Settings. Alynna uses weather, humidity, pressure, and nearby conditions to calculate your mantra and rhythm.",
+                        title: String(localized: "onboarding.location_dialog.title"),
+                        message: String(localized: "onboarding.location_dialog.message"),
                         symbol: "location.slash.circle",
                         tone: .warning,
-                        primaryButtonTitle: "Open Settings",
+                        primaryButtonTitle: String(localized: "onboarding.location_dialog.open_settings"),
                         primaryAction: { locationPermissionCoordinator.openAppSettings() },
-                        dismissButtonTitle: "Not Now",
+                        dismissButtonTitle: String(localized: "onboarding.location_dialog.not_now"),
                         onDismiss: dismissLocationAccessDialog
                     )
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
@@ -2042,7 +2072,7 @@ struct OnboardingFinalStep: View {
 
                 // 进页面即发起位置权限与解析
                 didAttemptReverseGeocode = false
-                locationMessage = "Requesting location permission..."
+                locationMessage = String(localized: "onboarding.location.requesting")
                 locationPermissionCoordinator.refreshAuthorizationStatus()
                 handleLocationAuthorizationStatus(locationPermissionCoordinator.authorizationStatus)
                 locationManager.requestLocation()
@@ -2071,15 +2101,15 @@ struct OnboardingFinalStep: View {
                         if let place = place, !place.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                             viewModel.currentPlace = place
                             viewModel.currentCoordinate = coord
-                            locationMessage = "✓ Current Place detected: \(place)"
+                            locationMessage = String(format: String(localized: "onboarding.location.detected"), place)
                         } else {
-                            // ✅ 失败也先显示坐标，避免“看不到定位”
+                            // ✅ 失败也先显示坐标，避免"看不到定位"
                             viewModel.currentCoordinate = coord
                             let coordText = String(format: "%.4f, %.4f", coord.latitude, coord.longitude)
                             viewModel.currentPlace = coordText
-                            locationMessage = "Location acquired, resolving address failed."
+                            locationMessage = String(localized: "onboarding.location.resolve_failed")
 
-                            // ✅ 关键：给一次“自动重试机会”
+                            // ✅ 关键：给一次"自动重试机会"
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                                 didAttemptReverseGeocode = false
                             }
@@ -2121,7 +2151,7 @@ struct OnboardingFinalStep: View {
     private func handleLocationAuthorizationStatus(_ status: CLAuthorizationStatus) {
         switch status {
         case .denied, .restricted:
-            locationMessage = "Location access is off."
+            locationMessage = String(localized: "onboarding.location.off")
             if isLoading {
                 isLoading = false
                 loadingStageIndex = 0
@@ -2206,7 +2236,7 @@ struct OnboardingFinalStep: View {
                 isLoading = false
                 loadingStageIndex = 0
                 showLongWaitHint = false
-                loadingErrorMessage = "Sign-in is required to finish onboarding."
+                loadingErrorMessage = String(localized: "onboarding.error.signin_required")
             }
         }
     }
@@ -2304,9 +2334,9 @@ struct OnboardingFinalStep: View {
 
     private var loadingStageText: String {
         let stages = [
-            "Saving your preferences…",
-            "Personalizing your profile…",
-            "Finalizing recommendations…"
+            String(localized: "onboarding.loading.saving"),
+            String(localized: "onboarding.loading.personalizing"),
+            String(localized: "onboarding.loading.finalizing")
         ]
         if stages.isEmpty { return "" }
         return stages[min(loadingStageIndex, stages.count - 1)]

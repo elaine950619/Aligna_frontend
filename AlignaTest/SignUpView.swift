@@ -102,7 +102,7 @@ struct SignUpView: View {
                                             fontSize: minL * 0.12,
                                             letterSpacing: minL * 0.005
                                         )
-                                        Text("Create Your Space")
+                                        Text(String(localized: "signup.create_your_space"))
                                             .font(AlynnaTypography.font(.subheadline))
                                             .foregroundColor(themeManager.fixedNightTextSecondary)
                                     }
@@ -178,7 +178,7 @@ struct SignUpView: View {
                                                     .frame(width: 16, height: 16)
                                                     .foregroundColor(.black)
                                                     .frame(width: 24, height: 24)
-                                                Text("Sign up with Google")
+                                                Text(String(localized: "signup.sign_up_google"))
                                                     .font(AlynnaTypography.font(.headline).weight(.semibold))
                                             }
                                             .foregroundColor(.black)
@@ -201,7 +201,7 @@ struct SignUpView: View {
                                             onCompletion: { result in
                                                 guard !authBusy else { return }
                                                 guard let raw = currentNonce, !raw.isEmpty else {
-                                                    alertMessage = "Missing nonce. Please try again."
+                                                    alertMessage = String(localized: "auth.missing_nonce")
                                                     showAlert = true
                                                     return
                                                 }
@@ -264,7 +264,7 @@ struct SignUpView: View {
 
                                     HStack {
                                         Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
-                                        Text("Or with")
+                                        Text(String(localized: "auth.or_with"))
                                             .font(AlynnaTypography.font(.footnote))
                                             .foregroundColor(themeManager.fixedNightTextSecondary)
                                         Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
@@ -283,7 +283,7 @@ struct SignUpView: View {
                                             .cornerRadius(14)
                                             .foregroundColor(themeManager.fixedNightTextPrimary)
                                             .placeholder(when: email.isEmpty) {
-                                                Text("Enter your email")
+                                                Text(String(localized: "auth.email_placeholder"))
                                                     .foregroundColor(themeManager.fixedNightTextSecondary)
                                                     .padding(.leading, 16)
                                             }
@@ -309,7 +309,7 @@ struct SignUpView: View {
                                             .cornerRadius(14)
                                             .foregroundColor(themeManager.fixedNightTextPrimary)
                                             .placeholder(when: password.isEmpty) {
-                                                Text("Enter your password")
+                                                Text(String(localized: "auth.password_placeholder"))
                                                     .foregroundColor(themeManager.fixedNightTextSecondary)
                                                     .padding(.leading, 16)
                                             }
@@ -340,7 +340,7 @@ struct SignUpView: View {
                                                     .tint(.black)
                                                     .scaleEffect(0.75)
                                             }
-                                            Text(isActive(.emailSignUp) ? "Creating..." : "Create Account")
+                                            Text(isActive(.emailSignUp) ? String(localized: "signup.creating") : String(localized: "signup.create_account"))
                                         }
                                         .font(AlynnaTypography.font(.headline).weight(.semibold))
                                         .padding()
@@ -386,22 +386,22 @@ struct SignUpView: View {
                 .overlay {
                     if showAlert {
                         AlynnaActionDialog(
-                            title: "Notice",
+                            title: String(localized: "signup.dialog_notice_title"),
                             message: alertMessage,
                             symbol: "exclamationmark.circle",
                             tone: .error,
-                            dismissButtonTitle: "OK",
+                            dismissButtonTitle: String(localized: "auth.dialog_ok"),
                             onDismiss: { showAlert = false }
                         )
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
                         .zIndex(20)
                     } else if showInfoAlert {
                         AlynnaActionDialog(
-                            title: "Sign In",
+                            title: String(localized: "signup.dialog_signin_title"),
                             message: infoMessage,
                             symbol: "arrow.right.circle",
                             tone: .info,
-                            dismissButtonTitle: "Continue",
+                            dismissButtonTitle: String(localized: "auth.dialog_continue"),
                             onDismiss: {
                                 showInfoAlert = false
                         if navigateToLoginOnDismiss {
@@ -414,22 +414,22 @@ struct SignUpView: View {
                         .zIndex(20)
                     } else if showVerifyAlert {
                         AlynnaActionDialog(
-                            title: "Verify Email",
+                            title: String(localized: "signup.dialog_verify_title"),
                             message: verifyMessage,
                             symbol: "envelope.badge",
                             tone: .warning,
-                            primaryButtonTitle: "I Verified",
+                            primaryButtonTitle: String(localized: "signup.dialog_i_verified"),
                             primaryAction: {
                                 guard !isVerifyingEmail else { return }
                                 isVerifyingEmail = true
                                 checkEmailVerificationAndContinue()
                             },
-                            secondaryButtonTitle: "Resend",
+                            secondaryButtonTitle: String(localized: "signup.dialog_resend"),
                             secondaryAction: {
                                 guard !isVerifyingEmail else { return }
                                 resendVerificationEmail()
                             },
-                            dismissButtonTitle: "Cancel",
+                            dismissButtonTitle: String(localized: "signup.dialog_cancel"),
                             onDismiss: { showVerifyAlert = false }
                         )
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
@@ -457,7 +457,7 @@ struct SignUpView: View {
                                     .progressViewStyle(.circular)
                                     .tint(themeManager.fixedNightTextPrimary)
                                     .scaleEffect(1.05)
-                                Text(showAuthOverlay ? "Signing up…" : "Checking verification…")
+                                Text(showAuthOverlay ? String(localized: "signup.overlay_signing_up") : String(localized: "signup.overlay_checking"))
                                     .font(AlynnaTypography.font(.footnote))
                                     .foregroundColor(themeManager.fixedNightTextPrimary)
                             }
@@ -489,7 +489,7 @@ struct SignUpView: View {
             activeAuthAction = nil
             showAuthOverlay = false
             shouldOnboardAfterSignIn = false
-            alertMessage = "Session expired. Please sign in again."
+            alertMessage = String(localized: "signup.error_session_expired")
             showAlert = true
             return
         }
@@ -536,7 +536,7 @@ struct SignUpView: View {
     private func registerWithEmailPassword() {
         guard !email.isEmpty, !password.isEmpty else {
             showAuthOverlay = false
-            alertMessage = "Please fill in all fields."
+            alertMessage = String(localized: "signup.error_fill_fields")
             showAlert = true
             return
         }
@@ -568,7 +568,7 @@ struct SignUpView: View {
                                 authBusy = false
                                 activeAuthAction = nil
                                 showAuthOverlay = false
-                                alertMessage = "Sign in failed. Please try again."
+                                alertMessage = String(localized: "signup.error_sign_in_failed")
                                 showAlert = true
                                 return
                             }
@@ -579,7 +579,7 @@ struct SignUpView: View {
                                 authBusy = false
                                 activeAuthAction = nil
                                 showAuthOverlay = false
-                                verifyMessage = "We sent a verification email to \(email). Please verify, then tap 'I Verified' to continue."
+                                verifyMessage = String(format: String(localized: "signup.verify_email_sent"), email)
                                 showVerifyAlert = true
                                 return
                             }
@@ -627,7 +627,7 @@ struct SignUpView: View {
                 authBusy = false
                 activeAuthAction = nil
                 showAuthOverlay = false
-                verifyMessage = "We sent a verification email to \(email). Please verify, then tap 'I Verified' to continue."
+                verifyMessage = String(format: String(localized: "signup.verify_email_sent"), email)
                 showVerifyAlert = true
             }
         }
@@ -673,7 +673,7 @@ struct SignUpView: View {
                         )
                     } else {
                         showAuthOverlay = false
-                        alertMessage = "Email not verified yet. Please check your inbox, then try again."
+                        alertMessage = String(localized: "signup.error_not_verified")
                         showAlert = true
                     }
                 }
@@ -696,7 +696,7 @@ struct SignUpView: View {
                     } else {
                         authBusy = false
                         isVerifyingEmail = false
-                        infoMessage = "会话已过期，请登录后继续。"
+                        infoMessage = String(localized: "signup.session_expired_goto_login")
                         navigateToLoginOnDismiss = true
                         showInfoAlert = true
                     }
@@ -707,7 +707,7 @@ struct SignUpView: View {
 
         // Case 3: No session and no credentials available (e.g., app restarted). Ask user to login.
         isVerifyingEmail = false
-        infoMessage = "会话已过期，请登录后继续。"
+        infoMessage = String(localized: "signup.session_expired_goto_login")
         navigateToLoginOnDismiss = true
         showInfoAlert = true
     }

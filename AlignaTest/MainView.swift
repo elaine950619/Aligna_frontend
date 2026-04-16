@@ -700,7 +700,7 @@ struct MainView: View {
         let dateFormatter = DateFormatter()
         dateFormatter.locale = .current
         dateFormatter.timeZone = .current
-        dateFormatter.dateFormat = "EEEE, MMMM d"
+        dateFormatter.setLocalizedDateFormatFromTemplate("EEEEMMMd")
 
         let dateText = dateFormatter.string(from: Date())
         let locationText = resolvedWidgetLocation()
