@@ -3143,7 +3143,7 @@ struct MainView: View {
 
             let controller = UIHostingController(rootView: wallpaperView)
             // Suppress the safe area insets so content starts at (0,0) with no status-bar gap
-            controller._disableSafeArea = true
+            controller.safeAreaRegions = []
             controller.view.bounds = CGRect(origin: .zero, size: screenSize)
             controller.view.frame = CGRect(origin: .zero, size: screenSize)
             controller.view.backgroundColor = .clear
