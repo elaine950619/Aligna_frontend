@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "ChatGPT Image Apr 15, 2026, 08_28_50 PM.png",
+      "filename" : "AppIconLight.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,7 +13,7 @@
           "value" : "dark"
         }
       ],
-      "filename" : "logo_dark.png",
+      "filename" : "AppIconDark.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -25,7 +25,7 @@
           "value" : "tinted"
         }
       ],
-      "filename" : "logo_dark.png",
+      "filename" : "AppIconDark.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
