@@ -440,7 +440,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "香气"
+            "value" : "香氛"
           }
         }
       }
@@ -456,7 +456,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用香气重置情绪并支持过渡，如从工作到休息。"
+            "value" : "使用香氛重置情绪并支持过渡，如从工作到休息。"
           }
         }
       }
@@ -739,7 +739,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "香气"
+            "value" : "香氛"
           }
         }
       }
@@ -2396,7 +2396,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在生成你的咒语…"
+            "value" : "正在生成你的心语…"
           }
         }
       }
@@ -6246,7 +6246,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "有任何感觉不对的香气吗？"
+            "value" : "有哪些气味让你不舒服？"
           }
         }
       }
@@ -8626,7 +8626,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "今日咒语将在这里显示。"
+            "value" : "今日心语将在这里显示。"
           }
         }
       }
@@ -8674,7 +8674,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "当天暂无咒语。"
+            "value" : "当天暂无心语生成。"
           }
         }
       }
@@ -8722,7 +8722,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "咒语"
+            "value" : "心语"
           }
         }
       }
