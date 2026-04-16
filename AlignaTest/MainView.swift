@@ -2183,7 +2183,7 @@ struct MainView: View {
                                         Capsule()
                                             .stroke(Color.white.opacity(0.16), lineWidth: 1)
                                     )
-                                    .offset(x: 18, y: -13)
+                                    .offset(x: 6, y: -14)
                             }
                         }
                         .padding(.top, 20)
@@ -2233,7 +2233,7 @@ struct MainView: View {
                                             // x: 句尾右端 + 小间距（icon 自带 padding=8，.position 按中心定位，无需额外补偿）
                                             expandedMantraInfoBadge
                                                 .position(
-                                                    x: min(lastLineRect.maxX + 16, textWidth - 2),
+                                                    x: min(lastLineRect.maxX + 5, textWidth - 4),
                                                     y: lastLineRect.midY
                                                 )
                                         }

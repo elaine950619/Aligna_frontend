@@ -40,7 +40,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点心咒正在生成中，请稍候。"
+            "value" : "焦点心语正在生成中，请稍候。"
           }
         }
       }
@@ -587,6 +587,30 @@
         }
       }
     },
+    "auth.account_incomplete_message" : {
+
+    },
+    "auth.dialog_continue" : {
+
+    },
+    "auth.dialog_error_title" : {
+
+    },
+    "auth.dialog_ok" : {
+
+    },
+    "auth.email_placeholder" : {
+
+    },
+    "auth.missing_nonce" : {
+
+    },
+    "auth.or_with" : {
+
+    },
+    "auth.password_placeholder" : {
+
+    },
     "Birth Place" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -737,6 +761,7 @@
       }
     },
     "Checking verification…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -768,6 +793,7 @@
       }
     },
     "Confirm" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -789,6 +815,7 @@
       }
     },
     "Confirm your information" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -799,6 +826,7 @@
       }
     },
     "Continue" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -823,7 +851,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无法生成 %@ 心咒："
+            "value" : "无法生成 %@ 心语："
           }
         }
       }
@@ -833,12 +861,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无法读取 %@ 心咒响应。"
+            "value" : "无法读取 %@ 心语响应。"
           }
         }
       }
     },
     "Create Account" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -849,6 +878,7 @@
       }
     },
     "Create An Account" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -859,6 +889,7 @@
       }
     },
     "Create Your Space" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -869,6 +900,7 @@
       }
     },
     "Creating..." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -935,7 +967,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "「每日」已固定，可随时返回今日心咒。"
+            "value" : "「每日」已固定，可随时返回今日心语。"
           }
         }
       }
@@ -1362,6 +1394,7 @@
       }
     },
     "Don't have an account?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1382,6 +1415,7 @@
       }
     },
     "Enter your email" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1392,6 +1426,7 @@
       }
     },
     "Enter your password" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1468,7 +1503,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点已保存并添加到心咒下方。"
+            "value" : "焦点已保存并添加到心语下方。"
           }
         }
       }
@@ -1478,7 +1513,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点已保存。如需显示在心咒下方，请先移除一个当前焦点。"
+            "value" : "焦点已保存。如需显示在心语下方，请先移除一个当前焦点。"
           }
         }
       }
@@ -1505,7 +1540,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "最多选择 3 个生活焦点，指定这个心咒应关注的方向。"
+            "value" : "最多选择 3 个生活焦点，指定这个心语应关注的方向。"
           }
         }
       }
@@ -1569,7 +1604,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你每天的根基心咒。"
+            "value" : "你每天的根基心语。"
           }
         }
       }
@@ -1650,7 +1685,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点心咒请求最多可能需要一分钟。"
+            "value" : "焦点心语请求最多可能需要一分钟。"
           }
         }
       }
@@ -1794,7 +1829,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "显示上次结果。正在生成今天的心咒和节奏。"
+            "value" : "显示上次结果。正在生成今天的心语和节奏。"
           }
         }
       }
@@ -1879,6 +1914,7 @@
       }
     },
     "Forgot Password?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1957,7 +1993,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在生成今日心咒"
+            "value" : "正在生成今日心语"
           }
         }
       }
@@ -1967,7 +2003,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在生成今日心咒与节奏"
+            "value" : "正在生成今日心语与节奏"
           }
         }
       }
@@ -1977,7 +2013,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在生成你的焦点心咒"
+            "value" : "正在生成你的焦点心语"
           }
         }
       }
@@ -2008,7 +2044,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "请稍候，焦点心咒请求最多需要一分钟。"
+            "value" : "请稍候，焦点心语请求最多需要一分钟。"
           }
         }
       }
@@ -2018,7 +2054,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "请稍候，生成今日心咒最多需要一分钟。"
+            "value" : "请稍候，生成今日心语最多需要一分钟。"
           }
         }
       }
@@ -2039,7 +2075,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "提升你的节奏与心咒指引"
+            "value" : "提升你的节奏与心语指引"
           }
         }
       }
@@ -2328,7 +2364,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "生成今天的心咒"
+            "value" : "生成今天的心语"
           }
         }
       }
@@ -2344,7 +2380,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在生成你的心咒"
+            "value" : "正在生成你的心语"
           }
         }
       }
@@ -2376,7 +2412,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "仍在生成今天的心咒和节奏。"
+            "value" : "仍在生成今天的心语和节奏。"
           }
         }
       }
@@ -2896,7 +2932,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "查看今天的心咒"
+            "value" : "查看今天的心语"
           }
         }
       }
@@ -3110,6 +3146,7 @@
       }
     },
     "loading.segment.source" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3547,12 +3584,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "获取位置耗时过长，请稍后再试 %@ 心咒。"
+            "value" : "获取位置耗时过长，请稍后再试 %@ 心语。"
           }
         }
       }
     },
     "Log In" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3563,6 +3601,7 @@
       }
     },
     "Logging in…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3571,6 +3610,57 @@
           }
         }
       }
+    },
+    "login.almost_there_title" : {
+
+    },
+    "login.create_account" : {
+
+    },
+    "login.email_password_required" : {
+
+    },
+    "login.enter_email_first" : {
+
+    },
+    "login.error_invalid_email" : {
+
+    },
+    "login.error_user_disabled" : {
+
+    },
+    "login.error_user_not_found" : {
+
+    },
+    "login.error_verify_email" : {
+
+    },
+    "login.error_wrong_password" : {
+
+    },
+    "login.forgot_password" : {
+
+    },
+    "login.log_in" : {
+
+    },
+    "login.logging_in_overlay" : {
+
+    },
+    "login.no_account" : {
+
+    },
+    "login.reset_email_sent" : {
+
+    },
+    "login.sign_in_google" : {
+
+    },
+    "login.signing_in" : {
+
+    },
+    "login.welcome_back" : {
+
     },
     "main.attribution" : {
       "localizations" : {
@@ -3631,7 +3721,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点帮助 Alynna 围绕你生活的某个特定部分塑造心咒，使指引更贴近你今天希望获得支持的方向。"
+            "value" : "焦点帮助 Alynna 围绕你生活的某个特定部分塑造心语，使指引更贴近你今天希望获得支持的方向。"
           }
         }
       }
@@ -3696,7 +3786,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "焦点心咒请求最多可能需要一分钟。"
+            "value" : "焦点心语请求最多可能需要一分钟。"
           }
         }
       }
@@ -3728,7 +3818,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在生成你的%@焦点心咒。"
+            "value" : "正在生成你的%@焦点心语。"
           }
         }
       }
@@ -3792,7 +3882,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "点击上方心咒以展开今日节奏指引。"
+            "value" : "点击上方心语以展开今日节奏指引。"
           }
         }
       }
@@ -3937,7 +4027,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "为什么是这个心咒"
+            "value" : "为什么是这个心语"
           }
         }
       }
@@ -4129,7 +4219,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "今天没有心咒。"
+            "value" : "今天没有心语。"
           }
         }
       }
@@ -4566,7 +4656,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "请在设置中开启位置访问权限。Alynna 会使用天气、湿度、气压和周边环境来计算你的心咒与节律。"
+            "value" : "请在设置中开启位置访问权限。Alynna 会使用天气、湿度、气压和周边环境来计算你的心语与节律。"
           }
         }
       }
@@ -5622,6 +5712,7 @@
       }
     },
     "Or with" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -6257,6 +6348,7 @@
       }
     },
     "Preparing your profile…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -6672,7 +6764,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "允许通知以接收每日心咒提醒。"
+            "value" : "允许通知以接收每日心语提醒。"
           }
         }
       }
@@ -7233,7 +7325,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "改善你的节律与心咒引导"
+            "value" : "改善你的节律与心语引导"
           }
         }
       }
@@ -7842,7 +7934,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "自适应"
+            "value" : "随节律"
           }
         }
       }
@@ -7938,7 +8030,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "时间轴"
+            "value" : "时光轴"
           }
         }
       }
@@ -8103,6 +8195,7 @@
       }
     },
     "Retry" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -8213,7 +8306,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "心咒下方最多显示 3 个焦点，请先移除一个再添加。"
+            "value" : "心语下方最多显示 3 个焦点，请先移除一个再添加。"
           }
         }
       }
@@ -8223,12 +8316,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "显示选择此心咒的原因"
+            "value" : "显示选择此心语的原因"
           }
         }
       }
     },
     "Sign in with Google" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -8239,6 +8333,7 @@
       }
     },
     "Sign up with Google" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -8249,6 +8344,7 @@
       }
     },
     "Signing in..." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -8259,6 +8355,7 @@
       }
     },
     "Signing up…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -8268,7 +8365,62 @@
         }
       }
     },
+    "signup.create_account" : {
+
+    },
+    "signup.create_your_space" : {
+
+    },
+    "signup.creating" : {
+
+    },
+    "signup.dialog_cancel" : {
+
+    },
+    "signup.dialog_i_verified" : {
+
+    },
+    "signup.dialog_notice_title" : {
+
+    },
+    "signup.dialog_resend" : {
+
+    },
+    "signup.dialog_signin_title" : {
+
+    },
+    "signup.dialog_verify_title" : {
+
+    },
+    "signup.error_fill_fields" : {
+
+    },
+    "signup.error_not_verified" : {
+
+    },
+    "signup.error_session_expired" : {
+
+    },
+    "signup.error_sign_in_failed" : {
+
+    },
+    "signup.overlay_checking" : {
+
+    },
+    "signup.overlay_signing_up" : {
+
+    },
+    "signup.session_expired_goto_login" : {
+
+    },
+    "signup.sign_up_google" : {
+
+    },
+    "signup.verify_email_sent" : {
+
+    },
     "Skip for now" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -8289,6 +8441,7 @@
       }
     },
     "Still working—hang tight." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -8334,7 +8487,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ 心咒请求未能成功完成。"
+            "value" : "%@ 心语请求未能成功完成。"
           }
         }
       }
@@ -8344,7 +8497,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ 心咒响应不完整。"
+            "value" : "%@ 心语响应不完整。"
           }
         }
       }
@@ -8365,12 +8518,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "这将删除所有出现 %@ 的地方，并清除其缓存的焦点心咒。"
+            "value" : "这将删除所有出现 %@ 的地方，并清除其缓存的焦点心语。"
           }
         }
       }
     },
     "This helps us personalize your daily rhythms" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -8381,6 +8535,7 @@
       }
     },
     "This may take a few seconds." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -8391,6 +8546,7 @@
       }
     },
     "This may take around a minute." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -8612,7 +8768,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "请在设置中开启位置访问权限。Alynna 会利用天气、湿度、气压及周边环境状况来计算你的心咒与节奏。"
+            "value" : "请在设置中开启位置访问权限。Alynna 会利用天气、湿度、气压及周边环境状况来计算你的心语与节奏。"
           }
         }
       }
@@ -8622,7 +8778,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "请在设置中开启位置访问权限。Alynna 会利用天气、湿度、气压及周边环境状况来塑造你的 %@ 心咒。"
+            "value" : "请在设置中开启位置访问权限。Alynna 会利用天气、湿度、气压及周边环境状况来塑造你的 %@ 心语。"
           }
         }
       }
@@ -8632,7 +8788,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无法准备此焦点心咒请求。"
+            "value" : "无法准备此焦点心语请求。"
           }
         }
       }
@@ -8642,7 +8798,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "当前无法发起焦点心咒请求。"
+            "value" : "当前无法发起焦点心语请求。"
           }
         }
       }
@@ -8682,7 +8838,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在围绕「%@」和今日信号塑造心咒。"
+            "value" : "正在围绕「%@」和今日信号塑造心语。"
           }
         }
       }
@@ -8698,6 +8854,7 @@
       }
     },
     "Welcome Back" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -8728,6 +8885,7 @@
       }
     },
     "Your preferences" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {

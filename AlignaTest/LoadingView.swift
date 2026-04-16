@@ -949,9 +949,9 @@ struct LoadingView: View {
             return trimmed
         }
 
-        let sun = clean(sunText)
-        let moon = clean(moonText)
-        let rising = clean(risingText)
+        let sun = clean(sunText).map { zodiacLocalizedName(for: $0) }
+        let moon = clean(moonText).map { zodiacLocalizedName(for: $0) }
+        let rising = clean(risingText).map { zodiacLocalizedName(for: $0) }
         let phaseName = localizedMoonPhaseLabel(for: Date()).trimmingCharacters(in: .whitespacesAndNewlines)
 
         let sunLine = sun.map { String(format: String(localized: "loading.sun_in"), $0) } ?? String(localized: "loading.sun_in_dash")
@@ -1280,9 +1280,9 @@ struct LoadingView: View {
     private var cosmosSummaryRows: [[GatheringSegment]] {
         [
             [
-                GatheringSegment(label: String(localized: "loading.segment.sun"), value: summaryValue(sunText, fallback: "—")),
-                GatheringSegment(label: String(localized: "loading.segment.moon"), value: summaryValue(moonText, fallback: "—")),
-                GatheringSegment(label: String(localized: "loading.segment.rising"), value: summaryValue(risingText, fallback: "—"))
+                GatheringSegment(label: String(localized: "loading.segment.sun"), value: summaryValue(zodiacLocalizedName(for: sunText), fallback: "—")),
+                GatheringSegment(label: String(localized: "loading.segment.moon"), value: summaryValue(zodiacLocalizedName(for: moonText), fallback: "—")),
+                GatheringSegment(label: String(localized: "loading.segment.rising"), value: summaryValue(zodiacLocalizedName(for: risingText), fallback: "—"))
             ],
             [
                 GatheringSegment(label: String(localized: "loading.segment.moon_phase"), value: summaryValue(localizedMoonPhaseLabel(for: Date()), fallback: "—"))
@@ -1312,8 +1312,7 @@ struct LoadingView: View {
             [
                 GatheringSegment(label: String(localized: "loading.segment.mood"), value: summaryValue(normalizedSelection(mood), fallback: "—")),
                 GatheringSegment(label: String(localized: "loading.segment.stress"), value: summaryValue(normalizedSelection(stress), fallback: "—")),
-                GatheringSegment(label: String(localized: "loading.segment.sleep"), value: summaryValue(normalizedSelection(sleep), fallback: "—")),
-                GatheringSegment(label: String(localized: "loading.segment.source"), value: summaryValue(normalizedSelection(source), fallback: "—"))
+                GatheringSegment(label: String(localized: "loading.segment.sleep"), value: summaryValue(normalizedSelection(sleep), fallback: "—"))
             ]
         ]
 
@@ -1521,7 +1520,8 @@ struct LoadingView: View {
     }
 
     private func handleNotNow() {
-        showMainGenerationOverlay = false
+        // 不改变 showMainGenerationOverlay——让 MainView 的 onPersonalComplete
+        // 分支正常判断是否需要生成心语，"Not Now" 仅表示跳过 check-in 输入
         completePersonal()
     }
 
