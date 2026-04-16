@@ -3815,11 +3815,15 @@ struct MainView: View {
                         startInitialLoad()
                     },
                     onPersonalComplete: { didProvidePersonal in
-                        if isManualRefreshFlow {
+                        if isManualRefreshFlow && showMainGenerationOverlay {
                             forceRefetchDailyIfNotLocked()
                             if showMainGenerationOverlay {
                                 isBootDataReady = true
                             }
+                        } else if isManualRefreshFlow && !showMainGenerationOverlay {
+                            // 用户在手动刷新流程中点了 Not Now，不生成，直接回主页
+                            isManualRefreshFlow = false
+                            isBootDataReady = true
                         } else if showMainGenerationOverlay && !hasRecentRecommendation {
                             forceRefetchDailyIfNotLocked()
                             if showMainGenerationOverlay {

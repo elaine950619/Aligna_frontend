@@ -1520,8 +1520,8 @@ struct LoadingView: View {
     }
 
     private func handleNotNow() {
-        // 不改变 showMainGenerationOverlay——让 MainView 的 onPersonalComplete
-        // 分支正常判断是否需要生成心语，"Not Now" 仅表示跳过 check-in 输入
+        // 用户主动跳过，明确不生成
+        showMainGenerationOverlay = false
         completePersonal()
     }
 
