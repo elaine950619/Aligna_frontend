@@ -682,17 +682,19 @@ struct MainView: View {
             return !engage.isEmpty ? engage : (anchorCache[cat] ?? "")
         }
 
-        // Fixed slots: Activity, Place, Career
-        for cat in ["Activity", "Place", "Career"] {
+        // Collect all available categories that have content
+        let allCats = ["Activity", "Place", "Career", "Relationship", "Gemstone", "Scent", "Color", "Sound"]
+        var available: [(String, String)] = []
+        for cat in allCats {
             let t = text(for: cat)
-            if !t.isEmpty { result.append((cat, t)) }
+            if !t.isEmpty { available.append((cat, t)) }
         }
 
-        // 4th slot: first non-empty from Gemstone, then Scent
-        for cat in ["Gemstone", "Scent"] {
-            let t = text(for: cat)
-            if !t.isEmpty { result.append((cat, t)); break }
-        }
+        // Pick 3 or 4 items, seeded by today's date so the selection is stable within a day
+        let daySeed = Calendar.current.ordinality(of: .day, in: .era, for: Date()) ?? 0
+        var rng = SeededRandomNumberGenerator(seed: daySeed)
+        let count = Int.random(in: 3...4, using: &rng)
+        result = Array(available.shuffled(using: &rng).prefix(count))
 
         return result
     }
@@ -1113,22 +1115,10 @@ struct MainView: View {
     private func homeCollapsedContent(geometry: GeometryProxy, minLength: CGFloat) -> some View {
         if !isMantraExpanded {
             let hPad = geometry.size.width * 0.07
-            let gridPad = geometry.size.width * 0.05
-            let gridSpacing: CGFloat = 6
             // Compact layout for screens shorter than iPhone 14 Pro (852pt)
             let isCompact = geometry.size.height < 852
-            let cellHeight: CGFloat = isCompact ? 46 : 56
-            let actionFontSize: CGFloat = isCompact ? 14 : 16
-            let actionIconSize: CGFloat = isCompact ? 16 : 18
-            let actionRowVPad: CGFloat = isCompact ? 5 : 7
-            let columns = [
-                GridItem(.flexible(), spacing: gridSpacing, alignment: .center),
-                GridItem(.flexible(), spacing: gridSpacing, alignment: .center)
-            ]
-            let gridItems = [
-                "Place", "Gemstone", "Color", "Scent",
-                "Activity", "Sound", "Career", "Relationship"
-            ]
+            let actionFontSize: CGFloat = isCompact ? 12 : 14
+            let actionIconSize: CGFloat = isCompact ? 14 : 16
 
             VStack(spacing: 0) {
                 if !dailyActionItems.isEmpty {
@@ -1138,64 +1128,51 @@ struct MainView: View {
                             .foregroundColor(themeManager.descriptionText.opacity(0.50))
                             .tracking(1.2)
                             .textCase(.uppercase)
-                            .padding(.bottom, 8)
+                            .padding(.bottom, 10)
 
                         ForEach(Array(dailyActionItems.enumerated()), id: \.offset) { _, item in
                             let done = todayActionsDict[item.category] ?? false
+                            let cat = RecCategory(rawValue: item.category)
+
                             HStack(spacing: 12) {
+                                // Checkbox — enlarged hit area
                                 Button {
                                     toggleActionComplete(category: item.category)
                                 } label: {
                                     Image(systemName: done ? "checkmark.circle.fill" : "circle")
                                         .font(.system(size: actionIconSize, weight: .regular))
                                         .foregroundColor(done
-                                            ? themeManager.primaryText.opacity(0.75)
-                                            : themeManager.primaryText.opacity(0.60))
+                                            ? themeManager.primaryText.opacity(0.55)
+                                            : themeManager.primaryText.opacity(0.70))
+                                        .frame(width: 36, height: 36)
+                                        .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
 
+                                // Anchor text — tapping navigates to DetailView
                                 Text(item.anchor)
                                     .font(.custom("Merriweather-Bold", size: actionFontSize))
                                     .foregroundColor(done
-                                        ? themeManager.descriptionText.opacity(0.45)
-                                        : themeManager.primaryText)
+                                        ? themeManager.descriptionText.opacity(0.40)
+                                        : themeManager.primaryText.opacity(0.88))
                                     .lineLimit(2)
                                     .fixedSize(horizontal: false, vertical: true)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
                                     .onTapGesture {
-                                        actionReasoningCategory = item.category
-                                        showActionReasoningSheet = true
+                                        if let cat {
+                                            shouldCollapseMantraOnReturn = true
+                                            mainNavigationPath.append(cat)
+                                        }
                                     }
-
-                                Spacer()
                             }
-                            .padding(.vertical, actionRowVPad)
+                            .padding(.bottom, 8)
                         }
                     }
                     .padding(.horizontal, hPad)
-                    .padding(.top, 14)
-                    .padding(.bottom, 10)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
                 }
-
-                HStack {
-                    Text("home.today_guidance")
-                        .font(.custom("Merriweather-Regular", size: 10))
-                        .foregroundColor(themeManager.descriptionText.opacity(0.50))
-                        .tracking(1.2)
-                        .textCase(.uppercase)
-                    Spacer()
-                }
-                .padding(.horizontal, hPad)
-                .padding(.top, 10)
-                .padding(.bottom, 8)
-
-                LazyVGrid(columns: columns, spacing: gridSpacing) {
-                    ForEach(Array(gridItems.enumerated()), id: \.offset) { index, title in
-                        navItemView(title: title, geometry: geometry,
-                                    index: index, cellHeight: cellHeight)
-                    }
-                }
-                .padding(.horizontal, gridPad)
-                .padding(.bottom, 8)
             }
             .transition(.opacity.combined(with: .move(edge: .bottom)))
             .animation(.easeInOut(duration: 0.45), value: isMantraExpanded)
@@ -2857,6 +2834,7 @@ struct MainView: View {
                     }
                     .padding(.top, 16)
                     } // ScrollView
+                    .scrollDisabled(!isMantraExpanded)
                     .frame(width: geometry.size.width)
                     .preferredColorScheme(themeManager.preferredColorScheme)
                     .onAppear {
@@ -6088,6 +6066,16 @@ private struct RitualExpandedPreviewContainer: View {
 let _isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
 #endif
 
+
+/// A simple seeded RNG so daily picks are stable within the same day.
+struct SeededRandomNumberGenerator: RandomNumberGenerator {
+    private var state: UInt64
+    init(seed: Int) { state = UInt64(bitPattern: Int64(seed &* 6364136223846793005 &+ 1442695040888963407)) }
+    mutating func next() -> UInt64 {
+        state = state &* 6364136223846793005 &+ 1442695040888963407
+        return state
+    }
+}
 
 enum RecCategory: String, CaseIterable, Identifiable {
     case Place, Gemstone, Color, Scent, Activity, Sound, Career, Relationship
