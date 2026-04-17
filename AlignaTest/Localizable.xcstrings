@@ -531,6 +531,54 @@
         }
       }
     },
+    "action.toast.on_track" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're on track"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你在正确的路上"
+          }
+        }
+      }
+    },
+    "action.toast.step_closer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One step closer"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "距离目标又近了一步"
+          }
+        }
+      }
+    },
+    "action.toast.well_done" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Well done"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成了，继续"
+          }
+        }
+      }
+    },
     "Add a short description for this focus." : {
       "localizations" : {
         "zh-Hans" : {
@@ -1623,6 +1671,7 @@
       }
     },
     "fetch.stage_0" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1639,6 +1688,7 @@
       }
     },
     "fetch.stage_1" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1655,6 +1705,7 @@
       }
     },
     "fetch.stage_2" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10177,6 +10228,7 @@
       }
     },
     "To keep each refresh intentional, the next one will be available 12 hours later. We're actively developing a subscription option with expanded access. Thank you for your patience." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -10404,55 +10456,14 @@
         }
       }
     },
-    "action.toast.step_closer" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "One step closer"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "距离目标又近了一步"
-          }
-        }
-      }
+    "You have %d refresh(es) remaining today." : {
+
     },
-    "action.toast.well_done" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Well done"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "完成了，继续"
-          }
-        }
-      }
-    },
-    "action.toast.on_track" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You're on track"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "你在正确的路上"
-          }
-        }
-      }
+    "You've used all 3 refreshes for today. Come back tomorrow to update your rhythm. We're also working on a subscription plan with more access. Thank you for your patience." : {
+
     },
     "Your last rhythm update was at %@. To keep each refresh intentional, the next one will be available 12 hours later. We're actively developing a subscription option with expanded access. Thank you for your patience." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {

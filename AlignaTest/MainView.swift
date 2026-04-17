@@ -391,6 +391,8 @@ struct MainView: View {
     @AppStorage("lastRecommendationTimestamp") private var lastRecommendationTimestamp: Double = 0
     @AppStorage("lastRecommendationHasFullSet") private var lastRecommendationHasFullSet: Bool = false
     @AppStorage("lastManualRefreshTimestamp") private var lastManualRefreshTimestamp: Double = 0
+    @AppStorage("manualRefreshCountDay") private var manualRefreshCountDay: String = ""
+    @AppStorage("manualRefreshCountToday") private var manualRefreshCountToday: Int = 0
     @AppStorage("shouldExpandMantraFromNotification") private var shouldExpandMantraFromNotification: Bool = false
     @AppStorage("mantraExpandHapticDay") private var mantraExpandHapticDay: String = ""
     @AppStorage("mantraGuidanceHintTapCount") private var mantraGuidanceHintTapCount: Int = 0
@@ -1117,8 +1119,8 @@ struct MainView: View {
             let hPad = geometry.size.width * 0.07
             // Compact layout for screens shorter than iPhone 14 Pro (852pt)
             let isCompact = geometry.size.height < 852
-            let actionFontSize: CGFloat = isCompact ? 12 : 14
-            let actionIconSize: CGFloat = isCompact ? 14 : 16
+            let actionFontSize: CGFloat = isCompact ? 13 : 14
+            let actionIconSize: CGFloat = isCompact ? 14 : 15
 
             VStack(spacing: 0) {
                 if !dailyActionItems.isEmpty {
@@ -1134,28 +1136,29 @@ struct MainView: View {
                             let done = todayActionsDict[item.category] ?? false
                             let cat = RecCategory(rawValue: item.category)
 
-                            HStack(spacing: 12) {
+                            HStack(alignment: .center, spacing: 10) {
                                 // Checkbox — enlarged hit area
                                 Button {
                                     toggleActionComplete(category: item.category)
                                 } label: {
                                     Image(systemName: done ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: actionIconSize, weight: .regular))
+                                        .font(.system(size: actionIconSize, weight: .light))
                                         .foregroundColor(done
-                                            ? themeManager.primaryText.opacity(0.55)
-                                            : themeManager.primaryText.opacity(0.70))
-                                        .frame(width: 36, height: 36)
+                                            ? themeManager.primaryText.opacity(0.45)
+                                            : themeManager.primaryText.opacity(0.60))
+                                        .frame(width: 32, height: 32)
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
 
                                 // Anchor text — tapping navigates to DetailView
                                 Text(item.anchor)
-                                    .font(.custom("Merriweather-Bold", size: actionFontSize))
+                                    .font(.custom("Merriweather-Regular", size: actionFontSize))
                                     .foregroundColor(done
-                                        ? themeManager.descriptionText.opacity(0.40)
-                                        : themeManager.primaryText.opacity(0.88))
+                                        ? themeManager.descriptionText.opacity(0.35)
+                                        : themeManager.primaryText.opacity(0.82))
                                     .lineLimit(2)
+                                    .lineSpacing(3)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .contentShape(Rectangle())
@@ -1166,7 +1169,7 @@ struct MainView: View {
                                         }
                                     }
                             }
-                            .padding(.bottom, 8)
+                            .padding(.bottom, 6)
                         }
                     }
                     .padding(.horizontal, hPad)
@@ -2785,8 +2788,8 @@ struct MainView: View {
                                     } label: {
                                         Text(viewModel.dailyMantra)
                                             .font(currentRecommendationLanguageCode() == "zh-Hans"
-                                                  ? .custom("LXGWWenKaiTC-Bold", size: 14)
-                                                  : .custom("Merriweather-Italic", size: 14))
+                                                  ? .custom("LXGWWenKaiTC-Bold", size: 17)
+                                                  : .custom("Merriweather-Italic", size: 17))
                                             .lineSpacing(3)
                                             .multilineTextAlignment(.leading)
                                             .foregroundColor(themeManager.descriptionText.opacity(0.80))
@@ -4204,6 +4207,9 @@ struct MainView: View {
 
     private func attemptBootAdvance() {
         guard isBootDataReady, didCompletePersonalCheckIn else { return }
+        // Pre-resolve dayPhase before switching to .main so the fullScreenCover
+        // (ritualExpandedView) appears immediately without a collapsed-state flash.
+        resolveDayPhase()
         withAnimation(.easeInOut) { bootPhase = .main }
         pendingMantraExpansion = true
         markMantraReadyIfPossible()
@@ -4214,14 +4220,9 @@ struct MainView: View {
 
     @ViewBuilder
     private func profileViewWithDevCallback() -> some View {
-        #if DEBUG
         ProfileView(viewModel: viewModel, onDevRefresh: devRefresh)
-        #else
-        ProfileView(viewModel: viewModel)
-        #endif
     }
 
-    #if DEBUG
     private func devRefresh() {
         // Always show wrapUp first in dev — synthesize mock data if none exists
         if !hasPreviousSessionActions {
@@ -4266,7 +4267,6 @@ struct MainView: View {
         }
         mantraActiveFocusByDay[yesterdayKey] = focusID
     }
-    #endif
 
     private func handleManualRefreshTap() {
         guard canProceedWithLocationRefresh() else { return }
@@ -4286,23 +4286,36 @@ struct MainView: View {
         bootPhase = .loading
     }
 
+    private let maxDailyManualRefreshes = 3
+
+    private func todayRefreshCount() -> Int {
+        let today = todayString()
+        guard manualRefreshCountDay == today else { return 0 }
+        return manualRefreshCountToday
+    }
+
+    private func recordManualRefresh() {
+        let today = todayString()
+        if manualRefreshCountDay != today {
+            manualRefreshCountDay = today
+            manualRefreshCountToday = 1
+        } else {
+            manualRefreshCountToday += 1
+        }
+        lastManualRefreshTimestamp = Date().timeIntervalSince1970
+    }
+
     private func manualRefreshAllowed() -> Bool {
         if isPrivilegedUser { return true }
-        let now = Date().timeIntervalSince1970
-        return now - lastManualRefreshTimestamp >= 12 * 60 * 60
+        return todayRefreshCount() < maxDailyManualRefreshes
     }
 
     private func refreshCooldownText() -> String {
-        guard lastManualRefreshTimestamp > 0 else {
-            return String(localized: "To keep each refresh intentional, the next one will be available 12 hours later. We're actively developing a subscription option with expanded access. Thank you for your patience.")
+        let remaining = maxDailyManualRefreshes - todayRefreshCount()
+        if remaining > 0 {
+            return String(format: String(localized: "You have %d refresh(es) remaining today."), remaining)
         }
-        let last = Date(timeIntervalSince1970: lastManualRefreshTimestamp)
-        let formatter = DateFormatter()
-        formatter.locale = .current
-        formatter.timeStyle = .short
-        formatter.dateStyle = .none
-        let lastText = formatter.string(from: last)
-        return String(format: String(localized: "Your last rhythm update was at %@. To keep each refresh intentional, the next one will be available 12 hours later. We're actively developing a subscription option with expanded access. Thank you for your patience."), lastText)
+        return String(localized: "You've used all 3 refreshes for today. Come back tomorrow to update your rhythm. We're also working on a subscription plan with more access. Thank you for your patience.")
     }
 
     private func expandMantraIfNeeded() {
@@ -4458,7 +4471,7 @@ struct MainView: View {
                             showMainGenerationOverlay = false
                         }
                         if isManualRefreshFlow {
-                            lastManualRefreshTimestamp = Date().timeIntervalSince1970
+                            recordManualRefresh()
                             isManualRefreshFlow = false
                             isBootDataReady = true
                         }
@@ -5982,23 +5995,6 @@ private struct WrapUpPreviewContainer: View {
     }
 }
 
-private struct FetchingPreviewContainer: View {
-    @StateObject private var themeManager: ThemeManager
-    @StateObject private var starManager = StarAnimationManager()
-    init() {
-        let tm = ThemeManager(); tm.selected = .night
-        _themeManager = StateObject(wrappedValue: tm)
-    }
-    var body: some View {
-        FocusFetchingView(
-            focusName: "专注力",
-            onComplete: {},
-            isDataReady: false
-        )
-        .environmentObject(themeManager)
-        .environmentObject(starManager)
-    }
-}
 
 private struct RitualExpandedPreviewContainer: View {
     @StateObject private var starManager = StarAnimationManager()
@@ -6057,9 +6053,6 @@ private struct RitualExpandedPreviewContainer: View {
     WrapUpPreviewContainer()
 }
 
-#Preview("加载过渡 Fetching") {
-    FetchingPreviewContainer()
-}
 #endif
 
 #if DEBUG

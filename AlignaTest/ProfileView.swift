@@ -1490,9 +1490,11 @@ struct ProfileView: View {
     @ObservedObject var viewModel: OnboardingViewModel
     @Environment(\.colorScheme) private var colorScheme
 
-    #if DEBUG
     var onDevRefresh: (() -> Void)? = nil
-    #endif
+
+    private var isPrivilegedUser: Bool {
+        viewModel.nickname.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "jakobzhao"
+    }
 
     // Firestore
     @State private var userDocID: String?
@@ -1665,9 +1667,9 @@ struct ProfileView: View {
                             aboutCard
                             signOutCard
                             deleteAccountCard
-                            #if DEBUG
-                            debugRitualResetCard
-                            #endif
+                            if isPrivilegedUser {
+                                debugRitualResetCard
+                            }
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 16)
@@ -2509,7 +2511,6 @@ private extension ProfileView {
         }
     }
 
-    #if DEBUG
     var debugRitualResetCard: some View {
         Button {
             UserDefaults.standard.removeObject(forKey: "hasSeenExpandedToday")
@@ -2525,7 +2526,6 @@ private extension ProfileView {
             )
         }
     }
-    #endif
 
     var signOutCard: some View {
         Button {
