@@ -1001,9 +1001,6 @@
         }
       }
     },
-    "Create your own" : {
-
-    },
     "Create Your Space" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2562,7 +2559,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "当下"
+            "value" : "活在当下"
           }
         }
       }
@@ -10403,6 +10400,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "上次收尾"
+          }
+        }
+      }
+    },
+    "action.toast.step_closer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One step closer"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "距离目标又近了一步"
+          }
+        }
+      }
+    },
+    "action.toast.well_done" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Well done"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成了，继续"
+          }
+        }
+      }
+    },
+    "action.toast.on_track" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're on track"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你在正确的路上"
           }
         }
       }

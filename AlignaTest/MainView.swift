@@ -477,6 +477,10 @@ struct MainView: View {
     @State private var hasLoadedMantraFocuses = false
     @State private var mantraFocusUsageByDay: [String: DailyFocusUsageEntry] = [:]
     @FocusState private var focusedFocusFormField: FocusFormField?
+    @State private var actionReasoningCategory: String? = nil
+    @State private var showActionReasoningSheet = false
+    @State private var showActionCompleteToast = false
+    @State private var actionCompleteToastMessage = ""
 
     // MARK: - Daily ritual flow
     @AppStorage("hasSeenExpandedToday")  private var hasSeenExpandedToday: String = ""  // "yyyy-MM-dd"
@@ -762,6 +766,23 @@ struct MainView: View {
         !todaySoundKey.isEmpty
             && soundPlayer.isLoading
             && soundPlayer.currentSoundKey == todaySoundKey
+    }
+
+    private var actionCompleteToastView: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(Color(red: 0.94, green: 0.88, blue: 0.72))
+            Text(actionCompleteToastMessage)
+                .font(.custom("Merriweather-Regular", size: 13))
+                .foregroundColor(themeManager.primaryText.opacity(0.95))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1))
+        .shadow(color: Color.black.opacity(0.22), radius: 12, x: 0, y: 6)
+        .transition(.scale(scale: 0.88).combined(with: .opacity))
     }
 
     private var noSoundToastView: some View {
@@ -1087,16 +1108,19 @@ struct MainView: View {
         }
     }
 
-    // 今日行动 checklist + 今日指引 + 8-grid (collapsed home, placed directly below mantra)
+    // 今日行动 checklist + 今日指引 + 8-grid — pinned as safeAreaInset above footer
     @ViewBuilder
     private func homeCollapsedContent(geometry: GeometryProxy, minLength: CGFloat) -> some View {
         if !isMantraExpanded {
             let hPad = geometry.size.width * 0.07
             let gridPad = geometry.size.width * 0.05
             let gridSpacing: CGFloat = 6
-            let totalH = geometry.size.height
-            // 셀 높이: 수평 레이아웃으로 변경 — 고정 높이 사용
-            let cellHeight: CGFloat = 56
+            // Compact layout for screens shorter than iPhone 14 Pro (852pt)
+            let isCompact = geometry.size.height < 852
+            let cellHeight: CGFloat = isCompact ? 46 : 56
+            let actionFontSize: CGFloat = isCompact ? 14 : 16
+            let actionIconSize: CGFloat = isCompact ? 16 : 18
+            let actionRowVPad: CGFloat = isCompact ? 5 : 7
             let columns = [
                 GridItem(.flexible(), spacing: gridSpacing, alignment: .center),
                 GridItem(.flexible(), spacing: gridSpacing, alignment: .center)
@@ -1117,36 +1141,38 @@ struct MainView: View {
                             .padding(.bottom, 8)
 
                         ForEach(Array(dailyActionItems.enumerated()), id: \.offset) { _, item in
-                            HStack(spacing: 10) {
+                            let done = todayActionsDict[item.category] ?? false
+                            HStack(spacing: 12) {
                                 Button {
                                     toggleActionComplete(category: item.category)
                                 } label: {
-                                    let done = todayActionsDict[item.category] ?? false
                                     Image(systemName: done ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: 15, weight: .light))
+                                        .font(.system(size: actionIconSize, weight: .regular))
                                         .foregroundColor(done
                                             ? themeManager.primaryText.opacity(0.75)
-                                            : themeManager.descriptionText.opacity(0.45))
+                                            : themeManager.primaryText.opacity(0.60))
                                 }
                                 .buttonStyle(.plain)
 
                                 Text(item.anchor)
-                                    .font(.custom("Merriweather-Regular", size: 12))
-                                    .foregroundColor(
-                                        (todayActionsDict[item.category] ?? false)
+                                    .font(.custom("Merriweather-Bold", size: actionFontSize))
+                                    .foregroundColor(done
                                         ? themeManager.descriptionText.opacity(0.45)
-                                        : themeManager.primaryText.opacity(0.78)
-                                    )
+                                        : themeManager.primaryText)
                                     .lineLimit(2)
                                     .fixedSize(horizontal: false, vertical: true)
+                                    .onTapGesture {
+                                        actionReasoningCategory = item.category
+                                        showActionReasoningSheet = true
+                                    }
 
                                 Spacer()
                             }
-                            .padding(.vertical, 5)
+                            .padding(.vertical, actionRowVPad)
                         }
                     }
                     .padding(.horizontal, hPad)
-                    .padding(.top, 22)
+                    .padding(.top, 14)
                     .padding(.bottom, 10)
                 }
 
@@ -1159,7 +1185,7 @@ struct MainView: View {
                     Spacer()
                 }
                 .padding(.horizontal, hPad)
-                .padding(.top, 14)
+                .padding(.top, 10)
                 .padding(.bottom, 8)
 
                 LazyVGrid(columns: columns, spacing: gridSpacing) {
@@ -1169,7 +1195,7 @@ struct MainView: View {
                     }
                 }
                 .padding(.horizontal, gridPad)
-                .padding(.bottom, 32)
+                .padding(.bottom, 8)
             }
             .transition(.opacity.combined(with: .move(edge: .bottom)))
             .animation(.easeInOut(duration: 0.45), value: isMantraExpanded)
@@ -2487,6 +2513,24 @@ struct MainView: View {
         }
     }
 
+    private func triggerActionCompleteToast() {
+        let copies: [String] = [
+            String(localized: "action.toast.step_closer"),
+            String(localized: "action.toast.well_done"),
+            String(localized: "action.toast.on_track"),
+        ]
+        actionCompleteToastMessage = copies.randomElement() ?? copies[0]
+        guard !showActionCompleteToast else { return }
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.80)) {
+            showActionCompleteToast = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+            withAnimation(.easeInOut(duration: 0.22)) {
+                showActionCompleteToast = false
+            }
+        }
+    }
+
     private func showNoSoundToastIfNeeded() {
         guard !showNoSoundToast else { return }
         withAnimation(.easeOut(duration: 0.2)) {
@@ -2640,7 +2684,6 @@ struct MainView: View {
                             if isMantraExpanded && dayPhase == .home {
                                 // ── 主页心语详读态（全居中重设计）──
                                 let hPad = geometry.size.width * 0.08
-                                let sandColor = Color(red: 0.94, green: 0.88, blue: 0.72)
                                 ScrollView(showsIndicators: false) {
                                     VStack(spacing: 0) {
                                         // ── 今日课题（顶部，清晰可见）──
@@ -2729,7 +2772,7 @@ struct MainView: View {
                                         }
                                         .padding(.horizontal, hPad)
                                         .padding(.bottom, 32)
-                                        .onTapGesture { toggleMantraExpansion() }
+                                        .onTapGesture { showReasoningSheet = true }
 
                                         // ── 打开今日指引 button ──
                                         Button {
@@ -2737,17 +2780,17 @@ struct MainView: View {
                                         } label: {
                                             HStack(spacing: 8) {
                                                 Text("home.today_guidance")
-                                                    .font(.custom("Merriweather-Bold", size: 14))
-                                                    .foregroundColor(Color(red: 0.12, green: 0.10, blue: 0.08))
+                                                    .font(.custom("Merriweather-Regular", size: 14))
+                                                    .foregroundColor(Color(hex: "#5C3A1E").opacity(0.85))
                                                 Image(systemName: "arrow.right")
-                                                    .font(.system(size: 12, weight: .semibold))
-                                                    .foregroundColor(Color(red: 0.12, green: 0.10, blue: 0.08).opacity(0.70))
+                                                    .font(.system(size: 12, weight: .regular))
+                                                    .foregroundColor(Color(hex: "#5C3A1E").opacity(0.50))
                                             }
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 15)
                                             .background(
                                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                                    .fill(sandColor.opacity(themeManager.isNight ? 0.85 : 0.78))
+                                                    .fill(Color(red: 0.94, green: 0.88, blue: 0.72).opacity(themeManager.isNight ? 0.88 : 0.80))
                                             )
                                         }
                                         .buttonStyle(.plain)
@@ -2759,9 +2802,9 @@ struct MainView: View {
                             } else {
                                 // Card: full mantra text + share icon bottom-right
                                 ZStack(alignment: .bottomTrailing) {
-                                    // Mantra text (taps expand)
+                                    // Mantra text (taps open reasoning sheet)
                                     Button {
-                                        toggleMantraExpansion()
+                                        showReasoningSheet = true
                                     } label: {
                                         Text(viewModel.dailyMantra)
                                             .font(currentRecommendationLanguageCode() == "zh-Hans"
@@ -2800,8 +2843,8 @@ struct MainView: View {
                                                 .stroke(themeManager.panelStrokeHi.opacity(0.20), lineWidth: 1)
                                         )
                                 )
-                                // Tapping the card background also expands
-                                .onTapGesture { toggleMantraExpansion() }
+                                // Tapping the card background opens reasoning sheet
+                                .onTapGesture { showReasoningSheet = true }
                                 .padding(.horizontal, geometry.size.width * 0.07)
                             }
                         }
@@ -2810,10 +2853,6 @@ struct MainView: View {
                         .opacity(isMantraReady ? 1 : 0)
                         .allowsHitTesting(isMantraReady)
 
-
-                        // ✅ 当 mantra 更新（新的一天/重新拉取）时，自动收起回 "..."
-
-                        homeCollapsedContent(geometry: geometry, minLength: minLength)
 
                     }
                     .padding(.top, 16)
@@ -2837,6 +2876,10 @@ struct MainView: View {
                         }
                     }
                     .coordinateSpace(name: "HomeSpace")
+                    // ── 今日行动 + 今日指引 pinned above footer ──
+                    .safeAreaInset(edge: .bottom) {
+                        homeCollapsedContent(geometry: geometry, minLength: minLength)
+                    }
                 }
             }
             // ✅ 只作用在首页这个 ZStack 上，push 新页面后不会带过去
@@ -2860,6 +2903,12 @@ struct MainView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
+            .overlay(alignment: .center) {
+                if showActionCompleteToast {
+                    actionCompleteToastView
+                        .padding(.horizontal, 32)
+                }
+            }
             .overlay {
                 if showMainViewDialog {
                     mainViewDialog
@@ -2870,6 +2919,13 @@ struct MainView: View {
                     .presentationDetents([.fraction(0.4), .large])
                     .presentationDragIndicator(.visible)
                     .presentationCornerRadius(24)
+            }
+            .sheet(isPresented: $showActionReasoningSheet) {
+                ReasoningSheet(
+                    sectionTitle: actionReasoningCategory ?? "",
+                    reasoningText: reasoningStore.text(for: actionReasoningCategory ?? ""),
+                    themeManager: themeManager
+                )
             }
             .sheet(isPresented: $showFocusManagerSheet, onDismiss: {
                 resetNewFocusForm()
@@ -4445,6 +4501,7 @@ struct MainView: View {
                         )
                     },
                     presenceFocusID: presenceFocusID,
+                    currentFocusID: mantraActiveFocusByDay[todayKey],
                     forceFullLoading: isFullLoadingFlow,
                     locationManager: locationManager
                 )
@@ -5342,11 +5399,15 @@ struct MainView: View {
 
     private func toggleActionComplete(category: String) {
         var dict = todayActionsDict
-        dict[category] = !(dict[category] ?? false)
+        let wasCompleted = dict[category] ?? false
+        dict[category] = !wasCompleted
         dailyActionsDate = todayKey
         if let data = try? JSONEncoder().encode(dict),
            let str = String(data: data, encoding: .utf8) {
             dailyActionsCompleted = str
+        }
+        if !wasCompleted {
+            triggerActionCompleteToast()
         }
     }
 

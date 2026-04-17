@@ -13,7 +13,21 @@ struct FocusSelectionView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var starManager: StarAnimationManager
 
-    @State private var selectedID: String? = nil
+    @State private var selectedID: String?
+
+    init(focuses: [FocusItem], presenceFocusID: String, currentFocusID: String?,
+         onConfirm: @escaping (String) -> Void, onAddCustom: @escaping () -> Void,
+         onCreateCustom: ((String, String) -> Void)? = nil) {
+        self.focuses = focuses
+        self.presenceFocusID = presenceFocusID
+        self.currentFocusID = currentFocusID
+        self.onConfirm = onConfirm
+        self.onAddCustom = onAddCustom
+        self.onCreateCustom = onCreateCustom
+        // Set initial selection immediately so first render shows the correct highlight
+        _selectedID = State(initialValue: currentFocusID ?? presenceFocusID)
+    }
+
     @State private var showCustomForm = false
     @State private var customName = ""
     @State private var customDescription = ""
@@ -69,23 +83,17 @@ struct FocusSelectionView: View {
                 .environmentObject(themeManager)
                 .ignoresSafeArea()
 
-            // ── Scrollable content fills all space ──
-            VStack(spacing: 0) {
-                // Spacer pushes title down to roughly the upper-middle
-                Spacer().frame(height: 60)
-
-                // Title
-                Text("focus.select_title")
-                    .font(.custom("Merriweather-Bold", size: 22))
-                    .foregroundColor(themeManager.primaryText)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-                    .padding(.bottom, 32)
+            // ── ScrollView with button inset at bottom ──
+            // Top padding = 1/3 screen height (for title) + title height (60pt) + gap (8pt)
+            // This is set via safeAreaInset on the ScrollView and dynamic top padding
+            GeometryReader { geo in
+                let titleAreaHeight = geo.size.height / 3 + 68  // 1/3 height + title(~60) + gap(8)
+                let buttonAreaHeight: CGFloat = 112              // button height + bottom padding
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 0) {
 
-                        // ── Presence focus — same 2-col grid as other cards ──
+                        // ── Presence focus ──
                         if let p = presenceItem {
                             LazyVGrid(columns: columns, spacing: 12) {
                                 focusCard(p)
@@ -122,7 +130,7 @@ struct FocusSelectionView: View {
                             }
                         }
 
-                        // Custom user focuses (no groupKey / ungrouped)
+                        // ── Custom user focuses ──
                         let customItems = focuses.filter { $0.groupKey.isEmpty && $0.id != presenceFocusID }
                         if !customItems.isEmpty {
                             HStack(spacing: 10) {
@@ -148,12 +156,26 @@ struct FocusSelectionView: View {
                             .padding(.bottom, 28)
                         }
                     }
-                    // Extra bottom padding so last cards don't hide behind the pinned button
-                    .padding(.bottom, 100)
                 }
+                // Top padding pushes cards below the title
+                .padding(.top, titleAreaHeight)
+                // Bottom inset reserves space for the pinned button
+                .safeAreaInset(edge: .bottom) {
+                    Color.clear.frame(height: buttonAreaHeight)
+                }
+
+                // ── Title: positioned at geo.size.height / 3 from top of safe-area rect ──
+                Text("focus.select_title")
+                    .font(.custom("Merriweather-Bold", size: 22))
+                    .foregroundColor(themeManager.primaryText)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 60)
+                    .offset(y: geo.size.height / 3)
             }
 
-            // ── Confirm button pinned to bottom ──
+            // ── Confirm button — pinned to screen bottom ──
             VStack {
                 Spacer()
                 Button {
@@ -164,7 +186,7 @@ struct FocusSelectionView: View {
                     Text("focus.confirm_button")
                         .font(.custom("Merriweather-Regular", size: 16))
                         .foregroundColor(selectedID != nil
-                            ? Color(red: 0.12, green: 0.10, blue: 0.08)
+                            ? Color(hex: "#5C3A1E").opacity(0.85)
                             : themeManager.descriptionText.opacity(0.4))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
@@ -180,10 +202,8 @@ struct FocusSelectionView: View {
                 .padding(.horizontal, 24)
                 .padding(.bottom, 48)
             }
-        }
-        .onAppear {
-            // Pre-select current focus if set
-            selectedID = currentFocusID
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea()
         }
         // ── 自定义 focus 创建表单 ──
         .sheet(isPresented: $showCustomForm) {
@@ -295,7 +315,7 @@ struct FocusSelectionView: View {
                     Text(String(localized: "focus.confirm_button"))
                         .font(.custom("Merriweather-Regular", size: 16))
                         .foregroundColor(canSaveCustom
-                            ? Color(red: 0.12, green: 0.10, blue: 0.08)
+                            ? Color(hex: "#5C3A1E").opacity(0.85)
                             : themeManager.descriptionText.opacity(0.4))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
@@ -329,13 +349,13 @@ struct FocusSelectionView: View {
                 Text(item.name)
                     .font(.custom("Merriweather-Bold", size: 15))
                     .foregroundColor(isSelected
-                        ? Color(red: 0.12, green: 0.10, blue: 0.08)
+                        ? themeManager.primaryText.opacity(0.90)
                         : themeManager.primaryText.opacity(0.88))
                     .lineLimit(1)
                 Text(item.description)
                     .font(.custom("Merriweather-Regular", size: 11))
                     .foregroundColor(isSelected
-                        ? Color(red: 0.12, green: 0.10, blue: 0.08).opacity(0.65)
+                        ? themeManager.primaryText.opacity(0.55)
                         : themeManager.descriptionText.opacity(0.55))
                     .lineLimit(3)
                     .lineSpacing(3)
@@ -359,35 +379,6 @@ struct FocusSelectionView: View {
         .buttonStyle(.plain)
     }
 
-    private var addCustomCard: some View {
-        Button {
-            showCustomForm = true
-        } label: {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 5) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 13, weight: .medium))
-                    Text("focus.add_custom")
-                        .font(.custom("Merriweather-Bold", size: 15))
-                }
-                .foregroundColor(themeManager.primaryText.opacity(0.70))
-                Text(String(localized: "Create your own"))
-                    .font(.custom("Merriweather-Regular", size: 11))
-                    .foregroundColor(themeManager.descriptionText.opacity(0.45))
-                    .lineSpacing(3)
-            }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(themeManager.panelFill.opacity(themeManager.isNight ? 0.18 : 0.22))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [5, 3]))
-                    .foregroundColor(Color.white.opacity(0.14))
-            )
-        }
-        .buttonStyle(.plain)
-    }
 }
+
+

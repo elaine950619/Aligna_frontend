@@ -388,7 +388,7 @@ struct LoadingView: View {
     @State private var didStartLoading = false
     @State private var didFetchPlaceSignals = false
     @State private var stage: LoadingStage = .initial  // overridden in onAppear
-    @State private var selectedFocusID: String? = nil
+    @State private var selectedFocusID: String?
     @State private var initialPulse = false
 
     @AppStorage("lastRecommendationTimestamp") private var lastRecommendationTimestamp: Double = 0
@@ -446,6 +446,7 @@ struct LoadingView: View {
         onFocusSelected: ((String) -> Void)? = nil,
         focuses: [FocusSelectionView.FocusItem] = [],
         presenceFocusID: String = "",
+        currentFocusID: String? = nil,
         fixedMessageIndex: Int? = nil,
         forceFullLoading: Bool = false,
         locationManager: LocationManager = LocationManager()
@@ -458,6 +459,9 @@ struct LoadingView: View {
         self.fixedMessageIndex = fixedMessageIndex
         self.forceFullLoading = forceFullLoading
         _locationManager = ObservedObject(wrappedValue: locationManager)
+        // Pre-select the last chosen focus; fall back to presence
+        let initial = currentFocusID?.isEmpty == false ? currentFocusID : presenceFocusID
+        _selectedFocusID = State(initialValue: initial)
     }
 
     fileprivate enum LoadingStage: Int {
@@ -504,16 +508,10 @@ struct LoadingView: View {
                 VStack(spacing: 22) {
                     stageContent
                 }
-                .frame(maxWidth: 520)
+                .frame(maxWidth: 520, maxHeight: stage == .focusSelection ? .infinity : nil, alignment: .top)
                 .padding(.horizontal, 20)
-                .padding(.top, 28)
-                .padding(.bottom, 24)
-                .onAppear {
-                    if !didStartLoading {
-                        didStartLoading = true
-                        onStartLoading?()
-                    }
-                }
+                .padding(.top, stage == .focusSelection ? 0 : 28)
+                .padding(.bottom, stage == .focusSelection ? 0 : 24)
 
                 VStack {
                     Spacer()
@@ -526,9 +524,46 @@ struct LoadingView: View {
                 }
                 .padding(.horizontal, 16)
 
+                // === Confirm button pinned to bottom for focus selection ===
+                if stage == .focusSelection {
+                    let sandColor = Color(red: 0.94, green: 0.88, blue: 0.72)
+                    VStack {
+                        Spacer()
+                        Button {
+                            if let id = selectedFocusID {
+                                advanceFromFocusSelection(focusID: id)
+                            }
+                        } label: {
+                            Text("focus.confirm_button")
+                                .font(.custom("Merriweather-Regular", size: 16))
+                                .foregroundColor(selectedFocusID != nil
+                                    ? Color(red: 0.12, green: 0.10, blue: 0.08)
+                                    : themeManager.descriptionText.opacity(0.4))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(selectedFocusID != nil
+                                            ? sandColor
+                                            : themeManager.panelFill.opacity(0.3))
+                                )
+                        }
+                        .disabled(selectedFocusID == nil)
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 48)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .ignoresSafeArea()
+                }
+
 
             }
             .onAppear {
+                if !didStartLoading {
+                    didStartLoading = true
+                    onStartLoading?()
+                }
                 // Set correct initial stage — .focusSelection only for full loading flows with focuses
                 if forceFullLoading && !focuses.isEmpty {
                     stage = .focusSelection
@@ -603,7 +638,6 @@ struct LoadingView: View {
             switch stage {
             case .focusSelection:
                 focusSelectionStage
-                    .frame(height: headerHeight + contentHeight, alignment: .top)
 
             case .initial:
                 initialHeader
@@ -668,7 +702,122 @@ struct LoadingView: View {
     }
 
 
-    // MARK: - Focus Selection Stage
+    // MARK: - Focus Selection Full Screen
+    @ViewBuilder
+    private var focusSelectionFullScreen: some View {
+        let sandColor = Color(red: 0.94, green: 0.88, blue: 0.72)
+        let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+        let groupDefs: [(key: String, labelKey: String)] = [
+            ("everyday",      "focus.group.everyday"),
+            ("relationships", "focus.group.relationships"),
+            ("body",          "focus.group.body"),
+            ("transitions",   "focus.group.transitions"),
+            ("inner",         "focus.group.inner"),
+            ("practical",     "focus.group.practical"),
+        ]
+
+        VStack(spacing: 0) {
+            // Title — sits in the upper area with safe area padding
+            Text("focus.select_title")
+                .font(.custom("Merriweather-Bold", size: 20))
+                .foregroundColor(themeManager.primaryText)
+                .multilineTextAlignment(.center)
+                .padding(.top, 56)
+                .padding(.horizontal, 32)
+                .padding(.bottom, 24)
+
+            // Scrollable grid fills all available space
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    // Presence focus — half-width in 2-col grid
+                    if let presenceItem = focuses.first(where: { $0.id == presenceFocusID }) {
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            focusCardInline(presenceItem, sandColor: sandColor)
+                        }
+                        .padding(.bottom, 12)
+                    }
+
+                    ForEach(groupDefs, id: \.key) { group in
+                        let groupItems = focuses.filter { $0.groupKey == group.key }
+                        if !groupItems.isEmpty {
+                            HStack(spacing: 10) {
+                                Text(String(localized: String.LocalizationValue(group.labelKey)))
+                                    .font(.custom("Merriweather-Regular", size: 10))
+                                    .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                                    .tracking(1.2)
+                                    .textCase(.uppercase)
+                                    .fixedSize()
+                                Rectangle()
+                                    .fill(themeManager.descriptionText.opacity(0.15))
+                                    .frame(height: 1)
+                            }
+                            .padding(.bottom, 10)
+
+                            LazyVGrid(columns: columns, spacing: 12) {
+                                ForEach(groupItems) { item in
+                                    focusCardInline(item, sandColor: sandColor)
+                                }
+                            }
+                            .padding(.bottom, 20)
+                        }
+                    }
+
+                    let customItems = focuses.filter { $0.groupKey.isEmpty && $0.id != presenceFocusID }
+                    if !customItems.isEmpty {
+                        HStack(spacing: 10) {
+                            Text(String(localized: "focus.add_custom"))
+                                .font(.custom("Merriweather-Regular", size: 10))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                                .tracking(1.2)
+                                .textCase(.uppercase)
+                                .fixedSize()
+                            Rectangle()
+                                .fill(themeManager.descriptionText.opacity(0.15))
+                                .frame(height: 1)
+                        }
+                        .padding(.bottom, 10)
+
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            ForEach(customItems) { item in
+                                focusCardInline(item, sandColor: sandColor)
+                            }
+                        }
+                        .padding(.bottom, 20)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 24)
+            }
+
+            // Confirm button pinned to bottom
+            Button {
+                if let id = selectedFocusID {
+                    advanceFromFocusSelection(focusID: id)
+                }
+            } label: {
+                Text("focus.confirm_button")
+                    .font(.custom("Merriweather-Regular", size: 16))
+                    .foregroundColor(selectedFocusID != nil
+                        ? Color(red: 0.12, green: 0.10, blue: 0.08)
+                        : themeManager.descriptionText.opacity(0.4))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(selectedFocusID != nil
+                                ? sandColor
+                                : themeManager.panelFill.opacity(0.3))
+                    )
+            }
+            .disabled(selectedFocusID == nil)
+            .buttonStyle(.plain)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 48)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - Focus Selection Stage (fixed-height, kept for stageContent switch)
     @ViewBuilder
     private var focusSelectionStage: some View {
         let sandColor = Color(red: 0.94, green: 0.88, blue: 0.72)
@@ -685,14 +834,16 @@ struct LoadingView: View {
         ]
 
         VStack(spacing: 0) {
-            // Title — matches position of other stage headers
+            // Title — safe area top + padding to match other stage header positions
             Text("focus.select_title")
                 .font(.custom("Merriweather-Bold", size: 20))
                 .foregroundColor(themeManager.primaryText)
                 .multilineTextAlignment(.center)
+                .padding(.top, 87)   // safe area (~59) + original top padding (28)
+                .padding(.horizontal, 20)
                 .padding(.bottom, 16)
 
-            // Scrollable focus grid — fills space between title and confirm button
+            // Scrollable focus grid — fills all remaining height in the stage frame
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
                     // ── Presence focus — same 2-col grid as other cards ──
@@ -753,31 +904,9 @@ struct LoadingView: View {
                         .padding(.bottom, 20)
                     }
                 }
+                // Bottom padding so last cards clear the pinned confirm button
+                .padding(.bottom, 100)
             }
-
-            // Confirm button at bottom of the stage block
-            Button {
-                if let id = selectedFocusID {
-                    advanceFromFocusSelection(focusID: id)
-                }
-            } label: {
-                Text("focus.confirm_button")
-                    .font(.custom("Merriweather-Regular", size: 16))
-                    .foregroundColor(selectedFocusID != nil
-                        ? Color(red: 0.12, green: 0.10, blue: 0.08)
-                        : themeManager.descriptionText.opacity(0.4))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14)
-                            .fill(selectedFocusID != nil
-                                ? sandColor
-                                : themeManager.panelFill.opacity(0.3))
-                    )
-            }
-            .disabled(selectedFocusID == nil)
-            .buttonStyle(.plain)
-            .padding(.top, 12)
         }
     }
 

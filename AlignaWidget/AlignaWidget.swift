@@ -944,7 +944,10 @@ private func soundOrbControl(
             orb
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(isPlaying ? "Pause \(soundTitle)" : "Play \(soundTitle)")
+        .accessibilityLabel(widgetIsChinese()
+            ? (isPlaying ? "暂停 \(soundTitle)" : "播放 \(soundTitle)")
+            : (isPlaying ? "Pause \(soundTitle)" : "Play \(soundTitle)")
+        )
     }
 }
 
@@ -1018,7 +1021,9 @@ private func widgetMantra(_ raw: String) -> String {
         .trimmingCharacters(in: .whitespacesAndNewlines)
 
     guard !cleaned.isEmpty else {
-        return "Today is not about perfection. It is about noticing small moments, honoring how I feel, and allowing myself to move forward with patience and care."
+        return widgetIsChinese()
+            ? "今天不是关于完美，而是关于觉察细小的当下，尊重此刻的感受，温柔地向前走。"
+            : "Today is not about perfection. It is about noticing small moments, honoring how I feel, and allowing myself to move forward with patience and care."
     }
 
     let sentences = cleaned
@@ -1288,6 +1293,15 @@ private func compactWeatherDetails(_ raw: String) -> (wind: String?, humidity: S
             default: return zh ? "大风" : "Gusty"
             }
         }
+        if zh {
+            let lowered = raw.lowercased()
+            if lowered.contains("calm") { return "无风" }
+            if lowered.contains("light") { return "微风" }
+            if lowered.contains("breezy") { return "清风" }
+            if lowered.contains("windy") { return "有风" }
+            if lowered.contains("blustery") { return "强风" }
+            if lowered.contains("gusty") { return "大风" }
+        }
         return raw.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
@@ -1301,6 +1315,14 @@ private func compactWeatherDetails(_ raw: String) -> (wind: String?, humidity: S
             default: return zh ? "闷热" : "Muggy"
             }
         }
+        if zh {
+            let lowered = raw.lowercased()
+            if lowered.contains("dry") { return "干燥" }
+            if lowered.contains("comfortable") { return "舒适" }
+            if lowered.contains("balanced") { return "平衡" }
+            if lowered.contains("humid") { return "潮湿" }
+            if lowered.contains("muggy") { return "闷热" }
+        }
         return raw.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
@@ -1311,6 +1333,12 @@ private func compactWeatherDetails(_ raw: String) -> (wind: String?, humidity: S
             case ..<1019: return zh ? "正常" : "Balanced"
             default: return zh ? "高压" : "Crisp"
             }
+        }
+        if zh {
+            let lowered = raw.lowercased()
+            if lowered.contains("heavy") { return "低压" }
+            if lowered.contains("balanced") { return "正常" }
+            if lowered.contains("crisp") { return "高压" }
         }
         return raw.trimmingCharacters(in: .whitespacesAndNewlines)
     }

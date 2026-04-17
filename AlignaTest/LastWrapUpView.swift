@@ -144,12 +144,12 @@ struct LastWrapUpView: View {
                     } label: {
                         Text("wrapup.cta")
                             .font(.custom("Merriweather-Regular", size: 16))
-                            .foregroundColor(Color(red: 0.12, green: 0.10, blue: 0.08))
+                            .foregroundColor(Color(hex: "#5C3A1E").opacity(0.85))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(
                                 RoundedRectangle(cornerRadius: 14)
-                                    .fill(Color(red: 0.94, green: 0.88, blue: 0.72))
+                                    .fill(Color(red: 0.94, green: 0.88, blue: 0.72).opacity(themeManager.isNight ? 0.88 : 0.80))
                             )
                     }
                     .buttonStyle(.plain)
