@@ -36,83 +36,109 @@ struct LastWrapUpView: View {
                 .environmentObject(themeManager)
                 .ignoresSafeArea()
 
-            // ── 左上角：日期 · 天气 · 地点（单行）──
-            if !fullInfoLine.isEmpty {
-                Text(fullInfoLine)
-                    .font(.custom("Merriweather-Regular", size: 10))
-                    .foregroundColor(themeManager.descriptionText.opacity(0.45))
-                    .tracking(0.6)
-                    .lineLimit(1)
-                    .padding(.leading, 32)
-                    .padding(.top, 60)
+            // ── 左上角：日期（第一行）+ 天气 · 地点（第二行）──
+            if !dateString.isEmpty {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(dateString)
+                        .font(.custom("Merriweather-Regular", size: 10))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                        .tracking(0.6)
+                        .lineLimit(1)
+                    let secondLine = ([weatherCondition, locationName].filter { !$0.isEmpty }).joined(separator: " · ")
+                    if !secondLine.isEmpty {
+                        Text(secondLine)
+                            .font(.custom("Merriweather-Regular", size: 10))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                            .tracking(0.6)
+                            .lineLimit(1)
+                    }
+                }
+                .padding(.leading, 32)
+                .padding(.top, 60)
             }
 
             VStack(spacing: 0) {
                 Spacer()
 
                 VStack(alignment: .leading, spacing: 0) {
-                    // Title
-                    Text("wrapup.title")
-                        .font(.custom("Merriweather-Regular", size: 13))
-                        .foregroundColor(themeManager.descriptionText.opacity(0.5))
-                        .padding(.bottom, 10)
+                    // ── Card: title → focus name → count → checklist → encouragement ──
+                    VStack(alignment: .leading, spacing: 0) {
+                        // Title
+                        Text("wrapup.title")
+                            .font(.custom("Merriweather-Regular", size: 13))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.5))
+                            .padding(.bottom, 10)
 
-                    // Last session's focus name
-                    Text(lastFocusName)
-                        .font(.custom("Merriweather-Bold", size: 28))
-                        .foregroundColor(themeManager.primaryText)
-                        .padding(.bottom, 6)
+                        // Last session's focus name
+                        Text(lastFocusName)
+                            .font(.custom("Merriweather-Bold", size: 28))
+                            .foregroundColor(themeManager.primaryText)
+                            .padding(.bottom, 6)
 
-                    // Completed count
-                    if total > 0 {
-                        Text(String(format: String(localized: "wrapup.completed"), completedCount, total))
-                            .font(.custom("Merriweather-Regular", size: 14))
-                            .foregroundColor(themeManager.descriptionText.opacity(0.7))
-                            .padding(.bottom, 24)
-                    }
+                        // Completed count
+                        if total > 0 {
+                            Text(String(format: String(localized: "wrapup.completed"), completedCount, total))
+                                .font(.custom("Merriweather-Regular", size: 14))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.7))
+                                .padding(.bottom, 24)
+                        }
 
-                    // Action list
-                    if !actions.isEmpty {
-                        VStack(spacing: 12) {
-                            ForEach(actions, id: \.category) { action in
-                                HStack(alignment: .top, spacing: 12) {
-                                    Image(systemName: action.completed ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: 18))
-                                        .foregroundColor(
-                                            action.completed
-                                            ? Color(red: 0.94, green: 0.88, blue: 0.72)
-                                            : themeManager.descriptionText.opacity(0.35)
-                                        )
-                                        .frame(width: 22)
-                                    Text(action.anchor)
-                                        .font(.custom("Merriweather-Regular", size: 14))
-                                        .foregroundColor(
-                                            action.completed
-                                            ? themeManager.primaryText.opacity(0.75)
-                                            : themeManager.descriptionText.opacity(0.5)
-                                        )
-                                        .strikethrough(action.completed, color: themeManager.descriptionText.opacity(0.4))
-                                        .lineSpacing(4)
+                        // Action list — left-aligned icon + text
+                        if !actions.isEmpty {
+                            VStack(alignment: .leading, spacing: 12) {
+                                ForEach(actions, id: \.category) { action in
+                                    HStack(alignment: .top, spacing: 12) {
+                                        Image(systemName: action.completed ? "checkmark.circle.fill" : "circle")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(
+                                                action.completed
+                                                ? Color(red: 0.94, green: 0.88, blue: 0.72)
+                                                : themeManager.descriptionText.opacity(0.35)
+                                            )
+                                            .frame(width: 18, alignment: .leading)
+                                        Text(action.anchor)
+                                            .font(.custom("Merriweather-Regular", size: 14))
+                                            .foregroundColor(
+                                                action.completed
+                                                ? themeManager.primaryText.opacity(0.75)
+                                                : themeManager.descriptionText.opacity(0.5)
+                                            )
+                                            .strikethrough(action.completed, color: themeManager.descriptionText.opacity(0.4))
+                                            .lineSpacing(4)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
                                 }
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.bottom, 24)
+
+                            // Divider
+                            Rectangle()
+                                .fill(themeManager.primaryText.opacity(0.10))
+                                .frame(height: 1)
+                                .padding(.bottom, 18)
                         }
-                        .padding(.bottom, 28)
 
-                        // Divider
-                        Rectangle()
-                            .fill(themeManager.primaryText.opacity(0.08))
-                            .frame(height: 1)
-                            .padding(.bottom, 20)
+                        // Encouragement copy
+                        Text(encouragementCopy)
+                            .font(.custom("Merriweather-Regular", size: 14))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.65))
+                            .lineSpacing(5)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(themeManager.panelFill.opacity(0.38))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18)
+                                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                            )
+                    )
+                    .padding(.bottom, 20)
 
-                    // Encouragement copy
-                    Text(encouragementCopy)
-                        .font(.custom("Merriweather-Regular", size: 14))
-                        .foregroundColor(themeManager.descriptionText.opacity(0.65))
-                        .lineSpacing(5)
-                        .padding(.bottom, 36)
-
-                    // CTA button
+                    // CTA button (outside the card)
                     Button {
                         onContinue()
                     } label: {
@@ -128,7 +154,7 @@ struct LastWrapUpView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 32)
+                .padding(.horizontal, 28)
                 .padding(.bottom, 52)
             }
         }

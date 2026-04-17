@@ -30,29 +30,65 @@ func attachRecommendationLanguage(to payload: inout [String: Any]) {
 // The raw `name` (e.g. "daily") is kept as-is for the backend focus_tag payload.
 func focusLocalizedName(for nameKey: String) -> String {
     switch nameKey.lowercased() {
-    case "daily":       return String(localized: "focus.name.daily")
-    case "fertility":   return String(localized: "focus.name.fertility")
-    case "connection":  return String(localized: "focus.name.connection")
-    case "transition":  return String(localized: "focus.name.transition")
-    case "caregiving":  return String(localized: "focus.name.caregiving")
-    case "recovery":    return String(localized: "focus.name.recovery")
-    case "clarity":     return String(localized: "focus.name.clarity")
-    case "grief":       return String(localized: "focus.name.grief")
-    default:            return nameKey
+    // Legacy key — treated as presence
+    case "daily":        return String(localized: "focus.name.presence")
+    // Active keys
+    case "presence":     return String(localized: "focus.name.presence")
+    case "rest":         return String(localized: "focus.name.rest")
+    case "focus_work":   return String(localized: "focus.name.focus_work")
+    case "creativity":   return String(localized: "focus.name.creativity")
+    case "connection":   return String(localized: "focus.name.connection")
+    case "family":       return String(localized: "focus.name.family")
+    case "conflict":     return String(localized: "focus.name.conflict")
+    case "parenting":    return String(localized: "focus.name.parenting")
+    case "recovery":     return String(localized: "focus.name.recovery")
+    case "quitting":     return String(localized: "focus.name.quitting")
+    case "chronic":      return String(localized: "focus.name.chronic")
+    case "fertility":    return String(localized: "focus.name.fertility")
+    case "transition":   return String(localized: "focus.name.transition")
+    case "grief":        return String(localized: "focus.name.grief")
+    case "caregiving":   return String(localized: "focus.name.caregiving")
+    case "end_of_life":  return String(localized: "focus.name.end_of_life")
+    case "clarity":      return String(localized: "focus.name.clarity")
+    case "anxiety":      return String(localized: "focus.name.anxiety")
+    case "identity":     return String(localized: "focus.name.identity")
+    case "purpose":      return String(localized: "focus.name.purpose")
+    case "career":       return String(localized: "focus.name.career")
+    case "research":     return String(localized: "focus.name.research")
+    case "finance":      return String(localized: "focus.name.finance")
+    case "relocation":   return String(localized: "focus.name.relocation")
+    default:             return nameKey
     }
 }
 
 func focusLocalizedDescription(for nameKey: String, fallback: String) -> String {
     switch nameKey.lowercased() {
-    case "daily":       return String(localized: "focus.desc.daily")
-    case "fertility":   return String(localized: "focus.desc.fertility")
-    case "connection":  return String(localized: "focus.desc.connection")
-    case "transition":  return String(localized: "focus.desc.transition")
-    case "caregiving":  return String(localized: "focus.desc.caregiving")
-    case "recovery":    return String(localized: "focus.desc.recovery")
-    case "clarity":     return String(localized: "focus.desc.clarity")
-    case "grief":       return String(localized: "focus.desc.grief")
-    default:            return fallback
+    case "daily":        return String(localized: "focus.desc.presence")
+    case "presence":     return String(localized: "focus.desc.presence")
+    case "rest":         return String(localized: "focus.desc.rest")
+    case "focus_work":   return String(localized: "focus.desc.focus_work")
+    case "creativity":   return String(localized: "focus.desc.creativity")
+    case "connection":   return String(localized: "focus.desc.connection")
+    case "family":       return String(localized: "focus.desc.family")
+    case "conflict":     return String(localized: "focus.desc.conflict")
+    case "parenting":    return String(localized: "focus.desc.parenting")
+    case "recovery":     return String(localized: "focus.desc.recovery")
+    case "quitting":     return String(localized: "focus.desc.quitting")
+    case "chronic":      return String(localized: "focus.desc.chronic")
+    case "fertility":    return String(localized: "focus.desc.fertility")
+    case "transition":   return String(localized: "focus.desc.transition")
+    case "grief":        return String(localized: "focus.desc.grief")
+    case "caregiving":   return String(localized: "focus.desc.caregiving")
+    case "end_of_life":  return String(localized: "focus.desc.end_of_life")
+    case "clarity":      return String(localized: "focus.desc.clarity")
+    case "anxiety":      return String(localized: "focus.desc.anxiety")
+    case "identity":     return String(localized: "focus.desc.identity")
+    case "purpose":      return String(localized: "focus.desc.purpose")
+    case "career":       return String(localized: "focus.desc.career")
+    case "research":     return String(localized: "focus.desc.research")
+    case "finance":      return String(localized: "focus.desc.finance")
+    case "relocation":   return String(localized: "focus.desc.relocation")
+    default:             return fallback
     }
 }
 

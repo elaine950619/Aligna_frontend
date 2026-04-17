@@ -45,6 +45,9 @@
         }
       }
     },
+    "A short description…" : {
+
+    },
     "Aa" : {
 
     },
@@ -538,6 +541,9 @@
         }
       }
     },
+    "Aligna" : {
+
+    },
     "Allow Access" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -994,6 +1000,9 @@
           }
         }
       }
+    },
+    "Create your own" : {
+
     },
     "Create Your Space" : {
       "extractionState" : "stale",
@@ -1511,6 +1520,9 @@
         }
       }
     },
+    "e.g. Creative work" : {
+
+    },
     "Each focus name can use up to 2 words." : {
       "localizations" : {
         "zh-Hans" : {
@@ -1554,6 +1566,54 @@
         }
       }
     },
+    "expanded.cta_button" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Today"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始今天"
+          }
+        }
+      }
+    },
+    "expanded.topic_label" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's focus"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天的课题"
+          }
+        }
+      }
+    },
+    "expanded.topic_subtitle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today you'll act in this direction"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "围绕这个方向，今天你会有所行动"
+          }
+        }
+      }
+    },
     "Failed to generate wallpaper." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1561,6 +1621,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法生成壁纸。"
+          }
+        }
+      }
+    },
+    "fetch.stage_0" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sensing today's energy…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在感知今日能量…"
+          }
+        }
+      }
+    },
+    "fetch.stage_1" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matching your mantra…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为你的课题匹配心语…"
+          }
+        }
+      }
+    },
+    "fetch.stage_2" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "准备好了"
           }
         }
       }
@@ -1636,6 +1744,22 @@
         }
       }
     },
+    "focus.add_custom" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New focus"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建课题"
+          }
+        }
+      }
+    },
     "focus.choose_focuses" : {
       "localizations" : {
         "en" : {
@@ -1648,6 +1772,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "最多选择 3 个生活主题，指定这个心语应关注的方向。"
+          }
+        }
+      }
+    },
+    "focus.confirm_button" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm focus"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确认课题"
+          }
+        }
+      }
+    },
+    "focus.desc.anxiety" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meeting worry with structure, breath, and grounded attention."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用结构、呼吸与稳定的注意力去面对焦虑。"
+          }
+        }
+      }
+    },
+    "focus.desc.career" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigating ambition, direction, and the meaning of your work."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在抱负、方向与工作意义之间找到自己的路。"
           }
         }
       }
@@ -1668,6 +1840,22 @@
         }
       }
     },
+    "focus.desc.chronic" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Living alongside persistent discomfort with steadiness."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "以平静与坚韧，与持续的身体不适共存。"
+          }
+        }
+      }
+    },
     "focus.desc.clarity" : {
       "localizations" : {
         "en" : {
@@ -1680,6 +1868,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "帮助你厘清决策、优先级与当下最重要的事。"
+          }
+        }
+      }
+    },
+    "focus.desc.conflict" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moving through friction, rupture, and the hard work of repair."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "穿越摩擦、裂痕，以及修复关系的艰难工作。"
           }
         }
       }
@@ -1700,18 +1904,50 @@
         }
       }
     },
-    "focus.desc.daily" : {
+    "focus.desc.creativity" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your everyday grounding mantra."
+            "value" : "Tending the conditions for original thought and expressive flow."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你每天的根基心语。"
+            "value" : "为原创思维与创作流动培育土壤。"
+          }
+        }
+      }
+    },
+    "focus.desc.end_of_life" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Companioning someone — or yourself — through the final passage."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "陪伴他人或自己，走过生命最后的旅程。"
+          }
+        }
+      }
+    },
+    "focus.desc.family" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigating the complexity of the people you belong to."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在你所归属的那些人之间，找到自己的立足点。"
           }
         }
       }
@@ -1732,6 +1968,38 @@
         }
       }
     },
+    "focus.desc.finance" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steadiness when money is a source of stress or uncertainty."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当金钱成为压力或不确定性的来源时，保持稳定。"
+          }
+        }
+      }
+    },
+    "focus.desc.focus_work" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A container for uninterrupted attention and meaningful output."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为不被打断的专注与有意义的产出创造空间。"
+          }
+        }
+      }
+    },
     "focus.desc.grief" : {
       "localizations" : {
         "en" : {
@@ -1748,6 +2016,86 @@
         }
       }
     },
+    "focus.desc.identity" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Holding open questions about who you are and what you're becoming."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "带着关于自我与成长的开放问题，继续前行。"
+          }
+        }
+      }
+    },
+    "focus.desc.parenting" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Presence and patience in the weight of raising another person."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在养育另一个生命的重量中，保持临在与耐心。"
+          }
+        }
+      }
+    },
+    "focus.desc.presence" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rooted in the now, open to what is."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "扎根此刻，与当下同在。"
+          }
+        }
+      }
+    },
+    "focus.desc.purpose" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The search for meaning when the path feels unclear."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在道路模糊时，寻找生命的意义与方向。"
+          }
+        }
+      }
+    },
+    "focus.desc.quitting" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Releasing a substance, habit, or pattern that no longer serves you."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "放下那些不再适合你的物质、习惯或模式。"
+          }
+        }
+      }
+    },
     "focus.desc.recovery" : {
       "localizations" : {
         "en" : {
@@ -1760,6 +2108,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "给自己修复、稳定与重建能量的空间。"
+          }
+        }
+      }
+    },
+    "focus.desc.relocation" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rooting in unfamiliar surroundings while building a new ordinary."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在陌生的环境中扎根，建立新的日常。"
+          }
+        }
+      }
+    },
+    "focus.desc.research" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deep inquiry, experimentation, and the long patience of discovery."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "深度探索、实验，以及发现过程中漫长的耐心。"
+          }
+        }
+      }
+    },
+    "focus.desc.rest" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permission to stop, recover, and simply be."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允许自己停下来，恢复，只是存在。"
           }
         }
       }
@@ -1797,12 +2193,146 @@
         }
       }
     },
+    "focus.group.body" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Body & Health"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "身体与健康"
+          }
+        }
+      }
+    },
+    "focus.group.everyday" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Everyday"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日常与当下"
+          }
+        }
+      }
+    },
+    "focus.group.inner" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inner Work"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "内在与成长"
+          }
+        }
+      }
+    },
+    "focus.group.practical" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Practical Life"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "现实处境"
+          }
+        }
+      }
+    },
+    "focus.group.relationships" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Relationships"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关系与他人"
+          }
+        }
+      }
+    },
+    "focus.group.transitions" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Life Transitions"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "人生过渡"
+          }
+        }
+      }
+    },
+    "focus.name.anxiety" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anxiety"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焦虑"
+          }
+        }
+      }
+    },
+    "focus.name.career" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Career"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "事业"
+          }
+        }
+      }
+    },
     "focus.name.caregiving" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "caregiving"
+            "value" : "Caregiving"
           }
         },
         "zh-Hans" : {
@@ -1813,18 +2343,50 @@
         }
       }
     },
-    "focus.name.clarity" : {
+    "focus.name.chronic" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "clarity"
+            "value" : "Chronic Pain"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "清澈"
+            "value" : "慢性痛"
+          }
+        }
+      }
+    },
+    "focus.name.clarity" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clarity"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清明"
+          }
+        }
+      }
+    },
+    "focus.name.conflict" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conflict"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "冲突"
           }
         }
       }
@@ -1834,7 +2396,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "connection"
+            "value" : "Connection"
           }
         },
         "zh-Hans" : {
@@ -1845,18 +2407,50 @@
         }
       }
     },
-    "focus.name.daily" : {
+    "focus.name.creativity" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "daily"
+            "value" : "Creativity"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "每日"
+            "value" : "创作"
+          }
+        }
+      }
+    },
+    "focus.name.end_of_life" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "End of Life"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "临终"
+          }
+        }
+      }
+    },
+    "focus.name.family" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Family"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "家庭"
           }
         }
       }
@@ -1866,7 +2460,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "fertility"
+            "value" : "Fertility"
           }
         },
         "zh-Hans" : {
@@ -1877,12 +2471,44 @@
         }
       }
     },
+    "focus.name.finance" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finance"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "财务"
+          }
+        }
+      }
+    },
+    "focus.name.focus_work" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deep Work"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "深度专注"
+          }
+        }
+      }
+    },
     "focus.name.grief" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "grief"
+            "value" : "Grief"
           }
         },
         "zh-Hans" : {
@@ -1893,18 +2519,146 @@
         }
       }
     },
-    "focus.name.recovery" : {
+    "focus.name.identity" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "recovery"
+            "value" : "Identity"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "恢复"
+            "value" : "自我"
+          }
+        }
+      }
+    },
+    "focus.name.parenting" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parenting"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "育儿"
+          }
+        }
+      }
+    },
+    "focus.name.presence" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Presence"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当下"
+          }
+        }
+      }
+    },
+    "focus.name.purpose" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purpose"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "意义"
+          }
+        }
+      }
+    },
+    "focus.name.quitting" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breaking Free"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "戒断"
+          }
+        }
+      }
+    },
+    "focus.name.recovery" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recovery"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "康复"
+          }
+        }
+      }
+    },
+    "focus.name.relocation" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Place"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "迁居"
+          }
+        }
+      }
+    },
+    "focus.name.research" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Research"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "科研"
+          }
+        }
+      }
+    },
+    "focus.name.rest" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rest"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "休息"
           }
         }
       }
@@ -1914,7 +2668,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "transition"
+            "value" : "Transition"
           }
         },
         "zh-Hans" : {
@@ -1937,6 +2691,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "显示上次结果。正在生成今天的心语和节奏。"
+          }
+        }
+      }
+    },
+    "focus.select_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What do you want to face today?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天，你想面对什么？"
           }
         }
       }
@@ -2162,6 +2932,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请稍候，生成今日心语最多需要一分钟。"
+          }
+        }
+      }
+    },
+    "home.today_actions" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's actions"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日行动"
+          }
+        }
+      }
+    },
+    "home.today_focus" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's focus"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日课题"
+          }
+        }
+      }
+    },
+    "home.today_guidance" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's guidance"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日指引"
+          }
+        }
+      }
+    },
+    "home.today_mantra" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's mantra"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日心语"
           }
         }
       }
@@ -2695,7 +3529,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "月相%@"
+            "value" : "月相是%@"
           }
         }
       }
@@ -4200,6 +5034,7 @@
       }
     },
     "main.mantra_expand_hint" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4313,6 +5148,7 @@
       }
     },
     "main.todays_rhythm" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7903,13 +8739,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "9 AM & 8 PM · Today's mantra"
+            "value" : "Reminded at sunrise & sunset"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "早9点 · 晚8点 · 今日心语"
+            "value" : "在日出与日落时提醒"
           }
         }
       }
@@ -8107,6 +8943,7 @@
       }
     },
     "profile.rhythm_update_sheet_subtitle" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8123,6 +8960,7 @@
       }
     },
     "profile.rhythm_update_sheet_title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8139,6 +8977,7 @@
       }
     },
     "profile.rhythm_update_status" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8155,6 +8994,7 @@
       }
     },
     "profile.rhythm_update_title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8536,6 +9376,7 @@
       }
     },
     "Refresh" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -9399,6 +10240,7 @@
       }
     },
     "Update time" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -9465,6 +10307,102 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "这个主题应该关注什么？"
+          }
+        }
+      }
+    },
+    "wrapup.completed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You completed %lld of %lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你完成了 %lld / %lld 项"
+          }
+        }
+      }
+    },
+    "wrapup.copy_all" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You completed everything. Keep going."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你完成了所有行动，继续前行。"
+          }
+        }
+      }
+    },
+    "wrapup.copy_none" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today is a good time to start fresh."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天是重新出发的好时机。"
+          }
+        }
+      }
+    },
+    "wrapup.copy_partial" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're one step closer to \"%@\"."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你向「%@」又靠近了一步。"
+          }
+        }
+      }
+    },
+    "wrapup.cta" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start today"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始今天"
+          }
+        }
+      }
+    },
+    "wrapup.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last wrap-up"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上次收尾"
           }
         }
       }

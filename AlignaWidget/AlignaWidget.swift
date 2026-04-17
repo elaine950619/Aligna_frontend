@@ -649,8 +649,8 @@ struct AlynnaWidgetEntryView: View {
 
                     if !footerItems.isEmpty {
                         let lineColor = secondaryTextColor
-                        let topFooterItems = footerItems.filter { ["Environment", "Weather"].contains($0.label) }
-                        let bottomFooterItems = footerItems.filter { ["Air", "Wind", "Humidity", "Pressure"].contains($0.label) }
+                        let topFooterItems = footerItems.filter { ["Environment", "Weather", "环境", "天气"].contains($0.label) }
+                        let bottomFooterItems = footerItems.filter { ["Air", "Wind", "Humidity", "Pressure", "空气", "风速", "湿度", "气压"].contains($0.label) }
 
                         VStack(alignment: .leading, spacing: minSide * 0.01) {
                             if !topFooterItems.isEmpty {

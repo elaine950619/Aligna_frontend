@@ -69,42 +69,48 @@ struct FocusSelectionView: View {
                 .environmentObject(themeManager)
                 .ignoresSafeArea()
 
+            // ── Scrollable content fills all space ──
             VStack(spacing: 0) {
+                // Spacer pushes title down to roughly the upper-middle
+                Spacer().frame(height: 60)
+
                 // Title
                 Text("focus.select_title")
                     .font(.custom("Merriweather-Bold", size: 22))
                     .foregroundColor(themeManager.primaryText)
                     .multilineTextAlignment(.center)
-                    .padding(.top, 56)
                     .padding(.horizontal, 32)
                     .padding(.bottom, 32)
 
-                // Scrollable content
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 0) {
 
-                        // ── Row 1: Presence (pinned) + Custom card ──
-                        LazyVGrid(columns: columns, spacing: 12) {
-                            if let p = presenceItem {
+                        // ── Presence focus — same 2-col grid as other cards ──
+                        if let p = presenceItem {
+                            LazyVGrid(columns: columns, spacing: 12) {
                                 focusCard(p)
                             }
-                            addCustomCard
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 12)
                         }
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 28)
 
                         // ── Grouped sections ──
                         ForEach(groups, id: \.key) { group in
                             let groupItems = items(for: group.key)
                             if !groupItems.isEmpty {
-                                // Section header
-                                Text(String(localized: String.LocalizationValue(group.labelKey)))
-                                    .font(.custom("Merriweather-Regular", size: 10))
-                                    .foregroundColor(themeManager.descriptionText.opacity(0.45))
-                                    .tracking(1.2)
-                                    .textCase(.uppercase)
-                                    .padding(.horizontal, 24)
-                                    .padding(.bottom, 10)
+                                HStack(spacing: 10) {
+                                    Text(String(localized: String.LocalizationValue(group.labelKey)))
+                                        .font(.custom("Merriweather-Regular", size: 10))
+                                        .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                                        .tracking(1.2)
+                                        .textCase(.uppercase)
+                                        .fixedSize()
+                                    Rectangle()
+                                        .fill(themeManager.descriptionText.opacity(0.15))
+                                        .frame(height: 1)
+                                }
+                                .padding(.horizontal, 24)
+                                .padding(.bottom, 10)
 
                                 LazyVGrid(columns: columns, spacing: 12) {
                                     ForEach(groupItems) { item in
@@ -119,13 +125,19 @@ struct FocusSelectionView: View {
                         // Custom user focuses (no groupKey / ungrouped)
                         let customItems = focuses.filter { $0.groupKey.isEmpty && $0.id != presenceFocusID }
                         if !customItems.isEmpty {
-                            Text(String(localized: "focus.add_custom"))
-                                .font(.custom("Merriweather-Regular", size: 10))
-                                .foregroundColor(themeManager.descriptionText.opacity(0.45))
-                                .tracking(1.2)
-                                .textCase(.uppercase)
-                                .padding(.horizontal, 24)
-                                .padding(.bottom, 10)
+                            HStack(spacing: 10) {
+                                Text(String(localized: "focus.add_custom"))
+                                    .font(.custom("Merriweather-Regular", size: 10))
+                                    .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                                    .tracking(1.2)
+                                    .textCase(.uppercase)
+                                    .fixedSize()
+                                Rectangle()
+                                    .fill(themeManager.descriptionText.opacity(0.15))
+                                    .frame(height: 1)
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 10)
 
                             LazyVGrid(columns: columns, spacing: 12) {
                                 ForEach(customItems) { item in
@@ -136,12 +148,14 @@ struct FocusSelectionView: View {
                             .padding(.bottom, 28)
                         }
                     }
-                    .padding(.bottom, 24)
+                    // Extra bottom padding so last cards don't hide behind the pinned button
+                    .padding(.bottom, 100)
                 }
+            }
 
-                Spacer(minLength: 0)
-
-                // Confirm button
+            // ── Confirm button pinned to bottom ──
+            VStack {
+                Spacer()
                 Button {
                     if let id = selectedID {
                         onConfirm(id)

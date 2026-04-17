@@ -175,7 +175,7 @@ enum AlignaType {
     static func expandedMantraFont() -> Font {
         isChinese
             ? .custom("LXGWWenKaiTC-Bold", size: 22)
-            : .custom("Merriweather-Bold", size: 23)
+            : .custom("Merriweather-Bold", size: 18)
     }
 
     // 首页收缩态 mantra — 中文用霞鹜文楷 Bold（与展开态一致），英文用 Merriweather-Italic
@@ -197,13 +197,13 @@ enum AlignaType {
     // UI 元素 — 中文用思源黑体（清晰），英文保持 Merriweather
     static func gridCategoryTitle() -> Font {
         isChinese
-            ? .custom("SourceHanSansSCVF-Medium", size: 18)
-            : .custom("Merriweather-Bold", size: 18)
+            ? .custom("SourceHanSansSCVF-Medium", size: 12)
+            : .custom("Merriweather-Bold", size: 12)
     }
     static func gridItemName() -> Font {
         isChinese
-            ? .custom("SourceHanSansSCVF-Light", size: 16)
-            : .custom("Merriweather-Light", size: 16)
+            ? .custom("SourceHanSansSCVF-Light", size: 11)
+            : .custom("Merriweather-Light", size: 11)
     }
 
     // loading / helper — 中文用思源黑体 Light（清晰易读）
@@ -273,6 +273,27 @@ private func focusDisplayDescription(for focus: MantraFocus) -> String {
     focusLocalizedDescription(for: focus.name, fallback: focus.description)
 }
 
+/// Maps a seeded focus name key to the group key used by FocusSelectionView.
+/// Custom user-created focuses return "" (ungrouped).
+private func focusGroupKey(for nameKey: String) -> String {
+    switch nameKey.lowercased() {
+    case "rest", "focus_work", "creativity":
+        return "everyday"
+    case "connection", "family", "conflict", "parenting":
+        return "relationships"
+    case "recovery", "quitting", "chronic", "fertility":
+        return "body"
+    case "transition", "grief", "caregiving", "end_of_life":
+        return "transitions"
+    case "clarity", "anxiety", "identity", "purpose":
+        return "inner"
+    case "career", "research", "finance", "relocation":
+        return "practical"
+    default:
+        return ""
+    }
+}
+
 private struct FocusedMantraEntry: Codable, Hashable {
     var mantra: String
     var recommendations: [String: String]
@@ -337,6 +358,12 @@ private struct DailyFocusUsageEntry: Codable, Hashable {
     var generatedFocuses: [String: Int]
 }
 
+private enum DayPhase {
+    case wrapUp     // 上次收尾（有历史行动数据时）
+    case expanded   // 课题展开态（每日首次）
+    case home       // 主页缩略态
+}
+
 struct MainView: View {
     private enum FocusFormField: Hashable {
         case name
@@ -360,13 +387,10 @@ struct MainView: View {
     @AppStorage("shouldOnboardAfterSignIn") var shouldOnboardAfterSignIn: Bool = false
     @AppStorage("didDeleteAccount") private var didDeleteAccount: Bool = false
     @AppStorage("dailyMantraNotificationEnabled") private var dailyMantraNotificationEnabled: Bool = false
-    @AppStorage("dailyRhythmUpdateHour") private var dailyRhythmUpdateHour: Int = 7
-    @AppStorage("dailyRhythmUpdateMinute") private var dailyRhythmUpdateMinute: Int = 0
     @AppStorage("cachedDailyMantra") private var cachedDailyMantra: String = ""
     @AppStorage("lastRecommendationTimestamp") private var lastRecommendationTimestamp: Double = 0
     @AppStorage("lastRecommendationHasFullSet") private var lastRecommendationHasFullSet: Bool = false
     @AppStorage("lastManualRefreshTimestamp") private var lastManualRefreshTimestamp: Double = 0
-    @AppStorage("shouldExpandMantraOnBoot") private var shouldExpandMantraOnBoot: Bool = false
     @AppStorage("shouldExpandMantraFromNotification") private var shouldExpandMantraFromNotification: Bool = false
     @AppStorage("mantraExpandHapticDay") private var mantraExpandHapticDay: String = ""
     @AppStorage("mantraGuidanceHintTapCount") private var mantraGuidanceHintTapCount: Int = 0
@@ -394,14 +418,16 @@ struct MainView: View {
     @State private var soundPlayerAutoDismissTask: Task<Void, Never>? = nil
     @State private var showNoSoundToast: Bool = false
     @State private var journalSpinAngle: Double = 0
+    @State private var ctaArrowOffset: CGFloat = 0
     @State private var lastPrefetchedSoundKey: String = ""
     @State private var mantraSaveMessage: String = ""
 
     @State private var showReasoningBubble: Bool = false
     @State private var refreshCooldownMessage = ""
     @State private var isManualRefreshFlow = false
+    /// True for both manual refresh and remedial loading — controls full loading flow (with focus selection).
+    @State private var isFullLoadingFlow = false
 
-    @AppStorage("todayAutoRefetchDone") private var todayAutoRefetchDone: String = ""
     @AppStorage("shouldShowBootLoading") private var shouldShowBootLoading: Bool = false
     @AppStorage("showMainGenerationOverlay") private var showMainGenerationOverlay: Bool = false
     @AppStorage("mainGenerationOverlayTitle") private var mainGenerationOverlayTitle: String = "Generating today's mantra"
@@ -452,20 +478,26 @@ struct MainView: View {
     @State private var mantraFocusUsageByDay: [String: DailyFocusUsageEntry] = [:]
     @FocusState private var focusedFocusFormField: FocusFormField?
 
-    @AppStorage("watchdogDay") private var watchdogDay: String = ""
-    @AppStorage("todayAutoRefetchAttempts") private var todayAutoRefetchAttempts: Int = 0
-    // NEW: 多次重试的配置
-    private let maxRefetchAttempts = 3
+    // MARK: - Daily ritual flow
+    @AppStorage("hasSeenExpandedToday")  private var hasSeenExpandedToday: String = ""  // "yyyy-MM-dd"
+    @AppStorage("dailyActionsCompleted") private var dailyActionsCompleted: String = ""  // JSON [String:Bool]
+    @AppStorage("dailyActionsDate")      private var dailyActionsDate: String = ""        // "yyyy-MM-dd"
     private let initialRefetchDelay: TimeInterval = 8.0
 
     @StateObject private var locationManager = LocationManager()
     @State private var recommendationTitles: [String: String] = [:]
+    @State private var anchorCache: [String: String] = [:]  // category → anchor text from RecommendationItem
     
     @State private var selectedDate = Date()
     @State private var mainNavigationPath = NavigationPath()
     
     @State private var bootPhase: BootPhase = .loading
-    
+    @State private var dayPhase: DayPhase = .home
+
+    // Data snapshot for WrapUpView — captured from previous session before it's overwritten
+    @State private var lastFocusName: String = ""
+    @State private var lastWrapUpActions: [(category: String, anchor: String, completed: Bool)] = []
+
     @State private var didBootVisuals = false
     @State private var shouldCollapseMantraOnReturn = false
     @State private var privilegedNickname: String = ""
@@ -495,14 +527,38 @@ struct MainView: View {
         "teal":"#008080"
     ]
     private let maxAppliedFocuses = 3
-    private let dailyFocusID = "11111111-1111-1111-1111-111111111111"
-    private let fertilityFocusID = "22222222-2222-2222-2222-222222222222"
+    // Group: Presence (top-row solo) — previously "dailyFocusID"
+    private let presenceFocusID   = "11111111-1111-1111-1111-111111111111"
+    private var dailyFocusID: String { presenceFocusID }
+    // Group: 日常与当下
+    private let restFocusID       = "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1"
+    private let focusWorkFocusID  = "a2a2a2a2-a2a2-a2a2-a2a2-a2a2a2a2a2a2"
+    private let creativityFocusID = "a3a3a3a3-a3a3-a3a3-a3a3-a3a3a3a3a3a3"
+    // Group: 关系与他人
     private let connectionFocusID = "33333333-3333-3333-3333-333333333333"
+    private let familyFocusID     = "b1b1b1b1-b1b1-b1b1-b1b1-b1b1b1b1b1b1"
+    private let conflictFocusID   = "b2b2b2b2-b2b2-b2b2-b2b2-b2b2b2b2b2b2"
+    private let parentingFocusID  = "b3b3b3b3-b3b3-b3b3-b3b3-b3b3b3b3b3b3"
+    // Group: 身体与健康
+    private let recoveryFocusID   = "66666666-6666-6666-6666-666666666666"
+    private let quittingFocusID   = "c1c1c1c1-c1c1-c1c1-c1c1-c1c1c1c1c1c1"
+    private let chronicFocusID    = "c2c2c2c2-c2c2-c2c2-c2c2-c2c2c2c2c2c2"
+    private let fertilityFocusID  = "22222222-2222-2222-2222-222222222222"
+    // Group: 人生过渡
     private let transitionFocusID = "44444444-4444-4444-4444-444444444444"
+    private let griefFocusID      = "88888888-8888-8888-8888-888888888888"
     private let caregivingFocusID = "55555555-5555-5555-5555-555555555555"
-    private let recoveryFocusID = "66666666-6666-6666-6666-666666666666"
-    private let clarityFocusID = "77777777-7777-7777-7777-777777777777"
-    private let griefFocusID = "88888888-8888-8888-8888-888888888888"
+    private let endOfLifeFocusID  = "d1d1d1d1-d1d1-d1d1-d1d1-d1d1d1d1d1d1"
+    // Group: 内在与成长
+    private let clarityFocusID    = "77777777-7777-7777-7777-777777777777"
+    private let anxietyFocusID    = "e1e1e1e1-e1e1-e1e1-e1e1-e1e1e1e1e1e1"
+    private let identityFocusID   = "e2e2e2e2-e2e2-e2e2-e2e2-e2e2e2e2e2e2"
+    private let purposeFocusID    = "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3"
+    // Group: 现实处境
+    private let careerFocusID     = "f1f1f1f1-f1f1-f1f1-f1f1-f1f1f1f1f1f1"
+    private let researchFocusID   = "f2f2f2f2-f2f2-f2f2-f2f2-f2f2f2f2f2f2"
+    private let financeFocusID    = "f3f3f3f3-f3f3-f3f3-f3f3-f3f3f3f3f3f3"
+    private let relocationFocusID = "f4f4f4f4-f4f4-f4f4-f4f4-f4f4f4f4f4f4"
     private let maxNonDailyFocusUpdatesPerDay = 2
 
     private var currentFocusSelectionKey: String {
@@ -566,6 +622,77 @@ struct MainView: View {
         !isMantraExpanded && activeFocusName != "daily"
     }
 
+    // MARK: - Daily ritual helpers
+    private var todayKey: String { currentFocusSelectionKey }
+    private var hasTodayFocus: Bool {
+        if let id = mantraActiveFocusByDay[todayKey], !id.isEmpty { return true }
+        return false
+    }
+    private var todayActionsDict: [String: Bool] {
+        guard dailyActionsDate == todayKey,
+              let data = dailyActionsCompleted.data(using: .utf8),
+              let dict = try? JSONDecoder().decode([String: Bool].self, from: data)
+        else { return [:] }
+        return dict
+    }
+
+    // Returns true when there is a previous session's action data that hasn't been shown in wrapup yet
+    private var hasPreviousSessionActions: Bool {
+        guard !dailyActionsDate.isEmpty, dailyActionsDate != todayKey else { return false }
+        guard let data = dailyActionsCompleted.data(using: .utf8),
+              let dict = try? JSONDecoder().decode([String: Bool].self, from: data)
+        else { return false }
+        return !dict.isEmpty
+    }
+
+    // Builds the wrapup snapshot from stored previous-session data + anchorCache
+    private func buildWrapUpData() {
+        let dateKey = dailyActionsDate  // e.g. "2026-04-15"
+        // Focus name from that day
+        let focusID = mantraActiveFocusByDay[dateKey] ?? ""
+        let focus = mantraFocuses.first { $0.id.uuidString == focusID }
+        lastFocusName = focus.map { focusDisplayName(for: $0) } ?? dateKey
+
+        // Actions from stored JSON
+        guard let data = dailyActionsCompleted.data(using: .utf8),
+              let dict = try? JSONDecoder().decode([String: Bool].self, from: data)
+        else {
+            lastWrapUpActions = []
+            return
+        }
+        let order = ["Activity", "Place", "Sound", "Scent", "Gemstone", "Color", "Career", "Relationship"]
+        lastWrapUpActions = order.compactMap { cat -> (String, String, Bool)? in
+            guard dict[cat] != nil else { return nil }
+            let anchor = anchorCache[cat] ?? ""
+            guard !anchor.isEmpty else { return nil }
+            return (cat, anchor, dict[cat] ?? false)
+        }
+    }
+    // Fixed: Activity, Place, Career (always); 4th slot: first non-empty from Gemstone/Scent
+    private var dailyActionItems: [(category: String, anchor: String)] {
+        var result: [(String, String)] = []
+
+        // Helper to get text for a category
+        func text(for cat: String) -> String {
+            let engage = viewModel.howToEngage[cat]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return !engage.isEmpty ? engage : (anchorCache[cat] ?? "")
+        }
+
+        // Fixed slots: Activity, Place, Career
+        for cat in ["Activity", "Place", "Career"] {
+            let t = text(for: cat)
+            if !t.isEmpty { result.append((cat, t)) }
+        }
+
+        // 4th slot: first non-empty from Gemstone, then Scent
+        for cat in ["Gemstone", "Scent"] {
+            let t = text(for: cat)
+            if !t.isEmpty { result.append((cat, t)); break }
+        }
+
+        return result
+    }
+
     init(
         previewExpanded: Bool = false,
         previewShowGeneration: Bool = false,
@@ -585,28 +712,6 @@ struct MainView: View {
     private func todayColorHex() -> String? {
         let key = viewModel.recommendations["Color"]?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
         return colorHexMapping[key]
-    }
-
-    /// Sets dailyRhythmUpdateHour/Minute to the local sunrise time whenever a location is available.
-    /// Only overwrites if the value is still at the factory default (7:00) OR if this is the first
-    /// time a real location has been resolved.
-    private func applySunriseRhythmDefaultIfNeeded() {
-        let defaults = UserDefaults.standard
-        let storedLat = defaults.double(forKey: "lastKnownLatitude")
-        let storedLon = defaults.double(forKey: "lastKnownLongitude")
-        guard storedLat != 0 || storedLon != 0 else { return }
-
-        // Reuse the same NOAA calculation from MantraNotificationManager
-        let times = MantraNotificationManager.notificationTimes()
-        // notificationTimes() falls back to (9,0,20,0) — if we're still at that fallback,
-        // the location resolve didn't produce a valid sunrise, so skip.
-        let isAtDefault = dailyRhythmUpdateHour == 7 && dailyRhythmUpdateMinute == 0
-        let hadNoLocation = !defaults.bool(forKey: "hasPreviouslyAppliedSunriseRhythm")
-        guard isAtDefault || hadNoLocation else { return }
-
-        dailyRhythmUpdateHour = times.morningHour
-        dailyRhythmUpdateMinute = times.morningMinute
-        defaults.set(true, forKey: "hasPreviouslyAppliedSunriseRhythm")
     }
 
     private func ensureDefaultsIfMissing() {
@@ -760,25 +865,11 @@ struct MainView: View {
     }
 
     private func effectiveDayString(for date: Date) -> String {
-        var calendar = Calendar.current
-        calendar.timeZone = .current
-
-        let currentComponents = calendar.dateComponents([.hour, .minute], from: date)
-        let currentMinutes = (currentComponents.hour ?? 0) * 60 + (currentComponents.minute ?? 0)
-        let updateMinutes = dailyRhythmUpdateHour * 60 + dailyRhythmUpdateMinute
-
-        let effectiveDate: Date
-        if currentMinutes < updateMinutes {
-            effectiveDate = calendar.date(byAdding: .day, value: -1, to: date) ?? date
-        } else {
-            effectiveDate = date
-        }
-
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = .current
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: effectiveDate)
+        let df = DateFormatter()
+        df.calendar = Calendar.current
+        df.timeZone = .current
+        df.dateFormat = "yyyy-MM-dd"
+        return df.string(from: date)
     }
 
     private var infoIconButton: some View {
@@ -804,6 +895,287 @@ struct MainView: View {
             .accessibilityHint("Shows why this mantra was chosen")
     }
 
+    // 每日仪式：展开态 (课题标题 + 心语 + CTA)
+    @ViewBuilder
+    private func ritualExpandedView(geometry: GeometryProxy) -> some View {
+        let textWidth = geometry.size.width * 0.80
+        let topInset = geometry.size.height * 0.12
+        let sandColor = Color(red: 0.94, green: 0.88, blue: 0.72)
+        let activeFocusName: String = {
+            if let f = mantraFocuses.first(where: { $0.id.uuidString == mantraActiveFocusByDay[todayKey] }) {
+                return focusDisplayName(for: f)
+            }
+            return ""
+        }()
+
+        VStack(spacing: 0) {
+            // ── 固定头部：课题标识区域 ──
+            VStack(alignment: .center, spacing: 0) {
+                Spacer().frame(height: topInset)
+
+                Text("expanded.topic_label")
+                    .font(.custom("Merriweather-Regular", size: 11))
+                    .foregroundColor(themeManager.descriptionText.opacity(0.50))
+                    .tracking(1.8)
+                    .textCase(.uppercase)
+
+                if !activeFocusName.isEmpty {
+                    HStack(alignment: .top, spacing: 4) {
+                        Text(activeFocusName)
+                            .font(.custom("Merriweather-Bold", size: 28))
+                            .foregroundColor(themeManager.primaryText)
+                            .multilineTextAlignment(.center)
+
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.5)) {
+                                journalSpinAngle += 360
+                            }
+                            isManualRefreshFlow = true
+                            isFullLoadingFlow = true
+                            didCompletePersonalCheckIn = false
+                            isMantraReady = false
+                            withAnimation(.easeInOut) { bootPhase = .loading }
+                        } label: {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .font(.system(size: 11, weight: .regular))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                                .rotationEffect(.degrees(journalSpinAngle))
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 2)
+                    }
+                    .padding(.top, 8)
+                    .padding(.horizontal, 24)
+                }
+
+                Text("expanded.topic_subtitle")
+                    .font(.custom("Merriweather-Regular", size: 13))
+                    .foregroundColor(themeManager.descriptionText.opacity(0.55))
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 10)
+                    .padding(.horizontal, 32)
+
+                // 分割线
+                Rectangle()
+                    .fill(themeManager.descriptionText.opacity(0.18))
+                    .frame(width: textWidth * 0.40, height: 0.5)
+                    .padding(.top, 28)
+            }
+
+            // ── 可滚动：今日心语区域 ──
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .center, spacing: 0) {
+                    Text("home.today_mantra")
+                        .font(.custom("Merriweather-Regular", size: 11))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.50))
+                        .tracking(1.8)
+                        .textCase(.uppercase)
+                        .padding(.top, 24)
+                        .padding(.bottom, 16)
+
+                    Text(viewModel.dailyMantra)
+                        .font(AlignaType.expandedMantraFont())
+                        .lineSpacing(12)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(
+                            themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
+                        )
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(width: textWidth)
+                        .padding(.bottom, 32)
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .frame(maxWidth: .infinity)
+
+            // ── 固定底部：开始今天 按钮 ──
+            Button {
+                markExpandedSeen()
+            } label: {
+                HStack(spacing: 8) {
+                    Text("expanded.cta_button")
+                        .font(.custom("Merriweather-Bold", size: 15))
+                        .foregroundColor(Color(red: 0.12, green: 0.10, blue: 0.08))
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color(red: 0.12, green: 0.10, blue: 0.08).opacity(0.70))
+                        .offset(x: ctaArrowOffset)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(sandColor.opacity(themeManager.isNight ? 0.88 : 0.80))
+                )
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 28)
+            .padding(.bottom, 48)
+            .padding(.top, 16)
+            .onAppear {
+                // Nudge right twice, then pause — repeating loop
+                let nudge: CGFloat = 5
+                let step = 0.18
+                let pause = 1.6
+                func cycle() {
+                    withAnimation(.easeInOut(duration: step)) { ctaArrowOffset = nudge }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + step) {
+                        withAnimation(.easeInOut(duration: step)) { ctaArrowOffset = 0 }
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + step * 2 + 0.06) {
+                        withAnimation(.easeInOut(duration: step)) { ctaArrowOffset = nudge }
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + step * 3 + 0.06) {
+                        withAnimation(.easeInOut(duration: step)) { ctaArrowOffset = 0 }
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + step * 4 + pause) {
+                        guard isMantraExpanded else { return }
+                        cycle()
+                    }
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { cycle() }
+            }
+        }
+        .frame(width: geometry.size.width, height: geometry.size.height)
+    }
+
+    // 今日课题 capsule (collapsed home)
+    @ViewBuilder
+    private var todayFocusCapsule: some View {
+        if !isMantraExpanded, hasTodayFocus,
+           let activeFocus = mantraFocuses.first(where: { $0.id.uuidString == mantraActiveFocusByDay[todayKey] }) {
+            HStack(alignment: .top, spacing: 6) {
+                Text("home.today_focus")
+                    .font(.custom("Merriweather-Regular", size: 10))
+                    .foregroundColor(themeManager.descriptionText.opacity(0.52))
+                    .padding(.top, 4)
+
+                Text(focusDisplayName(for: activeFocus))
+                    .font(.custom("Merriweather-Regular", size: 10))
+                    .foregroundColor(themeManager.primaryText.opacity(0.82))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(themeManager.panelFill.opacity(themeManager.isNight ? 0.38 : 0.50))
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                    )
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.5)) {
+                        journalSpinAngle += 360
+                    }
+                    isManualRefreshFlow = true
+                    isFullLoadingFlow = true
+                    didCompletePersonalCheckIn = false
+                    isMantraReady = false
+                    withAnimation(.easeInOut) { bootPhase = .loading }
+                } label: {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.system(size: 9, weight: .regular))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                        .rotationEffect(.degrees(journalSpinAngle))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 2)
+            }
+            .padding(.top, 4)
+            .transition(.opacity.combined(with: .scale(scale: 0.96)))
+        }
+    }
+
+    // 今日行动 checklist + 今日指引 + 8-grid (collapsed home, placed directly below mantra)
+    @ViewBuilder
+    private func homeCollapsedContent(geometry: GeometryProxy, minLength: CGFloat) -> some View {
+        if !isMantraExpanded {
+            let hPad = geometry.size.width * 0.07
+            let gridPad = geometry.size.width * 0.05
+            let gridSpacing: CGFloat = 6
+            let totalH = geometry.size.height
+            // 셀 높이: 수평 레이아웃으로 변경 — 고정 높이 사용
+            let cellHeight: CGFloat = 56
+            let columns = [
+                GridItem(.flexible(), spacing: gridSpacing, alignment: .center),
+                GridItem(.flexible(), spacing: gridSpacing, alignment: .center)
+            ]
+            let gridItems = [
+                "Place", "Gemstone", "Color", "Scent",
+                "Activity", "Sound", "Career", "Relationship"
+            ]
+
+            VStack(spacing: 0) {
+                if !dailyActionItems.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("home.today_actions")
+                            .font(.custom("Merriweather-Regular", size: 10))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.50))
+                            .tracking(1.2)
+                            .textCase(.uppercase)
+                            .padding(.bottom, 8)
+
+                        ForEach(Array(dailyActionItems.enumerated()), id: \.offset) { _, item in
+                            HStack(spacing: 10) {
+                                Button {
+                                    toggleActionComplete(category: item.category)
+                                } label: {
+                                    let done = todayActionsDict[item.category] ?? false
+                                    Image(systemName: done ? "checkmark.circle.fill" : "circle")
+                                        .font(.system(size: 15, weight: .light))
+                                        .foregroundColor(done
+                                            ? themeManager.primaryText.opacity(0.75)
+                                            : themeManager.descriptionText.opacity(0.45))
+                                }
+                                .buttonStyle(.plain)
+
+                                Text(item.anchor)
+                                    .font(.custom("Merriweather-Regular", size: 12))
+                                    .foregroundColor(
+                                        (todayActionsDict[item.category] ?? false)
+                                        ? themeManager.descriptionText.opacity(0.45)
+                                        : themeManager.primaryText.opacity(0.78)
+                                    )
+                                    .lineLimit(2)
+                                    .fixedSize(horizontal: false, vertical: true)
+
+                                Spacer()
+                            }
+                            .padding(.vertical, 5)
+                        }
+                    }
+                    .padding(.horizontal, hPad)
+                    .padding(.top, 22)
+                    .padding(.bottom, 10)
+                }
+
+                HStack {
+                    Text("home.today_guidance")
+                        .font(.custom("Merriweather-Regular", size: 10))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.50))
+                        .tracking(1.2)
+                        .textCase(.uppercase)
+                    Spacer()
+                }
+                .padding(.horizontal, hPad)
+                .padding(.top, 14)
+                .padding(.bottom, 8)
+
+                LazyVGrid(columns: columns, spacing: gridSpacing) {
+                    ForEach(Array(gridItems.enumerated()), id: \.offset) { index, title in
+                        navItemView(title: title, geometry: geometry,
+                                    index: index, cellHeight: cellHeight)
+                    }
+                }
+                .padding(.horizontal, gridPad)
+                .padding(.bottom, 32)
+            }
+            .transition(.opacity.combined(with: .move(edge: .bottom)))
+            .animation(.easeInOut(duration: 0.45), value: isMantraExpanded)
+        }
+    }
+
     private var mainViewDialog: some View {
         AlynnaActionDialog(
             title: mainViewDialogTitle,
@@ -825,7 +1197,7 @@ struct MainView: View {
             // 展开态 mantra 用霞鹜文楷 Bold，与 AlignaType.expandedMantraFont() 一致
             font = UIFont(name: "LXGWWenKaiTC-Bold", size: 22) ?? UIFont.systemFont(ofSize: 22, weight: .bold)
         } else {
-            font = UIFont(name: "Merriweather-Bold", size: 23) ?? UIFont.systemFont(ofSize: 23, weight: .bold)
+            font = UIFont(name: "Merriweather-Bold", size: 18) ?? UIFont.systemFont(ofSize: 18, weight: .bold)
         }
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .center
@@ -912,14 +1284,37 @@ struct MainView: View {
 
     private var seededMantraFocuses: [MantraFocus] {
         [
-            MantraFocus(id: UUID(uuidString: dailyFocusID) ?? UUID(), name: "daily", description: "Your everyday grounding mantra.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: fertilityFocusID) ?? UUID(), name: "fertility", description: "Attention for conception, hormones, and family-building hopes.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: connectionFocusID) ?? UUID(), name: "connection", description: "A lens for intimacy, partnership, and emotional closeness.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: transitionFocusID) ?? UUID(), name: "transition", description: "Support for change, uncertainty, and a life in motion.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: caregivingFocusID) ?? UUID(), name: "caregiving", description: "Grounding while supporting someone who depends on you.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: recoveryFocusID) ?? UUID(), name: "recovery", description: "Space for repair, steadiness, and rebuilding your energy.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: clarityFocusID) ?? UUID(), name: "clarity", description: "Perspective for decisions, priorities, and what matters now.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: griefFocusID) ?? UUID(), name: "grief", description: "Holding space for loss, remembrance, and emotional tenderness.", createdAt: .distantPast)
+            // Presence — top-level solo focus
+            MantraFocus(id: UUID(uuidString: presenceFocusID) ?? UUID(),   name: "presence",    description: "Rooted in the now, open to what is.",                                  createdAt: .distantPast),
+            // 日常与当下
+            MantraFocus(id: UUID(uuidString: restFocusID) ?? UUID(),       name: "rest",        description: "Permission to stop, recover, and simply be.",                          createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: focusWorkFocusID) ?? UUID(),  name: "focus_work",  description: "A container for uninterrupted attention and meaningful output.",        createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: creativityFocusID) ?? UUID(), name: "creativity",  description: "Tending the conditions for original thought and expressive flow.",      createdAt: .distantPast),
+            // 关系与他人
+            MantraFocus(id: UUID(uuidString: connectionFocusID) ?? UUID(), name: "connection",  description: "A lens for intimacy, partnership, and emotional closeness.",            createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: familyFocusID) ?? UUID(),     name: "family",      description: "Navigating the complexity of the people you belong to.",               createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: conflictFocusID) ?? UUID(),   name: "conflict",    description: "Moving through friction, rupture, and the hard work of repair.",       createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: parentingFocusID) ?? UUID(),  name: "parenting",   description: "Presence and patience in the weight of raising another person.",       createdAt: .distantPast),
+            // 身体与健康
+            MantraFocus(id: UUID(uuidString: recoveryFocusID) ?? UUID(),   name: "recovery",    description: "Space for repair, steadiness, and rebuilding your energy.",            createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: quittingFocusID) ?? UUID(),   name: "quitting",    description: "Releasing a substance, habit, or pattern that no longer serves you.", createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: chronicFocusID) ?? UUID(),    name: "chronic",     description: "Living alongside persistent discomfort with steadiness.",              createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: fertilityFocusID) ?? UUID(),  name: "fertility",   description: "Attention for conception, hormones, and family-building hopes.",       createdAt: .distantPast),
+            // 人生过渡
+            MantraFocus(id: UUID(uuidString: transitionFocusID) ?? UUID(), name: "transition",  description: "Support for change, uncertainty, and a life in motion.",               createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: griefFocusID) ?? UUID(),      name: "grief",       description: "Holding space for loss, remembrance, and emotional tenderness.",       createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: caregivingFocusID) ?? UUID(), name: "caregiving",  description: "Grounding while supporting someone who depends on you.",               createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: endOfLifeFocusID) ?? UUID(),  name: "end_of_life", description: "Companioning someone — or yourself — through the final passage.",      createdAt: .distantPast),
+            // 内在与成长
+            MantraFocus(id: UUID(uuidString: clarityFocusID) ?? UUID(),    name: "clarity",     description: "Perspective for decisions, priorities, and what matters now.",         createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: anxietyFocusID) ?? UUID(),    name: "anxiety",     description: "Meeting worry with structure, breath, and grounded attention.",        createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: identityFocusID) ?? UUID(),   name: "identity",    description: "Holding open questions about who you are and what you're becoming.",   createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: purposeFocusID) ?? UUID(),    name: "purpose",     description: "The search for meaning when the path feels unclear.",                  createdAt: .distantPast),
+            // 现实处境
+            MantraFocus(id: UUID(uuidString: careerFocusID) ?? UUID(),     name: "career",      description: "Navigating ambition, direction, and the meaning of your work.",        createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: researchFocusID) ?? UUID(),   name: "research",    description: "Deep inquiry, experimentation, and the long patience of discovery.",   createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: financeFocusID) ?? UUID(),    name: "finance",     description: "Steadiness when money is a source of stress or uncertainty.",          createdAt: .distantPast),
+            MantraFocus(id: UUID(uuidString: relocationFocusID) ?? UUID(), name: "relocation",  description: "Rooting in unfamiliar surroundings while building a new ordinary.",    createdAt: .distantPast),
         ]
     }
 
@@ -2128,281 +2523,302 @@ struct MainView: View {
                 GeometryReader { geometry in
                     let minLength = min(geometry.size.width, geometry.size.height)
 
+                    ScrollView(showsIndicators: false) {
                     VStack(spacing: minLength * 0.015) {
                         // 顶部按钮
-                        HStack {
-                            
-                            HStack(spacing: geometry.size.width * 0.035) {
-                                Button {
-                                    withAnimation(.easeInOut(duration: 0.5)) {
-                                        journalSpinAngle += 360
-                                    }
-                                    handleManualRefreshTap()
-                                } label: {
-                                    Image(systemName: "arrow.triangle.2.circlepath")
-                                        .font(.system(size: 20))
-                                        .foregroundColor(themeManager.primaryText)
-                                        .frame(width: 28, height: 28)
-                                        .rotationEffect(.degrees(journalSpinAngle))
+                        HStack(alignment: .top) {
+                            // 左上角：日期（第一行）+ 天气 · 地点（第二行）
+                            let df: DateFormatter = {
+                                let f = DateFormatter()
+                                f.locale = .current
+                                f.timeZone = .current
+                                f.setLocalizedDateFormatFromTemplate("EEEEMMMd")
+                                return f
+                            }()
+                            let condStr = viewModel.weatherCondition ?? ""
+                            let locStr = resolvedWidgetLocation()
+                            let secondLine = ([condStr, locStr].filter { !$0.isEmpty }).joined(separator: " · ")
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(df.string(from: Date()))
+                                    .font(.custom("Merriweather-Regular", size: 10))
+                                    .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                                    .tracking(0.6)
+                                    .lineLimit(1)
+                                if !secondLine.isEmpty {
+                                    Text(secondLine)
+                                        .font(.custom("Merriweather-Regular", size: 10))
+                                        .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                                        .tracking(0.6)
+                                        .lineLimit(1)
                                 }
-                                .disabled(isFetchingToday || isManualRefreshFlow)
-                                .accessibilityLabel("Refresh")
                             }
-                            .padding(.leading, geometry.size.width * 0.05)
+                            .padding(.leading, geometry.size.width * 0.07)
 
                             Spacer()
 
-                            HStack(spacing: geometry.size.width * 0.02) {
+                            if !isMantraExpanded {
+                                HStack(spacing: geometry.size.width * 0.02) {
 
-                                if isLoggedIn {
-                                    NavigationLink(
-                                        destination: ProfileView(viewModel: viewModel)
-                                            .environmentObject(starManager)
-                                            .environmentObject(themeManager)
-                                    ) {
-                                        Image("account")
-                                            .resizable()
-                                            .renderingMode(.template)
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 28, height: 28)
-                                            .foregroundColor(themeManager.primaryText)
-                                    }
-                                } else {
-                                    NavigationLink(
-                                        destination: ProfileView(viewModel: viewModel)
-                                    ) {
-                                        Image("account")
-                                            .resizable()
-                                            .renderingMode(.template)
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 28, height: 28)
-                                            .foregroundColor(themeManager.primaryText)
+                                    if isLoggedIn {
+                                        NavigationLink(
+                                            destination: profileViewWithDevCallback()
+                                                .environmentObject(starManager)
+                                                .environmentObject(themeManager)
+                                        ) {
+                                            Image("account")
+                                                .resizable()
+                                                .renderingMode(.template)
+                                                .aspectRatio(contentMode: .fit)
+                                                .frame(width: 28, height: 28)
+                                                .foregroundColor(themeManager.primaryText)
+                                        }
+                                    } else {
+                                        NavigationLink(
+                                            destination: profileViewWithDevCallback()
+                                        ) {
+                                            Image("account")
+                                                .resizable()
+                                                .renderingMode(.template)
+                                                .aspectRatio(contentMode: .fit)
+                                                .frame(width: 28, height: 28)
+                                                .foregroundColor(themeManager.primaryText)
+                                        }
                                     }
                                 }
+                                .padding(.trailing, geometry.size.width * 0.05)
                             }
-                            .padding(.trailing, geometry.size.width * 0.05)
 
                         }
 
-                        VStack(spacing: 4) {
-                            Text("main.todays_rhythm")
-                                .font(.custom("Merriweather-SemiBold", size: 34))
-                                .lineSpacing(AlignaType.logoLineSpacing)
-                                .foregroundColor(themeManager.primaryText)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("home.today_focus")
+                                .font(.custom("Merriweather-Regular", size: 11))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.50))
+                                .tracking(1.6)
+                                .textCase(.uppercase)
 
-                            Text(rhythmHeaderSubtitle)
-                                .font(.custom("Merriweather-Regular", size: 10))
-                                .foregroundColor(themeManager.descriptionText.opacity(0.52))
-                                .multilineTextAlignment(.center)
-                                .lineLimit(2)
-                                .minimumScaleFactor(0.85)
-                        }
-                        .overlay(alignment: .topTrailing) {
-                            if shouldShowCompactFocusBadge, let activeFocus {
-                                Text(activeFocus.name)
-                                    .font(.custom("Merriweather-Regular", size: 10))
-                                    .foregroundColor(themeManager.primaryText.opacity(0.84))
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 5)
-                                    .background(
-                                        Capsule()
-                                            .fill(themeManager.panelFill.opacity(themeManager.isNight ? 0.42 : 0.55))
-                                    )
-                                    .overlay(
-                                        Capsule()
-                                            .stroke(Color.white.opacity(0.16), lineWidth: 1)
-                                    )
-                                    .offset(x: 6, y: -14)
+                            if let f = activeFocus {
+                                HStack(alignment: .top, spacing: 4) {
+                                    Text(focusDisplayName(for: f))
+                                        .font(.custom("Merriweather-Bold", size: 28))
+                                        .foregroundColor(themeManager.primaryText)
+                                        .multilineTextAlignment(.leading)
+                                    Button {
+                                        withAnimation(.easeInOut(duration: 0.5)) {
+                                            journalSpinAngle += 360
+                                        }
+                                        isManualRefreshFlow = true
+                                        isFullLoadingFlow = true
+                                        didCompletePersonalCheckIn = false
+                                        isMantraReady = false
+                                        withAnimation(.easeInOut) { bootPhase = .loading }
+                                    } label: {
+                                        Image(systemName: "arrow.triangle.2.circlepath")
+                                            .font(.system(size: 11, weight: .regular))
+                                            .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                                            .rotationEffect(.degrees(journalSpinAngle))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .padding(.top, 3)
+                                }
+                            } else {
+                                Text("Aligna")
+                                    .font(.custom("Merriweather-Bold", size: 28))
+                                    .foregroundColor(themeManager.primaryText)
                             }
+
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, geometry.size.width * 0.07)
                         .padding(.top, 20)
                         .opacity(isMantraExpanded ? 0 : 1)
                         .scaleEffect(isMantraExpanded ? 0.92 : 1)
                         .frame(height: isMantraExpanded ? 0 : nil)
-                        .allowsHitTesting(false)
-
-
-
+                        .allowsHitTesting(!isMantraExpanded)
 
                         Group {
-                            if isMantraExpanded {
-                                let textWidth = geometry.size.width * 0.72
-                                let topInset = geometry.size.height * 0.16
-                                let lastLineRect = expandedMantraLastLineRect(for: viewModel.dailyMantra, width: textWidth)
-
-                                VStack(spacing: 0) {
-                                    ZStack(alignment: .topLeading) {
-                                        VStack(spacing: 1) {
-                                            Text(viewModel.dailyMantra)
-                                                .font(AlignaType.expandedMantraFont())
-                                                .lineSpacing(12)
-                                                .multilineTextAlignment(.center)
-                                                .foregroundColor(
-                                                    themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
-                                                )
-                                                .fixedSize(horizontal: false, vertical: true)
-                                                .frame(width: textWidth)
-
-                                            if shouldShowMantraGuidanceHint {
-                                                Text("main.mantra_expand_hint")
-                                                    .font(.custom("Merriweather-Regular", size: 11))
-                                                    .foregroundColor(themeManager.descriptionText.opacity(0.68))
-                                                    .multilineTextAlignment(.center)
-                                                    .frame(width: textWidth * 0.96)
-                                                    .transition(.opacity)
+                            if isMantraExpanded && dayPhase == .home {
+                                // ── 主页心语详读态（全居中重设计）──
+                                let hPad = geometry.size.width * 0.08
+                                let sandColor = Color(red: 0.94, green: 0.88, blue: 0.72)
+                                ScrollView(showsIndicators: false) {
+                                    VStack(spacing: 0) {
+                                        // ── 今日课题（顶部，清晰可见）──
+                                        VStack(spacing: 8) {
+                                            Text("home.today_focus")
+                                                .font(.custom("Merriweather-Regular", size: 10))
+                                                .foregroundColor(themeManager.descriptionText.opacity(0.50))
+                                                .tracking(1.6)
+                                                .textCase(.uppercase)
+                                            if let f = activeFocus {
+                                                HStack(alignment: .top, spacing: 4) {
+                                                    Text(focusDisplayName(for: f))
+                                                        .font(.custom("Merriweather-Bold", size: 26))
+                                                        .foregroundColor(themeManager.primaryText)
+                                                        .multilineTextAlignment(.center)
+                                                    Button {
+                                                        withAnimation(.easeInOut(duration: 0.5)) {
+                                                            journalSpinAngle += 360
+                                                        }
+                                                        isManualRefreshFlow = true
+                                                        isFullLoadingFlow = true
+                                                        didCompletePersonalCheckIn = false
+                                                        isMantraReady = false
+                                                        withAnimation(.easeInOut) { bootPhase = .loading }
+                                                    } label: {
+                                                        Image(systemName: "arrow.triangle.2.circlepath")
+                                                            .font(.system(size: 11, weight: .regular))
+                                                            .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                                                            .rotationEffect(.degrees(journalSpinAngle))
+                                                    }
+                                                    .buttonStyle(.plain)
+                                                    .padding(.top, 3)
+                                                }
                                             }
+                                            Text("expanded.topic_subtitle")
+                                                .font(.custom("Merriweather-Regular", size: 12))
+                                                .foregroundColor(themeManager.descriptionText.opacity(0.55))
+                                                .multilineTextAlignment(.center)
+                                                .lineSpacing(4)
                                         }
-                                        .contentShape(Rectangle())
-                                        .onTapGesture {
-                                            toggleMantraExpansion()
-                                        }
+                                        .padding(.horizontal, hPad)
+                                        .padding(.top, geometry.size.height * 0.12)
+                                        .padding(.bottom, 0)
 
-                                        if let lastLineRect {
-                                            // 紧跟句尾，垂直居中于最后一行
-                                            // x: 句尾右端 + 小间距（icon 自带 padding=8，.position 按中心定位，无需额外补偿）
-                                            expandedMantraInfoBadge
-                                                .position(
-                                                    x: min(lastLineRect.maxX + 5, textWidth - 4),
-                                                    y: lastLineRect.midY
+                                        // spacer pushes mantra card to the lower portion
+                                        Spacer()
+                                            .frame(height: geometry.size.height * 0.20)
+
+                                        // ── 心语 card ──
+                                        ZStack(alignment: .topLeading) {
+                                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                                .fill(themeManager.panelFill.opacity(0.45))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                                        .stroke(themeManager.panelStrokeHi.opacity(0.35), lineWidth: 1)
                                                 )
+
+                                            VStack(alignment: .leading, spacing: 12) {
+                                                HStack {
+                                                    Text("home.today_mantra")
+                                                        .font(.custom("Merriweather-Regular", size: 9))
+                                                        .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                                                        .tracking(1.4)
+                                                        .textCase(.uppercase)
+                                                    Spacer()
+                                                    Button {
+                                                        showWallpaperPreview = true
+                                                    } label: {
+                                                        Image(systemName: "square.and.arrow.up")
+                                                            .font(.system(size: 12, weight: .regular))
+                                                            .foregroundColor(themeManager.descriptionText.opacity(0.50))
+                                                    }
+                                                    .buttonStyle(.plain)
+                                                }
+
+                                                Text(viewModel.dailyMantra)
+                                                    .font(AlignaType.expandedMantraFont())
+                                                    .lineSpacing(10)
+                                                    .multilineTextAlignment(.leading)
+                                                    .foregroundColor(
+                                                        themeManager.primaryText.opacity(themeManager.isNight ? 0.92 : 0.86)
+                                                    )
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                            }
+                                            .padding(20)
                                         }
+                                        .padding(.horizontal, hPad)
+                                        .padding(.bottom, 32)
+                                        .onTapGesture { toggleMantraExpansion() }
+
+                                        // ── 打开今日指引 button ──
+                                        Button {
+                                            toggleMantraExpansion()
+                                        } label: {
+                                            HStack(spacing: 8) {
+                                                Text("home.today_guidance")
+                                                    .font(.custom("Merriweather-Bold", size: 14))
+                                                    .foregroundColor(Color(red: 0.12, green: 0.10, blue: 0.08))
+                                                Image(systemName: "arrow.right")
+                                                    .font(.system(size: 12, weight: .semibold))
+                                                    .foregroundColor(Color(red: 0.12, green: 0.10, blue: 0.08).opacity(0.70))
+                                            }
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 15)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                    .fill(sandColor.opacity(themeManager.isNight ? 0.85 : 0.78))
+                                            )
+                                        }
+                                        .buttonStyle(.plain)
+                                        .padding(.horizontal, hPad)
+                                        .padding(.bottom, 48)
                                     }
-                                    .frame(width: textWidth, alignment: .center)
-                                    .padding(.top, topInset)
-                                    .padding(.bottom, shouldShowMantraGuidanceHint ? 8 : 18)
                                 }
                                 .frame(maxWidth: .infinity)
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    toggleMantraExpansion()
-                                }
                             } else {
-                                Button {
-                                    toggleMantraExpansion()
-                                } label: {
-                                    Text(viewModel.dailyMantra)
-                                        .font(AlignaType.homeMantraFont())
-                                        .lineSpacing(AlignaType.descLineSpacing)
-                                        .multilineTextAlignment(.center)
-                                        .foregroundColor(themeManager.descriptionText.opacity(0.72))
-                                        .lineLimit(2)
-                                        .truncationMode(.tail)
-                                        .padding(.horizontal, geometry.size.width * 0.1)
-                                        .frame(maxWidth: .infinity)
+                                // Card: full mantra text + share icon bottom-right
+                                ZStack(alignment: .bottomTrailing) {
+                                    // Mantra text (taps expand)
+                                    Button {
+                                        toggleMantraExpansion()
+                                    } label: {
+                                        Text(viewModel.dailyMantra)
+                                            .font(currentRecommendationLanguageCode() == "zh-Hans"
+                                                  ? .custom("LXGWWenKaiTC-Bold", size: 14)
+                                                  : .custom("Merriweather-Italic", size: 14))
+                                            .lineSpacing(3)
+                                            .multilineTextAlignment(.leading)
+                                            .foregroundColor(themeManager.descriptionText.opacity(0.80))
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            // Reserve space at bottom-right for share icon
+                                            .padding(.trailing, 32)
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+
+                                    // Share icon — bottom-right corner
+                                    Button {
+                                        showWallpaperPreview = true
+                                    } label: {
+                                        Image(systemName: "square.and.arrow.up")
+                                            .font(.system(size: 11, weight: .regular))
+                                            .foregroundColor(themeManager.descriptionText.opacity(0.38))
+                                            .frame(width: 24, height: 24)
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
                                 }
-                                .buttonStyle(.plain)
-                                .contentShape(Rectangle())
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 14)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(themeManager.panelFill.opacity(themeManager.isNight ? 0.32 : 0.28))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                .stroke(themeManager.panelStrokeHi.opacity(0.20), lineWidth: 1)
+                                        )
+                                )
+                                // Tapping the card background also expands
+                                .onTapGesture { toggleMantraExpansion() }
+                                .padding(.horizontal, geometry.size.width * 0.07)
                             }
                         }
                         .frame(maxWidth: .infinity)
                         .frame(maxHeight: isMantraExpanded ? .infinity : nil, alignment: isMantraExpanded ? .top : .center)
                         .opacity(isMantraReady ? 1 : 0)
                         .allowsHitTesting(isMantraReady)
-                        
-                        if isMantraExpanded {
-                            VStack(spacing: 8) {
-                                HStack(spacing: 8) {
-                                    if focusHelperShowsProgress {
-                                        ProgressView()
-                                            .progressViewStyle(.circular)
-                                            .tint(themeManager.descriptionText.opacity(0.75))
-                                            .scaleEffect(0.8)
-                                    }
 
-                                    if shouldShowFocusHelper {
-                                        Text(focusHelperText)
-                                            .font(AlignaType.helperSmall())
-                                            .lineSpacing(AlignaType.small14LineSpacing)
-                                            .foregroundColor(themeManager.descriptionText.opacity(0.75))
-                                            .multilineTextAlignment(.center)
-                                    }
-                                }
-                                .padding(.horizontal, geometry.size.width * 0.12)
 
-                                expandedMantraFocusStrip
-                            }
-                            .padding(.top, 12)
-                            .transition(.move(edge: .top).combined(with: .opacity))
+                        // ✅ 当 mantra 更新（新的一天/重新拉取）时，自动收起回 "..."
 
-                            let actionButtonSize: CGFloat = 32
-                            HStack(spacing: 12) {
-                                Button {
-                                    showWallpaperPreview = true
-                                } label: {
-                                    Image(systemName: "square.and.arrow.up")
-                                        .font(AlynnaTypography.font(.footnote))
-                                        .foregroundColor(themeManager.primaryText)
-                                        .frame(width: actionButtonSize, height: actionButtonSize)
-                                        .contentShape(Rectangle())
-                                }
-                                .sheet(isPresented: $showWallpaperPreview) {
-                                    WallpaperPreviewView(
-                                        mantra: viewModel.dailyMantra,
-                                        colorHex: todayColorHex() ?? "#CBBBA0"
-                                    )
-                                }
-
-                                Button {
-                                    if isTodaySoundPlaying {
-                                        soundPlayer.pause()
-                                    } else if todaySoundKey.isEmpty {
-                                        showNoSoundToastIfNeeded()
-                                    } else {
-                                        soundPlayer.playSound(named: todaySoundKey)
-                                        showTodaySoundPlayer = true
-                                        scheduleSoundPlayerAutoDismiss()
-                                    }
-                                } label: {
-                                    Group {
-                                        if isTodaySoundLoading {
-                                            ProgressView()
-                                                .progressViewStyle(.circular)
-                                                .tint(themeManager.primaryText)
-                                        } else if isTodaySoundPlaying {
-                                            Image(systemName: "pause.fill")
-                                                .font(AlynnaTypography.font(.footnote))
-                                                .foregroundColor(themeManager.primaryText)
-                                                .breathingIcon(scale: 1.06, minOpacity: 0.8, duration: 1.6)
-                                        } else {
-                                            Image(systemName: "play.fill")
-                                                .font(AlynnaTypography.font(.footnote))
-                                                .foregroundColor(
-                                                    themeManager.primaryText.opacity(todaySoundKey.isEmpty ? 0.35 : 1)
-                                                )
-                                        }
-                                    }
-                                    .frame(width: actionButtonSize, height: actionButtonSize)
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-                                .sheet(isPresented: $showTodaySoundPlayer, onDismiss: {
-                                    isAutoDismissSoundPlayer = false
-                                    soundPlayerAutoDismissTask?.cancel()
-                                    soundPlayerAutoDismissTask = nil
-                                }) {
-                                    PlayerPopup(
-                                        documentName: todaySoundKey,
-                                        dismiss: { showTodaySoundPlayer = false }
-                                    )
-                                    .presentationBackground(.clear)
-                                    .presentationDetents([.fraction(0.6), .large])
-                                    .presentationDragIndicator(.visible)
-                                    .presentationCornerRadius(24)
-                                }
-
-                            }
-                            .padding(.top, 8)
-                            .transition(.opacity)
-                            .animation(.easeInOut(duration: 0.25), value: isMantraExpanded)
-                        }
-                        // ✅ 当 mantra 更新（新的一天/重新拉取）时，自动收起回 “...”
-                        
+                        homeCollapsedContent(geometry: geometry, minLength: minLength)
 
                     }
                     .padding(.top, 16)
-                    .frame(width: geometry.size.width,
-                           height: geometry.size.height,
-                           alignment: .top)
+                    } // ScrollView
+                    .frame(width: geometry.size.width)
                     .preferredColorScheme(themeManager.preferredColorScheme)
                     .onAppear {
                         starManager.animateStar = true
@@ -2421,40 +2837,6 @@ struct MainView: View {
                         }
                     }
                     .coordinateSpace(name: "HomeSpace")
-                    .overlay(alignment: .topLeading) { }
-                    .overlay(alignment: .top) {
-                        if !isMantraExpanded {
-                            let totalH = geometry.size.height
-                            let gridSpacing = minLength * 0.018
-                            // geometry.size.height 已扣除 safeAreaInset footer，无需额外 clearance
-                            // grid 从屏幕 40% 处开始（mantra 约在 38% 处结束，留 2% 间距）
-                            let gridTopOffset = totalH * 0.28
-                            // 底部保留 12pt 视觉间距，其余全部给 grid
-                            let gridAvailableH = totalH - gridTopOffset - 12
-                            // 4 行卡片，3 个行间距
-                            let cellHeight = max(56, (gridAvailableH - gridSpacing * 3) / 4)
-
-                            let columns = [
-                                GridItem(.flexible(), spacing: gridSpacing, alignment: .center),
-                                GridItem(.flexible(), spacing: gridSpacing, alignment: .center)
-                            ]
-                            let gridItems = [
-                                "Place", "Gemstone", "Color", "Scent",
-                                "Activity", "Sound", "Career", "Relationship"
-                            ]
-
-                            LazyVGrid(columns: columns, spacing: gridSpacing) {
-                                ForEach(Array(gridItems.enumerated()), id: \.offset) { index, title in
-                                    navItemView(title: title, geometry: geometry,
-                                                index: index, cellHeight: cellHeight)
-                                }
-                            }
-                            .padding(.horizontal, geometry.size.width * 0.05)
-                            .padding(.top, gridTopOffset)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                            .animation(.easeInOut(duration: 0.55), value: isMantraExpanded)
-                        }
-                    }
                 }
             }
             // ✅ 只作用在首页这个 ZStack 上，push 新页面后不会带过去
@@ -2499,6 +2881,11 @@ struct MainView: View {
                     .presentationDragIndicator(.visible)
                     .presentationCornerRadius(24)
             }
+            .sheet(isPresented: $showWallpaperPreview) {
+                WallpaperPreviewView(mantra: viewModel.dailyMantra, colorHex: todayColorHex() ?? "#CBBBA0")
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(24)
+            }
             .navigationDestination(for: RecCategory.self) { cat in
                 RecommendationPagerView(
                     docsByCategory: makeDocsMap(),
@@ -2519,6 +2906,55 @@ struct MainView: View {
         .navigationViewStyle(.stack)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
+        // ── 上次收尾 ── 展示上一次行动数据，然后进入 loading
+        .fullScreenCover(isPresented: Binding(
+            get: { bootPhase == .main && dayPhase == .wrapUp },
+            set: { _ in }
+        )) {
+            LastWrapUpView(
+                lastFocusName: lastFocusName,
+                actions: lastWrapUpActions,
+                onContinue: {
+                    // WrapUp seen — now kick off the full loading/cosmos flow
+                    dayPhase = .home
+                    isManualRefreshFlow = true
+                    isFullLoadingFlow = true
+                    didCompletePersonalCheckIn = false
+                    isMantraReady = false
+                    withAnimation(.easeInOut) { bootPhase = .loading }
+                },
+                dateString: {
+                    let f = DateFormatter()
+                    f.locale = .current
+                    f.timeZone = .current
+                    f.setLocalizedDateFormatFromTemplate("EEEEMMMd")
+                    return f.string(from: Date())
+                }(),
+                weatherCondition: viewModel.weatherCondition ?? "",
+                locationName: resolvedWidgetLocation()
+            )
+            .environmentObject(themeManager)
+            .environmentObject(starManager)
+        }
+        // ── 每日仪式：展开态 ── 全屏 cover，确保 CTA 按钮始终可见
+        .fullScreenCover(isPresented: Binding(
+            get: { bootPhase == .main && dayPhase == .expanded },
+            set: { _ in }
+        )) {
+            GeometryReader { geometry in
+                ZStack {
+                    AppBackgroundView(nightMotion: .animated, nightAnimationSpeed: 7.0)
+                        .environmentObject(starManager)
+                        .environmentObject(themeManager)
+                        .ignoresSafeArea()
+                    ritualExpandedView(geometry: geometry)
+                }
+            }
+            .ignoresSafeArea()
+            .environmentObject(themeManager)
+            .environmentObject(starManager)
+            .environmentObject(viewModel)
+        }
     }
 
 
@@ -3345,9 +3781,6 @@ struct MainView: View {
 
     // NEW: 等待 Firebase 恢复 currentUser 后再走原有分流逻辑
     private func waitForAuthenticatedUserThenBoot(maxWait: TimeInterval) {
-        // 每天首次启动：重置 watchdog 计数/锁
-        resetDailyWatchdogIfNeeded()
-
         if let user = Auth.auth().currentUser, !authWaitTimedOut {
             resolveBootPath(for: user)
             return
@@ -3476,17 +3909,6 @@ struct MainView: View {
         }
     }
 
-    // NEW: 按自然日重置 watchdog 相关的 @AppStorage
-    private func resetDailyWatchdogIfNeeded() {
-        let today = todayString()
-        if watchdogDay != today {
-            watchdogDay = today
-            todayAutoRefetchAttempts = 0
-            todayAutoRefetchDone = ""
-            todayFetchLock = ""
-        }
-    }
-
     // ====== MainView 内新增 ======
     private func hydrateBirthFromProfileIfNeeded(_ done: @escaping () -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else { done(); return }
@@ -3522,11 +3944,6 @@ struct MainView: View {
 
 
     /// 每次 app 进入前台时调用，检测当前内容是否需要通过 LoadingView 补救更新。
-    /// 规则：
-    ///   1. isDefault mantra → 立即走 LoadingView（最高优先级）
-    ///   2. 更新时间之后 + 内容是昨天的 → 走 LoadingView
-    ///   3. 更新时间之前 + 内容是昨天的 → 不处理（正常，还没到更新时间）
-    ///   4. 内容是今天的且非 default → 不处理
     private func evaluateOnLaunch() {
         // 只在已进入主界面后才评估
         guard bootPhase == .main else { return }
@@ -3534,30 +3951,20 @@ struct MainView: View {
 
         let today = todayString()
 
-        // 情况 1：当前是 default mantra，立即补救
+        // default mantra → 补救加载
         if isDefaultRecommendation {
             print("🔄 evaluateOnLaunch: 检测到 default mantra，触发 LoadingView 补救")
             triggerRemedialLoading()
             return
         }
 
-        // 情况 2：内容日期不是今天（且当前时间已过更新时间）
+        // 内容不是今天的 → 触发新一天加载
         let recDay = lastRecommendationHasFullSet
-            ? effectiveDayString(for: Date(timeIntervalSince1970: lastRecommendationTimestamp))
+            ? todayString(from: Date(timeIntervalSince1970: lastRecommendationTimestamp))
             : ""
         if recDay != today {
-            // 检查当前时间是否已过更新时间
-            let now = Date()
-            let cal = Calendar.current
-            let comps = cal.dateComponents([.hour, .minute], from: now)
-            let currentMinutes = (comps.hour ?? 0) * 60 + (comps.minute ?? 0)
-            let updateMinutes = dailyRhythmUpdateHour * 60 + dailyRhythmUpdateMinute
-            if currentMinutes >= updateMinutes {
-                print("🔄 evaluateOnLaunch: 内容是昨天的且已过更新时间，触发 LoadingView 补救")
-                triggerRemedialLoading()
-            } else {
-                print("ℹ️ evaluateOnLaunch: 内容是昨天的但还未到更新时间，跳过")
-            }
+            print("🔄 evaluateOnLaunch: 内容是昨天的，触发 LoadingView 补救")
+            triggerRemedialLoading()
         }
     }
 
@@ -3567,15 +3974,9 @@ struct MainView: View {
             print("ℹ️ triggerRemedialLoading: 已有请求在途，跳过")
             return
         }
-        // 重置 watchdog 以允许新一轮重试
-        let today = todayString()
-        if watchdogDay != today {
-            watchdogDay = today
-            todayAutoRefetchAttempts = 0
-            todayAutoRefetchDone = ""
-            todayFetchLock = ""
-        }
+        todayFetchLock = ""
         isManualRefreshFlow = false
+        isFullLoadingFlow = true
         didCompletePersonalCheckIn = false
         isMantraReady = false
         withAnimation(.easeInOut) { bootPhase = .loading }
@@ -3777,6 +4178,62 @@ struct MainView: View {
         }
     }
 
+    @ViewBuilder
+    private func profileViewWithDevCallback() -> some View {
+        #if DEBUG
+        ProfileView(viewModel: viewModel, onDevRefresh: devRefresh)
+        #else
+        ProfileView(viewModel: viewModel)
+        #endif
+    }
+
+    #if DEBUG
+    private func devRefresh() {
+        // Always show wrapUp first in dev — synthesize mock data if none exists
+        if !hasPreviousSessionActions {
+            injectMockPreviousSessionData()
+        }
+        buildWrapUpData()
+        dayPhase = .wrapUp
+    }
+
+    /// Writes fake yesterday actions + focus into AppStorage so wrapUp always has data in dev
+    private func injectMockPreviousSessionData() {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        df.calendar = Calendar.current
+        df.timeZone = .current
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
+        let yesterdayKey = df.string(from: yesterday)
+
+        // Store a partially-completed action set using DesignRecs anchors
+        let mockActions: [String: Bool] = [
+            "Activity": true,
+            "Place": false,
+            "Sound": true
+        ]
+        if let data = try? JSONEncoder().encode(mockActions),
+           let str = String(data: data, encoding: .utf8) {
+            dailyActionsCompleted = str
+        }
+        dailyActionsDate = yesterdayKey
+
+        // Populate anchorCache with DesignRecs titles so buildWrapUpData can read them
+        anchorCache["Activity"] = DesignRecs.titles["Activity"] ?? "Polishing Mirror"
+        anchorCache["Place"]    = DesignRecs.titles["Place"]    ?? "Echo Niche"
+        anchorCache["Sound"]    = DesignRecs.titles["Sound"]    ?? "Brown Noise"
+
+        // Assign the first available focus (or a seeded one) to yesterday
+        let focusID: String
+        if let first = mantraFocuses.first {
+            focusID = first.id.uuidString
+        } else {
+            focusID = ""
+        }
+        mantraActiveFocusByDay[yesterdayKey] = focusID
+    }
+    #endif
+
     private func handleManualRefreshTap() {
         guard canProceedWithLocationRefresh() else { return }
         guard manualRefreshAllowed() else {
@@ -3789,6 +4246,7 @@ struct MainView: View {
             return
         }
         isManualRefreshFlow = true
+        isFullLoadingFlow = true
         didCompletePersonalCheckIn = false
         isMantraReady = false
         bootPhase = .loading
@@ -3970,10 +4428,24 @@ struct MainView: View {
                             isManualRefreshFlow = false
                             isBootDataReady = true
                         }
+                        isFullLoadingFlow = false
                         didCompletePersonalCheckIn = true
                         attemptBootAdvance()
                     },
-                    forceFullLoading: isManualRefreshFlow,
+                    onFocusSelected: { selectedID in
+                        mantraActiveFocusByDay[todayKey] = selectedID
+                        persistMantraFocuses()
+                    },
+                    focuses: mantraFocuses.map { f in
+                        FocusSelectionView.FocusItem(
+                            id: f.id.uuidString,
+                            name: focusDisplayName(for: f),
+                            description: focusDisplayDescription(for: f),
+                            groupKey: focusGroupKey(for: f.name)
+                        )
+                    },
+                    presenceFocusID: presenceFocusID,
+                    forceFullLoading: isFullLoadingFlow,
                     locationManager: locationManager
                 )
                 .ignoresSafeArea()
@@ -4035,7 +4507,6 @@ struct MainView: View {
                 }
                 if shouldShowBootLoading { bootPhase = .loading }
                 evaluateOnLaunch()
-                applySunriseRhythmDefaultIfNeeded()
                 if shouldCollapseMantraOnReturn {
                     withAnimation(.easeInOut(duration: 0.2)) { isMantraExpanded = false }
                     shouldCollapseMantraOnReturn = false
@@ -4055,9 +4526,12 @@ struct MainView: View {
                         isChinese: currentRecommendationLanguageCode() == "zh-Hans"
                     )
                 }
+                // 如果 mantra 刚加载完毕且还没展示过展开态，切换到 expanded
+                if bootPhase == .main && dayPhase == .home && hasSeenExpandedToday != todayKey && !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    dayPhase = .expanded
+                }
             }
             .onChange(of: locationManager.currentLocation.map { "\($0.latitude),\($0.longitude)" }) { _, _ in
-                applySunriseRhythmDefaultIfNeeded()
                 if dailyMantraNotificationEnabled {
                     let mantra = viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines)
                     let text = mantra.isEmpty ? cachedDailyMantra : mantra
@@ -4141,6 +4615,10 @@ struct MainView: View {
                 if let data = snapshot?.data(), let title = data["title"] as? String {
                     DispatchQueue.main.async {
                         self.recommendationTitles[canon] = title // 以规范写法作键
+                        // Populate anchorCache for daily action checklist
+                        if let anchor = data["anchor"] as? String, !anchor.isEmpty {
+                            self.anchorCache[canon] = anchor
+                        }
                         self.persistWidgetSnapshotFromViewModel()
                     }
                 } else {
@@ -4151,36 +4629,22 @@ struct MainView: View {
     }
 
     /// 启动“保底看门狗”：若 delay 秒后仍未拿到 mantra 或推荐，则强制走一次 FastAPI 重拉
-    // === 替换你原有的 startAutoRefetchWatchdog(delay:)（整段替换） ===
     private func startAutoRefetchWatchdog(delay: TimeInterval = 8.0) {
-        // 只安排一次根任务
         guard !autoRefetchScheduled else { return }
         autoRefetchScheduled = true
 
         func scheduleNext(after: TimeInterval) {
-            // 只有拿到非默认结果才停止自动重试
             let mantraReady = !viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             let recsReady   = !viewModel.recommendations.isEmpty
             if mantraReady && recsReady && !isDefaultRecommendation { return }
 
-            // 达到上限就停
-            if todayAutoRefetchAttempts >= maxRefetchAttempts { return }
-
             DispatchQueue.main.asyncAfter(deadline: .now() + after) {
-                // 进入具体一次尝试：再次判断是否已经拿到非默认结果
                 let readyNow = !viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                             && !viewModel.recommendations.isEmpty
                             && !isDefaultRecommendation
                 guard !readyNow else { return }
 
-                // 触发一次强制重拉
-                print("🛡️ Watchdog attempt #\(todayAutoRefetchAttempts + 1)")
                 forceRefetchDailyIfNotLocked()
-
-                // 增加计数并安排下一次（指数退避，封顶 60s）
-                todayAutoRefetchAttempts += 1
-                let nextDelay = min(60.0, max(6.0, after * 1.8))
-                scheduleNext(after: nextDelay)
             }
         }
 
@@ -4227,26 +4691,19 @@ struct MainView: View {
     
     // 当天字符串
     private func todayString() -> String {
-        let now = Date()
-        var calendar = Calendar.current
-        calendar.timeZone = .current
-
-        let currentComponents = calendar.dateComponents([.hour, .minute], from: now)
-        let currentMinutes = (currentComponents.hour ?? 0) * 60 + (currentComponents.minute ?? 0)
-        let updateMinutes = dailyRhythmUpdateHour * 60 + dailyRhythmUpdateMinute
-
-        let effectiveDate: Date
-        if currentMinutes < updateMinutes {
-            effectiveDate = calendar.date(byAdding: .day, value: -1, to: now) ?? now
-        } else {
-            effectiveDate = now
-        }
-
         let df = DateFormatter()
-        df.calendar = calendar
+        df.calendar = Calendar.current
         df.timeZone = .current
         df.dateFormat = "yyyy-MM-dd"
-        return df.string(from: effectiveDate)
+        return df.string(from: Date())
+    }
+
+    private func todayString(from date: Date) -> String {
+        let df = DateFormatter()
+        df.calendar = Calendar.current
+        df.timeZone = .current
+        df.dateFormat = "yyyy-MM-dd"
+        return df.string(from: date)
     }
 
     // 当天唯一 DocID：uid_yyyy-MM-dd
@@ -4773,36 +5230,36 @@ struct MainView: View {
                     shouldCollapseMantraOnReturn = true
                     mainNavigationPath.append(startCat)
                 } label: {
-                    VStack(spacing: 2) {   // ⬅️ tighter spacing
-                        // 图标图像
+                    HStack(spacing: 10) {
+                        // 左：图标
                         SafeImage(name: documentName, renderingMode: .template, contentMode: .fit)
                             .foregroundColor(themeManager.primaryText)
-                            .frame(width: geometry.size.width * 0.16)  // slightly smaller to balance text
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .frame(width: geometry.size.width * 0.14, height: geometry.size.width * 0.14)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
                             .shadow(radius: 1.5)
                             .scaleEffect(isMantraExpanded ? 0.78 : 1)
                             .animation(.spring(response: 0.5, dampingFraction: 0.82, blendDuration: 0.2), value: isMantraExpanded)
                             .staggered(index, show: $showGridItems, baseDelay: 0.07)
-                        
-                        // 推荐名称（小字体，紧贴图标）
-                        Text(recommendationTitles[title] ?? "")
-                            .font(AlignaType.gridItemName())
-                            .lineSpacing(AlignaType.body16LineSpacing) // 22-16=6
-                            .foregroundColor(themeManager.descriptionText)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
 
-                        
-                        // 类别标题（和上面稍微拉开）
-                        Text(categoryDisplayName(for: title))
-                            .font(AlignaType.gridCategoryTitle())
-                            .lineSpacing(34 - 28) // 6
-                            .foregroundColor(themeManager.primaryText)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
+                        // 右：类别标题 + 推荐名称
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(categoryDisplayName(for: title))
+                                .font(AlignaType.gridCategoryTitle())
+                                .foregroundColor(themeManager.primaryText)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.80)
+
+                            Text(recommendationTitles[title] ?? "")
+                                .font(AlignaType.gridItemName())
+                                .foregroundColor(themeManager.descriptionText)
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.80)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
                     .frame(maxWidth: .infinity)
                     .frame(height: cellHeight)
                     .background(
@@ -4842,10 +5299,7 @@ struct MainView: View {
     }
     private func handleBootPhaseChange(_ phase: BootPhase) {
         if phase == .main {
-            isMantraExpanded = true
-            if shouldExpandMantraOnBoot {
-                shouldExpandMantraOnBoot = false
-            }
+            resolveDayPhase()
             if pendingGenerationToast {
                 pendingGenerationToast = false
                 triggerGenerationHapticIfNeeded()
@@ -4854,6 +5308,45 @@ struct MainView: View {
             if showGenerationStrongHint && isGenerationInProgress {
                 showCenterToast(String(localized: "Generating today's mantra and rhythm"), duration: 2.6, includeTime: false)
             }
+        }
+    }
+
+    private func resolveDayPhase() {
+        // Already tapped "Start Today" today → straight to home
+        if hasSeenExpandedToday == todayKey {
+            dayPhase = .home
+            isMantraExpanded = false
+            return
+        }
+        // Has previous session actions not yet reviewed → show wrapUp first
+        if hasPreviousSessionActions {
+            buildWrapUpData()
+            dayPhase = .wrapUp
+            return
+        }
+        // Mantra ready → show expanded; otherwise wait (onChange will re-trigger)
+        if !viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            dayPhase = .expanded
+        } else {
+            dayPhase = .home
+        }
+    }
+
+    private func markExpandedSeen() {
+        hasSeenExpandedToday = todayKey
+        withAnimation(.easeInOut(duration: 0.45)) {
+            isMantraExpanded = false
+            dayPhase = .home
+        }
+    }
+
+    private func toggleActionComplete(category: String) {
+        var dict = todayActionsDict
+        dict[category] = !(dict[category] ?? false)
+        dailyActionsDate = todayKey
+        if let data = try? JSONEncoder().encode(dict),
+           let str = String(data: data, encoding: .utf8) {
+            dailyActionsCompleted = str
         }
     }
 
@@ -5381,7 +5874,12 @@ private struct FirstPagePreviewContainer: View {
             "Career": "clear_channel",
             "Relationship": "breathe_sync"
         ]
-        viewModel.dailyMantra = "Today is not about perfection. It is about noticing small moments, honoring how I feel, and allowing myself to move forward with patience and care."
+        viewModel.howToEngage = [
+            "Activity": "整理一面镜子，看见今天的自己",
+            "Place": "找一处安静角落，坐下来三分钟",
+            "Sound": "播放棕噪音，屏蔽环境杂音"
+        ]
+        viewModel.dailyMantra = "今天不关乎完美。它关乎注意到小时刻，尊重我的感受，允许自己带着耐心和关怀继续前行。"
         _viewModel = StateObject(wrappedValue: viewModel)
     }
 
@@ -5396,8 +5894,132 @@ private struct FirstPagePreviewContainer: View {
     }
 }
 
-#Preview("Main View") {
+private struct FocusSelectionPreviewContainer: View {
+    @StateObject private var themeManager: ThemeManager
+    @StateObject private var starManager = StarAnimationManager()
+    init() {
+        let tm = ThemeManager(); tm.selected = .night
+        _themeManager = StateObject(wrappedValue: tm)
+    }
+    var body: some View {
+        FocusSelectionView(
+            focuses: [
+                FocusSelectionView.FocusItem(id: "p1", name: "Presence", description: "Rooted in the now, open to what is.", groupKey: ""),
+                FocusSelectionView.FocusItem(id: "e1", name: "Rest", description: "Permission to stop, recover, and simply be.", groupKey: "everyday"),
+                FocusSelectionView.FocusItem(id: "e2", name: "Deep Work", description: "A container for uninterrupted attention.", groupKey: "everyday"),
+                FocusSelectionView.FocusItem(id: "r1", name: "Connection", description: "A lens for intimacy and emotional closeness.", groupKey: "relationships"),
+                FocusSelectionView.FocusItem(id: "r2", name: "Family", description: "Navigating the people you belong to.", groupKey: "relationships"),
+                FocusSelectionView.FocusItem(id: "i1", name: "Clarity", description: "Perspective for decisions and priorities.", groupKey: "inner"),
+            ],
+            presenceFocusID: "p1",
+            currentFocusID: nil,
+            onConfirm: { _ in },
+            onAddCustom: {}
+        )
+        .environmentObject(themeManager)
+        .environmentObject(starManager)
+    }
+}
+
+private struct WrapUpPreviewContainer: View {
+    @StateObject private var themeManager: ThemeManager
+    @StateObject private var starManager = StarAnimationManager()
+    init() {
+        let tm = ThemeManager(); tm.selected = .night
+        _themeManager = StateObject(wrappedValue: tm)
+    }
+    var body: some View {
+        LastWrapUpView(
+            lastFocusName: "专注力",
+            actions: [
+                (category: "Activity", anchor: "整理一面镜子，看见今天的自己", completed: true),
+                (category: "Place", anchor: "找一处安静角落，坐下来三分钟", completed: false),
+                (category: "Sound", anchor: "播放棕噪音，屏蔽环境杂音", completed: false)
+            ],
+            onContinue: {}
+        )
+        .environmentObject(themeManager)
+        .environmentObject(starManager)
+    }
+}
+
+private struct FetchingPreviewContainer: View {
+    @StateObject private var themeManager: ThemeManager
+    @StateObject private var starManager = StarAnimationManager()
+    init() {
+        let tm = ThemeManager(); tm.selected = .night
+        _themeManager = StateObject(wrappedValue: tm)
+    }
+    var body: some View {
+        FocusFetchingView(
+            focusName: "专注力",
+            onComplete: {},
+            isDataReady: false
+        )
+        .environmentObject(themeManager)
+        .environmentObject(starManager)
+    }
+}
+
+private struct RitualExpandedPreviewContainer: View {
+    @StateObject private var starManager = StarAnimationManager()
+    @StateObject private var themeManager: ThemeManager
+    @StateObject private var viewModel: OnboardingViewModel
+    @StateObject private var soundPlayer = SoundPlayer.shared
+    @StateObject private var reasoningStore = DailyReasoningStore()
+
+    init() {
+        let tm = ThemeManager(); tm.selected = .night
+        _themeManager = StateObject(wrappedValue: tm)
+        let vm = OnboardingViewModel()
+        vm.recommendations = [
+            "Place": "echo_niche", "Gemstone": "amethyst", "Color": "amber",
+            "Scent": "bergamot", "Activity": "clean_mirror",
+            "Sound": "brown_noise", "Career": "clear_channel", "Relationship": "breathe_sync"
+        ]
+        vm.howToEngage = [
+            "Activity": "整理一面镜子，看见今天的自己",
+            "Place": "找一处安静角落，坐下来三分钟",
+            "Sound": "播放棕噪音，屏蔽环境杂音"
+        ]
+        vm.dailyMantra = "今天不关乎完美。它关乎注意到小时刻，尊重我的感受，允许自己带着耐心和关怀继续前行。"
+        _viewModel = StateObject(wrappedValue: vm)
+    }
+
+    var body: some View {
+        MainView(
+            previewExpanded: true,
+            previewShowGeneration: false,
+            previewToastMessage: nil,
+            previewShowStrongHint: false,
+            previewUsingPreviousResult: false
+        )
+        .environmentObject(starManager)
+        .environmentObject(themeManager)
+        .environmentObject(viewModel)
+        .environmentObject(soundPlayer)
+        .environmentObject(reasoningStore)
+    }
+}
+
+#Preview("主页缩略态 Home") {
     FirstPagePreviewContainer()
+}
+
+#Preview("展开态 Ritual Expanded") {
+    RitualExpandedPreviewContainer()
+}
+
+#Preview("课题选择 Focus Selection") {
+    FocusSelectionPreviewContainer()
+}
+
+#Preview("上次收尾 Last Wrap-Up") {
+    WrapUpPreviewContainer()
+}
+
+#Preview("加载过渡 Fetching") {
+    FetchingPreviewContainer()
 }
 #endif
 
@@ -5552,35 +6174,7 @@ struct CustomBackButton: View {
 }
 
 
-#if DEBUG
-#Preview("Main Expanded") {
-    let defaults = UserDefaults.standard
-    defaults.set(Date().timeIntervalSince1970 - 3600, forKey: "lastRecommendationTimestamp")
-    defaults.set(true, forKey: "lastRecommendationHasFullSet")
 
-    let starManager = StarAnimationManager()
-    let themeManager = ThemeManager()
-    let viewModel = OnboardingViewModel()
-    viewModel.dailyMantra = "Take a steady breath and follow the quiet momentum."
-    viewModel.recommendations = DesignRecs.docs
-
-    let soundPlayer = SoundPlayer()
-    let reasoningStore = DailyReasoningStore()
-
-    return MainView(
-        previewExpanded: true,
-        previewShowGeneration: true,
-        previewToastMessage: "Updated",
-        previewShowStrongHint: false,
-        previewUsingPreviousResult: true
-    )
-    .environmentObject(starManager)
-    .environmentObject(themeManager)
-    .environmentObject(viewModel)
-    .environmentObject(soundPlayer)
-    .environmentObject(reasoningStore)
-}
-#endif
 
 // 替换你文件中现有的 OnboardingViewModel
 import FirebaseFirestore

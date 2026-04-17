@@ -1490,6 +1490,10 @@ struct ProfileView: View {
     @ObservedObject var viewModel: OnboardingViewModel
     @Environment(\.colorScheme) private var colorScheme
 
+    #if DEBUG
+    var onDevRefresh: (() -> Void)? = nil
+    #endif
+
     // Firestore
     @State private var userDocID: String?
     @State private var userCollectionUsed: String?
@@ -1544,13 +1548,10 @@ struct ProfileView: View {
     @State private var showLanguagePartialDialog = false
     @State private var showLanguageSelectionSheet = false
     @AppStorage("dailyMantraNotificationEnabled") private var dailyMantraNotificationEnabled: Bool = true
-    @AppStorage("dailyRhythmUpdateHour") private var dailyRhythmUpdateHour: Int = 7
-    @AppStorage("dailyRhythmUpdateMinute") private var dailyRhythmUpdateMinute: Int = 0
     @AppStorage("cachedDailyMantra") private var cachedDailyMantra: String = ""
     @State private var notificationAuthStatus: UNAuthorizationStatus = .notDetermined
     @State private var showNotificationSettingsAlert = false
     @State private var showLocationInfoAlert = false
-    @State private var showDailyRhythmUpdateSheet = false
     @State private var birthPlaceResults: [PlaceResult] = []
     @State private var didSelectBirthPlaceResult = false
     @State private var pendingBirthPlaceCoordinate: CLLocationCoordinate2D?
@@ -1657,7 +1658,6 @@ struct ProfileView: View {
                             personalInfoCard
                             preferencesCard
                             timelineCard
-                            dailyRhythmUpdateCard
                             notificationCard
                             locationAccessCard
                             themeCard
@@ -1665,6 +1665,9 @@ struct ProfileView: View {
                             aboutCard
                             signOutCard
                             deleteAccountCard
+                            #if DEBUG
+                            debugRitualResetCard
+                            #endif
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 16)
@@ -1797,9 +1800,6 @@ struct ProfileView: View {
         } message: {
             Text(String(localized: "profile.confirm_password_message"))
         }
-        .sheet(isPresented: $showDailyRhythmUpdateSheet) {
-            dailyRhythmUpdateSheet
-        }
         .fullScreenCover(isPresented: $navigateToFrontPage) {
             FrontPageView()
                 .environmentObject(starManager)
@@ -1848,22 +1848,6 @@ struct ProfileView: View {
                     dailyMantraNotificationEnabled = false
                     MantraNotificationManager.cancelFixed()
                 }
-            }
-        )
-    }
-
-    private var dailyRhythmUpdateTimeBinding: Binding<Date> {
-        Binding(
-            get: {
-                BirthTimeUtils.makeLocalTimeDate(
-                    hour: dailyRhythmUpdateHour,
-                    minute: dailyRhythmUpdateMinute
-                )
-            },
-            set: { newValue in
-                let components = BirthTimeUtils.hourMinute(from: newValue)
-                dailyRhythmUpdateHour = components.hour
-                dailyRhythmUpdateMinute = components.minute
             }
         )
     }
@@ -2219,11 +2203,6 @@ private extension ProfileView {
         }
     }
 
-    private var dailyRhythmUpdateStatusText: String {
-        let time = BirthTimeUtils.displayFormatter.string(from: dailyRhythmUpdateTimeBinding.wrappedValue)
-        return String(format: String(localized: "profile.rhythm_update_status"), time)
-    }
-
     private var personalInfoMaskText: String {
         "********"
     }
@@ -2265,38 +2244,6 @@ private extension ProfileView {
         default:
             return false
         }
-    }
-
-    var dailyRhythmUpdateCard: some View {
-        Button {
-            showDailyRhythmUpdateSheet = true
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "clock.arrow.circlepath")
-                    .foregroundColor(themeManager.accent)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(String(localized: "profile.rhythm_update_title"))
-                        .font(AlynnaTypography.font(.headline))
-                        .foregroundColor(themeManager.primaryText)
-
-                    Text(dailyRhythmUpdateStatusText)
-                        .font(AlynnaTypography.font(.subheadline))
-                        .foregroundColor(themeManager.descriptionText)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(themeManager.descriptionText.opacity(0.75))
-            }
-        }
-        .buttonStyle(.plain)
-        .padding()
-        .alignaCard()
     }
 
     var notificationCard: some View {
@@ -2561,6 +2508,24 @@ private extension ProfileView {
             )
         }
     }
+
+    #if DEBUG
+    var debugRitualResetCard: some View {
+        Button {
+            UserDefaults.standard.removeObject(forKey: "hasSeenExpandedToday")
+            UserDefaults.standard.removeObject(forKey: "dailyActionsCompleted")
+            UserDefaults.standard.removeObject(forKey: "dailyActionsDate")
+            dismiss()
+            onDevRefresh?()
+        } label: {
+            rowCard(
+                icon: "arrow.counterclockwise.circle",
+                title: "[DEV] 生成今天的推荐",
+                subtitle: "清除仪式态缓存，触发 Loading → 展开态"
+            )
+        }
+    }
+    #endif
 
     var signOutCard: some View {
         Button {
@@ -2872,68 +2837,6 @@ private extension ProfileView {
             birthPlaceDisplayContent
         }
         .padding(.vertical, 4)
-    }
-
-    var dailyRhythmUpdateSheet: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Capsule()
-                .fill(themeManager.descriptionText.opacity(0.35))
-                .frame(width: 42, height: 5)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 8)
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text(String(localized: "profile.rhythm_update_sheet_title"))
-                    .font(AlynnaTypography.font(.title3))
-                    .foregroundColor(themeManager.primaryText)
-                Text(String(localized: "profile.rhythm_update_sheet_subtitle"))
-                    .font(AlynnaTypography.font(.subheadline))
-                    .foregroundColor(themeManager.descriptionText)
-            }
-
-            DatePicker(
-                "Update time",
-                selection: dailyRhythmUpdateTimeBinding,
-                displayedComponents: .hourAndMinute
-            )
-            .datePickerStyle(.wheel)
-            .labelsHidden()
-            .tint(themeManager.accent)
-            .foregroundStyle(themeManager.primaryText)
-            .colorMultiply(themeManager.primaryText)
-            .environment(\.colorScheme, themeManager.isNight ? .dark : .light)
-            .environment(\.locale, Locale(identifier: "en_US_POSIX"))
-
-            HStack(spacing: 10) {
-                Button(action: {
-                    showDailyRhythmUpdateSheet = false
-                }) {
-                    Text(String(localized: "profile.save_button"))
-                        .font(AlynnaTypography.font(.body))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(themeManager.accent.opacity(0.16))
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                Button(action: {
-                    showDailyRhythmUpdateSheet = false
-                }) {
-                    Text(String(localized: "profile.close_button"))
-                        .font(AlynnaTypography.font(.body))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(themeManager.panelFill)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-            }
-            .foregroundColor(themeManager.accent)
-        }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 20)
-        .preferredColorScheme(themeManager.preferredColorScheme)
-        .presentationDetents([.fraction(0.48), .large])
-        .presentationDragIndicator(.hidden)
-        .presentationBackground(.ultraThinMaterial)
     }
 
     var birthPlaceSheet: some View {

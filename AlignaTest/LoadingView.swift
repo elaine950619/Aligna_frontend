@@ -371,6 +371,10 @@ struct AlynnaGenerationOverlayCard: View {
 struct LoadingView: View {
     var onStartLoading: (() -> Void)? = nil
     var onPersonalComplete: ((Bool) -> Void)? = nil
+    var onFocusSelected: ((String) -> Void)? = nil
+    var onAddCustomFocus: (() -> Void)? = nil
+    private let focuses: [FocusSelectionView.FocusItem]
+    private let presenceFocusID: String
     private let fixedMessageIndex: Int?
     private let forceFullLoading: Bool
 
@@ -383,7 +387,8 @@ struct LoadingView: View {
 
     @State private var didStartLoading = false
     @State private var didFetchPlaceSignals = false
-    @State private var stage: LoadingStage = .initial
+    @State private var stage: LoadingStage = .initial  // overridden in onAppear
+    @State private var selectedFocusID: String? = nil
     @State private var initialPulse = false
 
     @AppStorage("lastRecommendationTimestamp") private var lastRecommendationTimestamp: Double = 0
@@ -438,18 +443,25 @@ struct LoadingView: View {
     init(
         onStartLoading: (() -> Void)? = nil,
         onPersonalComplete: ((Bool) -> Void)? = nil,
+        onFocusSelected: ((String) -> Void)? = nil,
+        focuses: [FocusSelectionView.FocusItem] = [],
+        presenceFocusID: String = "",
         fixedMessageIndex: Int? = nil,
         forceFullLoading: Bool = false,
         locationManager: LocationManager = LocationManager()
     ) {
         self.onStartLoading = onStartLoading
         self.onPersonalComplete = onPersonalComplete
+        self.onFocusSelected = onFocusSelected
+        self.focuses = focuses
+        self.presenceFocusID = presenceFocusID
         self.fixedMessageIndex = fixedMessageIndex
         self.forceFullLoading = forceFullLoading
         _locationManager = ObservedObject(wrappedValue: locationManager)
     }
 
     fileprivate enum LoadingStage: Int {
+        case focusSelection
         case initial
         case cosmic
         case place
@@ -513,8 +525,17 @@ struct LoadingView: View {
                     }
                 }
                 .padding(.horizontal, 16)
+
+
             }
             .onAppear {
+                // Set correct initial stage — .focusSelection only for full loading flows with focuses
+                if forceFullLoading && !focuses.isEmpty {
+                    stage = .focusSelection
+                    selectedFocusID = nil
+                } else {
+                    stage = .initial
+                }
                 locationPermissionCoordinator.refreshAuthorizationStatus()
                 scheduleStageProgression()
                 startEmojiTimers()
@@ -580,6 +601,10 @@ struct LoadingView: View {
         let contentHeight: CGFloat = 240
         return VStack(spacing: 12) {
             switch stage {
+            case .focusSelection:
+                focusSelectionStage
+                    .frame(height: headerHeight + contentHeight, alignment: .top)
+
             case .initial:
                 initialHeader
                     .frame(height: headerHeight + contentHeight, alignment: .top)
@@ -642,6 +667,161 @@ struct LoadingView: View {
         .padding(.top, topPadding)
     }
 
+
+    // MARK: - Focus Selection Stage
+    @ViewBuilder
+    private var focusSelectionStage: some View {
+        let sandColor = Color(red: 0.94, green: 0.88, blue: 0.72)
+        let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+
+        // Groups mirroring FocusSelectionView order
+        let groupDefs: [(key: String, labelKey: String)] = [
+            ("everyday",      "focus.group.everyday"),
+            ("relationships", "focus.group.relationships"),
+            ("body",          "focus.group.body"),
+            ("transitions",   "focus.group.transitions"),
+            ("inner",         "focus.group.inner"),
+            ("practical",     "focus.group.practical"),
+        ]
+
+        VStack(spacing: 0) {
+            // Title — matches position of other stage headers
+            Text("focus.select_title")
+                .font(.custom("Merriweather-Bold", size: 20))
+                .foregroundColor(themeManager.primaryText)
+                .multilineTextAlignment(.center)
+                .padding(.bottom, 16)
+
+            // Scrollable focus grid — fills space between title and confirm button
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    // ── Presence focus — same 2-col grid as other cards ──
+                    if let presenceItem = focuses.first(where: { $0.id == presenceFocusID }) {
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            focusCardInline(presenceItem, sandColor: sandColor)
+                        }
+                        .padding(.bottom, 12)
+                    }
+
+                    // ── Grouped sections ──
+                    ForEach(groupDefs, id: \.key) { group in
+                        let groupItems = focuses.filter { $0.groupKey == group.key }
+                        if !groupItems.isEmpty {
+                            HStack(spacing: 10) {
+                                Text(String(localized: String.LocalizationValue(group.labelKey)))
+                                    .font(.custom("Merriweather-Regular", size: 10))
+                                    .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                                    .tracking(1.2)
+                                    .textCase(.uppercase)
+                                    .fixedSize()
+                                Rectangle()
+                                    .fill(themeManager.descriptionText.opacity(0.15))
+                                    .frame(height: 1)
+                            }
+                            .padding(.bottom, 10)
+
+                            LazyVGrid(columns: columns, spacing: 12) {
+                                ForEach(groupItems) { item in
+                                    focusCardInline(item, sandColor: sandColor)
+                                }
+                            }
+                            .padding(.bottom, 20)
+                        }
+                    }
+
+                    // Custom user focuses (ungrouped, not presence)
+                    let customItems = focuses.filter { $0.groupKey.isEmpty && $0.id != presenceFocusID }
+                    if !customItems.isEmpty {
+                        HStack(spacing: 10) {
+                            Text(String(localized: "focus.add_custom"))
+                                .font(.custom("Merriweather-Regular", size: 10))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                                .tracking(1.2)
+                                .textCase(.uppercase)
+                                .fixedSize()
+                            Rectangle()
+                                .fill(themeManager.descriptionText.opacity(0.15))
+                                .frame(height: 1)
+                        }
+                        .padding(.bottom, 10)
+
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            ForEach(customItems) { item in
+                                focusCardInline(item, sandColor: sandColor)
+                            }
+                        }
+                        .padding(.bottom, 20)
+                    }
+                }
+            }
+
+            // Confirm button at bottom of the stage block
+            Button {
+                if let id = selectedFocusID {
+                    advanceFromFocusSelection(focusID: id)
+                }
+            } label: {
+                Text("focus.confirm_button")
+                    .font(.custom("Merriweather-Regular", size: 16))
+                    .foregroundColor(selectedFocusID != nil
+                        ? Color(red: 0.12, green: 0.10, blue: 0.08)
+                        : themeManager.descriptionText.opacity(0.4))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(selectedFocusID != nil
+                                ? sandColor
+                                : themeManager.panelFill.opacity(0.3))
+                    )
+            }
+            .disabled(selectedFocusID == nil)
+            .buttonStyle(.plain)
+            .padding(.top, 12)
+        }
+    }
+
+
+
+    @ViewBuilder
+    private func focusCardInline(_ item: FocusSelectionView.FocusItem, sandColor: Color) -> some View {
+        let isSelected = selectedFocusID == item.id
+        Button {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                selectedFocusID = item.id
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.name)
+                    .font(.custom("Merriweather-Bold", size: 13))
+                    .foregroundColor(isSelected
+                        ? Color(red: 0.12, green: 0.10, blue: 0.08)
+                        : themeManager.primaryText.opacity(0.88))
+                    .lineLimit(1)
+                Text(item.description)
+                    .font(.custom("Merriweather-Regular", size: 10))
+                    .foregroundColor(isSelected
+                        ? Color(red: 0.12, green: 0.10, blue: 0.08).opacity(0.60)
+                        : themeManager.descriptionText.opacity(0.50))
+                    .lineLimit(2)
+                    .lineSpacing(2)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected
+                        ? sandColor.opacity(themeManager.isNight ? 0.88 : 0.80)
+                        : themeManager.panelFill.opacity(themeManager.isNight ? 0.28 : 0.36))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? sandColor : Color.white.opacity(0.10),
+                            lineWidth: isSelected ? 1.5 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
 
     private var initialHeader: some View {
         VStack(spacing: 20) {
@@ -929,6 +1109,8 @@ struct LoadingView: View {
 
     private var footerText: String? {
         switch stage {
+        case .focusSelection:
+            return nil
         case .initial:
             return nil
         case .cosmic:
@@ -1039,6 +1221,16 @@ struct LoadingView: View {
             return
         }
 
+        // If we start at focusSelection, stage timers begin AFTER the user
+        // confirms their focus (triggered by advanceFromFocusSelection()).
+        // So we only schedule here when skipping focus selection.
+        if stage != .focusSelection {
+            schedulePostFocusProgression()
+        }
+    }
+
+    /// Schedules initial→cosmic→place→personal once past focus selection.
+    private func schedulePostFocusProgression() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             if stage == .initial { stage = .cosmic }
         }
@@ -1048,6 +1240,25 @@ struct LoadingView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 7.5) {
             if stage == .place { stage = .personal }
         }
+    }
+
+    /// Schedules cosmic→place→personal when skipping .initial (coming from focus selection).
+    private func schedulePostCosmicProgression() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
+            if stage == .cosmic { stage = .place }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
+            if stage == .place { stage = .personal }
+        }
+    }
+
+    /// Called when user confirms focus selection; skips .initial and goes straight to .cosmic.
+    private func advanceFromFocusSelection(focusID: String) {
+        onFocusSelected?(focusID)
+        withAnimation(.easeInOut(duration: 0.35)) {
+            stage = .cosmic
+        }
+        schedulePostCosmicProgression()
     }
 
     private func startEmojiTimers() {
