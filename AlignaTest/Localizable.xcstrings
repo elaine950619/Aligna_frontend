@@ -10341,6 +10341,312 @@
         }
       }
     },
+    "weather.clear" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear sky"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "晴"
+          }
+        }
+      }
+    },
+    "weather.cloudy" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cloudy"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "多云"
+          }
+        }
+      }
+    },
+    "weather.drizzle" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drizzle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "毛毛雨"
+          }
+        }
+      }
+    },
+    "weather.foggy" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foggy"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "雾"
+          }
+        }
+      }
+    },
+    "weather.heavy_rain" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heavy rain"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "大雨"
+          }
+        }
+      }
+    },
+    "weather.heavy_showers" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heavy showers"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "强阵雨"
+          }
+        }
+      }
+    },
+    "weather.heavy_snow" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heavy snow"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "大雪"
+          }
+        }
+      }
+    },
+    "weather.light_drizzle" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light drizzle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小毛毛雨"
+          }
+        }
+      }
+    },
+    "weather.light_rain" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light rain"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小雨"
+          }
+        }
+      }
+    },
+    "weather.light_snow" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light snow"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小雪"
+          }
+        }
+      }
+    },
+    "weather.mixed" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mixed conditions"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "天气多变"
+          }
+        }
+      }
+    },
+    "weather.moderate_rain" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moderate rain"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中雨"
+          }
+        }
+      }
+    },
+    "weather.moderate_showers" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moderate showers"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中阵雨"
+          }
+        }
+      }
+    },
+    "weather.moderate_snow" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moderate snow"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中雪"
+          }
+        }
+      }
+    },
+    "weather.mostly_clear" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostly clear"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "大部晴朗"
+          }
+        }
+      }
+    },
+    "weather.partly_cloudy" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partly cloudy"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "局部多云"
+          }
+        }
+      }
+    },
+    "weather.showers" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Showers"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "阵雨"
+          }
+        }
+      }
+    },
+    "weather.thunderstorm" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thunderstorm"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "雷阵雨"
+          }
+        }
+      }
+    },
     "Welcome Back" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -10737,114 +11043,6 @@
             "value" : "处女"
           }
         }
-      }
-    },
-    "weather.clear" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Clear sky" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "晴" } }
-      }
-    },
-    "weather.mostly_clear" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mostly clear" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "大部晴朗" } }
-      }
-    },
-    "weather.partly_cloudy" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Partly cloudy" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "局部多云" } }
-      }
-    },
-    "weather.cloudy" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cloudy" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "多云" } }
-      }
-    },
-    "weather.foggy" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Foggy" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "雾" } }
-      }
-    },
-    "weather.light_drizzle" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Light drizzle" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "小毛毛雨" } }
-      }
-    },
-    "weather.drizzle" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Drizzle" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "毛毛雨" } }
-      }
-    },
-    "weather.light_rain" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Light rain" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "小雨" } }
-      }
-    },
-    "weather.moderate_rain" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Moderate rain" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "中雨" } }
-      }
-    },
-    "weather.heavy_rain" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Heavy rain" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "大雨" } }
-      }
-    },
-    "weather.light_snow" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Light snow" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "小雪" } }
-      }
-    },
-    "weather.moderate_snow" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Moderate snow" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "中雪" } }
-      }
-    },
-    "weather.heavy_snow" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Heavy snow" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "大雪" } }
-      }
-    },
-    "weather.showers" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Showers" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "阵雨" } }
-      }
-    },
-    "weather.moderate_showers" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Moderate showers" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "中阵雨" } }
-      }
-    },
-    "weather.heavy_showers" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Heavy showers" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "强阵雨" } }
-      }
-    },
-    "weather.thunderstorm" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Thunderstorm" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "雷阵雨" } }
-      }
-    },
-    "weather.mixed" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mixed conditions" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "天气多变" } }
       }
     }
   },

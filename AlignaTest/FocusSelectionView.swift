@@ -77,64 +77,37 @@ struct FocusSelectionView: View {
     }
 
     var body: some View {
-        ZStack {
-            AppBackgroundView(nightMotion: .animated, nightAnimationSpeed: 7.0)
-                .environmentObject(starManager)
-                .environmentObject(themeManager)
-                .ignoresSafeArea()
+        // ── Layout: title (fixed top) → scrollable grid (flex) → confirm button (fixed bottom) ──
+        VStack(spacing: 0) {
 
-            // ── ScrollView with button inset at bottom ──
-            // Top padding = 1/3 screen height (for title) + title height (60pt) + gap (8pt)
-            // This is set via safeAreaInset on the ScrollView and dynamic top padding
-            GeometryReader { geo in
-                let titleAreaHeight = geo.size.height / 3 + 68  // 1/3 height + title(~60) + gap(8)
-                let buttonAreaHeight: CGFloat = 112              // button height + bottom padding
+            // ── Title ──
+            Text("focus.select_title")
+                .font(.custom("Merriweather-Bold", size: 22))
+                .foregroundColor(themeManager.primaryText)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+                .padding(.top, 56)
+                .padding(.bottom, 20)
+                .frame(maxWidth: .infinity)
 
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 0) {
+            // ── Scrollable focus grid — strictly between title and button ──
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
 
-                        // ── Presence focus ──
-                        if let p = presenceItem {
-                            LazyVGrid(columns: columns, spacing: 12) {
-                                focusCard(p)
-                            }
-                            .padding(.horizontal, 24)
-                            .padding(.bottom, 12)
+                    // ── Presence focus ──
+                    if let p = presenceItem {
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            focusCard(p)
                         }
+                        .padding(.bottom, 12)
+                    }
 
-                        // ── Grouped sections ──
-                        ForEach(groups, id: \.key) { group in
-                            let groupItems = items(for: group.key)
-                            if !groupItems.isEmpty {
-                                HStack(spacing: 10) {
-                                    Text(String(localized: String.LocalizationValue(group.labelKey)))
-                                        .font(.custom("Merriweather-Regular", size: 10))
-                                        .foregroundColor(themeManager.descriptionText.opacity(0.45))
-                                        .tracking(1.2)
-                                        .textCase(.uppercase)
-                                        .fixedSize()
-                                    Rectangle()
-                                        .fill(themeManager.descriptionText.opacity(0.15))
-                                        .frame(height: 1)
-                                }
-                                .padding(.horizontal, 24)
-                                .padding(.bottom, 10)
-
-                                LazyVGrid(columns: columns, spacing: 12) {
-                                    ForEach(groupItems) { item in
-                                        focusCard(item)
-                                    }
-                                }
-                                .padding(.horizontal, 24)
-                                .padding(.bottom, 28)
-                            }
-                        }
-
-                        // ── Custom user focuses ──
-                        let customItems = focuses.filter { $0.groupKey.isEmpty && $0.id != presenceFocusID }
-                        if !customItems.isEmpty {
+                    // ── Grouped sections ──
+                    ForEach(groups, id: \.key) { group in
+                        let groupItems = items(for: group.key)
+                        if !groupItems.isEmpty {
                             HStack(spacing: 10) {
-                                Text(String(localized: "focus.add_custom"))
+                                Text(String(localized: String.LocalizationValue(group.labelKey)))
                                     .font(.custom("Merriweather-Regular", size: 10))
                                     .foregroundColor(themeManager.descriptionText.opacity(0.45))
                                     .tracking(1.2)
@@ -144,66 +117,76 @@ struct FocusSelectionView: View {
                                     .fill(themeManager.descriptionText.opacity(0.15))
                                     .frame(height: 1)
                             }
-                            .padding(.horizontal, 24)
                             .padding(.bottom, 10)
 
                             LazyVGrid(columns: columns, spacing: 12) {
-                                ForEach(customItems) { item in
+                                ForEach(groupItems) { item in
                                     focusCard(item)
                                 }
                             }
-                            .padding(.horizontal, 24)
                             .padding(.bottom, 28)
                         }
                     }
-                }
-                // Top padding pushes cards below the title
-                .padding(.top, titleAreaHeight)
-                // Bottom inset reserves space for the pinned button
-                .safeAreaInset(edge: .bottom) {
-                    Color.clear.frame(height: buttonAreaHeight)
-                }
 
-                // ── Title: positioned at geo.size.height / 3 from top of safe-area rect ──
-                Text("focus.select_title")
-                    .font(.custom("Merriweather-Bold", size: 22))
-                    .foregroundColor(themeManager.primaryText)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 60)
-                    .offset(y: geo.size.height / 3)
-            }
+                    // ── Custom user focuses ──
+                    let customItems = focuses.filter { $0.groupKey.isEmpty && $0.id != presenceFocusID }
+                    if !customItems.isEmpty {
+                        HStack(spacing: 10) {
+                            Text(String(localized: "focus.add_custom"))
+                                .font(.custom("Merriweather-Regular", size: 10))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                                .tracking(1.2)
+                                .textCase(.uppercase)
+                                .fixedSize()
+                            Rectangle()
+                                .fill(themeManager.descriptionText.opacity(0.15))
+                                .frame(height: 1)
+                        }
+                        .padding(.bottom, 10)
 
-            // ── Confirm button — pinned to screen bottom ──
-            VStack {
-                Spacer()
-                Button {
-                    if let id = selectedID {
-                        onConfirm(id)
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            ForEach(customItems) { item in
+                                focusCard(item)
+                            }
+                        }
+                        .padding(.bottom, 28)
                     }
-                } label: {
-                    Text("focus.confirm_button")
-                        .font(.custom("Merriweather-Regular", size: 16))
-                        .foregroundColor(selectedID != nil
-                            ? Color(hex: "#5C3A1E").opacity(0.85)
-                            : themeManager.descriptionText.opacity(0.4))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(selectedID != nil
-                                    ? sandColor
-                                    : themeManager.panelFill.opacity(0.3))
-                        )
                 }
-                .disabled(selectedID == nil)
-                .buttonStyle(.plain)
                 .padding(.horizontal, 24)
-                .padding(.bottom, 48)
+                .padding(.bottom, 16)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .ignoresSafeArea()
+
+            // ── Confirm button — always visible at bottom ──
+            Button {
+                if let id = selectedID {
+                    onConfirm(id)
+                }
+            } label: {
+                Text("focus.confirm_button")
+                    .font(.custom("Merriweather-Regular", size: 16))
+                    .foregroundColor(selectedID != nil
+                        ? Color(hex: "#5C3A1E").opacity(0.85)
+                        : themeManager.descriptionText.opacity(0.4))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(selectedID != nil
+                                ? sandColor
+                                : themeManager.panelFill.opacity(0.3))
+                    )
+            }
+            .disabled(selectedID == nil)
+            .buttonStyle(.plain)
+            .padding(.horizontal, 24)
+            .padding(.top, 12)
+            .padding(.bottom, 12)
+        }
+        .background {
+            AppBackgroundView(nightMotion: .animated, nightAnimationSpeed: 7.0)
+                .environmentObject(starManager)
+                .environmentObject(themeManager)
+                .ignoresSafeArea()
         }
         // ── 自定义 focus 创建表单 ──
         .sheet(isPresented: $showCustomForm) {
