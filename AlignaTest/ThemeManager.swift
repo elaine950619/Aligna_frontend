@@ -27,7 +27,7 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
         if isLove     { return Color(hex: "#C05070") }
         if isVitality { return Color(hex: "#2D5A3A") }
         if isRain     { return Color(hex: "#C8DCE8") }
-        return isNight ? Color(hex: "#E6D9BD") : Color(hex: "#8F643E")
+        return isNight ? Color(hex: "#E6D9BD") : Color(hex: "#B8721E")
     }
     
     // 图标/高亮：夜 #D4A574；日 #8F643E；雨 #7EB8D4；绿 #3A9457；粉 #E8607A
@@ -35,7 +35,7 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
         if isLove     { return Color(hex: "#E8607A") }
         if isVitality { return Color(hex: "#3A9457") }
         if isRain     { return Color(hex: "#7EB8D4") }
-        return isNight ? Color(hex: "#D4A574") : Color(hex: "#8F643E")
+        return isNight ? Color(hex: "#D4A574") : Color(hex: "#C07828")
     }
     
     // 大型水印文字：夜 #4A5A9E(40%)；日 secondary；雨 #4A6B8A(50%)；绿 #3A7A4E(35%)；粉 #C05070(25%)
@@ -44,7 +44,7 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
         if isVitality { return Color(hex: "#3A7A4E").opacity(0.35) }
         if isRain     { return Color(hex: "#4A6B8A").opacity(0.50) }
         return isNight ? Color(hex: "#4A5A9E").opacity(0.4)
-                       : Color(hex: "#8B4513").opacity(0.6)
+                       : Color(hex: "#8B4513").opacity(0.42)
     }
     
     // 主标题：夜 #E6D7C3；日 #8B4513；雨 #D6E4F0；绿 #1E4A2C；粉 #7A2A45
@@ -52,7 +52,7 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
         if isLove     { return Color(hex: "#7A2A45") }
         if isVitality { return Color(hex: "#1E4A2C") }
         if isRain     { return Color(hex: "#D6E4F0") }
-        return isNight ? Color(hex: "#E6D7C3") : Color(hex: "#8B4513")
+        return isNight ? Color(hex: "#E6D7C3") : Color(hex: "#6B3418")
     }
     
     // 副标题：夜 #B8C5D6；日 secondary；雨 #8FA8C0；绿 #4A7C5A；粉 #A0526A
@@ -60,7 +60,7 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
         if isLove     { return Color(hex: "#A0526A") }
         if isVitality { return Color(hex: "#4A7C5A") }
         if isRain     { return Color(hex: "#8FA8C0") }
-        return isNight ? Color(hex: "#B8C5D6") : Color(hex: "#8B4513")
+        return isNight ? Color(hex: "#B8C5D6") : Color(hex: "#B07048")
     }
     
     // 正文：夜 #A8B5C8；日 primary；雨 #8FA8C0；绿 #4A7C5A；粉 #A0526A

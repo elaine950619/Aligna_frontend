@@ -137,32 +137,48 @@ private struct NightStarView: View {
 struct DayBackgroundLayer: View {
     let size: CGSize   // from outer GeometryReader
 
+    // Mountain parallax sway
+    @State private var mountainSway: CGFloat = 0
+
     var body: some View {
         let width = size.width
         let height = size.height
         let base = min(width, height)
 
-        let blob1Size = base * 0.45
-        let blob2Size = base * 0.38
+        let blob1Size = base * 0.55
+        let blob2Size = base * 0.45
 
         ZStack {
-            // === Main vertical beige gradient (React gradient) ===
+            // === Main vertical warm-light gradient ===
             LinearGradient(
                 colors: [
-                    Color(hex: "#F6EEDD"),
-                    Color(hex: "#F8F1E4"),
-                    Color(hex: "#FBF6EE"),
-                    Color(hex: "#FDF9F3")
+                    Color(hex: "#FFF8E8"),
+                    Color(hex: "#FEF8EE"),
+                    Color(hex: "#FFFBF6"),
+                    Color(hex: "#FFFEFB")
                 ],
                 startPoint: .top,
                 endPoint: .bottom
             )
                 .ignoresSafeArea()
 
-            // === Soft global radial glow ===
+            // === Top sun corona — the main "日光" source ===
+            RadialGradient(
+                gradient: Gradient(stops: [
+                    .init(color: Color(hex: "#FFE08A").opacity(0.38), location: 0.0),
+                    .init(color: Color(hex: "#FFD060").opacity(0.18), location: 0.35),
+                    .init(color: .clear, location: 1.0)
+                ]),
+                center: UnitPoint(x: 0.50, y: -0.08),
+                startRadius: 0,
+                endRadius: base * 1.1
+            )
+            .ignoresSafeArea()
+
+            // === Soft global centre glow ===
             RadialGradient(
                 gradient: Gradient(colors: [
-                    Color(hex: "#F4D69D").opacity(0.06),
+                    Color(hex: "#FFD97A").opacity(0.12),
                     .clear
                 ]),
                 center: .center,
@@ -173,16 +189,15 @@ struct DayBackgroundLayer: View {
 
             DayGrainLayer(size: CGSize(width: width, height: height))
                 .blendMode(.softLight)
-                .opacity(0.35)
+                .opacity(0.30)
                 .allowsHitTesting(false)
 
-            // === Ambient blobs (same idea as React) ===
-            // top ~15%, left ~20%
+            // === Ambient blob — upper left warm glow ===
             Circle()
                 .fill(
                     RadialGradient(
                         gradient: Gradient(colors: [
-                            Color(hex: "#FFDF9C").opacity(0.12),
+                            Color(hex: "#FFD060").opacity(0.28),
                             .clear
                         ]),
                         center: .center,
@@ -191,17 +206,14 @@ struct DayBackgroundLayer: View {
                     )
                 )
                 .frame(width: blob1Size, height: blob1Size)
-                .position(
-                    x: width * 0.20,
-                    y: height * 0.15
-                )
+                .position(x: width * 0.18, y: height * 0.12)
 
-            // top ~75%, right ~15%
+            // === Ambient blob — lower right fill light ===
             Circle()
                 .fill(
                     RadialGradient(
                         gradient: Gradient(colors: [
-                            Color(hex: "#FFEBBE").opacity(0.08),
+                            Color(hex: "#FFE8A0").opacity(0.20),
                             .clear
                         ]),
                         center: .center,
@@ -210,42 +222,44 @@ struct DayBackgroundLayer: View {
                     )
                 )
                 .frame(width: blob2Size, height: blob2Size)
-                .position(
-                    x: width * 0.85,
-                    y: height * 0.75
-                )
+                .position(x: width * 0.85, y: height * 0.72)
 
-            // === Rotating “gold” stars, like the React LineArtDecorations ===
+            // === Rotating gold stars ===
             DayStarField()
                 .allowsHitTesting(false)
 
-
-
-            // === Bottom mountains – exact SVG shapes ===
+            // === Bottom mountains with parallax sway ===
             VStack {
                 Spacer()
-                DaySVGMountainsView()
+                DaySVGMountainsView(sway: mountainSway)
                     .frame(height: height * 0.22)
             }
 
+            // === Bottom edge softening ===
             VStack {
                 Spacer()
                 LinearGradient(
                     colors: [
-                        Color.white.opacity(0.32),
+                        Color.white.opacity(0.28),
                         Color.white.opacity(0.0)
                     ],
                     startPoint: .bottom,
                     endPoint: .top
                 )
-                .frame(height: height * 0.18)
+                .frame(height: height * 0.16)
                 .blendMode(.softLight)
             }
         }
-        .onAppear {
-        }
         .frame(width: width, height: height, alignment: .center)
         .clipped()
+        .onAppear {
+            withAnimation(
+                .easeInOut(duration: 9.0)
+                .repeatForever(autoreverses: true)
+            ) {
+                mountainSway = 1.0
+            }
+        }
     }
 }
 
@@ -281,36 +295,50 @@ private struct DayGrainLayer: View {
 
 // MARK: - Hills / mountains using the same SVG paths as React
 struct DaySVGMountainsView: View {
+    /// Animated sway value 0→1 driven by parent; each layer applies a
+    /// scaled horizontal offset to create a parallax depth effect.
+    var sway: CGFloat = 0
+
     var body: some View {
         GeometryReader { proxy in
+            let w = proxy.size.width
             let h = proxy.size.height
+            // Max sway amplitude for the closest layer (in points)
+            let amp: CGFloat = w * 0.025
+            // sway goes 0→1 (easeInOut autoreverse), map to -amp…+amp
+            let s = (sway * 2 - 1) * amp   // -amp … +amp
 
             ZStack(alignment: .bottom) {
-                // Thin base strip (rect at y=195 → 200)
+                // Thin base strip
                 Rectangle()
-                    .fill(Color(hex: "#CD853F").opacity(0.05))
+                    .fill(Color(hex: "#E8A84A").opacity(0.08))
                     .frame(height: h * 0.03)
                     .alignmentGuide(.bottom) { d in d[.bottom] }
 
-                // Furthest layer
+                // Furthest layer — barely moves (parallax 0.15×)
                 SVGMountainLayer(layer: .far)
-                    .fill(Color(hex: "#CD853F").opacity(0.12))
+                    .fill(Color(hex: "#E8A84A").opacity(0.14))
+                    .offset(x: s * 0.15)
 
-                // Mid-far layer
+                // Mid-far layer — 0.28×
                 SVGMountainLayer(layer: .midFar)
-                    .fill(Color(hex: "#CD853F").opacity(0.16))
+                    .fill(Color(hex: "#E8A84A").opacity(0.20))
+                    .offset(x: s * 0.28)
 
-                // Mid layer
+                // Mid layer — 0.45×
                 SVGMountainLayer(layer: .mid)
-                    .fill(Color(hex: "#CD853F").opacity(0.20))
+                    .fill(Color(hex: "#E8A84A").opacity(0.26))
+                    .offset(x: s * 0.45)
 
-                // Front hill
+                // Front hill — 0.68×
                 SVGMountainLayer(layer: .front)
-                    .fill(Color(hex: "#CD853F").opacity(0.25))
+                    .fill(Color(hex: "#E8A84A").opacity(0.32))
+                    .offset(x: s * 0.68)
 
-                // Very front strip
+                // Very front strip — full amplitude
                 SVGMountainLayer(layer: .strip)
-                    .fill(Color(hex: "#CD853F").opacity(0.28))
+                    .fill(Color(hex: "#E8A84A").opacity(0.38))
+                    .offset(x: s * 1.0)
             }
         }
     }
