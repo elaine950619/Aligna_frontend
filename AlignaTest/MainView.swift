@@ -1042,10 +1042,9 @@ struct MainView: View {
                                     // Category icon in circle (inner button toggles completion)
                                     Button {
                                         if let aid = item.actionID {
-                                            if !viewModel.completedActionIDs.contains(aid) {
-                                                markActionComplete(actionID: aid)
-                                                triggerActionCompleteToast()
-                                            }
+                                            let wasCompleted = viewModel.completedActionIDs.contains(aid)
+                                            markActionComplete(actionID: aid)
+                                            if !wasCompleted { triggerActionCompleteToast() }
                                         } else {
                                             toggleActionComplete(category: item.category)
                                         }
@@ -4679,27 +4678,32 @@ struct MainView: View {
     }
 
     func markActionComplete(actionID: String) {
-        guard !viewModel.completedActionIDs.contains(actionID) else { return }
         guard let uid = Auth.auth().currentUser?.uid else { return }
 
-        viewModel.completedActionIDs.insert(actionID)
-
+        let isCompleted = viewModel.completedActionIDs.contains(actionID)
         let today = todayString()
         let docRef = todayDocRef(uid: uid, day: today)
 
-        docRef.updateData(["completed_action_ids": FieldValue.arrayUnion([actionID])]) { err in
-            if let err = err { print("❌ mark action complete failed:", err) }
+        if isCompleted {
+            viewModel.completedActionIDs.remove(actionID)
+            docRef.updateData(["completed_action_ids": FieldValue.arrayRemove([actionID])]) { err in
+                if let err = err { print("❌ unmark action failed:", err) }
+            }
+        } else {
+            viewModel.completedActionIDs.insert(actionID)
+            docRef.updateData(["completed_action_ids": FieldValue.arrayUnion([actionID])]) { err in
+                if let err = err { print("❌ mark action complete failed:", err) }
+            }
+            let logRef = Firestore.firestore()
+                .collection("action_logs")
+                .document("\(uid)_\(actionID)")
+            logRef.setData([
+                "uid":          uid,
+                "action_id":    actionID,
+                "date":         today,
+                "completed_at": FieldValue.serverTimestamp(),
+            ], merge: true)
         }
-
-        let logRef = Firestore.firestore()
-            .collection("action_logs")
-            .document("\(uid)_\(actionID)")
-        logRef.setData([
-            "uid":       uid,
-            "action_id": actionID,
-            "date":      today,
-            "completed_at": FieldValue.serverTimestamp(),
-        ], merge: true)
     }
 
     /// ✅ 当 FastAPI 生成失败时，把本地默认推荐也写入 daily_recommendation（用于 Timeline/Calendar 回看）
