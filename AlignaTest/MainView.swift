@@ -950,10 +950,10 @@ struct MainView: View {
                     .padding(.top, 4)
 
                 Text(focusDisplayName(for: activeFocus))
-                    .font(.custom("Merriweather-Regular", size: 10))
-                    .foregroundColor(themeManager.primaryText.opacity(0.82))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
+                    .font(.custom("Merriweather-Bold", size: 14))
+                    .foregroundColor(themeManager.primaryText.opacity(0.88))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 5)
                     .background(
                         Capsule()
                             .fill(themeManager.panelFill.opacity(themeManager.isNight ? 0.38 : 0.50))
@@ -974,12 +974,13 @@ struct MainView: View {
                     withAnimation(.easeInOut) { bootPhase = .loading }
                 } label: {
                     Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(.system(size: 9, weight: .regular))
-                        .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.55))
                         .rotationEffect(.degrees(journalSpinAngle))
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 2)
+
             }
             .padding(.top, 4)
             .transition(.opacity.combined(with: .scale(scale: 0.96)))
@@ -2610,29 +2611,10 @@ struct MainView: View {
                                                 .tracking(1.6)
                                                 .textCase(.uppercase)
                                             if let f = activeFocus {
-                                                HStack(alignment: .top, spacing: 4) {
-                                                    Text(focusDisplayName(for: f))
-                                                        .font(.custom("Merriweather-Bold", size: 26))
-                                                        .foregroundColor(themeManager.primaryText)
-                                                        .multilineTextAlignment(.center)
-                                                    Button {
-                                                        withAnimation(.easeInOut(duration: 0.5)) {
-                                                            journalSpinAngle += 360
-                                                        }
-                                                        isManualRefreshFlow = true
-                                                        isFullLoadingFlow = true
-                                                        didCompletePersonalCheckIn = false
-                                                        isMantraReady = false
-                                                        withAnimation(.easeInOut) { bootPhase = .loading }
-                                                    } label: {
-                                                        Image(systemName: "arrow.triangle.2.circlepath")
-                                                            .font(.system(size: 11, weight: .regular))
-                                                            .foregroundColor(themeManager.descriptionText.opacity(0.45))
-                                                            .rotationEffect(.degrees(journalSpinAngle))
-                                                    }
-                                                    .buttonStyle(.plain)
-                                                    .padding(.top, 3)
-                                                }
+                                                Text(focusDisplayName(for: f))
+                                                    .font(.custom("Merriweather-Bold", size: 26))
+                                                    .foregroundColor(themeManager.primaryText)
+                                                    .multilineTextAlignment(.center)
                                             }
                                             Text("expanded.topic_subtitle")
                                                 .font(.custom("Merriweather-Regular", size: 12))
