@@ -1666,8 +1666,12 @@ struct LoadingView: View {
     }
 
     private var compactConditionSummary: String {
+        let isChinese = currentRecommendationLanguageCode() == "zh-Hans"
         let text = conditionText.replacingOccurrences(of: "\n", with: " · ").trimmingCharacters(in: .whitespacesAndNewlines)
-        return text == "Cloud · Wind · Rain" ? "Today's weather is taking shape." : text
+        let isPlaceholder = text.isEmpty || text == "Cloud · Wind · Rain" || text == "云 · 风 · 雨"
+        return isPlaceholder
+            ? (isChinese ? "今日天气正在感知中。" : "Today's weather is taking shape.")
+            : text
     }
 
     private var compactAirQualitySummary: String {
@@ -1922,13 +1926,21 @@ struct LoadingView: View {
             let descriptionZH = placeWeatherDescriptionZH(for: code)  // 中文，用于界面显示
             let windDir       = wdeg.map { windCompassDirection(degrees: $0) }
 
-            // Build display strings
+            // Build display strings (language-aware)
+            let isChinese = currentRecommendationLanguageCode() == "zh-Hans"
+            let displayDescription = isChinese ? descriptionZH : description
             let tempStr = temp.map { "\(Int($0.rounded()))°F" } ?? ""
             let dirText = wdeg.map { windDirectionText(for: $0) } ?? ""
-            let windText = "Wind dir \(dirText) · \(Int((wspd ?? 0).rounded())) mph"
-            let humidityText = "Humidity \(Int((rhum ?? 0).rounded()))%"
-            let pressureText = "Pressure \(Int((pres ?? 0).rounded())) hPa"
-            let text = "\(description) · \(tempStr)\n\(windText)\n\(humidityText) · \(pressureText)"
+            let windText = isChinese
+                ? "风向 \(dirText) · \(Int((wspd ?? 0).rounded())) mph"
+                : "Wind dir \(dirText) · \(Int((wspd ?? 0).rounded())) mph"
+            let humidityText = isChinese
+                ? "湿度 \(Int((rhum ?? 0).rounded()))%"
+                : "Humidity \(Int((rhum ?? 0).rounded()))%"
+            let pressureText = isChinese
+                ? "气压 \(Int((pres ?? 0).rounded())) hPa"
+                : "Pressure \(Int((pres ?? 0).rounded())) hPa"
+            let text = "\(displayDescription) · \(tempStr)\n\(windText)\n\(humidityText) · \(pressureText)"
 
             // Widget-compact summaries (only when all required values are available)
             let widgetSummary: String? = temp.flatMap { t in wspd.map { w in
@@ -1940,7 +1952,7 @@ struct LoadingView: View {
 
             DispatchQueue.main.async {
                 conditionText = text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    ? "Cloud · Wind · Rain" : text
+                    ? (isChinese ? "云 · 风 · 雨" : "Cloud · Wind · Rain") : text
                 if let ws = widgetSummary       { widgetWeatherSummary = ws }
                 if let wd = widgetDetailSummary { widgetWeatherDetailSummary = wd }
                 placeTemperature   = temp
@@ -2095,40 +2107,38 @@ struct LoadingView: View {
         temperature: Double,
         windSpeed: Double
     ) -> String {
+        let zh = currentRecommendationLanguageCode() == "zh-Hans"
+
         let tempTone: String
         switch temperature {
-        case ..<45:
-            tempTone = "Cold"
-        case ..<60:
-            tempTone = "Cool"
-        case ..<75:
-            tempTone = "Mild"
-        case ..<86:
-            tempTone = "Warm"
-        default:
-            tempTone = "Hot"
+        case ..<45: tempTone = zh ? "寒冷" : "Cold"
+        case ..<60: tempTone = zh ? "凉爽" : "Cool"
+        case ..<75: tempTone = zh ? "温和" : "Mild"
+        case ..<86: tempTone = zh ? "温暖" : "Warm"
+        default:    tempTone = zh ? "炎热" : "Hot"
         }
 
+        // Match against English weather codes (description is always the API English value)
         let lowered = description.lowercased()
         let skyTone: String
         if lowered.contains("thunder") {
-            skyTone = "stormy"
+            skyTone = zh ? "有雷暴" : "stormy"
         } else if lowered.contains("snow") {
-            skyTone = "snowy"
+            skyTone = zh ? "有雪" : "snowy"
         } else if lowered.contains("rain") || lowered.contains("drizzle") || lowered.contains("shower") {
-            skyTone = "rainy"
+            skyTone = zh ? "有雨" : "rainy"
         } else if lowered.contains("fog") || lowered.contains("mist") {
-            skyTone = "misty"
+            skyTone = zh ? "有雾" : "misty"
         } else if lowered.contains("cloud") || lowered.contains("overcast") {
-            skyTone = "cloudy"
+            skyTone = zh ? "多云" : "cloudy"
         } else {
-            skyTone = "clear"
+            skyTone = zh ? "晴朗" : "clear"
         }
 
         if windSpeed >= 18 {
-            return "\(tempTone) and windy"
+            return zh ? "\(tempTone)多风" : "\(tempTone) and windy"
         }
-        return "\(tempTone), \(skyTone)"
+        return zh ? "\(tempTone)\(skyTone)" : "\(tempTone), \(skyTone)"
     }
 
     private func compactWeatherDetailSummary(
@@ -2136,51 +2146,42 @@ struct LoadingView: View {
         humidity: Double,
         pressure: Double
     ) -> String {
+        let zh = currentRecommendationLanguageCode() == "zh-Hans"
+
         let windLabel: String
         switch windSpeed {
-        case ..<3:
-            windLabel = "Calm"
-        case ..<8:
-            windLabel = "Light"
-        case ..<15:
-            windLabel = "Breezy"
-        case ..<22:
-            windLabel = "Windy"
-        case ..<30:
-            windLabel = "Blustery"
-        default:
-            windLabel = "Gusty"
+        case ..<3:  windLabel = zh ? "静风" : "Calm"
+        case ..<8:  windLabel = zh ? "微风" : "Light"
+        case ..<15: windLabel = zh ? "清风" : "Breezy"
+        case ..<22: windLabel = zh ? "有风" : "Windy"
+        case ..<30: windLabel = zh ? "大风" : "Blustery"
+        default:    windLabel = zh ? "阵风" : "Gusty"
         }
 
         let humidityLabel: String
         switch humidity {
-        case ..<30:
-            humidityLabel = "Dry"
-        case ..<45:
-            humidityLabel = "Comfortable"
-        case ..<60:
-            humidityLabel = "Balanced"
-        case ..<75:
-            humidityLabel = "Humid"
-        default:
-            humidityLabel = "Muggy"
+        case ..<30: humidityLabel = zh ? "干燥" : "Dry"
+        case ..<45: humidityLabel = zh ? "舒适" : "Comfortable"
+        case ..<60: humidityLabel = zh ? "适中" : "Balanced"
+        case ..<75: humidityLabel = zh ? "潮湿" : "Humid"
+        default:    humidityLabel = zh ? "闷热" : "Muggy"
         }
 
         let pressureLabel: String
         switch pressure {
-        case ..<1005:
-            pressureLabel = "Heavy"
-        case ..<1019:
-            pressureLabel = "Balanced"
-        default:
-            pressureLabel = "Crisp"
+        case ..<1005: pressureLabel = zh ? "低压" : "Heavy"
+        case ..<1019: pressureLabel = zh ? "适中" : "Balanced"
+        default:      pressureLabel = zh ? "高压" : "Crisp"
         }
 
-        return "Wind \(windLabel) · Humidity \(humidityLabel) · Pressure \(pressureLabel)"
+        return zh
+            ? "风况 \(windLabel) · 湿度 \(humidityLabel) · 气压 \(pressureLabel)"
+            : "Wind \(windLabel) · Humidity \(humidityLabel) · Pressure \(pressureLabel)"
     }
 
     private func compactEnvironmentSummary(from density: String) -> String {
         let pattern = #"Water\s+(\d+)%\s+·\s+Green\s+(\d+)%\s+·\s+Built\s+(\d+)%"#
+        let zh = currentRecommendationLanguageCode() == "zh-Hans"
         guard
             let regex = try? NSRegularExpression(pattern: pattern),
             let match = regex.firstMatch(
@@ -2195,48 +2196,30 @@ struct LoadingView: View {
             let green = Int(density[greenRange]),
             let built = Int(density[builtRange])
         else {
-            return "Sensing your surroundings"
+            return zh ? "正在感知周围环境" : "Sensing your surroundings"
         }
 
         if green >= max(water, built) + 15 {
-            if water >= 25 {
-                return "Mostly green, touched by water"
-            }
-            if built >= 25 {
-                return "Mostly green with quiet urban edges"
-            }
-            return "Mostly green and softly grounded"
+            if water >= 25 { return zh ? "绿色为主，水岸相映" : "Mostly green, touched by water" }
+            if built >= 25 { return zh ? "绿色为主，都市轻触" : "Mostly green with quiet urban edges" }
+            return zh ? "绿意深厚，安静自然" : "Mostly green and softly grounded"
         }
 
         if built >= max(green, water) + 15 {
-            if green >= 20 {
-                return "Mostly built with pockets of green"
-            }
-            if water >= 20 {
-                return "Mostly built, edged by water"
-            }
-            return "Mostly built and city-held"
+            if green >= 20 { return zh ? "城市为主，绿意点缀" : "Mostly built with pockets of green" }
+            if water >= 20 { return zh ? "城市为主，水岸相邻" : "Mostly built, edged by water" }
+            return zh ? "城市地带，人工主导" : "Mostly built and city-held"
         }
 
         if water >= max(green, built) + 15 {
-            if green >= 20 {
-                return "Water-led, softened by green"
-            }
-            if built >= 20 {
-                return "Water-led with urban edges"
-            }
-            return "Mostly water and open space"
+            if green >= 20 { return zh ? "水岸主导，绿意柔化" : "Water-led, softened by green" }
+            if built >= 20 { return zh ? "水岸主导，都市相邻" : "Water-led with urban edges" }
+            return zh ? "水域辽阔，空旷开放" : "Mostly water and open space"
         }
 
-        if green >= 30 && built >= 30 {
-            return "Balanced between green and city"
-        }
-
-        if green >= 25 && water >= 20 {
-            return "Balanced between green and water"
-        }
-
-        return "Mixed surroundings, gently balanced"
+        if green >= 30 && built >= 30 { return zh ? "绿色与城市均衡交织" : "Balanced between green and city" }
+        if green >= 25 && water >= 20 { return zh ? "绿色与水域均衡相融" : "Balanced between green and water" }
+        return zh ? "多元环境，轻柔均衡" : "Mixed surroundings, gently balanced"
     }
 
     private func sampleGridCoordinates(
