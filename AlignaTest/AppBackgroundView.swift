@@ -143,10 +143,6 @@ struct DayBackgroundLayer: View {
     var body: some View {
         let width = size.width
         let height = size.height
-        let base = min(width, height)
-
-        let blob1Size = base * 0.55
-        let blob2Size = base * 0.45
 
         ZStack {
             // === Main vertical warm-light gradient ===
@@ -162,67 +158,10 @@ struct DayBackgroundLayer: View {
             )
                 .ignoresSafeArea()
 
-            // === Top sun corona — the main "日光" source ===
-            RadialGradient(
-                gradient: Gradient(stops: [
-                    .init(color: Color(hex: "#FFE08A").opacity(0.38), location: 0.0),
-                    .init(color: Color(hex: "#FFD060").opacity(0.18), location: 0.35),
-                    .init(color: .clear, location: 1.0)
-                ]),
-                center: UnitPoint(x: 0.50, y: -0.08),
-                startRadius: 0,
-                endRadius: base * 1.1
-            )
-            .ignoresSafeArea()
-
-            // === Soft global centre glow ===
-            RadialGradient(
-                gradient: Gradient(colors: [
-                    Color(hex: "#FFD97A").opacity(0.12),
-                    .clear
-                ]),
-                center: .center,
-                startRadius: 0,
-                endRadius: base
-            )
-            .ignoresSafeArea()
-
             DayGrainLayer(size: CGSize(width: width, height: height))
                 .blendMode(.softLight)
                 .opacity(0.30)
                 .allowsHitTesting(false)
-
-            // === Ambient blob — upper left warm glow ===
-            Circle()
-                .fill(
-                    RadialGradient(
-                        gradient: Gradient(colors: [
-                            Color(hex: "#FFD060").opacity(0.28),
-                            .clear
-                        ]),
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: blob1Size * 0.6
-                    )
-                )
-                .frame(width: blob1Size, height: blob1Size)
-                .position(x: width * 0.18, y: height * 0.12)
-
-            // === Ambient blob — lower right fill light ===
-            Circle()
-                .fill(
-                    RadialGradient(
-                        gradient: Gradient(colors: [
-                            Color(hex: "#FFE8A0").opacity(0.20),
-                            .clear
-                        ]),
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: blob2Size * 0.6
-                    )
-                )
-                .frame(width: blob2Size, height: blob2Size)
-                .position(x: width * 0.85, y: height * 0.72)
 
             // === Rotating gold stars ===
             DayStarField()
