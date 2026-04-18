@@ -555,15 +555,18 @@ struct DayStarField: View {
         guard w > 0, h > 0 else { return }   // 👈 extra safety
         var generated: [DayStar] = []
 
-        // warm, sun-like palette
+        // warm palette: gold (primary) + rose-orange accent (~30%)
         let fills: [Color] = [
-            Color(hex: "#FFF4B3").opacity(0.38),
-            Color(hex: "#FFD700").opacity(0.45),
-            Color(hex: "#F4D69D").opacity(0.44)
+            Color(hex: "#FFF4B3").opacity(0.38),   // pale gold
+            Color(hex: "#FFD700").opacity(0.45),   // bright gold
+            Color(hex: "#F4D69D").opacity(0.44),   // apricot gold
+            Color(hex: "#F4A882").opacity(0.36),   // rose-orange accent
+            Color(hex: "#FFDAB0").opacity(0.40)    // soft peach accent
         ]
         let strokes: [Color] = [
-            Color(hex: "#D4A574").opacity(0.45),
-            Color(hex: "#C8925F").opacity(0.42)
+            Color(hex: "#D4A574").opacity(0.45),   // warm brown
+            Color(hex: "#C8925F").opacity(0.42),   // amber
+            Color(hex: "#D4816A").opacity(0.40)    // rose-orange stroke
         ]
 
         func makeRandomStar() {
@@ -794,7 +797,7 @@ struct RainBackgroundLayer: View {
             .animation(.easeInOut(duration: 1.2), value: isDark)
             .ignoresSafeArea()
 
-            // 3. Rain streaks
+            // 3. Rain streaks (white primary + cool violet-blue accent ~30%)
             GeometryReader { geo in
                 let w = geo.size.width
                 ForEach(0..<20, id: \.self) { i in
@@ -805,12 +808,16 @@ struct RainBackgroundLayer: View {
                     let opacity = 0.045 + Double(i % 4) * 0.012
                     let speed = 1.1 + Double(i % 5) * 0.14
                     let stagger = Double(i) * (1.4 / 20.0)
+                    // every 3rd streak gets the violet-blue accent tint
+                    let streakColor: Color = (i % 3 == 2)
+                        ? Color(hex: "#9BB8D4").opacity(opacity * 1.4)
+                        : Color.white.opacity(opacity)
 
                     Path { path in
                         path.move(to: CGPoint(x: x, y: 0))
                         path.addLine(to: CGPoint(x: x + 3, y: length))
                     }
-                    .stroke(Color.white.opacity(opacity), lineWidth: 0.85)
+                    .stroke(streakColor, lineWidth: 0.85)
                     .offset(y: rainOffset + CGFloat((i * 53) % Int(geo.size.height)))
                     .animation(
                         .linear(duration: speed)
@@ -822,12 +829,21 @@ struct RainBackgroundLayer: View {
             }
             .ignoresSafeArea()
 
-            // 4. Soft light halo (diffuse light through cloud)
+            // 4. Soft light halo (primary rain-blue) + secondary violet accent
             RadialGradient(
                 colors: [Color(hex: "#7EB8D4").opacity(haloOpacity), Color.clear],
                 center: UnitPoint(x: 0.5, y: 0.08),
                 startRadius: 0,
                 endRadius: 340
+            )
+            .animation(.easeInOut(duration: 1.2), value: isDark)
+            .ignoresSafeArea()
+
+            RadialGradient(
+                colors: [Color(hex: "#7A8FBF").opacity(haloOpacity * 0.7), Color.clear],
+                center: UnitPoint(x: 0.75, y: 0.22),
+                startRadius: 0,
+                endRadius: 220
             )
             .animation(.easeInOut(duration: 1.2), value: isDark)
             .ignoresSafeArea()
@@ -891,11 +907,11 @@ struct VitalityBackgroundLayer: View {
                     .blur(radius: 50)
                     .position(x: geo.size.width * 0.78, y: geo.size.height * 0.35)
 
-                // 底部中央暖光
+                // 底部中央暖黄光（晨光穿透叶隙打在地面）
                 Ellipse()
-                    .fill(Color(hex: "#C8E8BC").opacity(0.20))
+                    .fill(Color(hex: "#EDE89A").opacity(0.22))
                     .frame(width: geo.size.width * 0.60, height: 160)
-                    .blur(radius: 45)
+                    .blur(radius: 50)
                     .position(x: geo.size.width * 0.5, y: geo.size.height * 0.82)
             }
             .ignoresSafeArea()
@@ -960,8 +976,13 @@ struct VitalityBackgroundLayer: View {
                     let sway = lean + Double(swayPhase) * (i % 2 == 0 ? 2.2 : -2.0)
                     let opacity = 0.14 + Double(i % 4) * 0.05
 
+                    // every 4th blade gets a warm yellow-green tint
+                    let bladeColor: Color = (i % 4 == 3)
+                        ? Color(hex: "#C8D44A").opacity(opacity * 0.9)
+                        : Color(hex: "#5DBB74").opacity(opacity)
+
                     VitalityGrassBlade()
-                        .fill(Color(hex: "#5DBB74").opacity(opacity))
+                        .fill(bladeColor)
                         .frame(width: 2.5 + CGFloat(i % 3) * 0.5, height: bladeH)
                         .rotationEffect(.degrees(sway), anchor: .bottom)
                         .position(x: x, y: h - bladeH / 2)
@@ -1007,8 +1028,13 @@ struct VitalityBackgroundLayer: View {
                     let speed = 5.0 + Double(i % 5) * 0.9
                     let stagger = Double(i) * (speed / 20.0)
 
+                    // every 3rd particle is warm yellow (sunlight spore)
+                    let particleColor: Color = (i % 3 == 2)
+                        ? Color(hex: "#E8D84A").opacity(opacity * 1.2)
+                        : Color(hex: "#7DD890").opacity(opacity)
+
                     Circle()
-                        .fill(Color(hex: "#7DD890").opacity(opacity))
+                        .fill(particleColor)
                         .frame(width: size, height: size)
                         .blur(radius: size * 0.5)
                         .position(x: x, y: baseY)
@@ -1264,20 +1290,18 @@ struct LoveBackgroundLayer: View {
                         .fill(
                             RadialGradient(
                                 colors: [
-                                    Color.white.opacity(0.55),
-                                    Color(hex: "#F8D0DC").opacity(0.70),
-                                    Color(hex: "#F090A8").opacity(0.50),
+                                    Color.white.opacity(0.50),
+                                    Color(hex: "#F8D0DC").opacity(0.55),
+                                    Color(hex: "#F090A8").opacity(0.22),
+                                    Color.clear
                                 ],
                                 center: UnitPoint(x: 0.35, y: 0.30),
                                 startRadius: 0,
-                                endRadius: size * 0.5
+                                endRadius: size * 0.6
                             )
                         )
-                        .overlay(
-                            Circle()
-                                .stroke(Color.white.opacity(0.55), lineWidth: 1.0)
-                        )
                         .frame(width: size, height: size)
+                        .blur(radius: size * 0.14)
                         .opacity(opacity)
                         .position(x: x + CGFloat(sway), y: baseY)
                         .offset(y: bubbleOffset - CGFloat(i % 4) * 50)
