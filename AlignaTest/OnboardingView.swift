@@ -21,6 +21,8 @@ class OnboardingViewModel: ObservableObject {
     @Published var dailyMantra: String = ""
     @Published var reasoningSummary: String = ""
     @Published var howToEngage: [String: String] = [:]
+    @Published var dailyActions: [DailyAction] = []
+    @Published var completedActionIDs: Set<String> = []
     @Published var checkInMood: String? = nil
     @Published var checkInStress: String? = nil
     @Published var checkInSleep: String? = nil

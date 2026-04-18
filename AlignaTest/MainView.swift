@@ -296,6 +296,19 @@ private func focusGroupKey(for nameKey: String) -> String {
     }
 }
 
+struct DailyAction: Codable, Identifiable, Hashable {
+    var id: String
+    var category: String
+    var documentName: String
+    var howToEngage: String
+
+    private enum CodingKeys: String, CodingKey {
+        case id, category
+        case documentName = "document_name"
+        case howToEngage  = "how_to_engage"
+    }
+}
+
 private struct FocusedMantraEntry: Codable, Hashable {
     var mantra: String
     var recommendations: [String: String]
@@ -677,30 +690,32 @@ struct MainView: View {
         }
     }
     // Fixed: Activity, Place, Career (always); 4th slot: first non-empty from Gemstone/Scent
-    private var dailyActionItems: [(category: String, anchor: String)] {
-        var result: [(String, String)] = []
+    private var dailyActionItems: [(category: String, anchor: String, actionID: String?)] {
+        // Prefer backend-provided daily actions when available
+        if !viewModel.dailyActions.isEmpty {
+            return viewModel.dailyActions.map { action in
+                let canonical = canonicalCategory(from: action.category) ?? action.category.capitalized
+                return (category: canonical, anchor: action.howToEngage, actionID: action.id)
+            }
+        }
 
-        // Helper to get text for a category
+        // Fallback: client-side selection from howToEngage + anchorCache
         func text(for cat: String) -> String {
             let engage = viewModel.howToEngage[cat]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             return !engage.isEmpty ? engage : (anchorCache[cat] ?? "")
         }
 
-        // Collect all available categories that have content
         let allCats = ["Activity", "Place", "Career", "Relationship", "Gemstone", "Scent", "Color", "Sound"]
-        var available: [(String, String)] = []
+        var available: [(String, String, String?)] = []
         for cat in allCats {
             let t = text(for: cat)
-            if !t.isEmpty { available.append((cat, t)) }
+            if !t.isEmpty { available.append((cat, t, nil)) }
         }
 
-        // Pick 3 or 4 items, seeded by today's date so the selection is stable within a day
         let daySeed = Calendar.current.ordinality(of: .day, in: .era, for: Date()) ?? 0
         var rng = SeededRandomNumberGenerator(seed: daySeed)
         let count = Int.random(in: 3...4, using: &rng)
-        result = Array(available.shuffled(using: &rng).prefix(count))
-
-        return result
+        return Array(available.shuffled(using: &rng).prefix(count))
     }
 
     init(
@@ -992,7 +1007,12 @@ struct MainView: View {
                             .padding(.bottom, 10)
 
                         ForEach(Array(dailyActionItems.enumerated()), id: \.offset) { _, item in
-                            let done = todayActionsDict[item.category] ?? false
+                            let done: Bool = {
+                                if let aid = item.actionID {
+                                    return viewModel.completedActionIDs.contains(aid)
+                                }
+                                return todayActionsDict[item.category] ?? false
+                            }()
                             let cat = RecCategory(rawValue: item.category)
 
                             // SF Symbol per category
@@ -1020,7 +1040,14 @@ struct MainView: View {
                                 HStack(spacing: 10) {
                                     // Category icon in circle (inner button toggles completion)
                                     Button {
-                                        toggleActionComplete(category: item.category)
+                                        if let aid = item.actionID {
+                                            if !viewModel.completedActionIDs.contains(aid) {
+                                                markActionComplete(actionID: aid)
+                                                triggerActionCompleteToast()
+                                            }
+                                        } else {
+                                            toggleActionComplete(category: item.category)
+                                        }
                                     } label: {
                                         ZStack {
                                             Circle()
@@ -4668,7 +4695,31 @@ struct MainView: View {
             .collection("daily_recommendation")
             .document("\(uid)_\(day)")
     }
-    
+
+    func markActionComplete(actionID: String) {
+        guard !viewModel.completedActionIDs.contains(actionID) else { return }
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+
+        viewModel.completedActionIDs.insert(actionID)
+
+        let today = todayString()
+        let docRef = todayDocRef(uid: uid, day: today)
+
+        docRef.updateData(["completed_action_ids": FieldValue.arrayUnion([actionID])]) { err in
+            if let err = err { print("❌ mark action complete failed:", err) }
+        }
+
+        let logRef = Firestore.firestore()
+            .collection("action_logs")
+            .document("\(uid)_\(actionID)")
+        logRef.setData([
+            "uid":       uid,
+            "action_id": actionID,
+            "date":      today,
+            "completed_at": FieldValue.serverTimestamp(),
+        ], merge: true)
+    }
+
     /// ✅ 当 FastAPI 生成失败时，把本地默认推荐也写入 daily_recommendation（用于 Timeline/Calendar 回看）
     /// - Note: 使用同一个 docId = uid_yyyy-MM-dd，后续如果 FastAPI 成功，会覆盖掉默认值。
     private func saveDefaultDailyRecommendationToCalendar(
@@ -5070,6 +5121,19 @@ struct MainView: View {
                         ]
                     }()
 
+                    let parsedDailyActions: [DailyAction] = {
+                        guard let rawList = parsed["daily_actions"] as? [[String: Any]] else { return [] }
+                        return rawList.compactMap { dict in
+                            guard
+                                let id  = dict["id"]            as? String, !id.isEmpty,
+                                let cat = dict["category"]       as? String,
+                                let doc = dict["document_name"] as? String,
+                                let eng = dict["how_to_engage"] as? String
+                            else { return nil }
+                            return DailyAction(id: id, category: cat, documentName: doc, howToEngage: eng)
+                        }
+                    }()
+
                     DispatchQueue.main.async {
                         // ✅ 把后端 recommendations 的 key 统一成规范写法
                         let normalized: [String: String] = recs.reduce(into: [:]) { acc, kv in
@@ -5077,7 +5141,7 @@ struct MainView: View {
                                 acc[canon] = sanitizeDocumentName(kv.value)
                             }
                         }
-                        
+
                         // ✅ NEW: normalize reasoning keys too (same canon keys as normalized)
                         let normalizedReasoning: [String: String] = rawReasoning.reduce(into: [:]) { acc, kv in
                             if let canon = canonicalCategory(from: kv.key) {
@@ -5089,6 +5153,10 @@ struct MainView: View {
                         viewModel.recommendations = normalized
                         viewModel.dailyMantra = mantra
                         viewModel.howToEngage = normalizedHowToEngage
+                        if !parsedDailyActions.isEmpty {
+                            viewModel.dailyActions = parsedDailyActions
+                            viewModel.completedActionIDs = []
+                        }
                         lastRecommendationDate = today
                         viewModel.reasoningSummary = reasoning
                         cacheCurrentDailyFocusIfPossible(day: today)
@@ -5147,6 +5215,16 @@ struct MainView: View {
                             recommendationData["how_to_engage"] = normalizedHowToEngage
                         } else {
                             recommendationData["how_to_engage"] = FieldValue.delete()
+                        }
+
+                        if !parsedDailyActions.isEmpty {
+                            let actionsPayload = parsedDailyActions.map { a -> [String: String] in
+                                ["id": a.id, "category": a.category, "document_name": a.documentName, "how_to_engage": a.howToEngage]
+                            }
+                            recommendationData["daily_actions"] = actionsPayload
+                            recommendationData["completed_action_ids"] = [String]()
+                        } else {
+                            recommendationData["daily_actions"] = FieldValue.delete()
                         }
 
                         recommendationData["reasoning_summary"] = reasoning
@@ -5409,6 +5487,8 @@ struct MainView: View {
             var fetchedReasoning = ""
             var reasoningMap: [String: String] = [:]
             var fetchedHowToEngage: [String: String] = [:]
+            var fetchedDailyActions: [DailyAction] = []
+            var fetchedCompletedActionIDs: Set<String> = []
             var fetchedMood: String? = nil
             var fetchedStress: String? = nil
             var fetchedSleep: String? = nil
@@ -5439,6 +5519,22 @@ struct MainView: View {
                     guard !resolvedKey.isEmpty else { continue }
                     fetchedHowToEngage[resolvedKey] = s
                 }
+            }
+
+            if let rawActions = data["daily_actions"] as? [[String: Any]] {
+                fetchedDailyActions = rawActions.compactMap { dict in
+                    guard
+                        let id  = dict["id"]            as? String, !id.isEmpty,
+                        let cat = dict["category"]       as? String,
+                        let doc = dict["document_name"] as? String,
+                        let eng = dict["how_to_engage"] as? String
+                    else { return nil }
+                    return DailyAction(id: id, category: cat, documentName: doc, howToEngage: eng)
+                }
+            }
+
+            if let rawCompleted = data["completed_action_ids"] as? [String] {
+                fetchedCompletedActionIDs = Set(rawCompleted)
             }
 
             if let rawCheckIn = data["check_in_inputs"] as? [String: Any] {
@@ -5497,6 +5593,10 @@ struct MainView: View {
 
                 self.viewModel.recommendations = recs
                 self.viewModel.howToEngage = fetchedHowToEngage
+                if !fetchedDailyActions.isEmpty {
+                    self.viewModel.dailyActions = fetchedDailyActions
+                    self.viewModel.completedActionIDs = fetchedCompletedActionIDs
+                }
                 self.viewModel.checkInMood = fetchedMood
                 self.viewModel.checkInStress = fetchedStress
                 self.viewModel.checkInSleep = fetchedSleep
