@@ -1487,22 +1487,19 @@ private struct GradientHairline: View {
 }
 
 struct GradientButtonStyle: ButtonStyle {
+    let fillColor: Color
+    let textColor: Color
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 17, weight: .semibold))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
             .background(
-                LinearGradient(
-                    colors: [
-                        Color(hex: "#E8D3B0"),
-                        Color(hex: "#D4A574")
-                    ],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                )
-                .opacity(configuration.isPressed ? 0.8 : 1)
+                fillColor
+                    .opacity(configuration.isPressed ? 0.7 : 0.88)
             )
-            .foregroundColor(.black.opacity(0.9))
+            .foregroundColor(textColor)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .shadow(color: .black.opacity(0.15), radius: 14, x: 0, y: 8)
             .padding(.horizontal, 2)
@@ -1614,7 +1611,7 @@ struct GemLinkSheet: View {
                                     Text("detail.shop_bracelet")
                                 }
                             }
-                            .buttonStyle(GradientButtonStyle())
+                            .buttonStyle(GradientButtonStyle(fillColor: themeManager.accent, textColor: themeManager.buttonForegroundOnPrimary))
                         }
 
                         if let s = stoneURLString, let url = URL(string: s) {
@@ -1922,7 +1919,7 @@ struct ScentLinkSheet: View {
                                 Text("detail.shop_essential_oil")
                             }
                         }
-                        .buttonStyle(GradientButtonStyle())
+                        .buttonStyle(GradientButtonStyle(fillColor: themeManager.accent, textColor: themeManager.buttonForegroundOnPrimary))
                     }
 
                     if let s = candleURLString, let url = URL(string: s) {

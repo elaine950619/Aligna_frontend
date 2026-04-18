@@ -8903,6 +8903,54 @@
         }
       }
     },
+    "profile.theme_rain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rain"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "细雨"
+          }
+        }
+      }
+    },
+    "profile.theme_vitality" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vitality"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生命力"
+          }
+        }
+      }
+    },
+    "profile.theme_love" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Love"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "爱意"
+          }
+        }
+      }
+    },
     "profile.theme_dawn" : {
       "localizations" : {
         "en" : {

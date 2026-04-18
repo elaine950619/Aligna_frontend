@@ -670,8 +670,26 @@ struct AppBackgroundView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
+                // ===== 生命力主题背景 =====
+                if themeManager.isVitality {
+                    VitalityBackgroundLayer()
+                        .ignoresSafeArea()
+                }
+
+                // ===== 爱意主题背景 =====
+                if themeManager.isLove {
+                    LoveBackgroundLayer()
+                        .ignoresSafeArea()
+                }
+
+                // ===== 雨天背景 =====
+                if themeManager.isRain {
+                    RainBackgroundLayer(isDark: themeManager.rainIsDark)
+                        .ignoresSafeArea()
+                }
+
                 // ===== 背景底色/渐变 =====
-                if effectiveIsNight {
+                if effectiveIsNight && !themeManager.isRain && !themeManager.isVitality && !themeManager.isLove {
                     LinearGradient(
                         gradient: Gradient(stops: [
                             .init(color: Color(hex: "#151424"), location: 0.00),
@@ -692,12 +710,12 @@ struct AppBackgroundView: View {
                         endRadius: geo.size.height * 0.6
                     )
                     .ignoresSafeArea()
-                } else {
+                } else if !effectiveIsNight && !themeManager.isVitality && !themeManager.isLove {
                     Color(hex: "#E6D9BD").ignoresSafeArea()
                 }
 
                 // ===== 日间贴图 =====
-                if !effectiveIsNight {
+                if !effectiveIsNight && !themeManager.isVitality && !themeManager.isLove {
                     let fullSize = CGSize(
                         width: geo.size.width + geo.safeAreaInsets.leading + geo.safeAreaInsets.trailing,
                         height: geo.size.height + geo.safeAreaInsets.top + geo.safeAreaInsets.bottom
@@ -709,7 +727,7 @@ struct AppBackgroundView: View {
                 }
 
                 // ===== 夜间星空 + 同心环 =====
-                if effectiveIsNight {
+                if effectiveIsNight && !themeManager.isRain && !themeManager.isVitality && !themeManager.isLove {
                     Color.clear
                         .task(id: geo.size) {
                             starManager.generateStars(in: geo.size)
@@ -754,6 +772,682 @@ struct AppBackgroundView: View {
             .onChange(of: colorScheme) { _, new in themeManager.setSystemColorScheme(new) }
             .onChange(of: scenePhase) { _, new in if new == .active { themeManager.appBecameActive() } }
         }
+    }
+}
+
+// MARK: - Rain Background
+
+struct RainBackgroundLayer: View {
+    /// true = 夜间雨（更深暗）；false = 日间雨（蓝灰明亮）
+    var isDark: Bool = false
+
+    @State private var rainOffset: CGFloat = -120
+
+    // 日间：蓝灰色调偏亮
+    private let dayGradient: [Gradient.Stop] = [
+        .init(color: Color(hex: "#1E2E42"), location: 0.0),
+        .init(color: Color(hex: "#263A52"), location: 0.5),
+        .init(color: Color(hex: "#2E4660"), location: 1.0),
+    ]
+    // 夜间：墨蓝更深
+    private let nightGradient: [Gradient.Stop] = [
+        .init(color: Color(hex: "#0E1820"), location: 0.0),
+        .init(color: Color(hex: "#131F2E"), location: 0.5),
+        .init(color: Color(hex: "#192840"), location: 1.0),
+    ]
+
+    private var gradientStops: [Gradient.Stop] { isDark ? nightGradient : dayGradient }
+    private var cloudOpacity: Double { isDark ? 0.14 : 0.20 }
+    private var haloOpacity: Double  { isDark ? 0.04 : 0.08 }
+
+    var body: some View {
+        ZStack {
+            // 1. Base gradient (switches day ↔ night)
+            LinearGradient(
+                stops: gradientStops,
+                startPoint: .top, endPoint: .bottom
+            )
+            .animation(.easeInOut(duration: 1.2), value: isDark)
+            .ignoresSafeArea()
+
+            // 2. Cloud fog blobs
+            GeometryReader { geo in
+                Ellipse()
+                    .fill(Color(hex: "#3A5470").opacity(cloudOpacity))
+                    .frame(width: geo.size.width * 0.85, height: 180)
+                    .blur(radius: 44)
+                    .offset(x: -geo.size.width * 0.05, y: geo.size.height * 0.02)
+
+                Ellipse()
+                    .fill(Color(hex: "#3A5470").opacity(cloudOpacity * 0.65))
+                    .frame(width: geo.size.width * 0.65, height: 130)
+                    .blur(radius: 36)
+                    .offset(x: geo.size.width * 0.25, y: geo.size.height * 0.10)
+            }
+            .animation(.easeInOut(duration: 1.2), value: isDark)
+            .ignoresSafeArea()
+
+            // 3. Rain streaks
+            GeometryReader { geo in
+                let w = geo.size.width
+                ForEach(0..<20, id: \.self) { i in
+                    let xBase = (CGFloat(i) / 20.0) * w
+                    let xJitter = CGFloat((i * 37 + 11) % 28) - 14.0
+                    let x = xBase + xJitter
+                    let length = CGFloat(14 + (i % 6) * 3)
+                    let opacity = 0.045 + Double(i % 4) * 0.012
+                    let speed = 1.1 + Double(i % 5) * 0.14
+                    let stagger = Double(i) * (1.4 / 20.0)
+
+                    Path { path in
+                        path.move(to: CGPoint(x: x, y: 0))
+                        path.addLine(to: CGPoint(x: x + 3, y: length))
+                    }
+                    .stroke(Color.white.opacity(opacity), lineWidth: 0.85)
+                    .offset(y: rainOffset + CGFloat((i * 53) % Int(geo.size.height)))
+                    .animation(
+                        .linear(duration: speed)
+                        .repeatForever(autoreverses: false)
+                        .delay(stagger),
+                        value: rainOffset
+                    )
+                }
+            }
+            .ignoresSafeArea()
+
+            // 4. Soft light halo (diffuse light through cloud)
+            RadialGradient(
+                colors: [Color(hex: "#7EB8D4").opacity(haloOpacity), Color.clear],
+                center: UnitPoint(x: 0.5, y: 0.08),
+                startRadius: 0,
+                endRadius: 340
+            )
+            .animation(.easeInOut(duration: 1.2), value: isDark)
+            .ignoresSafeArea()
+
+            // 5. Bottom water shimmer
+            VStack(spacing: 0) {
+                Spacer()
+                ForEach(0..<4, id: \.self) { i in
+                    Capsule()
+                        .fill(Color.white.opacity(max(0, 0.028 - Double(i) * 0.006)))
+                        .frame(height: 1)
+                        .padding(.horizontal, CGFloat(i) * 22)
+                        .padding(.bottom, CGFloat(i) * 12 + 55)
+                }
+            }
+            .ignoresSafeArea()
+        }
+        .onAppear {
+            withAnimation(
+                .linear(duration: 1.5)
+                .repeatForever(autoreverses: false)
+            ) {
+                rainOffset = 900
+            }
+        }
+    }
+}
+
+// MARK: - Vitality Background
+
+struct VitalityBackgroundLayer: View {
+    @State private var particleOffset: CGFloat = 0
+    @State private var swayPhase: CGFloat = 0
+
+    var body: some View {
+        ZStack {
+            // 1. 清晨薄雾底色（浅雾绿 → 冷白绿）
+            LinearGradient(
+                stops: [
+                    .init(color: Color(hex: "#D8EDD8"), location: 0.0),
+                    .init(color: Color(hex: "#E8F4E4"), location: 0.45),
+                    .init(color: Color(hex: "#EEF7EA"), location: 1.0),
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+            .ignoresSafeArea()
+
+            // 2. 雾感光斑（大面积柔光晕染）
+            GeometryReader { geo in
+                // 顶部左侧大光斑
+                Ellipse()
+                    .fill(Color(hex: "#A8D8A8").opacity(0.22))
+                    .frame(width: geo.size.width * 0.75, height: 240)
+                    .blur(radius: 60)
+                    .position(x: geo.size.width * 0.3, y: 80)
+
+                // 右侧中部光斑
+                Ellipse()
+                    .fill(Color(hex: "#B8E0B0").opacity(0.16))
+                    .frame(width: geo.size.width * 0.55, height: 200)
+                    .blur(radius: 50)
+                    .position(x: geo.size.width * 0.78, y: geo.size.height * 0.35)
+
+                // 底部中央暖光
+                Ellipse()
+                    .fill(Color(hex: "#C8E8BC").opacity(0.20))
+                    .frame(width: geo.size.width * 0.60, height: 160)
+                    .blur(radius: 45)
+                    .position(x: geo.size.width * 0.5, y: geo.size.height * 0.82)
+            }
+            .ignoresSafeArea()
+
+            // 3. 底部大叶片（椭圆芭蕉叶剪影，浅绿点缀）
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h = geo.size.height
+
+                // 左侧主叶（偏大，低透明度）
+                VitalityLeafShape(curve: 0.22)
+                    .fill(Color(hex: "#6BBD80").opacity(0.18))
+                    .frame(width: 180, height: 260)
+                    .rotationEffect(.degrees(-22 + Double(swayPhase) * 1.0), anchor: .bottom)
+                    .position(x: w * 0.10, y: h - 50)
+
+                // 左侧后叶（更淡、更小）
+                VitalityLeafShape(curve: 0.18)
+                    .fill(Color(hex: "#4DA868").opacity(0.12))
+                    .frame(width: 130, height: 190)
+                    .rotationEffect(.degrees(-36 + Double(swayPhase) * 0.7), anchor: .bottom)
+                    .position(x: w * 0.04, y: h - 30)
+
+                // 右侧主叶
+                VitalityLeafShape(curve: -0.22)
+                    .fill(Color(hex: "#6BBD80").opacity(0.16))
+                    .frame(width: 170, height: 240)
+                    .rotationEffect(.degrees(24 - Double(swayPhase) * 0.9), anchor: .bottom)
+                    .position(x: w * 0.90, y: h - 40)
+
+                // 右侧后叶
+                VitalityLeafShape(curve: -0.18)
+                    .fill(Color(hex: "#4DA868").opacity(0.11))
+                    .frame(width: 120, height: 180)
+                    .rotationEffect(.degrees(38 - Double(swayPhase) * 0.6), anchor: .bottom)
+                    .position(x: w * 0.97, y: h - 20)
+
+                // 中央底部小叶（作为地面点缀）
+                VitalityLeafShape(curve: 0.10)
+                    .fill(Color(hex: "#82C98A").opacity(0.14))
+                    .frame(width: 100, height: 150)
+                    .rotationEffect(.degrees(-10 + Double(swayPhase) * 1.4), anchor: .bottom)
+                    .position(x: w * 0.38, y: h - 5)
+
+                VitalityLeafShape(curve: -0.10)
+                    .fill(Color(hex: "#82C98A").opacity(0.13))
+                    .frame(width: 95, height: 140)
+                    .rotationEffect(.degrees(14 - Double(swayPhase) * 1.2), anchor: .bottom)
+                    .position(x: w * 0.62, y: h)
+            }
+            .ignoresSafeArea()
+
+            // 4. 草叶层（纤细，贴近底边）
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h = geo.size.height
+                ForEach(0..<18, id: \.self) { i in
+                    let xFrac = CGFloat((i * 53 + 9) % 101) / 101.0
+                    let x = xFrac * w
+                    let bladeH = CGFloat(35 + (i % 5) * 14)
+                    let lean = Double((i % 7) - 3) * 5.0
+                    let sway = lean + Double(swayPhase) * (i % 2 == 0 ? 2.2 : -2.0)
+                    let opacity = 0.14 + Double(i % 4) * 0.05
+
+                    VitalityGrassBlade()
+                        .fill(Color(hex: "#5DBB74").opacity(opacity))
+                        .frame(width: 2.5 + CGFloat(i % 3) * 0.5, height: bladeH)
+                        .rotationEffect(.degrees(sway), anchor: .bottom)
+                        .position(x: x, y: h - bladeH / 2)
+                }
+            }
+            .ignoresSafeArea()
+
+            // 5. 蕨叶侧影（左右边缘，极淡）
+            GeometryReader { geo in
+                let h = geo.size.height
+
+                VitalityFernShape()
+                    .stroke(Color(hex: "#5DBB74").opacity(0.18), lineWidth: 1.2)
+                    .frame(width: 72, height: 110)
+                    .rotationEffect(.degrees(-6 + Double(swayPhase) * 0.7), anchor: .bottom)
+                    .position(x: 28, y: h * 0.70)
+
+                VitalityFernShape()
+                    .stroke(Color(hex: "#4DA868").opacity(0.13), lineWidth: 1.0)
+                    .frame(width: 54, height: 82)
+                    .rotationEffect(.degrees(-18 + Double(swayPhase) * 0.5), anchor: .bottom)
+                    .position(x: 14, y: h * 0.58)
+
+                VitalityFernShape()
+                    .stroke(Color(hex: "#5DBB74").opacity(0.16), lineWidth: 1.2)
+                    .frame(width: 72, height: 100)
+                    .rotationEffect(.degrees(6 - Double(swayPhase) * 0.6), anchor: .bottom)
+                    .scaleEffect(x: -1, y: 1)
+                    .position(x: geo.size.width - 28, y: h * 0.66)
+            }
+            .ignoresSafeArea()
+
+            // 6. 飘浮光粒（嫩芽孢子，非常淡）
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h = geo.size.height
+                ForEach(0..<20, id: \.self) { i in
+                    let xFrac = CGFloat((i * 31 + 7) % 89) / 89.0
+                    let x = xFrac * w
+                    let baseY = h - CGFloat((i * 53 + 13) % Int(h))
+                    let size = CGFloat(2 + (i % 3))
+                    let opacity = 0.06 + Double(i % 4) * 0.02
+                    let speed = 5.0 + Double(i % 5) * 0.9
+                    let stagger = Double(i) * (speed / 20.0)
+
+                    Circle()
+                        .fill(Color(hex: "#7DD890").opacity(opacity))
+                        .frame(width: size, height: size)
+                        .blur(radius: size * 0.5)
+                        .position(x: x, y: baseY)
+                        .offset(y: particleOffset - CGFloat(i % 4) * 45)
+                        .animation(
+                            .linear(duration: speed)
+                            .repeatForever(autoreverses: false)
+                            .delay(stagger),
+                            value: particleOffset
+                        )
+                }
+            }
+            .ignoresSafeArea()
+
+            // 7. 顶部雾白渐变（营造清晨晨雾感）
+            LinearGradient(
+                colors: [Color.white.opacity(0.28), Color.clear],
+                startPoint: .top,
+                endPoint: UnitPoint(x: 0.5, y: 0.30)
+            )
+            .ignoresSafeArea()
+        }
+        .onAppear {
+            withAnimation(
+                .linear(duration: 6.0)
+                .repeatForever(autoreverses: false)
+            ) {
+                particleOffset = -700
+            }
+            withAnimation(
+                .easeInOut(duration: 4.0)
+                .repeatForever(autoreverses: true)
+            ) {
+                swayPhase = 1.0
+            }
+        }
+    }
+}
+
+/// 单片椭圆叶轮廓（芭蕉/龟背竹风格，curve 控制叶身弯曲方向：正数向左弯，负数向右弯）
+private struct VitalityLeafShape: Shape {
+    /// 控制叶身偏转，范围约 -0.35 ~ 0.35
+    var curve: CGFloat = 0.20
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let w = rect.width
+        let h = rect.height
+
+        // 叶柄底部中心
+        let base = CGPoint(x: w * 0.5, y: h)
+        // 叶尖（顶部，沿 curve 方向偏移）
+        let tip = CGPoint(x: w * (0.5 + curve * 0.5), y: 0)
+
+        // 叶身中轴线上的控制锚点（叶最宽处约在 55% 高度）
+        let midX = w * (0.5 + curve * 0.35)
+        let midY = h * 0.45
+
+        // 左侧叶缘：从 base → 向左鼓出 → tip
+        let lOut = CGPoint(x: midX - w * 0.48, y: midY)
+        path.move(to: base)
+        path.addCurve(
+            to: tip,
+            control1: CGPoint(x: lOut.x, y: h * 0.72),
+            control2: CGPoint(x: lOut.x + w * 0.06, y: midY * 0.45)
+        )
+
+        // 右侧叶缘：从 tip → 向右收回 → base
+        let rOut = CGPoint(x: midX + w * 0.28, y: midY)
+        path.addCurve(
+            to: base,
+            control1: CGPoint(x: rOut.x, y: midY * 0.55),
+            control2: CGPoint(x: rOut.x - w * 0.04, y: h * 0.68)
+        )
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// 草叶形状（尖细的草茎）
+private struct VitalityGrassBlade: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let w = rect.width
+        let h = rect.height
+
+        path.move(to: CGPoint(x: w * 0.5, y: h))
+        path.addCurve(
+            to: CGPoint(x: w * 0.4, y: 0),
+            control1: CGPoint(x: w * 0.2, y: h * 0.7),
+            control2: CGPoint(x: w * 0.35, y: h * 0.3)
+        )
+        path.addLine(to: CGPoint(x: w * 0.6, y: h * 0.05))
+        path.addCurve(
+            to: CGPoint(x: w * 0.5, y: h),
+            control1: CGPoint(x: w * 0.7, y: h * 0.35),
+            control2: CGPoint(x: w * 0.85, y: h * 0.65)
+        )
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// 蕨叶形状（多羽状小叶沿主茎排列）
+private struct VitalityFernShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let w = rect.width
+        let h = rect.height
+
+        // 主茎
+        path.move(to: CGPoint(x: w * 0.5, y: h))
+        path.addLine(to: CGPoint(x: w * 0.5, y: 0))
+
+        // 沿主茎排列的 5 对小羽叶
+        let leafCount = 5
+        for i in 0..<leafCount {
+            let t = CGFloat(i + 1) / CGFloat(leafCount + 1)
+            let stemY = h * (1 - t)
+            let leafLen = w * 0.42 * (1 - t * 0.4)
+            let stemX = w * 0.5
+
+            // 左侧小叶
+            path.move(to: CGPoint(x: stemX, y: stemY))
+            path.addCurve(
+                to: CGPoint(x: stemX - leafLen, y: stemY - leafLen * 0.3),
+                control1: CGPoint(x: stemX - leafLen * 0.4, y: stemY - leafLen * 0.05),
+                control2: CGPoint(x: stemX - leafLen * 0.8, y: stemY - leafLen * 0.1)
+            )
+            path.addCurve(
+                to: CGPoint(x: stemX, y: stemY),
+                control1: CGPoint(x: stemX - leafLen * 0.7, y: stemY + leafLen * 0.1),
+                control2: CGPoint(x: stemX - leafLen * 0.3, y: stemY + leafLen * 0.05)
+            )
+
+            // 右侧小叶
+            path.move(to: CGPoint(x: stemX, y: stemY))
+            path.addCurve(
+                to: CGPoint(x: stemX + leafLen, y: stemY - leafLen * 0.3),
+                control1: CGPoint(x: stemX + leafLen * 0.4, y: stemY - leafLen * 0.05),
+                control2: CGPoint(x: stemX + leafLen * 0.8, y: stemY - leafLen * 0.1)
+            )
+            path.addCurve(
+                to: CGPoint(x: stemX, y: stemY),
+                control1: CGPoint(x: stemX + leafLen * 0.7, y: stemY + leafLen * 0.1),
+                control2: CGPoint(x: stemX + leafLen * 0.3, y: stemY + leafLen * 0.05)
+            )
+        }
+        return path
+    }
+}
+
+// MARK: - 爱意主题背景
+
+struct LoveBackgroundLayer: View {
+    @State private var bubbleOffset: CGFloat = 0
+    @State private var swayPhase: CGFloat = 0
+    @State private var petalOffset: CGFloat = 0
+
+    var body: some View {
+        ZStack {
+            // 1. 底层渐变（浅玫瑰白 → 粉白雾气）
+            LinearGradient(
+                stops: [
+                    .init(color: Color(hex: "#FDE8F0"), location: 0.0),
+                    .init(color: Color(hex: "#FAF0F4"), location: 0.48),
+                    .init(color: Color(hex: "#F7ECF1"), location: 1.0),
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+            .ignoresSafeArea()
+
+            // 2. 晕染光斑（大面积柔光晕）
+            GeometryReader { geo in
+                Ellipse()
+                    .fill(Color(hex: "#FABABC").opacity(0.22))
+                    .frame(width: geo.size.width * 0.72, height: 220)
+                    .blur(radius: 55)
+                    .position(x: geo.size.width * 0.28, y: 90)
+
+                Ellipse()
+                    .fill(Color(hex: "#F8C0CC").opacity(0.16))
+                    .frame(width: geo.size.width * 0.52, height: 190)
+                    .blur(radius: 45)
+                    .position(x: geo.size.width * 0.80, y: geo.size.height * 0.38)
+
+                Ellipse()
+                    .fill(Color(hex: "#FABCC8").opacity(0.19))
+                    .frame(width: geo.size.width * 0.60, height: 170)
+                    .blur(radius: 40)
+                    .position(x: geo.size.width * 0.48, y: geo.size.height * 0.80)
+            }
+            .ignoresSafeArea()
+
+            // 3. 底部花瓣剪影
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h = geo.size.height
+
+                LovePetalShape(curve: 0.28)
+                    .fill(Color(hex: "#F0B8C8").opacity(0.20))
+                    .frame(width: 110, height: 170)
+                    .rotationEffect(.degrees(-20 + Double(swayPhase) * 0.8), anchor: .bottom)
+                    .position(x: w * 0.10, y: h - 50)
+
+                LovePetalShape(curve: 0.20)
+                    .fill(Color(hex: "#F4C4D0").opacity(0.15))
+                    .frame(width: 80, height: 130)
+                    .rotationEffect(.degrees(-32 + Double(swayPhase) * 0.6), anchor: .bottom)
+                    .position(x: w * 0.04, y: h - 30)
+
+                LovePetalShape(curve: -0.28)
+                    .fill(Color(hex: "#F0B8C8").opacity(0.18))
+                    .frame(width: 105, height: 160)
+                    .rotationEffect(.degrees(22 - Double(swayPhase) * 0.7), anchor: .bottom)
+                    .position(x: w * 0.90, y: h - 45)
+
+                LovePetalShape(curve: -0.20)
+                    .fill(Color(hex: "#F4C4D0").opacity(0.14))
+                    .frame(width: 75, height: 120)
+                    .rotationEffect(.degrees(34 - Double(swayPhase) * 0.5), anchor: .bottom)
+                    .position(x: w * 0.97, y: h - 25)
+
+                LovePetalShape(curve: 0.12)
+                    .fill(Color(hex: "#EFB4C4").opacity(0.16))
+                    .frame(width: 70, height: 110)
+                    .rotationEffect(.degrees(-10 + Double(swayPhase) * 1.0), anchor: .bottom)
+                    .position(x: w * 0.40, y: h - 5)
+
+                LovePetalShape(curve: -0.12)
+                    .fill(Color(hex: "#EFB4C4").opacity(0.15))
+                    .frame(width: 65, height: 100)
+                    .rotationEffect(.degrees(12 - Double(swayPhase) * 0.9), anchor: .bottom)
+                    .position(x: w * 0.62, y: h)
+            }
+            .ignoresSafeArea()
+
+            // 4. 漂浮粉色泡泡（核心动效）
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h = geo.size.height
+                ForEach(0..<6, id: \.self) { i in
+                    let xFrac = CGFloat((i * 47 + 9) % 97) / 97.0
+                    let x = xFrac * w
+                    let baseY = h - CGFloat((i * 67 + 21) % Int(h * 0.7))
+                    let size = CGFloat(16 + (i % 5) * 8)
+                    let opacity = 0.38 + Double(i % 4) * 0.08
+                    let speed = 14.0 + Double(i % 5) * 1.6
+                    let stagger = Double(i) * (speed / 14.0)
+                    let sway = Double(swayPhase) * (i % 2 == 0 ? 8.0 : -7.0)
+
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    Color.white.opacity(0.55),
+                                    Color(hex: "#F8D0DC").opacity(0.70),
+                                    Color(hex: "#F090A8").opacity(0.50),
+                                ],
+                                center: UnitPoint(x: 0.35, y: 0.30),
+                                startRadius: 0,
+                                endRadius: size * 0.5
+                            )
+                        )
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white.opacity(0.55), lineWidth: 1.0)
+                        )
+                        .frame(width: size, height: size)
+                        .opacity(opacity)
+                        .position(x: x + CGFloat(sway), y: baseY)
+                        .offset(y: bubbleOffset - CGFloat(i % 4) * 50)
+                        .animation(
+                            .linear(duration: speed)
+                            .repeatForever(autoreverses: false)
+                            .delay(stagger),
+                            value: bubbleOffset
+                        )
+                }
+            }
+            .ignoresSafeArea()
+
+            // 6. 飘落花粉粒子（缓慢下落）
+            GeometryReader { geo in
+                let w = geo.size.width
+                ForEach(0..<12, id: \.self) { i in
+                    let xFrac = CGFloat((i * 29 + 13) % 89) / 89.0
+                    let x = xFrac * w
+                    let size = CGFloat(2 + (i % 3))
+                    let opacity = 0.05 + Double(i % 3) * 0.025
+                    let speed = 8.0 + Double(i % 4) * 1.0
+                    let stagger = Double(i) * (speed / 12.0)
+
+                    Circle()
+                        .fill(Color(hex: "#F8C0CC").opacity(opacity))
+                        .frame(width: size, height: size)
+                        .position(x: x, y: -20 + petalOffset + CGFloat(i % 5) * 60)
+                        .animation(
+                            .linear(duration: speed)
+                            .repeatForever(autoreverses: false)
+                            .delay(stagger),
+                            value: petalOffset
+                        )
+                }
+            }
+            .ignoresSafeArea()
+
+            // 7. 顶部白雾渐变
+            LinearGradient(
+                colors: [Color.white.opacity(0.35), Color.clear],
+                startPoint: .top,
+                endPoint: UnitPoint(x: 0.5, y: 0.28)
+            )
+            .ignoresSafeArea()
+        }
+        .onAppear {
+            withAnimation(
+                .linear(duration: 17.0)
+                .repeatForever(autoreverses: false)
+            ) {
+                bubbleOffset = -800
+            }
+            withAnimation(
+                .easeInOut(duration: 4.0)
+                .repeatForever(autoreverses: true)
+            ) {
+                swayPhase = 1.0
+            }
+            withAnimation(
+                .linear(duration: 9.0)
+                .repeatForever(autoreverses: false)
+            ) {
+                petalOffset = 900
+            }
+        }
+    }
+}
+
+/// 爱心形状（标准心形，由两段贝塞尔曲线构成）
+private struct LoveHeartShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let w = rect.width
+        let h = rect.height
+
+        // 底部尖端
+        let tip    = CGPoint(x: w * 0.50, y: h)
+        // 顶部中央凹点
+        let notch  = CGPoint(x: w * 0.50, y: h * 0.28)
+        // 左鼓包顶
+        let lTop   = CGPoint(x: w * 0.22, y: 0)
+        // 右鼓包顶
+        let rTop   = CGPoint(x: w * 0.78, y: 0)
+
+        path.move(to: tip)
+        // 左半心
+        path.addCurve(to: lTop,
+            control1: CGPoint(x: w * 0.00, y: h * 0.82),
+            control2: CGPoint(x: w * 0.00, y: h * 0.10))
+        path.addCurve(to: notch,
+            control1: CGPoint(x: w * 0.44, y: h * 0.00),
+            control2: CGPoint(x: w * 0.50, y: h * 0.12))
+        // 右半心
+        path.addCurve(to: rTop,
+            control1: CGPoint(x: w * 0.50, y: h * 0.12),
+            control2: CGPoint(x: w * 0.56, y: h * 0.00))
+        path.addCurve(to: tip,
+            control1: CGPoint(x: w * 1.00, y: h * 0.10),
+            control2: CGPoint(x: w * 1.00, y: h * 0.82))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// 花瓣形状（非对称椭圆叶形，curve 控制偏转方向）
+private struct LovePetalShape: Shape {
+    var curve: CGFloat = 0.22
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let w = rect.width
+        let h = rect.height
+
+        let base = CGPoint(x: w * 0.5, y: h)
+        let tip  = CGPoint(x: w * (0.5 + curve * 0.45), y: 0)
+        let midX = w * (0.5 + curve * 0.30)
+        let midY = h * 0.42
+
+        // 左侧叶缘（外鼓）
+        let lOut = CGPoint(x: midX - w * 0.52, y: midY)
+        path.move(to: base)
+        path.addCurve(
+            to: tip,
+            control1: CGPoint(x: lOut.x, y: h * 0.70),
+            control2: CGPoint(x: lOut.x + w * 0.08, y: midY * 0.40)
+        )
+
+        // 右侧叶缘（内收）
+        let rOut = CGPoint(x: midX + w * 0.32, y: midY)
+        path.addCurve(
+            to: base,
+            control1: CGPoint(x: rOut.x, y: midY * 0.50),
+            control2: CGPoint(x: rOut.x - w * 0.05, y: h * 0.66)
+        )
+        path.closeSubpath()
+        return path
     }
 }
 

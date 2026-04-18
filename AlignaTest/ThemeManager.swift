@@ -5,9 +5,9 @@ import CoreLocation
 @MainActor
 final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     
-    // 保留四个选项，.system 与 .autoClock 都按时段
+    // 保留四个选项，.system 与 .autoClock 都按时段；rain/vitality/love 为独立主题
     enum ThemeOption: String, CaseIterable {
-        case system, day, night, autoClock
+        case system, day, night, autoClock, rain, vitality, love
     }
     
     // 用于读取 AccountDetailView 用 @AppStorage("themePreference") 存的值
@@ -15,65 +15,105 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
     
     // === 对外暴露（与原工程保持一致）===
     @Published private(set) var isNight: Bool = false
+    @Published private(set) var isRain: Bool = false
+    /// 雨天主题下是否处于夜间时段（用于背景深浅切换）
+    @Published private(set) var rainIsDark: Bool = false
+    @Published private(set) var isVitality: Bool = false
+    @Published private(set) var isLove: Bool = false
     
     // MARK: – 文字与强调色（按你提供的映射）
-    // 全局前景（如通用标题/按钮文字）：夜 #E6D9BD；日 #8F643E
+    // 全局前景（如通用标题/按钮文字）：夜 #E6D9BD；日 #8F643E；雨 #C8DCE8；绿 #2D5A3A；粉 #C05070
     var foregroundColor: Color {
-        isNight ? Color(hex: "#E6D9BD") : Color(hex: "#8F643E")
+        if isLove     { return Color(hex: "#C05070") }
+        if isVitality { return Color(hex: "#2D5A3A") }
+        if isRain     { return Color(hex: "#C8DCE8") }
+        return isNight ? Color(hex: "#E6D9BD") : Color(hex: "#8F643E")
     }
     
-    // 图标/高亮：夜 #D4A574；日 #8F643E
+    // 图标/高亮：夜 #D4A574；日 #8F643E；雨 #7EB8D4；绿 #3A9457；粉 #E8607A
     var accent: Color {
-        isNight ? Color(hex: "#D4A574") : Color(hex: "#8F643E")
+        if isLove     { return Color(hex: "#E8607A") }
+        if isVitality { return Color(hex: "#3A9457") }
+        if isRain     { return Color(hex: "#7EB8D4") }
+        return isNight ? Color(hex: "#D4A574") : Color(hex: "#8F643E")
     }
     
-    // 大型水印文字：夜 #4A5A9E(40%)；日 secondary
+    // 大型水印文字：夜 #4A5A9E(40%)；日 secondary；雨 #4A6B8A(50%)；绿 #3A7A4E(35%)；粉 #C05070(25%)
     var watermark: Color {
-        isNight ? Color(hex: "#4A5A9E").opacity(0.4)
-                : Color(hex: "#8B4513").opacity(0.6)
+        if isLove     { return Color(hex: "#C05070").opacity(0.25) }
+        if isVitality { return Color(hex: "#3A7A4E").opacity(0.35) }
+        if isRain     { return Color(hex: "#4A6B8A").opacity(0.50) }
+        return isNight ? Color(hex: "#4A5A9E").opacity(0.4)
+                       : Color(hex: "#8B4513").opacity(0.6)
     }
     
-    // 主标题（例如 “Green Sanctuary”）
-    // 夜 #E6D7C3；日 #8F643E
+    // 主标题：夜 #E6D7C3；日 #8B4513；雨 #D6E4F0；绿 #1E4A2C；粉 #7A2A45
     var primaryText: Color {
-        isNight ? Color(hex: "#E6D7C3") : Color(hex: "#8B4513")
+        if isLove     { return Color(hex: "#7A2A45") }
+        if isVitality { return Color(hex: "#1E4A2C") }
+        if isRain     { return Color(hex: "#D6E4F0") }
+        return isNight ? Color(hex: "#E6D7C3") : Color(hex: "#8B4513")
     }
     
-    // 副标题/简短描述：夜 #B8C5D6；日 secondary
+    // 副标题：夜 #B8C5D6；日 secondary；雨 #8FA8C0；绿 #4A7C5A；粉 #A0526A
     var descriptionText: Color {
-        isNight ? Color(hex: "#B8C5D6") : Color(hex: "#8B4513")
+        if isLove     { return Color(hex: "#A0526A") }
+        if isVitality { return Color(hex: "#4A7C5A") }
+        if isRain     { return Color(hex: "#8FA8C0") }
+        return isNight ? Color(hex: "#B8C5D6") : Color(hex: "#8B4513")
     }
     
-    // 正文/长段落：夜 #A8B5C8；日 primary
+    // 正文：夜 #A8B5C8；日 primary；雨 #8FA8C0；绿 #4A7C5A；粉 #A0526A
     var bodyText: Color {
-        isNight ? Color(hex: "#A8B5C8") : Color.primary
+        if isLove     { return Color(hex: "#A0526A") }
+        if isVitality { return Color(hex: "#4A7C5A") }
+        if isRain     { return Color(hex: "#8FA8C0") }
+        return isNight ? Color(hex: "#A8B5C8") : Color.primary
     }
     
     var placeIcon: Color {
-        isNight ? Color.accentColor : Color(hex: "#CD853F")
+        if isLove     { return Color(hex: "#E8607A") }
+        if isVitality { return Color(hex: "#3A9457") }
+        if isRain     { return Color(hex: "#7EB8D4") }
+        return isNight ? Color.accentColor : Color(hex: "#CD853F")
     }
     
     var placeIconText: Color {
-        isNight ? Color.accentColor : Color(hex: "#7A5A3A")
+        if isLove     { return Color(hex: "#C05070") }
+        if isVitality { return Color(hex: "#2D6642") }
+        if isRain     { return Color(hex: "#A8C8E0") }
+        return isNight ? Color.accentColor : Color(hex: "#7A5A3A")
     }
     
+    /// Text/tint color for content placed ON TOP of a `primaryText`-colored background
+    /// (e.g. filled action buttons whose background = primaryText).
+    var buttonForegroundOnPrimary: Color {
+        if isLove     { return Color.white }             // white on rose-red button
+        if isVitality { return Color.white }             // white on deep-green button
+        if isRain     { return Color(hex: "#1A2636") }   // dark ink on rain-blue button
+        return isNight ? Color.black : Color.white
+    }
+
     // 全局强制：任何选项都返回 .dark/.light（不再随系统）
     var preferredColorScheme: ColorScheme? {
-        isNight ? .dark : .light
+        (isNight || isRain) ? .dark : .light
     }
     
     // card/panel behind the calendar
     var panelFill: Color {
-        isNight ? Color.white.opacity(0.04)
-                : Color.black.opacity(0.06)
+        if isLove { return Color.white.opacity(0.55) }
+        return isNight ? Color.white.opacity(0.04)
+                       : Color.black.opacity(0.06)
     }
     var panelStrokeHi: Color {
-        isNight ? Color.white.opacity(0.12)
-                : Color.black.opacity(0.18)
+        if isLove { return Color(hex: "#D4899A").opacity(0.30) }
+        return isNight ? Color.white.opacity(0.12)
+                       : Color.black.opacity(0.18)
     }
     var panelStrokeLo: Color {
-        isNight ? Color.white.opacity(0.04)
-                : Color.black.opacity(0.07)
+        if isLove { return Color(hex: "#D4899A").opacity(0.12) }
+        return isNight ? Color.white.opacity(0.04)
+                       : Color.black.opacity(0.07)
     }
     
     // 当前选择
@@ -111,7 +151,7 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
                 // UI 上叫 System，实际上就是按时段自动
                 selected = .system
             // 兼容未来如果你改成直接存 ThemeOption 的 rawValue
-            case "system", "day", "night", "autoClock":
+            case "system", "day", "night", "autoClock", "rain", "vitality", "love":
                 selected = ThemeOption(rawValue: raw) ?? .system
             default:
                 selected = .system
@@ -143,20 +183,47 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
         recomputeNight()
     }
     
-    // MARK: - 依据选择计算 isNight
+    // MARK: - 依据选择计算 isNight / isRain / isVitality
     private func recomputeNight() {
         switch selected {
         case .day:
-            isNight = false
+            isRain     = false
+            isVitality = false
+            isLove     = false
+            isNight    = false
+            rainIsDark = false
         case .night:
-            isNight = true
+            isRain     = false
+            isVitality = false
+            isLove     = false
+            isNight    = true
+            rainIsDark = false
+        case .rain:
+            isRain     = true
+            isVitality = false
+            isLove     = false
+            isNight    = true   // 使用深色基底
+            rainIsDark = Self.isNight(at: Date(), coordinate: solarCoordinate)
+        case .vitality:
+            isRain     = false
+            isVitality = true
+            isLove     = false
+            isNight    = false  // 浅色背景
+            rainIsDark = false
+        case .love:
+            isRain     = false
+            isVitality = false
+            isLove     = true
+            isNight    = false  // 浅色背景
+            rainIsDark = false
         case .system, .autoClock:
-            isNight = Self.isNight(
-                at: Date(),
-                coordinate: solarCoordinate
-            )
+            isRain     = false
+            isVitality = false
+            isLove     = false
+            rainIsDark = false
+            isNight    = Self.isNight(at: Date(), coordinate: solarCoordinate)
         }
-        // preferredColorScheme 由 isNight 推导
+        // preferredColorScheme 由 isNight / isRain 推导
     }
     
     // MARK: - 定时器：在“按时段”模式下启用，边界时刻自动切换
@@ -164,7 +231,7 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
         timerCancellable?.cancel()
         timerCancellable = nil
         
-        guard selected == .system || selected == .autoClock else { return }
+        guard selected == .system || selected == .autoClock || selected == .rain || selected == .vitality || selected == .love else { return }
         
         // 5 分钟刷新一次；进入前台时也会主动刷新位置和日夜状态。
         timerCancellable = Timer.publish(every: 300, on: .main, in: .common)

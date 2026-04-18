@@ -55,7 +55,7 @@ struct FocusSelectionView: View {
         FocusGroup(key: "practical",     labelKey: "focus.group.practical"),
     ]
 
-    private let sandColor = Color(red: 0.94, green: 0.88, blue: 0.72)
+    // sandColor 由 themeManager.accent 替代，在各处直接使用
     private let columns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12)
@@ -165,14 +165,14 @@ struct FocusSelectionView: View {
                 Text("focus.confirm_button")
                     .font(.custom("Merriweather-Regular", size: 16))
                     .foregroundColor(selectedID != nil
-                        ? Color(hex: "#5C3A1E").opacity(0.85)
+                        ? themeManager.buttonForegroundOnPrimary.opacity(0.85)
                         : themeManager.descriptionText.opacity(0.4))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(
                         RoundedRectangle(cornerRadius: 14)
                             .fill(selectedID != nil
-                                ? sandColor
+                                ? themeManager.accent.opacity(0.82)
                                 : themeManager.panelFill.opacity(0.3))
                     )
             }
@@ -239,7 +239,7 @@ struct FocusSelectionView: View {
                     TextField(String(localized: "e.g. Creative work"), text: $customName)
                         .font(.custom("Merriweather-Regular", size: 15))
                         .foregroundColor(themeManager.primaryText)
-                        .tint(sandColor)
+                        .tint(themeManager.accent)
                         .textInputAutocapitalization(.words)
                         .autocorrectionDisabled()
                         .padding(14)
@@ -265,7 +265,7 @@ struct FocusSelectionView: View {
                     TextField(String(localized: "A short description…"), text: $customDescription, axis: .vertical)
                         .font(.custom("Merriweather-Regular", size: 15))
                         .foregroundColor(themeManager.primaryText)
-                        .tint(sandColor)
+                        .tint(themeManager.accent)
                         .textInputAutocapitalization(.sentences)
                         .lineLimit(3...5)
                         .padding(14)
@@ -298,14 +298,14 @@ struct FocusSelectionView: View {
                     Text(String(localized: "focus.confirm_button"))
                         .font(.custom("Merriweather-Regular", size: 16))
                         .foregroundColor(canSaveCustom
-                            ? Color(hex: "#5C3A1E").opacity(0.85)
+                            ? themeManager.buttonForegroundOnPrimary.opacity(0.85)
                             : themeManager.descriptionText.opacity(0.4))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                         .background(
                             RoundedRectangle(cornerRadius: 14)
                                 .fill(canSaveCustom
-                                    ? sandColor
+                                    ? themeManager.accent.opacity(0.82)
                                     : themeManager.panelFill.opacity(0.35))
                         )
                 }
@@ -348,13 +348,13 @@ struct FocusSelectionView: View {
             .background(
                 RoundedRectangle(cornerRadius: 14)
                     .fill(isSelected
-                        ? sandColor.opacity(themeManager.isNight ? 0.88 : 0.80)
+                        ? themeManager.accent.opacity(themeManager.isNight ? 0.22 : 0.16)
                         : themeManager.panelFill.opacity(themeManager.isNight ? 0.28 : 0.36))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
                     .stroke(
-                        isSelected ? sandColor : Color.white.opacity(0.10),
+                        isSelected ? themeManager.accent.opacity(0.70) : themeManager.panelStrokeHi.opacity(0.5),
                         lineWidth: isSelected ? 1.5 : 1
                     )
             )

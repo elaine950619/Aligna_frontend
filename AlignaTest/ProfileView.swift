@@ -20,6 +20,12 @@ private struct ProfilePreviewContainer<Content: View>: View {
             themeManager.selected = .night
         case .auto:
             themeManager.selected = .system
+        case .rain:
+            themeManager.selected = .rain
+        case .vitality:
+            themeManager.selected = .vitality
+        case .love:
+            themeManager.selected = .love
         }
         _themeManager = StateObject(wrappedValue: themeManager)
         self.wrapsInNavigationStack = wrapsInNavigationStack
@@ -53,7 +59,7 @@ private struct ProfilePreviewContainer<Content: View>: View {
     }
 
     private var previewBaseColor: Color {
-        themeManager.isNight ? Color(hex: "#1a1a2e") : Color(hex: "#E6D9BD")
+        themeManager.isRain ? Color(hex: "#1A2636") : themeManager.isVitality ? Color(hex: "#E8F4E4") : themeManager.isLove ? Color(hex: "#FDE8F0") : themeManager.isNight ? Color(hex: "#1a1a2e") : Color(hex: "#E6D9BD")
     }
 }
 
@@ -1395,20 +1401,26 @@ import FirebaseFirestore
 
 // 主题偏好（轻/暗/系统）
 enum ThemePreference: String, CaseIterable, Identifiable {
-    case light, dark, auto
+    case light, dark, auto, rain, vitality, love
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .light: return String(localized: "profile.theme_dawn")
-        case .dark:  return String(localized: "profile.theme_dusk")
-        case .auto:  return String(localized: "profile.theme_adaptive")
+        case .light:    return String(localized: "profile.theme_dawn")
+        case .dark:     return String(localized: "profile.theme_dusk")
+        case .auto:     return String(localized: "profile.theme_adaptive")
+        case .rain:     return String(localized: "profile.theme_rain")
+        case .vitality: return String(localized: "profile.theme_vitality")
+        case .love:     return String(localized: "profile.theme_love")
         }
     }
     var icon: String  {
         switch self {
-        case .light: return "sun.max"
-        case .dark:  return "moon.stars"
-        case .auto:  return "gearshape"
+        case .light:    return "sun.max"
+        case .dark:     return "moon.stars"
+        case .auto:     return "gearshape"
+        case .rain:     return "cloud.drizzle"
+        case .vitality: return "leaf"
+        case .love:     return "heart"
         }
     }
 }
@@ -2358,7 +2370,7 @@ private extension ProfileView {
                     .frame(width: 44, height: 44)
                     .background(
                         Circle()
-                            .fill(themeManager.isNight ? Color(hex: "#182033").opacity(0.96) : Color.white.opacity(0.98))
+                            .fill(themeManager.isNight ? Color(hex: "#192840").opacity(0.96) : Color.white.opacity(0.98))
                     )
                     .overlay(
                         Circle()
@@ -2393,7 +2405,7 @@ private extension ProfileView {
                                 .padding(.vertical, 10)
                                 .background(
                                     Capsule()
-                                        .fill(themeManager.isNight ? Color(hex: "#202A40").opacity(0.98) : Color.white.opacity(0.98))
+                                        .fill(themeManager.isNight ? Color(hex: "#192840").opacity(0.98) : Color.white.opacity(0.98))
                                 )
                                 .overlay(
                                     Capsule()
@@ -2439,7 +2451,7 @@ private extension ProfileView {
             .frame(maxWidth: 320)
             .background(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(themeManager.isNight ? Color(hex: "#101726").opacity(0.98) : Color(hex: "#F7F1E3").opacity(0.985))
+                    .fill(themeManager.isRain ? Color(hex: "#131F2E").opacity(0.98) : themeManager.isNight ? Color(hex: "#101726").opacity(0.98) : Color(hex: "#F7F1E3").opacity(0.985))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -2465,7 +2477,17 @@ private extension ProfileView {
                         .foregroundColor(themeManager.descriptionText)
                 }
             }
-            HStack(spacing: 12) { themeOption(.light); themeOption(.dark); themeOption(.auto) }
+            // 上排 3 个，下排 3 个
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                themeOption(.light)
+                themeOption(.dark)
+                themeOption(.auto)
+            }
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                themeOption(.rain)
+                themeOption(.vitality)
+                themeOption(.love)
+            }
         }
         .padding()
         .alignaCard()
@@ -2974,9 +2996,12 @@ private extension ProfileView {
             withAnimation(.easeInOut(duration: 0.25)) {
                 themePreferenceRaw = pref.rawValue
                 switch pref {
-                case .light: themeManager.selected = .day
-                case .dark:  themeManager.selected = .night
-                case .auto:  themeManager.selected = .system
+                case .light:    themeManager.selected = .day
+                case .dark:     themeManager.selected = .night
+                case .auto:     themeManager.selected = .system
+                case .rain:     themeManager.selected = .rain
+                case .vitality: themeManager.selected = .vitality
+                case .love:     themeManager.selected = .love
                 }
                 themeManager.setSystemColorScheme(colorScheme)
             }
@@ -3305,9 +3330,12 @@ private extension ProfileView {
 
     func initialLoad() {
         switch ThemePreference(rawValue: themePreferenceRaw) ?? .auto {
-        case .light: themeManager.selected = .day
-        case .dark:  themeManager.selected = .night
-        case .auto:  themeManager.selected = .system
+        case .light:    themeManager.selected = .day
+        case .dark:     themeManager.selected = .night
+        case .auto:     themeManager.selected = .system
+        case .rain:     themeManager.selected = .rain
+        case .vitality: themeManager.selected = .vitality
+        case .love:     themeManager.selected = .love
         }
         themeManager.setSystemColorScheme(colorScheme)
         loadUser()

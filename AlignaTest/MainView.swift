@@ -2116,14 +2116,14 @@ struct MainView: View {
                 } label: {
                     Text(focusDisplayName(for: focus))
                         .font(.custom("Merriweather-Regular", size: 12))
-                        .foregroundColor(isActive ? Color.black.opacity(0.78) : themeManager.primaryText.opacity(0.88))
+                        .foregroundColor(isActive ? themeManager.buttonForegroundOnPrimary.opacity(0.88) : themeManager.primaryText.opacity(0.88))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 7)
                         .background(
                             Capsule()
                                 .fill(
                                     isActive
-                                        ? Color(red: 0.94, green: 0.88, blue: 0.72).opacity(themeManager.isNight ? 0.92 : 0.84)
+                                        ? themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.80)
                                         : themeManager.panelFill.opacity(themeManager.isNight ? 0.38 : 0.48)
                                 )
                         )
@@ -2732,14 +2732,14 @@ struct MainView: View {
                                             HStack(spacing: 6) {
                                                 Text("home.today_guidance")
                                                     .font(.custom("Merriweather-Regular", size: 14))
-                                                    .foregroundColor(Color(hex: "#5C3A1E").opacity(0.85))
-                                                GuidanceArrowView()
+                                                    .foregroundColor(themeManager.buttonForegroundOnPrimary.opacity(0.85))
+                                                GuidanceArrowView(color: themeManager.buttonForegroundOnPrimary)
                                             }
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 15)
                                             .background(
                                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                                    .fill(Color(red: 0.94, green: 0.88, blue: 0.72).opacity(themeManager.isNight ? 0.88 : 0.80))
+                                                    .fill(themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.80))
                                             )
                                         }
                                         .buttonStyle(.plain)
@@ -6315,12 +6315,13 @@ struct CustomBackButton: View {
 
 // MARK: - GuidanceArrowView
 private struct GuidanceArrowView: View {
+    let color: Color
     @State private var offsetX: CGFloat = 0
 
     var body: some View {
         Image(systemName: "arrow.right")
             .font(.system(size: 12, weight: .regular))
-            .foregroundColor(Color(hex: "#5C3A1E").opacity(0.50))
+            .foregroundColor(color.opacity(0.50))
             .offset(x: offsetX)
             .onAppear {
                 withAnimation(

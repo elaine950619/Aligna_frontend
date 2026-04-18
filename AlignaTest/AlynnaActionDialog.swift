@@ -119,7 +119,7 @@ struct AlynnaActionDialog: View {
                                 .padding(.vertical, 10)
                                 .background(
                                     Capsule()
-                                        .fill(themeManager.isNight ? Color(hex: "#202A40").opacity(0.98) : Color.white.opacity(0.98))
+                                        .fill(themeManager.isNight ? Color(hex: "#192840").opacity(0.98) : Color.white.opacity(0.98))
                                 )
                                 .overlay(
                                     Capsule()
@@ -139,7 +139,7 @@ struct AlynnaActionDialog: View {
                             .padding(.vertical, 10)
                             .background(
                                 Capsule()
-                                    .fill(themeManager.isNight ? Color(hex: "#202A40").opacity(0.98) : Color.white.opacity(0.98))
+                                    .fill(themeManager.isNight ? Color(hex: "#192840").opacity(0.98) : Color.white.opacity(0.98))
                             )
                             .overlay(
                                 Capsule()
@@ -154,7 +154,7 @@ struct AlynnaActionDialog: View {
             .frame(maxWidth: 332)
             .background(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(themeManager.isNight ? Color(hex: "#0F1726").opacity(0.98) : Color(hex: "#F5E6C8").opacity(0.98))
+                    .fill(themeManager.isRain ? Color(hex: "#131F2E").opacity(0.98) : themeManager.isVitality ? Color(hex: "#EDF7EC").opacity(0.98) : themeManager.isLove ? Color(hex: "#FDE8F0").opacity(0.98) : themeManager.isNight ? Color(hex: "#0F1726").opacity(0.98) : Color(hex: "#F5E6C8").opacity(0.98))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)

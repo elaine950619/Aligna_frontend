@@ -221,7 +221,7 @@ private struct LoadingNotesEditorSheet: View {
 
     var body: some View {
         ZStack {
-            (themeManager.isNight ? Color.black.opacity(0.6) : Color.white.opacity(0.6))
+            (themeManager.isNight ? Color(hex: "#0E1820").opacity(0.85) : Color.white.opacity(0.6))
                 .ignoresSafeArea()
 
             VStack(spacing: 16) {
@@ -342,7 +342,7 @@ struct AlynnaGenerationOverlayCard: View {
         .frame(maxWidth: 300)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(themeManager.isNight ? Color.black.opacity(0.92) : Color.white.opacity(0.96))
+                .fill(themeManager.isNight ? Color(hex: "#131F2E").opacity(0.96) : Color.white.opacity(0.96))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .stroke(themeManager.isNight ? Color.white.opacity(0.16) : Color.black.opacity(0.10), lineWidth: 1)
@@ -1168,13 +1168,13 @@ struct LoadingView: View {
                     if isProcessingPersonal {
                         ProgressView()
                             .progressViewStyle(.circular)
-                            .tint(themeManager.isNight ? Color.black : Color.white)
+                            .tint(themeManager.buttonForegroundOnPrimary)
                             .scaleEffect(0.75)
                     }
                     Text(isProcessingPersonal ? String(localized: "loading.preparing_next") : primaryActionLabel)
                 }
                 .font(.custom("Merriweather-Bold", size: 13))
-                .foregroundColor(themeManager.isNight ? Color.black : Color.white)
+                .foregroundColor(themeManager.buttonForegroundOnPrimary)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 22)
                 .background(themeManager.primaryText)
@@ -1239,13 +1239,13 @@ struct LoadingView: View {
                         if isGeneratingOverlayVisible {
                             ProgressView()
                                 .progressViewStyle(.circular)
-                                .tint(themeManager.isNight ? Color.black : Color.white)
+                                .tint(themeManager.buttonForegroundOnPrimary)
                                 .scaleEffect(0.75)
                         }
                         Text(buttonTitleForGathering)
                     }
                     .font(.custom("Merriweather-Bold", size: 13))
-                    .foregroundColor(themeManager.isNight ? Color.black : Color.white)
+                    .foregroundColor(themeManager.buttonForegroundOnPrimary)
                     .padding(.vertical, 9)
                     .padding(.horizontal, 22)
                     .frame(maxWidth: .infinity)
