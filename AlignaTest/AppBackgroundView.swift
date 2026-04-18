@@ -137,14 +137,11 @@ private struct NightStarView: View {
 struct DayBackgroundLayer: View {
     let size: CGSize   // from outer GeometryReader
 
-    @State private var sunPulse = false
-
     var body: some View {
         let width = size.width
         let height = size.height
         let base = min(width, height)
 
-        let sunSize   = width * 0.15
         let blob1Size = base * 0.45
         let blob2Size = base * 0.38
 
@@ -222,13 +219,7 @@ struct DayBackgroundLayer: View {
             DayStarField()
                 .allowsHitTesting(false)
 
-            // === Sun: top ~8%, hugging the right edge ===
-            DaySunView(pulse: $sunPulse)
-                .frame(width: sunSize, height: sunSize)
-                .position(
-                    x: width - sunSize,            // right: 0
-                    y: height * 0.08 + sunSize / 2     // top: 8%
-                )
+
 
             // === Bottom mountains – exact SVG shapes ===
             VStack {
@@ -252,13 +243,6 @@ struct DayBackgroundLayer: View {
             }
         }
         .onAppear {
-            withAnimation(
-                .easeInOut(duration: 3)
-                    .repeatForever(autoreverses: true)
-            ) {
-                sunPulse = true
-            }
-
         }
         .frame(width: width, height: height, alignment: .center)
         .clipped()
@@ -293,47 +277,7 @@ private struct DayGrainLayer: View {
 }
 
 
-// MARK: - Sun
-struct DaySunView: View {
-    @Binding var pulse: Bool
 
-    var body: some View {
-        ZStack {
-            // Outer glow
-            Circle()
-                .fill(Color(hex: "#FFE6A6").opacity(0.12))
-                .blur(radius: 30)
-                .scaleEffect(pulse ? 1.18 : 1.05)
-
-            // Halo
-            Circle()
-                .fill(Color.yellow.opacity(0.14))
-                .blur(radius: 20)
-                .scaleEffect(pulse ? 1.06 : 0.96)
-
-            // Core
-            Circle()
-                .fill(
-                    RadialGradient(
-                        gradient: Gradient(colors: [
-                            Color(hex: "#FFF4B3"),
-                            Color(hex: "#FFD700")
-                        ]),
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: 40
-                    )
-                )
-                .overlay(
-                    Circle()
-                        .stroke(Color.yellow.opacity(0.08), lineWidth: 0.8)
-                )
-                .shadow(color: Color.yellow.opacity(0.22),
-                        radius: 8, x: 0, y: 0)
-                .scaleEffect(pulse ? 1.03 : 1.0)
-        }
-    }
-}
 
 // MARK: - Hills / mountains using the same SVG paths as React
 struct DaySVGMountainsView: View {
