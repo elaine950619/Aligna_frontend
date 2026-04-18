@@ -24,6 +24,16 @@ struct RecommendationItem: Codable {
     let link: String?
     let stone: String?
     let candle: String?
+    let titleZh: String?
+    let descriptionZh: String?
+    let explanationZh: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name, title, description, explanation, about, notice, anchor, link, stone, candle
+        case titleZh = "title_zh"
+        case descriptionZh = "description_zh"
+        case explanationZh = "explanation_zh"
+    }
 }
 
 private func extractReasoningMapping(from data: [String: Any]) -> [String: String] {
@@ -288,8 +298,13 @@ struct FirestoreDetailView<Extra: View>: View {
                 return
             }
             do {
-                if let data = try snapshot?.data(as: RecommendationItem.self) {
-                    self.item = data
+                if var decoded = try snapshot?.data(as: RecommendationItem.self) {
+                    if currentRecommendationLanguageCode() == "zh-Hans" {
+                        if let zh = decoded.titleZh, !zh.isEmpty { decoded.title = zh }
+                        if let zh = decoded.descriptionZh, !zh.isEmpty { decoded.description = zh }
+                        if let zh = decoded.explanationZh, !zh.isEmpty { decoded.explanation = zh }
+                    }
+                    self.item = decoded
                 } else {
                     print("❌ Doc not found / decode failed")
                 }
@@ -2245,7 +2260,10 @@ private let previewScentItem = RecommendationItem(
     anchor: nil,
     link: "https://example.com/juniper-berry",
     stone: nil,
-    candle: "https://example.com/juniper-candle"
+    candle: "https://example.com/juniper-candle",
+    titleZh: nil,
+    descriptionZh: nil,
+    explanationZh: nil
 )
 
 #Preview("Sound Detail Day") {

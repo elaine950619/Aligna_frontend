@@ -260,17 +260,19 @@ struct SafeImage: View {
 
 private struct MantraFocus: Identifiable, Codable, Hashable {
     let id: UUID
-    var name: String
+    var name: String           // always the raw tag (e.g. "presence") — used for API calls
+    var localizedName: String = ""  // display name from Firestore (e.g. "活在当下")
     var description: String
+    var group: String = ""
     var createdAt: Date
 }
 
 private func focusDisplayName(for focus: MantraFocus) -> String {
-    focusLocalizedName(for: focus.name)
+    focus.localizedName.isEmpty ? focusLocalizedName(for: focus.name) : focus.localizedName
 }
 
 private func focusDisplayDescription(for focus: MantraFocus) -> String {
-    focusLocalizedDescription(for: focus.name, fallback: focus.description)
+    focus.description.isEmpty ? focusLocalizedDescription(for: focus.name, fallback: "") : focus.description
 }
 
 /// Maps a seeded focus name key to the group key used by FocusSelectionView.
@@ -407,6 +409,7 @@ struct MainView: View {
     @AppStorage("mantraFocusCacheStorage") private var mantraFocusCacheStorage: String = ""
     @AppStorage("mantraActiveFocusStorage") private var mantraActiveFocusStorage: String = ""
     @AppStorage("mantraFocusUsageStorage") private var mantraFocusUsageStorage: String = ""
+    @AppStorage("seededFocusCacheStorage") private var seededFocusCacheStorage: String = ""
     @AppStorage("hasDismissedFocusHelper") private var hasDismissedFocusHelper: Bool = false
     // legacy focus 迁移只执行一次的标记
     @AppStorage("hasCompletedLegacyFocusMigration") private var hasCompletedLegacyFocusMigration: Bool = false
@@ -1182,48 +1185,16 @@ struct MainView: View {
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var seededMantraFocuses: [MantraFocus] {
-        [
-            // Presence — top-level solo focus
-            MantraFocus(id: UUID(uuidString: presenceFocusID) ?? UUID(),   name: "presence",    description: "Rooted in the now, open to what is.",                                  createdAt: .distantPast),
-            // 日常与当下
-            MantraFocus(id: UUID(uuidString: restFocusID) ?? UUID(),       name: "rest",        description: "Permission to stop, recover, and simply be.",                          createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: focusWorkFocusID) ?? UUID(),  name: "focus_work",  description: "A container for uninterrupted attention and meaningful output.",        createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: creativityFocusID) ?? UUID(), name: "creativity",  description: "Tending the conditions for original thought and expressive flow.",      createdAt: .distantPast),
-            // 关系与他人
-            MantraFocus(id: UUID(uuidString: connectionFocusID) ?? UUID(), name: "connection",  description: "A lens for intimacy, partnership, and emotional closeness.",            createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: familyFocusID) ?? UUID(),     name: "family",      description: "Navigating the complexity of the people you belong to.",               createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: conflictFocusID) ?? UUID(),   name: "conflict",    description: "Moving through friction, rupture, and the hard work of repair.",       createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: parentingFocusID) ?? UUID(),  name: "parenting",   description: "Presence and patience in the weight of raising another person.",       createdAt: .distantPast),
-            // 身体与健康
-            MantraFocus(id: UUID(uuidString: recoveryFocusID) ?? UUID(),   name: "recovery",    description: "Space for repair, steadiness, and rebuilding your energy.",            createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: quittingFocusID) ?? UUID(),   name: "quitting",    description: "Releasing a substance, habit, or pattern that no longer serves you.", createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: chronicFocusID) ?? UUID(),    name: "chronic",     description: "Living alongside persistent discomfort with steadiness.",              createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: fertilityFocusID) ?? UUID(),  name: "fertility",   description: "Attention for conception, hormones, and family-building hopes.",       createdAt: .distantPast),
-            // 人生过渡
-            MantraFocus(id: UUID(uuidString: transitionFocusID) ?? UUID(), name: "transition",  description: "Support for change, uncertainty, and a life in motion.",               createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: griefFocusID) ?? UUID(),      name: "grief",       description: "Holding space for loss, remembrance, and emotional tenderness.",       createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: caregivingFocusID) ?? UUID(), name: "caregiving",  description: "Grounding while supporting someone who depends on you.",               createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: endOfLifeFocusID) ?? UUID(),  name: "end_of_life", description: "Companioning someone — or yourself — through the final passage.",      createdAt: .distantPast),
-            // 内在与成长
-            MantraFocus(id: UUID(uuidString: clarityFocusID) ?? UUID(),    name: "clarity",     description: "Perspective for decisions, priorities, and what matters now.",         createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: anxietyFocusID) ?? UUID(),    name: "anxiety",     description: "Meeting worry with structure, breath, and grounded attention.",        createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: identityFocusID) ?? UUID(),   name: "identity",    description: "Holding open questions about who you are and what you're becoming.",   createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: purposeFocusID) ?? UUID(),    name: "purpose",     description: "The search for meaning when the path feels unclear.",                  createdAt: .distantPast),
-            // 现实处境
-            MantraFocus(id: UUID(uuidString: careerFocusID) ?? UUID(),     name: "career",      description: "Navigating ambition, direction, and the meaning of your work.",        createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: researchFocusID) ?? UUID(),   name: "research",    description: "Deep inquiry, experimentation, and the long patience of discovery.",   createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: financeFocusID) ?? UUID(),    name: "finance",     description: "Steadiness when money is a source of stress or uncertainty.",          createdAt: .distantPast),
-            MantraFocus(id: UUID(uuidString: relocationFocusID) ?? UUID(), name: "relocation",  description: "Rooting in unfamiliar surroundings while building a new ordinary.",    createdAt: .distantPast),
-        ]
-    }
-
     private var seededFocusIDs: Set<String> {
-        Set(seededMantraFocuses.map { $0.id.uuidString })
-    }
-
-    private var seededFocusesByID: [String: MantraFocus] {
-        Dictionary(uniqueKeysWithValues: seededMantraFocuses.map { ($0.id.uuidString, $0) })
+        [
+            presenceFocusID,
+            restFocusID, focusWorkFocusID, creativityFocusID,
+            connectionFocusID, familyFocusID, conflictFocusID, parentingFocusID,
+            recoveryFocusID, quittingFocusID, chronicFocusID, fertilityFocusID,
+            transitionFocusID, griefFocusID, caregivingFocusID, endOfLifeFocusID,
+            clarityFocusID, anxietyFocusID, identityFocusID, purposeFocusID,
+            careerFocusID, researchFocusID, financeFocusID, relocationFocusID,
+        ]
     }
 
     private var recommendedDefaultFocusIDs: [String] {
@@ -1285,15 +1256,18 @@ struct MainView: View {
         return uniqueIDs
     }
 
-    private func syncSeededFocusDefinitions() {
+    private func syncSeededFocusDefinitions(using seedSource: [MantraFocus]? = nil) {
         guard !mantraFocuses.isEmpty else { return }
-
+        let source = seedSource ?? []
+        let byID = Dictionary(uniqueKeysWithValues: source.map { ($0.id.uuidString, $0) })
         mantraFocuses = mantraFocuses.map { existing in
-            guard let seeded = seededFocusesByID[existing.id.uuidString] else { return existing }
+            guard let seeded = byID[existing.id.uuidString] else { return existing }
             return MantraFocus(
                 id: existing.id,
                 name: seeded.name,
+                localizedName: seeded.localizedName,
                 description: seeded.description,
+                group: seeded.group,
                 createdAt: existing.createdAt
             )
         }
@@ -1328,11 +1302,19 @@ struct MainView: View {
             mantraFocusUsageByDay = decoded
         }
 
+        // Load seeded focuses from Firestore cache; empty until first fetch completes
+        var activeSeed: [MantraFocus] = []
+        if let data = seededFocusCacheStorage.data(using: .utf8),
+           let decoded = try? JSONDecoder().decode([MantraFocus].self, from: data),
+           !decoded.isEmpty {
+            activeSeed = decoded
+        }
+
         if mantraFocuses.isEmpty {
-            mantraFocuses = seededMantraFocuses
+            mantraFocuses = activeSeed
         } else {
-            syncSeededFocusDefinitions()
-            for seededFocus in seededMantraFocuses where !mantraFocuses.contains(where: { $0.name.caseInsensitiveCompare(seededFocus.name) == .orderedSame }) {
+            syncSeededFocusDefinitions(using: activeSeed)
+            for seededFocus in activeSeed where !mantraFocuses.contains(where: { $0.name.caseInsensitiveCompare(seededFocus.name) == .orderedSame }) {
                 mantraFocuses.append(seededFocus)
             }
         }
@@ -1340,6 +1322,9 @@ struct MainView: View {
         ensureDefaultFocusSetupForToday()
         pruneInvalidFocusSelectionsAndPersist()
         persistMantraFocuses()
+
+        // Background refresh from Firestore
+        fetchSeededFocusesFromFirestore()
     }
 
     private func persistMantraFocuses() {
@@ -1368,6 +1353,38 @@ struct MainView: View {
            let string = String(data: data, encoding: .utf8) {
             mantraFocusUsageStorage = string
         }
+    }
+
+    private func fetchSeededFocusesFromFirestore() {
+        let isChinese = currentRecommendationLanguageCode() == "zh-Hans"
+        Firestore.firestore()
+            .collection("focuses")
+            .order(by: "sort_order")
+            .getDocuments { snapshot, _ in
+                guard let docs = snapshot?.documents, !docs.isEmpty else { return }
+                let fetched: [MantraFocus] = docs.compactMap { doc in
+                    let data = doc.data()
+                    guard let tag = data["tag"] as? String,
+                          let id = UUID(uuidString: doc.documentID)
+                    else { return nil }
+                    let localizedName = (isChinese ? data["name_zh"] : data["name_en"]) as? String ?? tag
+                    let desc = (isChinese ? data["desc_zh"] : data["desc_en"]) as? String ?? ""
+                    let group = data["group"] as? String ?? ""
+                    return MantraFocus(id: id, name: tag, localizedName: localizedName, description: desc, group: group, createdAt: .distantPast)
+                }
+                guard !fetched.isEmpty else { return }
+                DispatchQueue.main.async {
+                    if let encoded = try? JSONEncoder().encode(fetched),
+                       let str = String(data: encoded, encoding: .utf8) {
+                        seededFocusCacheStorage = str
+                    }
+                    syncSeededFocusDefinitions(using: fetched)
+                    for focus in fetched where !mantraFocuses.contains(where: { $0.name.caseInsensitiveCompare(focus.name) == .orderedSame }) {
+                        mantraFocuses.append(focus)
+                    }
+                    persistMantraFocuses()
+                }
+            }
     }
 
     private func ensureDefaultFocusSetupForToday() {
@@ -2160,7 +2177,7 @@ struct MainView: View {
                 }
 
                 Section(String(localized: "Preset Focuses")) {
-                    ForEach(seededMantraFocuses) { focus in
+                    ForEach(mantraFocuses.filter { seededFocusIDs.contains($0.id.uuidString) }) { focus in
                         let isVisible = appliedMantraFocusIDs.contains(focus.id.uuidString)
                         HStack(alignment: .top, spacing: 12) {
                             Button {
@@ -4383,7 +4400,7 @@ struct MainView: View {
                             id: f.id.uuidString,
                             name: focusDisplayName(for: f),
                             description: focusDisplayDescription(for: f),
-                            groupKey: focusGroupKey(for: f.name)
+                            groupKey: f.group.isEmpty ? focusGroupKey(for: f.name) : f.group
                         )
                     },
                     presenceFocusID: presenceFocusID,
