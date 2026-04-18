@@ -373,6 +373,7 @@ struct LoadingView: View {
     var onPersonalComplete: ((Bool) -> Void)? = nil
     var onFocusSelected: ((String) -> Void)? = nil
     var onAddCustomFocus: (() -> Void)? = nil
+    var onCancelLoading: (() -> Void)? = nil
     private let focuses: [FocusSelectionView.FocusItem]
     private let presenceFocusID: String
     private let fixedMessageIndex: Int?
@@ -404,6 +405,9 @@ struct LoadingView: View {
     @State private var autoSkipWorkItem: DispatchWorkItem?
     @State private var autoSkipSecondsRemaining = 0
     @State private var autoSkipTimer: Timer?
+    @State private var cosmicPlaceWorkItem: DispatchWorkItem?
+    @State private var placePersonalWorkItem: DispatchWorkItem?
+    @State private var didAlreadyPassedStages = false
     @State private var personalCompleted = false
     @State private var isProcessingPersonal = false
     @State private var didInteractPersonal = false
@@ -442,6 +446,7 @@ struct LoadingView: View {
 
     init(
         onStartLoading: (() -> Void)? = nil,
+        onCancelLoading: (() -> Void)? = nil,
         onPersonalComplete: ((Bool) -> Void)? = nil,
         onFocusSelected: ((String) -> Void)? = nil,
         focuses: [FocusSelectionView.FocusItem] = [],
@@ -452,6 +457,7 @@ struct LoadingView: View {
         locationManager: LocationManager = LocationManager()
     ) {
         self.onStartLoading = onStartLoading
+        self.onCancelLoading = onCancelLoading
         self.onPersonalComplete = onPersonalComplete
         self.onFocusSelected = onFocusSelected
         self.focuses = focuses
@@ -557,6 +563,56 @@ struct LoadingView: View {
                     .ignoresSafeArea()
                 }
 
+                // === Personal stage back arrow (only in full loading flow) ===
+                if stage == .personal && forceFullLoading {
+                    VStack {
+                        HStack {
+                            Button {
+                                cancelAllStageWork()
+                                didAlreadyPassedStages = true
+                                withAnimation(.easeInOut(duration: 0.3)) { stage = .focusSelection }
+                            } label: {
+                                Image(systemName: "chevron.left")
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundColor(themeManager.primaryText)
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.leading, 12)
+                            Spacer()
+                        }
+                        .padding(.top, 64)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .allowsHitTesting(true)
+                }
+
+                // === Gathering stage back arrow ===
+                if stage == .gathering && forceFullLoading {
+                    VStack {
+                        HStack {
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.3)) { stage = .personal }
+                                loadPersonalSelections()
+                            } label: {
+                                Image(systemName: "chevron.left")
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundColor(themeManager.primaryText)
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.leading, 12)
+                            Spacer()
+                        }
+                        .padding(.top, 64)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .allowsHitTesting(true)
+                }
 
             }
             .onAppear {
@@ -834,12 +890,29 @@ struct LoadingView: View {
         ]
 
         VStack(spacing: 0) {
-            // Title — safe area top + padding to match other stage header positions
+            // Back arrow row
+            HStack {
+                Button {
+                    onCancelLoading?()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.title3.weight(.semibold))
+                        .foregroundColor(themeManager.primaryText)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.leading, 12)
+                Spacer()
+            }
+            .padding(.top, 64)
+
+            // Title
             Text("focus.select_title")
                 .font(.custom("Merriweather-Bold", size: 20))
                 .foregroundColor(themeManager.primaryText)
                 .multilineTextAlignment(.center)
-                .padding(.top, 87)   // safe area (~59) + original top padding (28)
+                .padding(.top, 8)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 16)
 
@@ -1373,21 +1446,25 @@ struct LoadingView: View {
 
     /// Schedules cosmic→place→personal when skipping .initial (coming from focus selection).
     private func schedulePostCosmicProgression() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
-            if stage == .cosmic { stage = .place }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
-            if stage == .place { stage = .personal }
-        }
+        let item1 = DispatchWorkItem { if stage == .cosmic { stage = .place } }
+        let item2 = DispatchWorkItem { if stage == .place  { stage = .personal } }
+        cosmicPlaceWorkItem  = item1
+        placePersonalWorkItem = item2
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.2, execute: item1)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6.0, execute: item2)
     }
 
     /// Called when user confirms focus selection; skips .initial and goes straight to .cosmic.
     private func advanceFromFocusSelection(focusID: String) {
         onFocusSelected?(focusID)
-        withAnimation(.easeInOut(duration: 0.35)) {
-            stage = .cosmic
+        if didAlreadyPassedStages {
+            // Already went through cosmic/place — skip straight to personal
+            withAnimation(.easeInOut(duration: 0.35)) { stage = .personal }
+            loadPersonalSelections()
+        } else {
+            withAnimation(.easeInOut(duration: 0.35)) { stage = .cosmic }
+            schedulePostCosmicProgression()
         }
-        schedulePostCosmicProgression()
     }
 
     private func startEmojiTimers() {
@@ -1579,36 +1656,10 @@ struct LoadingView: View {
     }
 
     private func scheduleAutoSkipIfNeeded() {
-        autoSkipWorkItem?.cancel()
-        autoSkipTimer?.invalidate()
-
-        let totalSeconds = 3
-        autoSkipSecondsRemaining = totalSeconds
-        autoSkipTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
-            autoSkipSecondsRemaining = max(0, autoSkipSecondsRemaining - 1)
-            if autoSkipSecondsRemaining == 0 {
-                timer.invalidate()
-            }
-        }
-
-        let item = DispatchWorkItem {
-            if shouldAutoSkipPersonal {
-                DispatchQueue.main.async {
-                    continueToGathering()
-                }
-            }
-        }
-        autoSkipWorkItem = item
-        DispatchQueue.main.asyncAfter(deadline: .now() + Double(totalSeconds), execute: item)
+        // Auto-skip disabled — user must tap Continue manually
     }
 
     private var primaryActionLabel: String {
-        if didInteractPersonal {
-            return String(localized: "loading.continue")
-        }
-        if autoSkipSecondsRemaining > 0 {
-            return String(format: String(localized: "loading.skip_in"), autoSkipSecondsRemaining)
-        }
         return String(localized: "loading.continue")
     }
 
@@ -1852,6 +1903,14 @@ struct LoadingView: View {
         .transition(.opacity)
     }
 
+    private func cancelAllStageWork() {
+        cosmicPlaceWorkItem?.cancel();   cosmicPlaceWorkItem = nil
+        placePersonalWorkItem?.cancel(); placePersonalWorkItem = nil
+        autoSkipWorkItem?.cancel();      autoSkipWorkItem = nil
+        autoSkipTimer?.invalidate()
+        autoSkipSecondsRemaining = 0
+    }
+
     private func continueToGathering() {
         guard stage == .personal else { return }
         autoSkipWorkItem?.cancel()
@@ -1901,6 +1960,8 @@ struct LoadingView: View {
                     viewModel.currentPlace = name
                 }
             }
+            // Sync GPS coordinate to user profile if it differs from stored location
+            syncLocationToProfile(coord: coord, placeName: name ?? "")
         }
 
         // Weather via Open-Meteo (no API key) — fetch structured fields
@@ -1978,6 +2039,65 @@ struct LoadingView: View {
 
         // Land cover density (approx) via WorldCover WMS RGB sampling
         fetchLandCoverDensity(for: coord)
+    }
+
+    /// Compares the current GPS coordinate with the profile-stored location.
+    /// If they differ by more than ~500 m, updates currentPlace / currentLat / currentLng in Firestore.
+    private func syncLocationToProfile(coord: CLLocationCoordinate2D, placeName: String) {
+        guard !placeName.isEmpty else { return }
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+
+        let db = Firestore.firestore()
+        let candidateCollections = ["user", "users"]
+        let freshLocation = CLLocation(latitude: coord.latitude, longitude: coord.longitude)
+
+        // Query both collections for the user document
+        func tryCollection(_ collections: [String]) {
+            guard let col = collections.first else { return }
+            let rest = Array(collections.dropFirst())
+
+            db.collection(col)
+                .whereField("uid", isEqualTo: uid)
+                .limit(to: 1)
+                .getDocuments { snapshot, _ in
+                    if let doc = snapshot?.documents.first {
+                        let data = doc.data()
+                        let storedLat = data["currentLat"] as? CLLocationDegrees
+                        let storedLng = data["currentLng"] as? CLLocationDegrees
+
+                        // If no stored coordinate, always write; otherwise compare distance
+                        var shouldUpdate = true
+                        if let lat = storedLat, let lng = storedLng {
+                            let storedLocation = CLLocation(latitude: lat, longitude: lng)
+                            shouldUpdate = freshLocation.distance(from: storedLocation) > 500
+                        }
+
+                        if shouldUpdate {
+                            let payload: [String: Any] = [
+                                "currentPlace": placeName,
+                                "currentLat": coord.latitude,
+                                "currentLng": coord.longitude,
+                                "updatedAt": FieldValue.serverTimestamp()
+                            ]
+                            db.collection(col).document(doc.documentID)
+                                .setData(payload, merge: true) { err in
+                                    if let err = err {
+                                        print("[LocationSync] Firestore write failed: \(err.localizedDescription)")
+                                    } else {
+                                        print("[LocationSync] Updated profile location to \(placeName) (\(coord.latitude), \(coord.longitude)) in '\(col)'")
+                                    }
+                                }
+                        } else {
+                            print("[LocationSync] Location unchanged (<500m), no update needed")
+                        }
+                    } else if !rest.isEmpty {
+                        tryCollection(rest)
+                    }
+                    // If not found in any collection, silently skip
+                }
+        }
+
+        tryCollection(candidateCollections)
     }
 
     private enum LandCoverCategory {

@@ -54,11 +54,18 @@ struct LastWrapUpView: View {
                         VStack(alignment: .leading, spacing: 0) {
                             // ── Card: title → focus name → checklist → progress ──
                             VStack(alignment: .leading, spacing: 0) {
-                                // Title
-                                Text("wrapup.title")
-                                    .font(.custom("Merriweather-Regular", size: 13))
-                                    .foregroundColor(themeManager.descriptionText.opacity(0.5))
-                                    .padding(.bottom, 10)
+                                // Title + date
+                                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                    Text("wrapup.title")
+                                        .font(.custom("Merriweather-Regular", size: 13))
+                                        .foregroundColor(themeManager.descriptionText.opacity(0.5))
+                                    if !dateString.isEmpty {
+                                        Text(dateString)
+                                            .font(.custom("Merriweather-Regular", size: 11))
+                                            .foregroundColor(themeManager.descriptionText.opacity(0.35))
+                                    }
+                                }
+                                .padding(.bottom, 10)
 
                                 // Last session's focus name
                                 Text(lastFocusName)

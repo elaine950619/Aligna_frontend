@@ -468,6 +468,7 @@ struct MainView: View {
     @State private var pendingGenerationToast = false
     @State private var showReasoningSheet = false
     @State private var showWallpaperPreview = false
+    @State private var showProfileFromWrapUp = false
     @State private var showFocusManagerSheet = false
     @State private var showFocusHint = false
     @State private var showNewFocusForm = false
@@ -2516,37 +2517,34 @@ struct MainView: View {
 
                             Spacer()
 
-                            if !isMantraExpanded {
-                                HStack(spacing: geometry.size.width * 0.02) {
-
-                                    if isLoggedIn {
-                                        NavigationLink(
-                                            destination: profileViewWithDevCallback()
-                                                .environmentObject(starManager)
-                                                .environmentObject(themeManager)
-                                        ) {
-                                            Image("account")
-                                                .resizable()
-                                                .renderingMode(.template)
-                                                .aspectRatio(contentMode: .fit)
-                                                .frame(width: 28, height: 28)
-                                                .foregroundColor(themeManager.primaryText)
-                                        }
-                                    } else {
-                                        NavigationLink(
-                                            destination: profileViewWithDevCallback()
-                                        ) {
-                                            Image("account")
-                                                .resizable()
-                                                .renderingMode(.template)
-                                                .aspectRatio(contentMode: .fit)
-                                                .frame(width: 28, height: 28)
-                                                .foregroundColor(themeManager.primaryText)
-                                        }
+                            HStack(spacing: geometry.size.width * 0.02) {
+                                if isLoggedIn {
+                                    NavigationLink(
+                                        destination: profileViewWithDevCallback()
+                                            .environmentObject(starManager)
+                                            .environmentObject(themeManager)
+                                    ) {
+                                        Image("account")
+                                            .resizable()
+                                            .renderingMode(.template)
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 28, height: 28)
+                                            .foregroundColor(themeManager.primaryText)
+                                    }
+                                } else {
+                                    NavigationLink(
+                                        destination: profileViewWithDevCallback()
+                                    ) {
+                                        Image("account")
+                                            .resizable()
+                                            .renderingMode(.template)
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 28, height: 28)
+                                            .foregroundColor(themeManager.primaryText)
                                     }
                                 }
-                                .padding(.trailing, geometry.size.width * 0.05)
                             }
+                            .padding(.trailing, geometry.size.width * 0.05)
 
                         }
 
@@ -2668,20 +2666,74 @@ struct MainView: View {
                                             .padding(20)
                                         }
                                         .padding(.horizontal, hPad)
-                                        .padding(.bottom, 32)
+                                        .padding(.bottom, 24)
                                         .onTapGesture { showReasoningSheet = true }
+
+                                        // ── 今日进度摘要（有行动且至少完成1项时显示）──
+                                        let totalCount = dailyActionItems.count
+                                        let completedCount = dailyActionItems.filter { item in
+                                            if let aid = item.actionID {
+                                                return viewModel.completedActionIDs.contains(aid)
+                                            }
+                                            return todayActionsDict[item.category] == true
+                                        }.count
+                                        let focusName = activeFocus.map { focusDisplayName(for: $0) } ?? ""
+
+                                        if totalCount > 0 && completedCount > 0 {
+                                            let isAllDone = completedCount == totalCount
+                                            let sandColor = Color(red: 0.94, green: 0.88, blue: 0.72)
+                                            let progress = CGFloat(completedCount) / CGFloat(totalCount)
+
+                                            VStack(alignment: .leading, spacing: 10) {
+                                                // 进度条
+                                                GeometryReader { bar in
+                                                    ZStack(alignment: .leading) {
+                                                        Capsule()
+                                                            .fill(themeManager.panelFill.opacity(0.30))
+                                                            .frame(height: 3)
+                                                        Capsule()
+                                                            .fill(sandColor.opacity(isAllDone ? 0.90 : 0.70))
+                                                            .frame(width: bar.size.width * progress, height: 3)
+                                                    }
+                                                }
+                                                .frame(height: 3)
+
+                                                // 完成计数
+                                                Text(String(format: String(localized: "progress.completed_count"), completedCount, totalCount))
+                                                    .font(.custom("Merriweather-Regular", size: 11))
+                                                    .foregroundColor(themeManager.descriptionText.opacity(0.55))
+                                                    .tracking(0.4)
+
+                                                // 鼓励语（中性表达，不说"靠近"，避免负面课题语义问题）
+                                                Text(String(format: String(localized: isAllDone ? "progress.encourage_all" : "progress.encourage_partial"), focusName))
+                                                    .font(.custom(isAllDone ? "Merriweather-Bold" : "Merriweather-Italic", size: 13))
+                                                    .foregroundColor(themeManager.primaryText.opacity(isAllDone ? 0.82 : 0.65))
+                                                    .lineSpacing(4)
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                            }
+                                            .padding(.horizontal, 20)
+                                            .padding(.vertical, 16)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                    .fill(themeManager.panelFill.opacity(isAllDone ? 0.28 : 0.18))
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                            .stroke(sandColor.opacity(isAllDone ? 0.25 : 0.12), lineWidth: 1)
+                                                    )
+                                            )
+                                            .padding(.horizontal, hPad)
+                                            .padding(.bottom, 20)
+                                        }
 
                                         // ── 打开今日指引 button ──
                                         Button {
                                             toggleMantraExpansion()
                                         } label: {
-                                            HStack(spacing: 8) {
+                                            HStack(spacing: 6) {
                                                 Text("home.today_guidance")
                                                     .font(.custom("Merriweather-Regular", size: 14))
                                                     .foregroundColor(Color(hex: "#5C3A1E").opacity(0.85))
-                                                Image(systemName: "arrow.right")
-                                                    .font(.system(size: 12, weight: .regular))
-                                                    .foregroundColor(Color(hex: "#5C3A1E").opacity(0.50))
+                                                GuidanceArrowView()
                                             }
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 15)
@@ -2881,17 +2933,33 @@ struct MainView: View {
                     withAnimation(.easeInOut) { bootPhase = .loading }
                 },
                 dateString: {
-                    let f = DateFormatter()
-                    f.locale = .current
-                    f.timeZone = .current
-                    f.setLocalizedDateFormatFromTemplate("EEEEMMMd")
-                    return f.string(from: Date())
+                    let parse = DateFormatter()
+                    parse.dateFormat = "yyyy-MM-dd"
+                    parse.locale = Locale(identifier: "en_US_POSIX")
+                    parse.timeZone = .current
+                    guard !dailyActionsDate.isEmpty,
+                          let date = parse.date(from: dailyActionsDate) else { return "" }
+                    let display = DateFormatter()
+                    display.locale = .current
+                    display.timeZone = .current
+                    display.setLocalizedDateFormatFromTemplate("EEEEMMMd")
+                    return display.string(from: date)
                 }(),
                 weatherCondition: viewModel.weatherCondition ?? "",
-                locationName: resolvedWidgetLocation()
+                locationName: resolvedWidgetLocation(),
+                onProfileTap: {
+                    dayPhase = .home
+                    showProfileFromWrapUp = true
+                }
             )
             .environmentObject(themeManager)
             .environmentObject(starManager)
+        }
+        .sheet(isPresented: $showProfileFromWrapUp) {
+            profileViewWithDevCallback()
+                .environmentObject(starManager)
+                .environmentObject(themeManager)
+                .presentationCornerRadius(24)
         }
     }
 
@@ -4191,7 +4259,7 @@ struct MainView: View {
         bootPhase = .loading
     }
 
-    private let maxDailyManualRefreshes = 3
+    private let maxDailyManualRefreshes = 1
 
     private func todayRefreshCount() -> Int {
         let today = todayString()
@@ -4220,7 +4288,7 @@ struct MainView: View {
         if remaining > 0 {
             return String(format: String(localized: "You have %d refresh(es) remaining today."), remaining)
         }
-        return String(localized: "You've used all 3 refreshes for today. Come back tomorrow to update your rhythm. We're also working on a subscription plan with more access. Thank you for your patience.")
+        return String(localized: "You've used all 2 refreshes for today. Come back tomorrow to update your rhythm. We're also working on a subscription plan with more access. Thank you for your patience.")
     }
 
     private func expandMantraIfNeeded() {
@@ -4358,6 +4426,11 @@ struct MainView: View {
                     onStartLoading: {
                         if isManualRefreshFlow { return }
                         startInitialLoad()
+                    },
+                    onCancelLoading: {
+                        isManualRefreshFlow = false
+                        isFullLoadingFlow = false
+                        withAnimation(.easeInOut) { bootPhase = .main }
                     },
                     onPersonalComplete: { didProvidePersonal in
                         // 判断是否走生成路径（用户点了生成，不是「暂不生成」）
@@ -4578,7 +4651,15 @@ struct MainView: View {
                 }
                 if let data = snapshot?.data(), let title = data["title"] as? String {
                     DispatchQueue.main.async {
-                        self.recommendationTitles[canon] = title // 以规范写法作键
+                        // 中文模式下优先使用 title_zh 字段，fallback 到 title
+                        let isChinese = currentRecommendationLanguageCode() == "zh-Hans"
+                        let localizedTitle: String
+                        if isChinese, let titleZh = data["title_zh"] as? String, !titleZh.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            localizedTitle = titleZh.trimmingCharacters(in: .whitespacesAndNewlines)
+                        } else {
+                            localizedTitle = title
+                        }
+                        self.recommendationTitles[canon] = localizedTitle // 以规范写法作键
                         // Populate anchorCache for daily action checklist
                         if let anchor = data["anchor"] as? String, !anchor.isEmpty {
                             self.anchorCache[canon] = anchor
@@ -6231,6 +6312,26 @@ struct CustomBackButton: View {
 
 
 
+
+// MARK: - GuidanceArrowView
+private struct GuidanceArrowView: View {
+    @State private var offsetX: CGFloat = 0
+
+    var body: some View {
+        Image(systemName: "arrow.right")
+            .font(.system(size: 12, weight: .regular))
+            .foregroundColor(Color(hex: "#5C3A1E").opacity(0.50))
+            .offset(x: offsetX)
+            .onAppear {
+                withAnimation(
+                    .easeInOut(duration: 0.65)
+                    .repeatForever(autoreverses: true)
+                ) {
+                    offsetX = 4
+                }
+            }
+    }
+}
 
 // 替换你文件中现有的 OnboardingViewModel
 import FirebaseFirestore

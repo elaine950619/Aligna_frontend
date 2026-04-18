@@ -893,12 +893,14 @@ private struct WidgetFooterItem: Hashable {
 }
 
 private func mantraText(_ text: String, size: CGFloat, isChinese: Bool = false) -> some View {
-    Text(text)
-        .font(.custom(isChinese ? "LXGWWenKaiTC-Bold" : "CormorantGaramond-SemiBold", size: size))
+    // 中文字符密度更高，缩小约两号（×0.84）以保持视觉平衡
+    let resolvedSize = isChinese ? size * 0.84 : size
+    return Text(text)
+        .font(.custom(isChinese ? "LXGWWenKaiTC-Bold" : "CormorantGaramond-SemiBold", size: resolvedSize))
         .multilineTextAlignment(.leading)
         .lineLimit(4)
         .minimumScaleFactor(0.72)
-        .lineSpacing(size * 0.06)
+        .lineSpacing(resolvedSize * 0.06)
         .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
 }
 
@@ -1026,6 +1028,24 @@ private func widgetMantra(_ raw: String) -> String {
             : "Today is not about perfection. It is about noticing small moments, honoring how I feel, and allowing myself to move forward with patience and care."
     }
 
+    let zh = widgetIsChinese()
+
+    if zh {
+        // 中文：按句子标点拆分（。！？），取第一句，超过30字则截断
+        let chineseSentences = cleaned
+            .components(separatedBy: CharacterSet(charactersIn: "。！？!?."))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        if let first = chineseSentences.first, first.count <= 30 {
+            return first
+        }
+        if cleaned.count <= 30 {
+            return cleaned
+        }
+        return String(cleaned.prefix(28)) + "…"
+    }
+
+    // 英文：按句点/感叹号/问号拆分
     let sentences = cleaned
         .split(whereSeparator: { [".", "!", "?"].contains($0) })
         .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -1226,26 +1246,37 @@ private func compactMoonPhase(_ raw: String) -> String {
 
 private func moonPhaseSymbol(for phase: String) -> String {
     switch phase.trimmingCharacters(in: .whitespacesAndNewlines) {
-    case "New Moon": return "moonphase.new.moon"
-    case "Waxing Crescent": return "moonphase.waxing.crescent"
-    case "First Quarter": return "moonphase.first.quarter"
-    case "Waxing Gibbous": return "moonphase.waxing.gibbous"
-    case "Full Moon": return "moonphase.full.moon"
-    case "Waning Gibbous": return "moonphase.waning.gibbous"
-    case "Third Quarter": return "moonphase.last.quarter"
-    case "Waning Crescent": return "moonphase.waning.crescent"
+    case "New Moon",        "新月": return "moonphase.new.moon"
+    case "Waxing Crescent", "娥眉月": return "moonphase.waxing.crescent"
+    case "First Quarter",   "上弦月": return "moonphase.first.quarter"
+    case "Waxing Gibbous",  "盈凸月": return "moonphase.waxing.gibbous"
+    case "Full Moon",       "满月": return "moonphase.full.moon"
+    case "Waning Gibbous",  "亏凸月": return "moonphase.waning.gibbous"
+    case "Third Quarter",   "下弦月": return "moonphase.last.quarter"
+    case "Waning Crescent", "残月": return "moonphase.waning.crescent"
     default: return "moon.fill"
     }
 }
 
 private func compactWeather(_ raw: String) -> String {
-    let text = raw
+    let trimmed = raw
         .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
         .trimmingCharacters(in: .whitespacesAndNewlines)
+
+    // 中文天气描述：按"·"或"，"取第一段，最多10个字
+    if widgetIsChinese() {
+        let parts = trimmed
+            .components(separatedBy: CharacterSet(charactersIn: "·，,"))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let first = parts.first ?? trimmed
+        return first.count <= 10 ? first : String(first.prefix(10))
+    }
+
+    let text = trimmed
         .replacingOccurrences(of: "air, ", with: "")
         .replacingOccurrences(of: "Mostly ", with: "")
         .replacingOccurrences(of: "mostly ", with: "")
-        .replacingOccurrences(of: "Light ", with: "Light ")
 
     if text.count <= 22 {
         return text

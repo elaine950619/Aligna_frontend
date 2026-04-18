@@ -3995,6 +3995,7 @@
       }
     },
     "loading.skip_in" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9127,6 +9128,56 @@
         }
       }
     },
+    "progress.completed_count" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of %lld actions done"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已完成 %lld / %lld 项行动"
+          }
+        }
+      }
+    },
+    "progress.encourage_all" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All done. On %@, you've built something real today."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日行动全部完成。你在「%@」这个课题上，今天积累了真实的改变。"
+          }
+        }
+      }
+    },
+    "progress.encourage_partial" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On %@, you're building real change — one action at a time."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你在「%@」这个课题上，正在积累真实的改变。"
+          }
+        }
+      }
+    },
     "Reasoning summary bubble" : {
       "localizations" : {
         "zh-Hans" : {
@@ -9893,18 +9944,82 @@
         }
       }
     },
-    "timeline.section_journal" : {
+    "timeline.section_notes" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Journal"
+            "value" : "Notes"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "日记"
+            "value" : "笔记"
+          }
+        }
+      }
+    },
+    "timeline.section_actions" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's Actions"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日行动"
+          }
+        }
+      }
+    },
+    "timeline.no_actions" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No actions for this day"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日暂无行动"
+          }
+        }
+      }
+    },
+    "timeline.action_why" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why this is recommended"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为什么推荐"
+          }
+        }
+      }
+    },
+    "timeline.action_how" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How to engage"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如何执行"
           }
         }
       }
@@ -10381,6 +10496,7 @@
       }
     },
     "wrapup.completed" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10397,6 +10513,7 @@
       }
     },
     "wrapup.copy_all" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10413,6 +10530,7 @@
       }
     },
     "wrapup.copy_none" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10429,6 +10547,7 @@
       }
     },
     "wrapup.copy_partial" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10460,6 +10579,54 @@
         }
       }
     },
+    "wrapup.progress_all" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All done. On %@, you truly showed up."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上次行动全部完成。你在「%@」这个课题上，真的做到了。"
+          }
+        }
+      }
+    },
+    "wrapup.progress_none" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No actions completed last time. Today is a fresh start."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上次行动未完成，今天重新开始。"
+          }
+        }
+      }
+    },
+    "wrapup.progress_partial" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On %@, you built real change."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你在「%@」这个课题上，积累了真实的改变。"
+          }
+        }
+      }
+    },
     "wrapup.title" : {
       "localizations" : {
         "en" : {
@@ -10479,7 +10646,7 @@
     "You have %d refresh(es) remaining today." : {
 
     },
-    "You've used all 3 refreshes for today. Come back tomorrow to update your rhythm. We're also working on a subscription plan with more access. Thank you for your patience." : {
+    "You've used all 2 refreshes for today. Come back tomorrow to update your rhythm. We're also working on a subscription plan with more access. Thank you for your patience." : {
 
     },
     "Your last rhythm update was at %@. To keep each refresh intentional, the next one will be available 12 hours later. We're actively developing a subscription option with expanded access. Thank you for your patience." : {

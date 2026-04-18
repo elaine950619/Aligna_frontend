@@ -351,6 +351,7 @@ struct TimelineView: View {
     @State private var isLoadingJournal: Bool = false
     @State private var secondaryLoadTask: Task<Void, Never>? = nil
     @State private var selectedSuggestion: SuggestionItem? = nil
+    @State private var selectedAction: DailyAction? = nil
 
     
     private let enableLoading: Bool
@@ -598,7 +599,7 @@ struct TimelineView: View {
                         }
                         .padding(.horizontal, 16)
                         
-                        sectionHeader(title: String(localized: "timeline.section_journal"), systemName: "book.closed")
+                        sectionHeader(title: String(localized: "timeline.section_notes"), systemName: "book.closed")
 
                         NavigationLink {
                             JournalView(date: selectedDate)
@@ -689,6 +690,36 @@ struct TimelineView: View {
                         )
                         .padding(.horizontal, 16)
 
+                        // === Actions Section ===
+                        sectionHeader(title: String(localized: "timeline.section_actions"), systemName: "checkmark.circle")
+                            .padding(.top, 20)
+
+                        let todayActions: [DailyAction] = Calendar.current.isDateInToday(selectedDate)
+                            ? viewModel.dailyActions : []
+
+                        if todayActions.isEmpty {
+                            Text(String(localized: "timeline.no_actions"))
+                                .font(AlynnaTypography.font(.subheadline))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.6))
+                                .padding(.horizontal, 16)
+                                .padding(.bottom, 8)
+                        } else {
+                            LazyVStack(spacing: 8) {
+                                ForEach(todayActions) { action in
+                                    let done = viewModel.completedActionIDs.contains(action.id)
+                                    Button {
+                                        selectedAction = action
+                                    } label: {
+                                        TimelineActionRow(action: action, isDone: done)
+                                            .environmentObject(themeManager)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 8)
+                        }
+
                         sectionHeader(title: String(localized: "timeline.section_rhythm"), systemName: "waveform")
 
                         // Build an ordered list of items for the categories you care about
@@ -725,7 +756,133 @@ struct TimelineView: View {
             .sheet(item: $selectedSuggestion) { item in
                 TimelineSuggestionDetailSheet(item: item)
             }
+            .sheet(item: $selectedAction) { action in
+                TimelineActionDetailSheet(action: action)
+                    .environmentObject(themeManager)
+                    .environmentObject(viewModel)
+                    .environmentObject(reasoningStore)
+            }
         }
+    }
+}
+
+// MARK: - TimelineActionRow
+
+private struct TimelineActionRow: View {
+    let action: DailyAction
+    let isDone: Bool
+    @EnvironmentObject var themeManager: ThemeManager
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 20, weight: .regular))
+                .foregroundColor(isDone
+                    ? themeManager.accent.opacity(0.6)
+                    : themeManager.descriptionText.opacity(0.4))
+
+            Text(action.howToEngage)
+                .font(AlynnaTypography.font(.subheadline))
+                .foregroundColor(isDone
+                    ? themeManager.descriptionText.opacity(0.38)
+                    : themeManager.primaryText.opacity(0.85))
+                .strikethrough(isDone, color: themeManager.descriptionText.opacity(0.3))
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "info.circle")
+                .font(.system(size: 13, weight: .light))
+                .foregroundColor(themeManager.descriptionText.opacity(0.35))
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(themeManager.isNight ? Color.white.opacity(0.05) : Color.black.opacity(0.05))
+        )
+    }
+}
+
+// MARK: - TimelineActionDetailSheet
+
+private struct TimelineActionDetailSheet: View {
+    let action: DailyAction
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var viewModel: OnboardingViewModel
+    @EnvironmentObject var reasoningStore: DailyReasoningStore
+
+    private var whyText: String {
+        let cat = action.category.capitalized
+        if let r = reasoningStore.map[cat],
+           !r.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return r
+        }
+        return defaultReasoning(for: cat)
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    // Why recommended card
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label(String(localized: "timeline.action_why"), systemImage: "sparkles")
+                            .font(AlynnaTypography.font(.caption1))
+                            .foregroundColor(themeManager.accent)
+                        Text(whyText)
+                            .font(AlynnaTypography.font(.body))
+                            .foregroundColor(themeManager.descriptionText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color.secondary.opacity(0.07))
+                    )
+
+                    // How to engage card
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label(String(localized: "timeline.action_how"), systemImage: "hand.raised")
+                            .font(AlynnaTypography.font(.caption1))
+                            .foregroundColor(themeManager.accent)
+                        Text(action.howToEngage)
+                            .font(AlynnaTypography.font(.body))
+                            .foregroundColor(themeManager.descriptionText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color.secondary.opacity(0.07))
+                    )
+                }
+                .padding(20)
+            }
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text(action.category.capitalized)
+                        .font(AlynnaTypography.font(.headline))
+                        .foregroundColor(themeManager.primaryText)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(themeManager.descriptionText)
+                            .frame(width: 30, height: 30)
+                            .background(Color.secondary.opacity(0.12))
+                            .clipShape(Circle())
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
     }
 }
 
