@@ -360,7 +360,6 @@ private struct DailyFocusUsageEntry: Codable, Hashable {
 
 private enum DayPhase {
     case wrapUp     // 上次收尾（有历史行动数据时）
-    case expanded   // 课题展开态（每日首次）
     case home       // 主页缩略态
 }
 
@@ -420,7 +419,6 @@ struct MainView: View {
     @State private var soundPlayerAutoDismissTask: Task<Void, Never>? = nil
     @State private var showNoSoundToast: Bool = false
     @State private var journalSpinAngle: Double = 0
-    @State private var ctaArrowOffset: CGFloat = 0
     @State private var lastPrefetchedSoundKey: String = ""
     @State private var mantraSaveMessage: String = ""
 
@@ -463,6 +461,8 @@ struct MainView: View {
     @State private var mantraActiveFocusByDay: [String: String] = [:]
     @State private var focusGenerationTagID: String? = nil
     @State private var previousActiveFocusIDBeforeFocusRequest: String? = nil
+    // focus selected in LoadingView but not yet committed (committed on generation success)
+    @State private var pendingBootFocusID: String? = nil
     @State private var newFocusName: String = ""
     @State private var newFocusDescription: String = ""
     @State private var focusManagerMessage: String = ""
@@ -485,7 +485,6 @@ struct MainView: View {
     @State private var actionCompleteToastMessage = ""
 
     // MARK: - Daily ritual flow
-    @AppStorage("hasSeenExpandedToday")  private var hasSeenExpandedToday: String = ""  // "yyyy-MM-dd"
     @AppStorage("dailyActionsCompleted") private var dailyActionsCompleted: String = ""  // JSON [String:Bool]
     @AppStorage("dailyActionsDate")      private var dailyActionsDate: String = ""        // "yyyy-MM-dd"
     private let initialRefetchDelay: TimeInterval = 8.0
@@ -920,149 +919,6 @@ struct MainView: View {
             .accessibilityHint("Shows why this mantra was chosen")
     }
 
-    // 每日仪式：展开态 (课题标题 + 心语 + CTA)
-    @ViewBuilder
-    private func ritualExpandedView(geometry: GeometryProxy) -> some View {
-        let textWidth = geometry.size.width * 0.80
-        let topInset = geometry.size.height * 0.12
-        let sandColor = Color(red: 0.94, green: 0.88, blue: 0.72)
-        let activeFocusName: String = {
-            if let f = mantraFocuses.first(where: { $0.id.uuidString == mantraActiveFocusByDay[todayKey] }) {
-                return focusDisplayName(for: f)
-            }
-            return ""
-        }()
-
-        VStack(spacing: 0) {
-            // ── 固定头部：课题标识区域 ──
-            VStack(alignment: .center, spacing: 0) {
-                Spacer().frame(height: topInset)
-
-                Text("expanded.topic_label")
-                    .font(.custom("Merriweather-Regular", size: 11))
-                    .foregroundColor(themeManager.descriptionText.opacity(0.50))
-                    .tracking(1.8)
-                    .textCase(.uppercase)
-
-                if !activeFocusName.isEmpty {
-                    HStack(alignment: .top, spacing: 4) {
-                        Text(activeFocusName)
-                            .font(.custom("Merriweather-Bold", size: 28))
-                            .foregroundColor(themeManager.primaryText)
-                            .multilineTextAlignment(.center)
-
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.5)) {
-                                journalSpinAngle += 360
-                            }
-                            isManualRefreshFlow = true
-                            isFullLoadingFlow = true
-                            didCompletePersonalCheckIn = false
-                            isMantraReady = false
-                            withAnimation(.easeInOut) { bootPhase = .loading }
-                        } label: {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                                .font(.system(size: 11, weight: .regular))
-                                .foregroundColor(themeManager.descriptionText.opacity(0.45))
-                                .rotationEffect(.degrees(journalSpinAngle))
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.top, 2)
-                    }
-                    .padding(.top, 8)
-                    .padding(.horizontal, 24)
-                }
-
-                Text("expanded.topic_subtitle")
-                    .font(.custom("Merriweather-Regular", size: 13))
-                    .foregroundColor(themeManager.descriptionText.opacity(0.55))
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 10)
-                    .padding(.horizontal, 32)
-
-                // 分割线
-                Rectangle()
-                    .fill(themeManager.descriptionText.opacity(0.18))
-                    .frame(width: textWidth * 0.40, height: 0.5)
-                    .padding(.top, 28)
-            }
-
-            // ── 可滚动：今日心语区域 ──
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .center, spacing: 0) {
-                    Text("home.today_mantra")
-                        .font(.custom("Merriweather-Regular", size: 11))
-                        .foregroundColor(themeManager.descriptionText.opacity(0.50))
-                        .tracking(1.8)
-                        .textCase(.uppercase)
-                        .padding(.top, 24)
-                        .padding(.bottom, 16)
-
-                    Text(viewModel.dailyMantra)
-                        .font(AlignaType.expandedMantraFont())
-                        .lineSpacing(12)
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(
-                            themeManager.primaryText.opacity(themeManager.isNight ? 0.94 : 0.88)
-                        )
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(width: textWidth)
-                        .padding(.bottom, 32)
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .frame(maxWidth: .infinity)
-
-            // ── 固定底部：开始今天 按钮 ──
-            Button {
-                markExpandedSeen()
-            } label: {
-                HStack(spacing: 8) {
-                    Text("expanded.cta_button")
-                        .font(.custom("Merriweather-Bold", size: 15))
-                        .foregroundColor(Color(red: 0.12, green: 0.10, blue: 0.08))
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(Color(red: 0.12, green: 0.10, blue: 0.08).opacity(0.70))
-                        .offset(x: ctaArrowOffset)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(sandColor.opacity(themeManager.isNight ? 0.88 : 0.80))
-                )
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 28)
-            .padding(.bottom, 48)
-            .padding(.top, 16)
-            .onAppear {
-                // Nudge right twice, then pause — repeating loop
-                let nudge: CGFloat = 5
-                let step = 0.18
-                let pause = 1.6
-                func cycle() {
-                    withAnimation(.easeInOut(duration: step)) { ctaArrowOffset = nudge }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + step) {
-                        withAnimation(.easeInOut(duration: step)) { ctaArrowOffset = 0 }
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + step * 2 + 0.06) {
-                        withAnimation(.easeInOut(duration: step)) { ctaArrowOffset = nudge }
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + step * 3 + 0.06) {
-                        withAnimation(.easeInOut(duration: step)) { ctaArrowOffset = 0 }
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + step * 4 + pause) {
-                        guard isMantraExpanded else { return }
-                        cycle()
-                    }
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { cycle() }
-            }
-        }
-        .frame(width: geometry.size.width, height: geometry.size.height)
-    }
 
     // 今日课题 capsule (collapsed home)
     @ViewBuilder
@@ -1120,15 +976,15 @@ struct MainView: View {
             // Compact layout for screens shorter than iPhone 14 Pro (852pt)
             let isCompact = geometry.size.height < 852
             let actionFontSize: CGFloat = isCompact ? 13 : 14
-            let actionIconSize: CGFloat = isCompact ? 14 : 15
+            let checkSize: CGFloat = isCompact ? 18 : 20
 
             VStack(spacing: 0) {
                 if !dailyActionItems.isEmpty {
                     VStack(alignment: .leading, spacing: 0) {
                         Text("home.today_actions")
                             .font(.custom("Merriweather-Regular", size: 10))
-                            .foregroundColor(themeManager.descriptionText.opacity(0.50))
-                            .tracking(1.2)
+                            .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                            .tracking(1.4)
                             .textCase(.uppercase)
                             .padding(.bottom, 10)
 
@@ -1136,39 +992,55 @@ struct MainView: View {
                             let done = todayActionsDict[item.category] ?? false
                             let cat = RecCategory(rawValue: item.category)
 
-                            HStack(alignment: .center, spacing: 10) {
-                                // Checkbox — enlarged hit area
-                                Button {
-                                    toggleActionComplete(category: item.category)
-                                } label: {
-                                    Image(systemName: done ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: actionIconSize, weight: .light))
-                                        .foregroundColor(done
-                                            ? themeManager.primaryText.opacity(0.45)
-                                            : themeManager.primaryText.opacity(0.60))
-                                        .frame(width: 32, height: 32)
-                                        .contentShape(Rectangle())
+                            // Card button — whole row navigates to DetailView
+                            Button {
+                                if let cat {
+                                    shouldCollapseMantraOnReturn = true
+                                    mainNavigationPath.append(cat)
                                 }
-                                .buttonStyle(.plain)
-
-                                // Anchor text — tapping navigates to DetailView
-                                Text(item.anchor)
-                                    .font(.custom("Merriweather-Regular", size: actionFontSize))
-                                    .foregroundColor(done
-                                        ? themeManager.descriptionText.opacity(0.35)
-                                        : themeManager.primaryText.opacity(0.82))
-                                    .lineLimit(2)
-                                    .lineSpacing(3)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        if let cat {
-                                            shouldCollapseMantraOnReturn = true
-                                            mainNavigationPath.append(cat)
-                                        }
+                            } label: {
+                                HStack(spacing: 10) {
+                                    // Checkbox (inner button, takes priority over outer card tap)
+                                    Button {
+                                        toggleActionComplete(category: item.category)
+                                    } label: {
+                                        Image(systemName: done ? "checkmark.circle.fill" : "circle")
+                                            .font(.system(size: checkSize, weight: .light))
+                                            .foregroundColor(done
+                                                ? themeManager.primaryText.opacity(0.45)
+                                                : themeManager.primaryText.opacity(0.55))
                                     }
+                                    .buttonStyle(.plain)
+
+                                    // Anchor text
+                                    Text(item.anchor)
+                                        .font(.custom(done ? "Merriweather-Regular" : "Merriweather-Bold", size: actionFontSize))
+                                        .foregroundColor(done
+                                            ? themeManager.descriptionText.opacity(0.35)
+                                            : themeManager.primaryText.opacity(0.85))
+                                        .strikethrough(done, color: themeManager.descriptionText.opacity(0.30))
+                                        .lineLimit(2)
+                                        .fixedSize(horizontal: false, vertical: true)
+
+//                                    Spacer(minLength: 2)
+
+                                    // Navigation hint
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 10, weight: .light))
+                                        .foregroundColor(themeManager.descriptionText.opacity(done ? 0.18 : 0.28))
+                                }
+                                .padding(.horizontal, 13)
+                                .padding(.vertical, 10)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .fill(themeManager.panelFill.opacity(done ? 0.10 : 0.24))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(Color.white.opacity(done ? 0.05 : 0.09), lineWidth: 1)
+                                )
                             }
+                            .buttonStyle(.plain)
                             .padding(.bottom, 6)
                         }
                     }
@@ -1445,8 +1317,6 @@ struct MainView: View {
 
         ensureDefaultFocusSetupForToday()
         pruneInvalidFocusSelectionsAndPersist()
-        // 每次启动都回到 daily focus，daily 是主 focus
-        mantraActiveFocusByDay[currentFocusSelectionKey] = dailyFocusID
         persistMantraFocuses()
     }
 
@@ -2952,10 +2822,14 @@ struct MainView: View {
                 lastFocusName: lastFocusName,
                 actions: lastWrapUpActions,
                 onContinue: {
-                    // WrapUp seen — now kick off the full loading/cosmos flow
+                    // WrapUp seen — mark actions date as today so resolveDayPhase
+                    // won't loop back to wrapUp when attemptBootAdvance runs
+                    loadMantraFocusesIfNeeded()   // 确保 mantraActiveFocusByDay 有值再切 loading
+                    dailyActionsDate = todayKey
                     dayPhase = .home
                     isManualRefreshFlow = true
                     isFullLoadingFlow = true
+                    showMainGenerationOverlay = true  // 确保 onPersonalComplete 走生成分支而非跳过
                     didCompletePersonalCheckIn = false
                     isMantraReady = false
                     withAnimation(.easeInOut) { bootPhase = .loading }
@@ -2972,25 +2846,6 @@ struct MainView: View {
             )
             .environmentObject(themeManager)
             .environmentObject(starManager)
-        }
-        // ── 每日仪式：展开态 ── 全屏 cover，确保 CTA 按钮始终可见
-        .fullScreenCover(isPresented: Binding(
-            get: { bootPhase == .main && dayPhase == .expanded },
-            set: { _ in }
-        )) {
-            GeometryReader { geometry in
-                ZStack {
-                    AppBackgroundView(nightMotion: .animated, nightAnimationSpeed: 7.0)
-                        .environmentObject(starManager)
-                        .environmentObject(themeManager)
-                        .ignoresSafeArea()
-                    ritualExpandedView(geometry: geometry)
-                }
-            }
-            .ignoresSafeArea()
-            .environmentObject(themeManager)
-            .environmentObject(starManager)
-            .environmentObject(viewModel)
         }
     }
 
@@ -3807,12 +3662,15 @@ struct MainView: View {
     // 冷启动只看"是否已登录 + 本地标记"来分流；不再在这里查 Firestore 决定是否强拉 Onboarding。
     // === 替换你原来的 startInitialLoad()（整段替换） ===
     private func startInitialLoad() {
+        // 最先加载 focus 数据，确保 LoadingView 出现时 mantraActiveFocusByDay 已有正确值，
+        // 避免 currentFocusID 传 nil 导致 FocusSelectionView 默认高亮 Presence 并覆盖已有选择
+        loadMantraFocusesIfNeeded()
         isMantraReady = false
 
         #if DEBUG
         if _isPreview { bootPhase = .main; return }
         #endif
-        // 冷启动先“等用户恢复”，最多等一小会（例如 6 秒）
+        // 冷启动先"等用户恢复"，最多等一小会（例如 6 秒）
         waitForAuthenticatedUserThenBoot(maxWait: 6.0)
     }
 
@@ -4011,6 +3869,7 @@ struct MainView: View {
             print("ℹ️ triggerRemedialLoading: 已有请求在途，跳过")
             return
         }
+        loadMantraFocusesIfNeeded()
         todayFetchLock = ""
         isManualRefreshFlow = false
         isFullLoadingFlow = true
@@ -4455,6 +4314,18 @@ struct MainView: View {
                         startInitialLoad()
                     },
                     onPersonalComplete: { didProvidePersonal in
+                        // 判断是否走生成路径（用户点了生成，不是「暂不生成」）
+                        let willGenerate = showMainGenerationOverlay
+                        // 只在生成路径提交 pending focus，确保 fetchFromFastAPIAndSave 读到正确值
+                        // 跳过路径丢弃 pending，今日课题保持不变
+                        if willGenerate, let pendingID = pendingBootFocusID {
+                            mantraActiveFocusByDay[todayKey] = pendingID
+                            if let data = try? JSONEncoder().encode(mantraActiveFocusByDay),
+                               let string = String(data: data, encoding: .utf8) {
+                                mantraActiveFocusStorage = string
+                            }
+                        }
+                        pendingBootFocusID = nil
                         if isManualRefreshFlow && showMainGenerationOverlay {
                             forceRefetchDailyIfNotLocked()
                             if showMainGenerationOverlay { isBootDataReady = true }
@@ -4480,8 +4351,11 @@ struct MainView: View {
                         attemptBootAdvance()
                     },
                     onFocusSelected: { selectedID in
-                        mantraActiveFocusByDay[todayKey] = selectedID
-                        persistMantraFocuses()
+                        // 只暂存，不立刻写入 mantraActiveFocusByDay
+                        // 等 onPersonalComplete（生成成功）后才真正提交，避免：
+                        // 1. 用户选了但点「暂不生成」时课题提前变更
+                        // 2. 此时 loadMantraFocusesIfNeeded 尚未运行，persistMantraFocuses 会用空数据覆盖 storage
+                        pendingBootFocusID = selectedID
                     },
                     focuses: mantraFocuses.map { f in
                         FocusSelectionView.FocusItem(
@@ -4573,10 +4447,6 @@ struct MainView: View {
                         mantra: newValue,
                         isChinese: currentRecommendationLanguageCode() == "zh-Hans"
                     )
-                }
-                // 如果 mantra 刚加载完毕且还没展示过展开态，切换到 expanded
-                if bootPhase == .main && dayPhase == .home && hasSeenExpandedToday != todayKey && !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    dayPhase = .expanded
                 }
             }
             .onChange(of: locationManager.currentLocation.map { "\($0.latitude),\($0.longitude)" }) { _, _ in
@@ -4956,6 +4826,13 @@ struct MainView: View {
 
         let trimmedNotes = viewModel.checkInNotes.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedNotes.isEmpty                                  { payload["personal_notes"]      = trimmedNotes }
+
+        // Attach the user's selected focus (if not the default Presence/daily focus)
+        if let focus = activeFocus, focus.id.uuidString != dailyFocusID {
+            payload["focus_tag"]         = focus.name
+            payload["focus_description"] = focus.description
+            payload["focus_mode"]        = "personal"
+        }
 
         print("[PayloadOut] place_signals → current_place=\(viewModel.currentPlace) condition=\(viewModel.weatherCondition ?? "nil") temp=\(viewModel.temperature.map { String($0) } ?? "nil") wind=\(viewModel.windDirection ?? "nil")@\(viewModel.windSpeed.map { String($0) } ?? "nil") humidity=\(viewModel.humidity.map { String($0) } ?? "nil") pressure=\(viewModel.pressure.map { String($0) } ?? "nil")")
 
@@ -5391,32 +5268,14 @@ struct MainView: View {
     }
 
     private func resolveDayPhase() {
-        // Already tapped "Start Today" today → straight to home
-        if hasSeenExpandedToday == todayKey {
-            dayPhase = .home
-            isMantraExpanded = false
-            return
-        }
         // Has previous session actions not yet reviewed → show wrapUp first
         if hasPreviousSessionActions {
             buildWrapUpData()
             dayPhase = .wrapUp
             return
         }
-        // Mantra ready → show expanded; otherwise wait (onChange will re-trigger)
-        if !viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            dayPhase = .expanded
-        } else {
-            dayPhase = .home
-        }
-    }
-
-    private func markExpandedSeen() {
-        hasSeenExpandedToday = todayKey
-        withAnimation(.easeInOut(duration: 0.45)) {
-            isMantraExpanded = false
-            dayPhase = .home
-        }
+        // Mantra ready or not → go straight to home
+        dayPhase = .home
     }
 
     private func toggleActionComplete(category: String) {

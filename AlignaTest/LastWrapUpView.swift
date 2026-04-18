@@ -57,8 +57,10 @@ struct LastWrapUpView: View {
                 .padding(.top, 60)
             }
 
-            VStack(spacing: 0) {
-                Spacer()
+            GeometryReader { geo in
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 0) {
+                    Spacer(minLength: 0)
 
                 VStack(alignment: .leading, spacing: 0) {
                     // ── Card: title → focus name → count → checklist → encouragement ──
@@ -156,6 +158,9 @@ struct LastWrapUpView: View {
                 }
                 .padding(.horizontal, 28)
                 .padding(.bottom, 52)
+                }
+                .frame(minHeight: geo.size.height)
+            }
             }
         }
     }

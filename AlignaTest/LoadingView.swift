@@ -1918,8 +1918,9 @@ struct LoadingView: View {
             let rhum  = current["relative_humidity_2m"] as? Double
             let pres  = current["surface_pressure"] as? Double
 
-            let description = placeWeatherDescription(for: code)
-            let windDir     = wdeg.map { windCompassDirection(degrees: $0) }
+            let description   = placeWeatherDescription(for: code)    // 英文，用于后台 payload
+            let descriptionZH = placeWeatherDescriptionZH(for: code)  // 中文，用于界面显示
+            let windDir       = wdeg.map { windCompassDirection(degrees: $0) }
 
             // Build display strings
             let tempStr = temp.map { "\(Int($0.rounded()))°F" } ?? ""
@@ -1948,8 +1949,8 @@ struct LoadingView: View {
                 placeHumidity      = rhum
                 placePressure      = pres
 
-                // Persist into viewModel so MainView can include them in the API payload
-                viewModel.weatherCondition = description.isEmpty ? nil : description
+                // Persist into viewModel — 中文版用于界面显示，英文版（description）用于 API payload
+                viewModel.weatherCondition = descriptionZH.isEmpty ? nil : descriptionZH
                 viewModel.temperature      = temp
                 viewModel.windDirection    = windDir
                 viewModel.windSpeed        = wspd
@@ -2375,6 +2376,31 @@ struct LoadingView: View {
         case 95:      return "Thunderstorm"
         default:      return "Mixed conditions"
         }
+    }
+
+    private func placeWeatherDescriptionZH(for code: Int) -> String {
+        let key: String
+        switch code {
+        case 0:       key = "weather.clear"
+        case 1:       key = "weather.mostly_clear"
+        case 2:       key = "weather.partly_cloudy"
+        case 3:       key = "weather.cloudy"
+        case 45, 48:  key = "weather.foggy"
+        case 51, 53:  key = "weather.light_drizzle"
+        case 55:      key = "weather.drizzle"
+        case 61:      key = "weather.light_rain"
+        case 63:      key = "weather.moderate_rain"
+        case 65:      key = "weather.heavy_rain"
+        case 71:      key = "weather.light_snow"
+        case 73:      key = "weather.moderate_snow"
+        case 75:      key = "weather.heavy_snow"
+        case 80:      key = "weather.showers"
+        case 81:      key = "weather.moderate_showers"
+        case 82:      key = "weather.heavy_showers"
+        case 95:      key = "weather.thunderstorm"
+        default:      key = "weather.mixed"
+        }
+        return String(localized: String.LocalizationValue(key))
     }
 
     private func windDirectionText(for degrees: Double) -> String {
