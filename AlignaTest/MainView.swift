@@ -976,7 +976,7 @@ struct MainView: View {
             // Compact layout for screens shorter than iPhone 14 Pro (852pt)
             let isCompact = geometry.size.height < 852
             let actionFontSize: CGFloat = isCompact ? 13 : 14
-            let checkSize: CGFloat = isCompact ? 18 : 20
+            let checkSize: CGFloat = isCompact ? 28 : 32
 
             VStack(spacing: 0) {
                 if !dailyActionItems.isEmpty {
@@ -992,6 +992,21 @@ struct MainView: View {
                             let done = todayActionsDict[item.category] ?? false
                             let cat = RecCategory(rawValue: item.category)
 
+                            // SF Symbol per category
+                            let categorySymbol: String = {
+                                switch item.category {
+                                case "Activity":     return "figure.walk"
+                                case "Place":        return "location.fill"
+                                case "Sound":        return "waveform"
+                                case "Scent":        return "wind"
+                                case "Gemstone":     return "diamond.fill"
+                                case "Color":        return "paintpalette.fill"
+                                case "Career":       return "briefcase.fill"
+                                case "Relationship": return "heart.fill"
+                                default:             return "sparkle"
+                                }
+                            }()
+
                             // Card button — whole row navigates to DetailView
                             Button {
                                 if let cat {
@@ -1000,15 +1015,22 @@ struct MainView: View {
                                 }
                             } label: {
                                 HStack(spacing: 10) {
-                                    // Checkbox (inner button, takes priority over outer card tap)
+                                    // Category icon in circle (inner button toggles completion)
                                     Button {
                                         toggleActionComplete(category: item.category)
                                     } label: {
-                                        Image(systemName: done ? "checkmark.circle.fill" : "circle")
-                                            .font(.system(size: checkSize, weight: .light))
-                                            .foregroundColor(done
-                                                ? themeManager.primaryText.opacity(0.45)
-                                                : themeManager.primaryText.opacity(0.55))
+                                        ZStack {
+                                            Circle()
+                                                .fill(done
+                                                    ? themeManager.primaryText.opacity(0.12)
+                                                    : themeManager.primaryText.opacity(0.18))
+                                                .frame(width: checkSize, height: checkSize)
+                                            Image(systemName: categorySymbol)
+                                                .font(.system(size: checkSize * 0.58, weight: .medium))
+                                                .foregroundColor(done
+                                                    ? themeManager.primaryText.opacity(0.30)
+                                                    : themeManager.primaryText.opacity(0.80))
+                                        }
                                     }
                                     .buttonStyle(.plain)
 
@@ -2659,18 +2681,16 @@ struct MainView: View {
                                         Text(viewModel.dailyMantra)
                                             .font(currentRecommendationLanguageCode() == "zh-Hans"
                                                   ? .custom("LXGWWenKaiTC-Bold", size: 17)
-                                                  : .custom("Merriweather-Italic", size: 17))
+                                                  : .custom("Merriweather-Italic", size: 16))
                                             .lineSpacing(3)
                                             .multilineTextAlignment(.leading)
                                             .foregroundColor(themeManager.descriptionText.opacity(0.80))
                                             .frame(maxWidth: .infinity, alignment: .leading)
-                                            // Reserve space at bottom-right for share icon
-                                            .padding(.trailing, 32)
                                             .contentShape(Rectangle())
                                     }
                                     .buttonStyle(.plain)
 
-                                    // Share icon — bottom-right corner
+                                    // Share icon — bottom-right, offset into card corner
                                     Button {
                                         showWallpaperPreview = true
                                     } label: {
@@ -2681,6 +2701,7 @@ struct MainView: View {
                                             .contentShape(Rectangle())
                                     }
                                     .buttonStyle(.plain)
+                                    .offset(x: 8, y: 8)
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 16)
