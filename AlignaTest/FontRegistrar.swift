@@ -29,7 +29,12 @@ enum FontRegistrar {
         "AidianFengYaHei"
     ]
 
+    private static var didRegister = false
+
     static func registerAllFonts() {
+        guard !didRegister else { return }
+        didRegister = true
+
         // If Info.plist UIAppFonts already registered everything, skip to avoid duplicate GSFont logs.
         let allAvailable = expectedPostScriptNames.allSatisfy { UIFont(name: $0, size: 12) != nil }
         if allAvailable {
