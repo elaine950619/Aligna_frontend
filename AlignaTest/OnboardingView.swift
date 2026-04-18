@@ -1692,6 +1692,26 @@ struct OnboardingStep3: View {
                         acc[key] = pair.value
                     }
 
+                    let responseFocusInputs: [String: String] = {
+                        let nested = coerceStringDict(parsed["focus_inputs"])
+                        let focusTag = ((parsed["focus_tag"] as? String) ?? nested["focus_tag"] ?? "")
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                        let focusDescription = ((parsed["focus_description"] as? String) ?? nested["focus_description"] ?? "")
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                        let focusMode = ((parsed["focus_mode"] as? String) ?? nested["focus_mode"] ?? "")
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+                        guard !focusTag.isEmpty || !focusDescription.isEmpty || !focusMode.isEmpty else {
+                            return [:]
+                        }
+
+                        return [
+                            "focus_tag": focusTag,
+                            "focus_description": focusDescription,
+                            "focus_mode": focusMode,
+                        ]
+                    }()
+
                     print("🧠 FastAPI(raw) reasoning count:", rawReasoning.count, "keys:", rawReasoning.keys.sorted())
 
                     DispatchQueue.main.async {
@@ -1715,6 +1735,17 @@ struct OnboardingStep3: View {
                             "sleep": viewModel.checkInSleep ?? "",
                             "personal_notes": viewModel.checkInNotes.trimmingCharacters(in: .whitespacesAndNewlines)
                         ]
+                        if !responseFocusInputs.isEmpty {
+                            recommendationData["focus_inputs"] = responseFocusInputs
+                            recommendationData["focus_tag"] = responseFocusInputs["focus_tag"] ?? ""
+                            recommendationData["focus_description"] = responseFocusInputs["focus_description"] ?? ""
+                            recommendationData["focus_mode"] = responseFocusInputs["focus_mode"] ?? ""
+                        } else {
+                            recommendationData["focus_inputs"] = FieldValue.delete()
+                            recommendationData["focus_tag"] = FieldValue.delete()
+                            recommendationData["focus_description"] = FieldValue.delete()
+                            recommendationData["focus_mode"] = FieldValue.delete()
+                        }
 
                         if !rawReasoning.isEmpty {
                             recommendationData["reasoning"] = rawReasoning
@@ -2566,6 +2597,26 @@ struct OnboardingFinalStep: View {
                         acc[key] = pair.value
                     }
 
+                    let responseFocusInputs: [String: String] = {
+                        let nested = coerceStringDict(parsed["focus_inputs"])
+                        let focusTag = ((parsed["focus_tag"] as? String) ?? nested["focus_tag"] ?? "")
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                        let focusDescription = ((parsed["focus_description"] as? String) ?? nested["focus_description"] ?? "")
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                        let focusMode = ((parsed["focus_mode"] as? String) ?? nested["focus_mode"] ?? "")
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+                        guard !focusTag.isEmpty || !focusDescription.isEmpty || !focusMode.isEmpty else {
+                            return [:]
+                        }
+
+                        return [
+                            "focus_tag": focusTag,
+                            "focus_description": focusDescription,
+                            "focus_mode": focusMode,
+                        ]
+                    }()
+
                     print("🧠 FastAPI(raw) reasoning count:", rawReasoning.count, "keys:", rawReasoning.keys.sorted())
                     
                     DispatchQueue.main.async {
@@ -2589,6 +2640,17 @@ struct OnboardingFinalStep: View {
                             "sleep": viewModel.checkInSleep ?? "",
                             "personal_notes": viewModel.checkInNotes.trimmingCharacters(in: .whitespacesAndNewlines)
                         ]
+                        if !responseFocusInputs.isEmpty {
+                            recommendationData["focus_inputs"] = responseFocusInputs
+                            recommendationData["focus_tag"] = responseFocusInputs["focus_tag"] ?? ""
+                            recommendationData["focus_description"] = responseFocusInputs["focus_description"] ?? ""
+                            recommendationData["focus_mode"] = responseFocusInputs["focus_mode"] ?? ""
+                        } else {
+                            recommendationData["focus_inputs"] = FieldValue.delete()
+                            recommendationData["focus_tag"] = FieldValue.delete()
+                            recommendationData["focus_description"] = FieldValue.delete()
+                            recommendationData["focus_mode"] = FieldValue.delete()
+                        }
                         
                         
                         if !rawReasoning.isEmpty {

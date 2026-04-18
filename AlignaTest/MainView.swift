@@ -5135,6 +5135,26 @@ struct MainView: View {
 
                     let reasoning = resolvedReasoningSummary
 
+                    let responseFocusInputs: [String: String] = {
+                        let nested = coerceStringDict(parsed["focus_inputs"])
+                        let focusTag = ((parsed["focus_tag"] as? String) ?? nested["focus_tag"] ?? "")
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                        let focusDescription = ((parsed["focus_description"] as? String) ?? nested["focus_description"] ?? "")
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                        let focusMode = ((parsed["focus_mode"] as? String) ?? nested["focus_mode"] ?? "")
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+                        guard !focusTag.isEmpty || !focusDescription.isEmpty || !focusMode.isEmpty else {
+                            return [:]
+                        }
+
+                        return [
+                            "focus_tag": focusTag,
+                            "focus_description": focusDescription,
+                            "focus_mode": focusMode,
+                        ]
+                    }()
+
                     DispatchQueue.main.async {
                         // ✅ 把后端 recommendations 的 key 统一成规范写法
                         let normalized: [String: String] = recs.reduce(into: [:]) { acc, kv in
@@ -5185,6 +5205,17 @@ struct MainView: View {
                             "sleep": viewModel.checkInSleep ?? "",
                             "personal_notes": viewModel.checkInNotes.trimmingCharacters(in: .whitespacesAndNewlines)
                         ]
+                        if !responseFocusInputs.isEmpty {
+                            recommendationData["focus_inputs"] = responseFocusInputs
+                            recommendationData["focus_tag"] = responseFocusInputs["focus_tag"] ?? ""
+                            recommendationData["focus_description"] = responseFocusInputs["focus_description"] ?? ""
+                            recommendationData["focus_mode"] = responseFocusInputs["focus_mode"] ?? ""
+                        } else {
+                            recommendationData["focus_inputs"] = FieldValue.delete()
+                            recommendationData["focus_tag"] = FieldValue.delete()
+                            recommendationData["focus_description"] = FieldValue.delete()
+                            recommendationData["focus_mode"] = FieldValue.delete()
+                        }
 
                         // ✅ Write reasoning into Firestore only when backend provides it.
                         // Avoid overwriting with placeholders, so missing reasoning is obvious.
