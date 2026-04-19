@@ -2832,7 +2832,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "行动"
+            "value": "今日行动"
           }
         }
       }
@@ -5141,6 +5141,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "记录"
+          }
+        }
+      }
+    },
+    "moon.clear": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear intentions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除心愿"
+          }
+        }
+      }
+    },
+    "moon.clear_confirm_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear intentions?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认清除心愿？"
+          }
+        }
+      }
+    },
+    "moon.clear_confirm_message": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This will remove your recorded intentions for today."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日记录的心愿将被删除。"
+          }
+        }
+      }
+    },
+    "moon.clear_confirm_action": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除"
+          }
+        }
+      }
+    },
+    "moon.clear_cancel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
           }
         }
       }
@@ -9542,7 +9622,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "今日行动"
+            "value": "行动"
           }
         }
       }

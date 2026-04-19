@@ -3115,11 +3115,18 @@ struct MainView: View {
             }
             .sheet(isPresented: $showMoonRitualSheet) {
                 if let phase = todayMoonPhase {
-                    MoonRitualSheet(phase: phase) {
-                        let df = DateFormatter()
-                        df.dateFormat = "yyyy-MM-dd"
-                        lastMoonRitualDate = df.string(from: Date())
-                    }
+                    MoonRitualSheet(
+                        phase: phase,
+                        isCompleted: moonRitualCompleted,
+                        onComplete: {
+                            let df = DateFormatter()
+                            df.dateFormat = "yyyy-MM-dd"
+                            lastMoonRitualDate = df.string(from: Date())
+                        },
+                        onReset: {
+                            lastMoonRitualDate = ""
+                        }
+                    )
                     .environmentObject(themeManager)
                     .presentationDragIndicator(.visible)
                     .presentationCornerRadius(24)
@@ -5958,7 +5965,8 @@ struct MainView: View {
                     || key == "daily_score"
                     || key == "score_breakdown"
                     || key == "score_explanation"
-                    || key == "keywords" {
+                    || key == "keywords"
+                    || key == "moon_intention" {
                     continue
                 }
 

@@ -122,7 +122,10 @@ struct MoonRitualBanner: View {
 
 struct MoonRitualSheet: View {
     let phase: MoonPhase
+    let isCompleted: Bool
     let onComplete: () -> Void
+    /// Called when the user clears a completed ritual. Caller resets lastMoonRitualDate.
+    let onReset: () -> Void
 
     @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
@@ -130,6 +133,7 @@ struct MoonRitualSheet: View {
     // Three intention / release lines
     @State private var lines: [String] = ["", "", ""]
     @State private var isSaving = false
+    @State private var showResetConfirm = false
     @FocusState private var focusedIndex: Int?
 
     // MARK: Phase identity (independent of theme)
@@ -336,10 +340,39 @@ struct MoonRitualSheet: View {
                 }
                 .disabled(!canSave || isSaving)
                 .padding(.horizontal, 24)
-                .padding(.bottom, 40)
+
+                // Clear button — only visible after ritual is completed
+                if isCompleted {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        showResetConfirm = true
+                    } label: {
+                        Text(String(localized: "moon.clear"))
+                            .font(.custom("Merriweather-Regular", size: 13))
+                            .foregroundColor(bodyColor.opacity(0.55))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 24)
+                }
+
+                Spacer(minLength: 8).frame(height: 32)
             }
         }
         .onAppear { focusedIndex = 0 }
+        .confirmationDialog(
+            String(localized: "moon.clear_confirm_title"),
+            isPresented: $showResetConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "moon.clear_confirm_action"), role: .destructive) {
+                deleteRitual()
+            }
+            Button(String(localized: "moon.clear_cancel"), role: .cancel) {}
+        } message: {
+            Text(String(localized: "moon.clear_confirm_message"))
+        }
     }
 
     private func saveRitual() {
@@ -356,7 +389,9 @@ struct MoonRitualSheet: View {
 
         if let uid = Auth.auth().currentUser?.uid {
             let db = Firestore.firestore()
-            let data: [String: Any] = [
+
+            // Save ritual record (source of truth for the ritual itself)
+            let ritualData: [String: Any] = [
                 "type": "moon_ritual",
                 "phase": phase.rawValue,
                 "date": dayKey,
@@ -365,10 +400,40 @@ struct MoonRitualSheet: View {
             ]
             db.collection("users").document(uid)
                 .collection("moon_rituals").document("\(phase.rawValue)_\(dayKey)")
-                .setData(data) { _ in }
+                .setData(ritualData) { _ in }
+
+            // Silently mirror intentions into today's daily_recommendation
+            // so the backend can use them as personalisation context.
+            // Uses merge: true so the doc is created if not yet generated today.
+            let recDocID = "\(uid)_\(dayKey)"
+            db.collection("daily_recommendation").document(recDocID)
+                .setData(["moon_intention": nonEmpty], merge: true) { _ in }
         }
 
         onComplete()
+        dismiss()
+    }
+
+    private func deleteRitual() {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let dayKey = df.string(from: Date())
+
+        if let uid = Auth.auth().currentUser?.uid {
+            let db = Firestore.firestore()
+
+            // Remove the ritual record
+            db.collection("users").document(uid)
+                .collection("moon_rituals").document("\(phase.rawValue)_\(dayKey)")
+                .delete() { _ in }
+
+            // Remove moon_intention from daily_recommendation (FieldValue.delete())
+            let recDocID = "\(uid)_\(dayKey)"
+            db.collection("daily_recommendation").document(recDocID)
+                .updateData(["moon_intention": FieldValue.delete()]) { _ in }
+        }
+
+        onReset()
         dismiss()
     }
 }
