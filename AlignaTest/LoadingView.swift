@@ -737,6 +737,7 @@ struct LoadingView: View {
             ("transitions",   "focus.group.transitions"),
             ("inner",         "focus.group.inner"),
             ("practical",     "focus.group.practical"),
+            ("rituals",       "focus.group.rituals"),
         ]
 
         VStack(spacing: 0) {
@@ -853,6 +854,7 @@ struct LoadingView: View {
             ("transitions",   "focus.group.transitions"),
             ("inner",         "focus.group.inner"),
             ("practical",     "focus.group.practical"),
+            ("rituals",       "focus.group.rituals"),
         ]
 
         VStack(spacing: 0) {

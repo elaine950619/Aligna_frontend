@@ -281,16 +281,23 @@ private func focusGroupKey(for nameKey: String) -> String {
     switch nameKey.lowercased() {
     case "rest", "focus_work", "creativity":
         return "everyday"
-    case "connection", "family", "conflict", "parenting":
+    case "connection", "family", "conflict", "parenting",
+         "heartbreak", "friendship", "singlehood", "long_distance":
         return "relationships"
-    case "recovery", "quitting", "chronic", "fertility":
+    case "recovery", "quitting", "chronic", "fertility",
+         "menstrual", "menopause":
         return "body"
-    case "transition", "grief", "caregiving", "end_of_life":
+    case "transition", "grief", "caregiving", "end_of_life",
+         "graduation", "empty_nest":
         return "transitions"
-    case "clarity", "anxiety", "identity", "purpose":
+    case "clarity", "anxiety", "identity", "purpose",
+         "loneliness":
         return "inner"
-    case "career", "research", "finance", "relocation":
+    case "career", "research", "finance", "relocation",
+         "job_search", "exam", "entrepreneurship":
         return "practical"
+    case "gratitude", "birthday", "anniversary", "solar_term", "digital_detox":
+        return "rituals"
     default:
         return ""
     }
@@ -581,6 +588,29 @@ struct MainView: View {
     private let researchFocusID   = "f2f2f2f2-f2f2-f2f2-f2f2-f2f2f2f2f2f2"
     private let financeFocusID    = "f3f3f3f3-f3f3-f3f3-f3f3-f3f3f3f3f3f3"
     private let relocationFocusID = "f4f4f4f4-f4f4-f4f4-f4f4-f4f4f4f4f4f4"
+    // Group: 关系与他人 (扩展)
+    private let heartbreakFocusID       = "b4b4b4b4-b4b4-b4b4-b4b4-b4b4b4b4b4b4"
+    private let friendshipFocusID       = "b5b5b5b5-b5b5-b5b5-b5b5-b5b5b5b5b5b5"
+    private let singlehoodFocusID       = "b6b6b6b6-b6b6-b6b6-b6b6-b6b6b6b6b6b6"
+    private let longDistanceFocusID     = "b7b7b7b7-b7b7-b7b7-b7b7-b7b7b7b7b7b7"
+    // Group: 身体与健康 (扩展)
+    private let menstrualFocusID        = "c3c3c3c3-c3c3-c3c3-c3c3-c3c3c3c3c3c3"
+    private let menopauseFocusID        = "c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4"
+    // Group: 人生过渡 (扩展)
+    private let graduationFocusID       = "d2d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2"
+    private let emptyNestFocusID        = "d3d3d3d3-d3d3-d3d3-d3d3-d3d3d3d3d3d3"
+    // Group: 内在与成长 (扩展)
+    private let lonelinessFocusID       = "e4e4e4e4-e4e4-e4e4-e4e4-e4e4e4e4e4e4"
+    // Group: 现实处境 (扩展)
+    private let jobSearchFocusID        = "f5f5f5f5-f5f5-f5f5-f5f5-f5f5f5f5f5f5"
+    private let examFocusID             = "f6f6f6f6-f6f6-f6f6-f6f6-f6f6f6f6f6f6"
+    private let entrepreneurshipFocusID = "f7f7f7f7-f7f7-f7f7-f7f7-f7f7f7f7f7f7"
+    // Group: 仪式 (新增)
+    private let gratitudeFocusID        = "a9a9a9a9-a9a9-a9a9-a9a9-a9a9a9a9a9a9"
+    private let birthdayFocusID         = "b9b9b9b9-b9b9-b9b9-b9b9-b9b9b9b9b9b9"
+    private let anniversaryFocusID      = "c9c9c9c9-c9c9-c9c9-c9c9-c9c9c9c9c9c9"
+    private let solarTermFocusID        = "d9d9d9d9-d9d9-d9d9-d9d9-d9d9d9d9d9d9"
+    private let digitalDetoxFocusID     = "e9e9e9e9-e9e9-e9e9-e9e9-e9e9e9e9e9e9"
     private let maxNonDailyFocusUpdatesPerDay = 2
 
     private var currentFocusSelectionKey: String {
@@ -1227,10 +1257,16 @@ struct MainView: View {
             presenceFocusID,
             restFocusID, focusWorkFocusID, creativityFocusID,
             connectionFocusID, familyFocusID, conflictFocusID, parentingFocusID,
+            heartbreakFocusID, friendshipFocusID, singlehoodFocusID, longDistanceFocusID,
             recoveryFocusID, quittingFocusID, chronicFocusID, fertilityFocusID,
+            menstrualFocusID, menopauseFocusID,
             transitionFocusID, griefFocusID, caregivingFocusID, endOfLifeFocusID,
+            graduationFocusID, emptyNestFocusID,
             clarityFocusID, anxietyFocusID, identityFocusID, purposeFocusID,
+            lonelinessFocusID,
             careerFocusID, researchFocusID, financeFocusID, relocationFocusID,
+            jobSearchFocusID, examFocusID, entrepreneurshipFocusID,
+            gratitudeFocusID, birthdayFocusID, anniversaryFocusID, solarTermFocusID, digitalDetoxFocusID,
         ]
     }
 
