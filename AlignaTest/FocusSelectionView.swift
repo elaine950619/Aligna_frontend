@@ -159,6 +159,7 @@ struct FocusSelectionView: View {
             // ── Confirm button — always visible at bottom ──
             Button {
                 if let id = selectedID {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                     onConfirm(id)
                 }
             } label: {

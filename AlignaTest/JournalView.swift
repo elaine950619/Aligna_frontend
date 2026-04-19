@@ -427,6 +427,7 @@ struct JournalView: View {
     
     @MainActor
     private func saveEntryAndClose() async {
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         let sanitizedText = sanitizeNotesText(text)
         let hasSelections = mood != nil || stress != nil || sleep != nil
         guard !sanitizedText.trimmed().isEmpty || hasSelections else { return }

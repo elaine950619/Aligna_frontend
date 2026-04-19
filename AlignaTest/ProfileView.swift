@@ -3030,6 +3030,7 @@ private extension ProfileView {
     func themeOption(_ pref: ThemePreference) -> some View {
         let selected = themePreferenceRaw == pref.rawValue
         return Button {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
             withAnimation(.easeInOut(duration: 0.25)) {
                 themePreferenceRaw = pref.rawValue
                 switch pref {

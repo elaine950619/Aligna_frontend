@@ -997,6 +997,9 @@
         }
       }
     },
+    "Copy" : {
+
+    },
     "Could not capture the screenshot." : {
       "localizations" : {
         "zh-Hans" : {
@@ -2709,7 +2712,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "今日行动"
+            "value" : "行动"
           }
         }
       }
@@ -8903,54 +8906,6 @@
         }
       }
     },
-    "profile.theme_rain" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rain"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "细雨"
-          }
-        }
-      }
-    },
-    "profile.theme_vitality" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vitality"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "生命力"
-          }
-        }
-      }
-    },
-    "profile.theme_love" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Love"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "爱意"
-          }
-        }
-      }
-    },
     "profile.theme_dawn" : {
       "localizations" : {
         "en" : {
@@ -8983,6 +8938,38 @@
         }
       }
     },
+    "profile.theme_love" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Love"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "爱意"
+          }
+        }
+      }
+    },
+    "profile.theme_rain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rain"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "细雨"
+          }
+        }
+      }
+    },
     "profile.theme_subtitle" : {
       "localizations" : {
         "en" : {
@@ -9011,6 +8998,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "主题"
+          }
+        }
+      }
+    },
+    "profile.theme_vitality" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vitality"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生命力"
           }
         }
       }
@@ -9864,6 +9867,38 @@
         }
       }
     },
+    "timeline.action_how" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How to engage"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如何执行"
+          }
+        }
+      }
+    },
+    "timeline.action_why" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why this is recommended"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为什么推荐"
+          }
+        }
+      }
+    },
     "timeline.header_title" : {
       "localizations" : {
         "en" : {
@@ -9924,6 +9959,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "今日心语将在这里显示。"
+          }
+        }
+      }
+    },
+    "timeline.no_actions" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No actions for this day"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日暂无行动"
           }
         }
       }
@@ -9992,22 +10043,6 @@
         }
       }
     },
-    "timeline.section_notes" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Notes"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "笔记"
-          }
-        }
-      }
-    },
     "timeline.section_actions" : {
       "localizations" : {
         "en" : {
@@ -10020,54 +10055,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "今日行动"
-          }
-        }
-      }
-    },
-    "timeline.no_actions" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No actions for this day"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "今日暂无行动"
-          }
-        }
-      }
-    },
-    "timeline.action_why" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Why this is recommended"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "为什么推荐"
-          }
-        }
-      }
-    },
-    "timeline.action_how" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "How to engage"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "如何执行"
           }
         }
       }
@@ -10088,6 +10075,22 @@
         }
       }
     },
+    "timeline.section_notes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "笔记"
+          }
+        }
+      }
+    },
     "timeline.section_rhythm" : {
       "localizations" : {
         "en" : {
@@ -10100,6 +10103,102 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "节律"
+          }
+        }
+      }
+    },
+    "journal.search.placeholder" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search notes..."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索日记..."
+          }
+        }
+      }
+    },
+    "journal.search.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Journal Search"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索日记"
+          }
+        }
+      }
+    },
+    "journal.search.no_results" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No entries match your search."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有符合条件的记录。"
+          }
+        }
+      }
+    },
+    "journal.search.loading" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading entries..."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加载中..."
+          }
+        }
+      }
+    },
+    "journal.search.all" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部"
+          }
+        }
+      }
+    },
+    "timeline.streak_days" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld days in a row"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连续记录 %lld 天"
           }
         }
       }

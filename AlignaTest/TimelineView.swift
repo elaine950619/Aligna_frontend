@@ -59,7 +59,9 @@ private struct TimelineHeader: View {
     var iconColor: Color = .white
     var topPadding: CGFloat = 0
     var horizontalPadding: CGFloat = 0
+    var streak: Int = 0
     var onBack: () -> Void
+    var onSearch: (() -> Void)? = nil
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject var themeManager: ThemeManager
 
@@ -71,7 +73,7 @@ private struct TimelineHeader: View {
 
             ZStack {
                 
-                // back button (leading)
+                // back button (leading) + search button (trailing)
                 HStack {
                     Button(action: onBack) {
                         Image(systemName: "chevron.left")
@@ -85,6 +87,15 @@ private struct TimelineHeader: View {
                             
                     }
                     Spacer()
+                    if let onSearch {
+                        Button(action: onSearch) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 18, weight: .regular))
+                                .foregroundColor(themeManager.foregroundColor)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
+                    }
                 }
                 .padding(.top, topPadding)
                 .padding(.horizontal, horizontalPadding)
@@ -92,16 +103,25 @@ private struct TimelineHeader: View {
                 
                 
 //                Spacer()
-                // centered title
-                VStack(spacing: 12) {
-                    Text(title)
-                        .font(TimelineType.title34GloockBlack())
-                        .lineSpacing(TimelineType.title34LineSpacing)
-                        .foregroundColor(themeManager.primaryText)
-                        .kerning(0.5)
-
-
-                }
+                // centered title — position unchanged
+                Text(title)
+                    .font(TimelineType.title34GloockBlack())
+                    .lineSpacing(TimelineType.title34LineSpacing)
+                    .foregroundColor(themeManager.primaryText)
+                    .kerning(0.5)
+                    // streak subtitle floats below title without moving it
+                    .overlay(alignment: .bottom) {
+                        if streak >= 2 {
+                            Text(String(format: String(localized: "timeline.streak_days"), streak))
+                                .font(.custom("Merriweather-Regular", size: 11))
+                                .tracking(0.6)
+                                .foregroundColor(themeManager.descriptionText.opacity(0.50))
+                                .fixedSize()
+                                .offset(y: 18)
+                                .transition(.opacity.combined(with: .scale(scale: 0.94)))
+                        }
+                    }
+                    .animation(.easeInOut(duration: 0.3), value: streak)
             }
 //            .padding(.top, max(top, 12))
             .padding(.horizontal, 20)
@@ -346,12 +366,14 @@ struct TimelineView: View {
     
     @State private var selectedDate = Date()
     @State private var validDayKeys: Set<String> = []
+    @State private var currentStreak: Int = 0
     @StateObject private var dailyVM: DailyViewModel
     @State private var journalText: String = ""
     @State private var isLoadingJournal: Bool = false
     @State private var secondaryLoadTask: Task<Void, Never>? = nil
     @State private var selectedSuggestion: SuggestionItem? = nil
     @State private var selectedAction: DailyAction? = nil
+    @State private var showJournalSearch = false
 
     
     private let enableLoading: Bool
@@ -426,6 +448,21 @@ struct TimelineView: View {
         return validDayKeys.contains(key)
     }
 
+    /// Counts consecutive days ending today that have a record in `keys`.
+    private func computeStreak(from keys: Set<String>) -> Int {
+        let cal = Calendar.current
+        var count = 0
+        var checking = cal.startOfDay(for: Date())
+        while true {
+            let key = DateFormatter.appDayKey.string(from: checking)
+            guard keys.contains(key) else { break }
+            count += 1
+            guard let prev = cal.date(byAdding: .day, value: -1, to: checking) else { break }
+            checking = prev
+        }
+        return count
+    }
+
     private func fetchValidDates(for month: Date) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         let calendar = Calendar.current
@@ -452,6 +489,7 @@ struct TimelineView: View {
                 if !keys.isEmpty {
                     DispatchQueue.main.async {
                         validDayKeys = Set(keys)
+                        currentStreak = computeStreak(from: Set(keys))
                     }
                     return
                 }
@@ -476,6 +514,7 @@ struct TimelineView: View {
 
                         DispatchQueue.main.async {
                             validDayKeys = Set(filtered)
+                            currentStreak = computeStreak(from: Set(filtered))
                         }
                     }
             }
@@ -550,9 +589,14 @@ struct TimelineView: View {
         
                 
                 ScrollView(.vertical, showsIndicators: false) {
-                    TimelineHeader(title: String(localized: "timeline.header_title")) { dismiss() }
-                                            .padding(.bottom, 4)
-                                            .foregroundColor(themeManager.foregroundColor)
+                    TimelineHeader(
+                        title: String(localized: "timeline.header_title"),
+                        streak: currentStreak,
+                        onBack: { dismiss() },
+                        onSearch: { showJournalSearch = true }
+                    )
+                    .padding(.bottom, 4)
+                    .foregroundColor(themeManager.foregroundColor)
                     
                     VStack(spacing: 12) {
                         CalendarView(
@@ -692,7 +736,7 @@ struct TimelineView: View {
 
                         // === Actions Section ===
                         sectionHeader(title: String(localized: "timeline.section_actions"), systemName: "checkmark.circle")
-                            .padding(.top, 20)
+                            .padding(.top, 10)
 
                         let todayActions: [DailyAction] = Calendar.current.isDateInToday(selectedDate)
                             ? viewModel.dailyActions : []
@@ -761,6 +805,15 @@ struct TimelineView: View {
                     .environmentObject(themeManager)
                     .environmentObject(viewModel)
                     .environmentObject(reasoningStore)
+            }
+            .sheet(isPresented: $showJournalSearch) {
+                JournalSearchView(onSelectDate: { date in
+                    selectedDate = date
+                    fetchValidDates(for: date)
+                    loadTimelineContent(for: date)
+                })
+                .environmentObject(themeManager)
+                .environmentObject(starManager)
             }
         }
     }

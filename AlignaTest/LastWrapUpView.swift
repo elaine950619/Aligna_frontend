@@ -190,6 +190,7 @@ struct LastWrapUpView: View {
 
                             // CTA button (outside the card)
                             Button {
+                                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                                 onContinue()
                             } label: {
                                 Text("wrapup.cta")

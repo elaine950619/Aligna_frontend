@@ -2667,6 +2667,14 @@ struct MainView: View {
                                                         themeManager.primaryText.opacity(themeManager.isNight ? 0.92 : 0.86)
                                                     )
                                                     .fixedSize(horizontal: false, vertical: true)
+                                                    .contextMenu {
+                                                        Button {
+                                                            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                                                            UIPasteboard.general.string = viewModel.dailyMantra
+                                                        } label: {
+                                                            Label("Copy", systemImage: "doc.on.doc")
+                                                        }
+                                                    }
                                             }
                                             .padding(20)
                                         }
@@ -2759,7 +2767,7 @@ struct MainView: View {
                             } else {
                                 // Card: full mantra text + share icon bottom-right
                                 ZStack(alignment: .bottomTrailing) {
-                                    // Mantra text (taps open reasoning sheet)
+                                    // Mantra text (taps open reasoning sheet, long-press to copy)
                                     Button {
                                         showReasoningSheet = true
                                     } label: {
@@ -2774,6 +2782,14 @@ struct MainView: View {
                                             .contentShape(Rectangle())
                                     }
                                     .buttonStyle(.plain)
+                                    .contextMenu {
+                                        Button {
+                                            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                                            UIPasteboard.general.string = viewModel.dailyMantra
+                                        } label: {
+                                            Label("Copy", systemImage: "doc.on.doc")
+                                        }
+                                    }
 
                                     // Share icon — bottom-right, offset into card corner
                                     Button {
