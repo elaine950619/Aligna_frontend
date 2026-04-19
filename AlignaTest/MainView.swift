@@ -324,6 +324,9 @@ private struct FocusedMantraEntry: Codable, Hashable {
     var locationName: String
     var savedAt: Date
     var isDefault: Bool
+    var dailyScore: Int
+    var dailyKeywords: [String]
+    var scoreExplanation: String
 
     init(
         mantra: String,
@@ -332,7 +335,10 @@ private struct FocusedMantraEntry: Codable, Hashable {
         howToEngage: [String: String] = [:],
         locationName: String,
         savedAt: Date,
-        isDefault: Bool
+        isDefault: Bool,
+        dailyScore: Int = 0,
+        dailyKeywords: [String] = [],
+        scoreExplanation: String = ""
     ) {
         self.mantra = mantra
         self.recommendations = recommendations
@@ -341,6 +347,9 @@ private struct FocusedMantraEntry: Codable, Hashable {
         self.locationName = locationName
         self.savedAt = savedAt
         self.isDefault = isDefault
+        self.dailyScore = dailyScore
+        self.dailyKeywords = dailyKeywords
+        self.scoreExplanation = scoreExplanation
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -351,6 +360,9 @@ private struct FocusedMantraEntry: Codable, Hashable {
         case locationName
         case savedAt
         case isDefault
+        case dailyScore
+        case dailyKeywords
+        case scoreExplanation
     }
 
     init(from decoder: Decoder) throws {
@@ -362,6 +374,9 @@ private struct FocusedMantraEntry: Codable, Hashable {
         locationName = try container.decode(String.self, forKey: .locationName)
         savedAt = try container.decode(Date.self, forKey: .savedAt)
         isDefault = try container.decode(Bool.self, forKey: .isDefault)
+        dailyScore = try container.decodeIfPresent(Int.self, forKey: .dailyScore) ?? 0
+        dailyKeywords = try container.decodeIfPresent([String].self, forKey: .dailyKeywords) ?? []
+        scoreExplanation = try container.decodeIfPresent(String.self, forKey: .scoreExplanation) ?? ""
     }
 
     func encode(to encoder: Encoder) throws {
@@ -373,11 +388,96 @@ private struct FocusedMantraEntry: Codable, Hashable {
         try container.encode(locationName, forKey: .locationName)
         try container.encode(savedAt, forKey: .savedAt)
         try container.encode(isDefault, forKey: .isDefault)
+        try container.encode(dailyScore, forKey: .dailyScore)
+        try container.encode(dailyKeywords, forKey: .dailyKeywords)
+        try container.encode(scoreExplanation, forKey: .scoreExplanation)
     }
 }
 
 private struct DailyFocusUsageEntry: Codable, Hashable {
     var generatedFocuses: [String: Int]
+}
+
+
+// MARK: - Daily Assessment Row
+// Shown on the collapsed mantra card between the focus name and the mantra
+// text. Displays: 5 four-point stars (round(score/20)) + keywords joined by
+// " · ". Tap the star row to reveal the score_explanation inline.
+private struct DailyAssessmentRow: View {
+    let score: Int            // expected range ~25...98
+    let keywords: [String]    // up to 3
+    let explanation: String
+
+    @EnvironmentObject var themeManager: ThemeManager
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isExpanded: Bool = false
+
+    private var filledStarCount: Int {
+        let rounded = (Double(score) / 20.0).rounded()
+        return min(5, max(0, Int(rounded)))
+    }
+
+    private var keywordLine: String {
+        keywords.prefix(3).joined(separator: " · ")
+    }
+
+    private var hasAnyContent: Bool {
+        score > 0 || !keywords.isEmpty
+    }
+
+    var body: some View {
+        if !hasAnyContent {
+            EmptyView()
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
+                        isExpanded.toggle()
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        ForEach(0..<5, id: \.self) { i in
+                            FourPointStarShape()
+                                .fill(
+                                    i < filledStarCount
+                                    ? themeManager.accent.opacity(0.88)
+                                    : themeManager.accent.opacity(0.22)
+                                )
+                                .frame(width: 11, height: 11)
+                        }
+                    }
+                    .padding(.vertical, 6) // pad for ≥ 24pt tap target height
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(String(
+                    format: String(localized: "daily_score.stars_a11y"),
+                    filledStarCount
+                )))
+                .accessibilityHint(Text(String(localized: "daily_score.tap_hint")))
+
+                if !keywordLine.isEmpty {
+                    Text(keywordLine)
+                        .font(.custom("Merriweather-Regular", size: 11))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.58))
+                        .tracking(1.0)
+                }
+
+                if isExpanded, !explanation.isEmpty {
+                    Text(explanation)
+                        .font(.custom("Merriweather-Regular", size: 11))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.75))
+                        .lineSpacing(3)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .transition(
+                            .opacity.combined(with: .move(edge: .top))
+                        )
+                }
+            }
+        }
+    }
 }
 
 
@@ -1581,6 +1681,9 @@ struct MainView: View {
         viewModel.recommendations = displayRecommendations
         viewModel.reasoningSummary = displayReasoningSummary
         viewModel.howToEngage = displayHowToEngage
+        viewModel.dailyScore = entry.dailyScore
+        viewModel.dailyKeywords = entry.dailyKeywords
+        viewModel.scoreExplanation = entry.scoreExplanation
         lastRecommendationPlace = displayLocationName
         lastRecommendationDate = todayString()
         isDefaultRecommendation = entry.isDefault
@@ -2075,6 +2178,17 @@ struct MainView: View {
                         ? self.viewModel.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines)
                         : self.lastRecommendationPlace.trimmingCharacters(in: .whitespacesAndNewlines)
 
+                    let parsedDailyScore: Int = {
+                        if let n = parsed["daily_score"] as? Int { return n }
+                        if let n = parsed["daily_score"] as? Double { return Int(n.rounded()) }
+                        return 0
+                    }()
+                    let parsedKeywords: [String] = (parsed["keywords"] as? [String]) ?? []
+                    let parsedScoreExplanation: String = {
+                        if let s = parsed["score_explanation"] as? String { return s }
+                        return ""
+                    }()
+
                     let entry = FocusedMantraEntry(
                         mantra: mantra,
                         recommendations: normalized,
@@ -2082,7 +2196,10 @@ struct MainView: View {
                         howToEngage: normalizedHowToEngage,
                         locationName: resolvedPlace,
                         savedAt: Date(),
-                        isDefault: false
+                        isDefault: false,
+                        dailyScore: parsedDailyScore,
+                        dailyKeywords: parsedKeywords,
+                        scoreExplanation: parsedScoreExplanation
                     )
 
                     DispatchQueue.main.async {
@@ -2636,6 +2753,19 @@ struct MainView: View {
                         .padding(.top, 20)
                         .opacity(isMantraExpanded ? 0 : 1)
                         .scaleEffect(isMantraExpanded ? 0.92 : 1)
+                        .frame(height: isMantraExpanded ? 0 : nil)
+                        .allowsHitTesting(!isMantraExpanded)
+
+                        // Daily score + keywords row — collapsed state only
+                        DailyAssessmentRow(
+                            score: viewModel.dailyScore,
+                            keywords: viewModel.dailyKeywords,
+                            explanation: viewModel.scoreExplanation
+                        )
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, geometry.size.width * 0.07)
+                        .padding(.top, 10)
+                        .opacity(isMantraExpanded ? 0 : 1)
                         .frame(height: isMantraExpanded ? 0 : nil)
                         .allowsHitTesting(!isMantraExpanded)
 
@@ -5280,6 +5410,14 @@ struct MainView: View {
                         }
                     }()
 
+                    let parsedDailyScore: Int = {
+                        if let n = parsed["daily_score"] as? Int { return n }
+                        if let n = parsed["daily_score"] as? Double { return Int(n.rounded()) }
+                        return 0
+                    }()
+                    let parsedKeywords: [String] = (parsed["keywords"] as? [String]) ?? []
+                    let parsedScoreExplanation: String = (parsed["score_explanation"] as? String) ?? ""
+
                     DispatchQueue.main.async {
                         // ✅ 把后端 recommendations 的 key 统一成规范写法
                         let normalized: [String: String] = recs.reduce(into: [:]) { acc, kv in
@@ -5299,6 +5437,9 @@ struct MainView: View {
                         viewModel.recommendations = normalized
                         viewModel.dailyMantra = mantra
                         viewModel.howToEngage = normalizedHowToEngage
+                        viewModel.dailyScore = parsedDailyScore
+                        viewModel.dailyKeywords = parsedKeywords
+                        viewModel.scoreExplanation = parsedScoreExplanation
                         if !parsedDailyActions.isEmpty {
                             viewModel.dailyActions = parsedDailyActions
                             viewModel.completedActionIDs = []

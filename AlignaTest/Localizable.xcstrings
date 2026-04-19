@@ -2204,6 +2204,40 @@
         }
       }
     },
+    "daily_score.stars_a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's score: %d of 5 stars"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日运势：%d 星，共 5 星"
+          }
+        }
+      }
+    },
+    "daily_score.tap_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Double tap to reveal the reason"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "双击查看原因"
+          }
+        }
+      }
+    },
     "focus.group.transitions" : {
       "extractionState" : "stale",
       "localizations" : {
