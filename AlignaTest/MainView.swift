@@ -1218,8 +1218,7 @@ struct MainView: View {
                                         .strikethrough(done, color: themeManager.descriptionText.opacity(0.30))
                                         .lineLimit(2)
                                         .fixedSize(horizontal: false, vertical: true)
-
-//                                    Spacer(minLength: 2)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
 
                                     // Navigation hint
                                     Image(systemName: "chevron.right")
