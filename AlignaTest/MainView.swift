@@ -5466,6 +5466,20 @@ struct MainView: View {
                         }
                     }()
 
+                    // 🔍 DIAGNOSTIC: one-shot visibility into whether the backend
+                    // actually returned the new fields. Safe to leave in place
+                    // until the feature is fully validated, then remove.
+                    let rawScore = parsed["daily_score"]
+                    let rawKeywords = parsed["keywords"]
+                    let rawExpl = parsed["score_explanation"]
+                    let rawBreakdown = parsed["score_breakdown"]
+                    print("🧪 [ASSESS] response keys sorted = \(parsed.keys.sorted())")
+                    print("🧪 [ASSESS] raw daily_score       = \(String(describing: rawScore))")
+                    print("🧪 [ASSESS] raw keywords          = \(String(describing: rawKeywords))")
+                    print("🧪 [ASSESS] raw score_explanation = \(String(describing: rawExpl))")
+                    print("🧪 [ASSESS] raw score_breakdown   = \(String(describing: rawBreakdown))")
+                    print("🧪 [ASSESS] parsed → score=\(parsedDailyScore) keywords=\(parsedKeywords) explanation_len=\(parsedScoreExplanation.count) breakdown=\(parsedScoreBreakdown)")
+
                     DispatchQueue.main.async {
                         // ✅ 把后端 recommendations 的 key 统一成规范写法
                         let normalized: [String: String] = recs.reduce(into: [:]) { acc, kv in
