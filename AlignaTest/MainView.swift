@@ -2920,7 +2920,7 @@ struct MainView: View {
                         )
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, geometry.size.width * 0.07)
-                        .padding(.top, 10)
+                        .padding(.top, 2)
                         .opacity(isMantraExpanded ? 0 : 1)
                         .frame(height: isMantraExpanded ? 0 : nil)
                         .allowsHitTesting(!isMantraExpanded)
