@@ -1,0 +1,374 @@
+import SwiftUI
+import FirebaseAuth
+import FirebaseFirestore
+
+// MARK: - MoonRitualBanner
+
+/// Compact horizontal banner shown in the collapsed mantra card.
+/// Taps open MoonRitualSheet.
+struct MoonRitualBanner: View {
+    let phase: MoonPhase
+    let isCompleted: Bool
+    let onTap: () -> Void
+
+    @EnvironmentObject private var themeManager: ThemeManager
+
+    /// Phase-specific ritual accent (independent of theme).
+    private var phaseAccent: Color {
+        switch phase {
+        case .new:  return Color(hex: "#7A9CC8")   // moonlit blue
+        case .full: return Color(hex: "#C8943A")   // warm gold
+        default:    return Color(hex: "#7A9CC8")
+        }
+    }
+
+    private var symbol: String {
+        switch phase {
+        case .new:  return "moonphase.new.moon.inverse"
+        case .full: return "moonphase.full.moon.inverse"
+        default:    return "moonphase.new.moon.inverse"
+        }
+    }
+
+    private var titleKey: String {
+        switch phase {
+        case .new:  return "moon.new_title"
+        case .full: return "moon.full_title"
+        default:    return "moon.new_title"
+        }
+    }
+
+    private var subtitleKey: String {
+        switch phase {
+        case .new:  return "moon.new_subtitle"
+        case .full: return "moon.full_subtitle"
+        default:    return "moon.new_subtitle"
+        }
+    }
+
+    /// True when the active theme uses a dark background.
+    private var isDarkTheme: Bool {
+        themeManager.isNight || themeManager.isRain
+    }
+
+    /// Primary label color: accent on dark themes (high contrast), theme primary text on light themes.
+    private var labelColor: Color {
+        isDarkTheme ? phaseAccent : themeManager.primaryText
+    }
+
+    /// Secondary/subtitle color.
+    private var subtitleColor: Color {
+        isDarkTheme
+            ? Color.white.opacity(isCompleted ? 0.28 : 0.50)
+            : themeManager.descriptionText.opacity(isCompleted ? 0.45 : 0.75)
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                Image(systemName: symbol)
+                    .font(.system(size: 22, weight: .thin))
+                    .foregroundColor(labelColor.opacity(isCompleted ? 0.45 : 0.85))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(localized: String.LocalizationValue(titleKey)))
+                        .font(.custom("Merriweather-Bold", size: 12))
+                        .foregroundColor(labelColor.opacity(isCompleted ? 0.45 : 0.85))
+                        .tracking(0.4)
+
+                    Text(String(localized: String.LocalizationValue(subtitleKey)))
+                        .font(.custom("Merriweather-Regular", size: 10))
+                        .foregroundColor(subtitleColor)
+                        .tracking(0.2)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                if isCompleted {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 14, weight: .light))
+                        .foregroundColor(phaseAccent.opacity(0.50))
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .light))
+                        .foregroundColor(isDarkTheme
+                            ? Color.white.opacity(0.35)
+                            : themeManager.descriptionText.opacity(0.45))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 11)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(themeManager.panelFill.opacity(isCompleted ? 0.65 : 0.85))
+                    // Subtle phase-tint overlay on top of panel background
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(phaseAccent.opacity(isDarkTheme ? 0.08 : 0.05))
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(phaseAccent.opacity(isCompleted ? 0.10 : 0.22), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - MoonRitualSheet
+
+struct MoonRitualSheet: View {
+    let phase: MoonPhase
+    let onComplete: () -> Void
+
+    @EnvironmentObject private var themeManager: ThemeManager
+    @Environment(\.dismiss) private var dismiss
+
+    // Three intention / release lines
+    @State private var lines: [String] = ["", "", ""]
+    @State private var isSaving = false
+    @FocusState private var focusedIndex: Int?
+
+    // MARK: Phase identity (independent of theme)
+
+    /// Ritual accent color — moonlit blue (new) or warm gold (full).
+    private var phaseAccent: Color {
+        switch phase {
+        case .new:  return Color(hex: "#7A9CC8")
+        case .full: return Color(hex: "#C8943A")
+        default:    return Color(hex: "#7A9CC8")
+        }
+    }
+
+    private var symbol: String {
+        switch phase {
+        case .new:  return "moonphase.new.moon.inverse"
+        case .full: return "moonphase.full.moon.inverse"
+        default:    return "moonphase.new.moon.inverse"
+        }
+    }
+
+    private var titleKey: String {
+        switch phase {
+        case .new:  return "moon.new_title"
+        case .full: return "moon.full_title"
+        default:    return "moon.new_title"
+        }
+    }
+
+    private var promptKey: String {
+        switch phase {
+        case .new:  return "moon.new_prompt"
+        case .full: return "moon.full_prompt"
+        default:    return "moon.new_prompt"
+        }
+    }
+
+    private var placeholderKeys: [String] {
+        switch phase {
+        case .new:  return ["moon.new_ph1", "moon.new_ph2", "moon.new_ph3"]
+        case .full: return ["moon.full_ph1", "moon.full_ph2", "moon.full_ph3"]
+        default:    return ["moon.new_ph1", "moon.new_ph2", "moon.new_ph3"]
+        }
+    }
+
+    // MARK: Theme-derived colors
+
+    /// Dark-background themes (Night, Rain) keep a deep atmospheric bg;
+    /// light themes (Day, Vitality, Love) use a soft themed background.
+    private var isDarkTheme: Bool {
+        themeManager.isNight || themeManager.isRain
+    }
+
+    /// Sheet background color.
+    private var sheetBg: Color {
+        if themeManager.isNight {
+            return Color(hex: "#0D0D1A")       // deep indigo-black
+        } else if themeManager.isRain {
+            return Color(hex: "#0E1620")       // deep slate
+        } else if themeManager.isVitality {
+            return Color(hex: "#EEF6EF")       // soft sage white
+        } else if themeManager.isLove {
+            return Color(hex: "#FDE8F0")       // rose blush
+        } else {
+            return Color(hex: "#FBF5EC")       // warm ivory (day)
+        }
+    }
+
+    /// Heading text color.
+    private var headingColor: Color {
+        isDarkTheme ? Color.white.opacity(0.88) : themeManager.primaryText
+    }
+
+    /// Body/prompt text color.
+    private var bodyColor: Color {
+        isDarkTheme ? Color.white.opacity(0.50) : themeManager.descriptionText
+    }
+
+    /// Text field input text.
+    private var inputTextColor: Color {
+        isDarkTheme ? Color.white.opacity(0.85) : themeManager.primaryText
+    }
+
+    /// Placeholder text color.
+    private var placeholderColor: Color {
+        isDarkTheme ? Color.white.opacity(0.22) : themeManager.descriptionText.opacity(0.35)
+    }
+
+    /// Input row background.
+    private var rowFill: Color {
+        isDarkTheme ? Color.white.opacity(0.05) : themeManager.panelFill.opacity(0.80)
+    }
+
+    /// Input row border (unfocused).
+    private var rowBorderIdle: Color {
+        isDarkTheme ? Color.white.opacity(0.10) : themeManager.panelStrokeHi.opacity(0.60)
+    }
+
+    /// Save button label color: on dark themes use the deep bg (legible on accent); on light use white.
+    private var saveButtonLabel: Color {
+        isDarkTheme ? sheetBg : Color.white
+    }
+
+    private var canSave: Bool {
+        lines.contains(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+    }
+
+    var body: some View {
+        ZStack {
+            sheetBg.ignoresSafeArea()
+
+            // Soft phase-colored glow behind the moon icon
+            Circle()
+                .fill(phaseAccent.opacity(isDarkTheme ? 0.07 : 0.10))
+                .frame(width: 260, height: 260)
+                .blur(radius: 60)
+                .offset(y: -120)
+
+            VStack(spacing: 0) {
+                // Header
+                VStack(spacing: 12) {
+                    Image(systemName: symbol)
+                        .font(.system(size: 48, weight: .ultraLight))
+                        .foregroundColor(phaseAccent.opacity(0.85))
+                        .padding(.top, 36)
+
+                    Text(String(localized: String.LocalizationValue(titleKey)))
+                        .font(.custom("Merriweather-Bold", size: 22))
+                        .foregroundColor(headingColor)
+
+                    Text(String(localized: String.LocalizationValue(promptKey)))
+                        .font(.custom("Merriweather-Regular", size: 13))
+                        .foregroundColor(bodyColor)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(4)
+                        .padding(.horizontal, 36)
+                }
+                .padding(.bottom, 32)
+
+                // Three input lines
+                VStack(spacing: 14) {
+                    ForEach(0..<3, id: \.self) { idx in
+                        HStack(spacing: 12) {
+                            Text("\(idx + 1)")
+                                .font(.custom("Merriweather-Regular", size: 13))
+                                .foregroundColor(phaseAccent.opacity(0.55))
+                                .frame(width: 16)
+
+                            ZStack(alignment: .leading) {
+                                if lines[idx].isEmpty {
+                                    Text(String(localized: String.LocalizationValue(placeholderKeys[idx])))
+                                        .font(.custom("Merriweather-Regular", size: 14))
+                                        .foregroundColor(placeholderColor)
+                                }
+                                TextField("", text: $lines[idx])
+                                    .font(.custom("Merriweather-Regular", size: 14))
+                                    .foregroundColor(inputTextColor)
+                                    .focused($focusedIndex, equals: idx)
+                                    .submitLabel(idx < 2 ? .next : .done)
+                                    .onSubmit {
+                                        if idx < 2 { focusedIndex = idx + 1 }
+                                        else { focusedIndex = nil }
+                                    }
+                            }
+                        }
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 13)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(rowFill)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(
+                                    focusedIndex == idx
+                                        ? phaseAccent.opacity(0.50)
+                                        : rowBorderIdle,
+                                    lineWidth: 1
+                                )
+                        )
+                    }
+                }
+                .padding(.horizontal, 24)
+
+                Spacer(minLength: 32)
+
+                // Save button
+                Button {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    saveRitual()
+                } label: {
+                    Text(String(localized: "moon.save"))
+                        .font(.custom("Merriweather-Bold", size: 15))
+                        .foregroundColor(canSave ? saveButtonLabel : bodyColor)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(canSave ? phaseAccent : rowFill)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(canSave ? Color.clear : rowBorderIdle, lineWidth: 1)
+                        )
+                }
+                .disabled(!canSave || isSaving)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
+            }
+        }
+        .onAppear { focusedIndex = 0 }
+    }
+
+    private func saveRitual() {
+        guard canSave, !isSaving else { return }
+        isSaving = true
+
+        let nonEmpty = lines
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let dayKey = df.string(from: Date())
+
+        if let uid = Auth.auth().currentUser?.uid {
+            let db = Firestore.firestore()
+            let data: [String: Any] = [
+                "type": "moon_ritual",
+                "phase": phase.rawValue,
+                "date": dayKey,
+                "lines": nonEmpty,
+                "createdAt": FieldValue.serverTimestamp()
+            ]
+            db.collection("users").document(uid)
+                .collection("moon_rituals").document("\(phase.rawValue)_\(dayKey)")
+                .setData(data) { _ in }
+        }
+
+        onComplete()
+        dismiss()
+    }
+}
