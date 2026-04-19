@@ -464,7 +464,7 @@
 				CODE_SIGN_ENTITLEMENTS = AlignaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = J58VC5CY3K;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AlignaWidget/Info.plist;
@@ -496,7 +496,7 @@
 				CODE_SIGN_ENTITLEMENTS = AlignaWidgetExtensionRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = J58VC5CY3K;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AlignaWidget/Info.plist;

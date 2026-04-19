@@ -1,6 +1,6 @@
 import SwiftUI
 import FirebaseAuth
-import FirebaseFirestore
+@preconcurrency import FirebaseFirestore
 
 // MARK: - Data model
 
@@ -31,6 +31,12 @@ final class JournalSearchViewModel: ObservableObject {
     }
 
     private func load() {
+        Task {
+            await loadAsync()
+        }
+    }
+
+    private func loadAsync() async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         isLoading = true
         errorMessage = nil
@@ -39,77 +45,75 @@ final class JournalSearchViewModel: ObservableObject {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
 
-        // Fetch all daily_recommendation docs for this user
-        db.collection("daily_recommendation")
-            .whereField("uid", isEqualTo: uid)
-            .getDocuments { [weak self] snap, error in
-                guard let self else { return }
-                if let error {
-                    self.errorMessage = error.localizedDescription
-                    self.isLoading = false
-                    return
-                }
+        do {
+            // Fetch all daily_recommendation docs for this user
+            let snap = try await db.collection("daily_recommendation")
+                .whereField("uid", isEqualTo: uid)
+                .getDocuments()
 
-                let recDocs = snap?.documents ?? []
-                guard !recDocs.isEmpty else {
-                    self.isLoading = false
-                    return
-                }
+            let recDocs = snap.documents
+            guard !recDocs.isEmpty else {
+                isLoading = false
+                return
+            }
 
-                var collected: [JournalSearchEntry] = []
-                let group = DispatchGroup()
-
+            // Fetch each journal subcollection concurrently
+            var collected: [JournalSearchEntry] = []
+            try await withThrowingTaskGroup(of: JournalSearchEntry?.self) { group in
                 for recDoc in recDocs {
-                    group.enter()
                     let dateKey: String
                     if let s = recDoc.data()["createdAt"] as? String {
                         dateKey = s
                     } else if let ts = recDoc.data()["createdAt"] as? Timestamp {
                         dateKey = df.string(from: ts.dateValue())
                     } else {
-                        group.leave()
                         continue
                     }
 
-                    db.collection("daily_recommendation")
-                        .document(recDoc.documentID)
-                        .collection("journals")
-                        .order(by: "createdAt", descending: false)
-                        .limit(to: 1)
-                        .getDocuments { jSnap, _ in
-                            defer { group.leave() }
-                            guard let jDoc = jSnap?.documents.first else { return }
-                            let data = jDoc.data()
-                            let rawText = data["text"] as? String ?? ""
-                            let text = Self.sanitize(rawText)
-                            guard !text.isEmpty
-                                    || data["mood"] as? String != nil
-                                    || data["stress"] as? String != nil
-                                    || data["sleep"] as? String != nil else { return }
+                    let docID = recDoc.documentID
+                    group.addTask {
+                        let jSnap = try await db.collection("daily_recommendation")
+                            .document(docID)
+                            .collection("journals")
+                            .order(by: "createdAt", descending: false)
+                            .limit(to: 1)
+                            .getDocuments()
+                        guard let jDoc = jSnap.documents.first else { return nil }
+                        let data = jDoc.data()
+                        let rawText = data["text"] as? String ?? ""
+                        let text = Self.sanitize(rawText)
+                        guard !text.isEmpty
+                                || data["mood"] as? String != nil
+                                || data["stress"] as? String != nil
+                                || data["sleep"] as? String != nil else { return nil }
 
-                            let date = df.date(from: dateKey) ?? Date.distantPast
-                            let entry = JournalSearchEntry(
-                                id: jDoc.documentID,
-                                date: date,
-                                dateKey: dateKey,
-                                text: text,
-                                mood: (data["mood"] as? String).flatMap { $0.isEmpty ? nil : $0 },
-                                stress: (data["stress"] as? String).flatMap { $0.isEmpty ? nil : $0 },
-                                sleep: (data["sleep"] as? String).flatMap { $0.isEmpty ? nil : $0 }
-                            )
-                            collected.append(entry)
-                        }
+                        let date = df.date(from: dateKey) ?? Date.distantPast
+                        return JournalSearchEntry(
+                            id: jDoc.documentID,
+                            date: date,
+                            dateKey: dateKey,
+                            text: text,
+                            mood: (data["mood"] as? String).flatMap { $0.isEmpty ? nil : $0 },
+                            stress: (data["stress"] as? String).flatMap { $0.isEmpty ? nil : $0 },
+                            sleep: (data["sleep"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+                        )
+                    }
                 }
 
-                group.notify(queue: .main) { [weak self] in
-                    guard let self else { return }
-                    self.entries = collected.sorted { $0.date > $1.date }
-                    self.isLoading = false
+                for try await entry in group {
+                    if let entry { collected.append(entry) }
                 }
             }
+
+            entries = collected.sorted { $0.date > $1.date }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+
+        isLoading = false
     }
 
-    private static func sanitize(_ value: String) -> String {
+    nonisolated private static func sanitize(_ value: String) -> String {
         let prefixes = ["Mood:", "Stress:", "Sleep:"]
         return value
             .components(separatedBy: .newlines)
