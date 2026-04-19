@@ -133,6 +133,7 @@ struct MoonRitualSheet: View {
     // Three intention / release lines
     @State private var lines: [String] = ["", "", ""]
     @State private var isSaving = false
+    @State private var isLoadingExisting = false
     @State private var showResetConfirm = false
     @FocusState private var focusedIndex: Int?
 
@@ -360,7 +361,10 @@ struct MoonRitualSheet: View {
                 Spacer(minLength: 8).frame(height: 32)
             }
         }
-        .onAppear { focusedIndex = 0 }
+        .onAppear {
+            focusedIndex = 0
+            loadExistingLinesIfAny()
+        }
         .confirmationDialog(
             String(localized: "moon.clear_confirm_title"),
             isPresented: $showResetConfirm,
@@ -373,6 +377,48 @@ struct MoonRitualSheet: View {
         } message: {
             Text(String(localized: "moon.clear_confirm_message"))
         }
+    }
+
+    /// On open, try to restore any previously-saved intentions for this phase
+    /// today. Guarantees users see their own content across app restarts and
+    /// devices. Guards against overwriting content the user has just typed.
+    private func loadExistingLinesIfAny() {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let dayKey = df.string(from: Date())
+
+        isLoadingExisting = true
+        Firestore.firestore()
+            .collection("users").document(uid)
+            .collection("moon_rituals").document("\(phase.rawValue)_\(dayKey)")
+            .getDocument { snap, err in
+                DispatchQueue.main.async {
+                    isLoadingExisting = false
+                }
+                if let err = err {
+                    print("⚠️ [MOON_RITUAL] load failed: \(err.localizedDescription)")
+                    return
+                }
+                guard
+                    let data = snap?.data(),
+                    let savedLines = data["lines"] as? [String],
+                    !savedLines.isEmpty
+                else { return }
+
+                DispatchQueue.main.async {
+                    // If the user has already started typing, do NOT clobber
+                    // their in-progress text with stale Firestore data.
+                    let userHasTyped = lines.contains { !$0.isEmpty }
+                    guard !userHasTyped else { return }
+
+                    var filled: [String] = ["", "", ""]
+                    for (i, line) in savedLines.prefix(3).enumerated() {
+                        filled[i] = line
+                    }
+                    lines = filled
+                }
+            }
     }
 
     private func saveRitual() {
@@ -400,14 +446,26 @@ struct MoonRitualSheet: View {
             ]
             db.collection("users").document(uid)
                 .collection("moon_rituals").document("\(phase.rawValue)_\(dayKey)")
-                .setData(ritualData) { _ in }
+                .setData(ritualData) { err in
+                    if let err = err {
+                        print("❌ [MOON_RITUAL] save ritual failed: \(err.localizedDescription)")
+                    } else {
+                        print("✅ [MOON_RITUAL] saved \(phase.rawValue) ritual for \(dayKey) (\(nonEmpty.count) lines)")
+                    }
+                }
 
             // Silently mirror intentions into today's daily_recommendation
             // so the backend can use them as personalisation context.
             // Uses merge: true so the doc is created if not yet generated today.
             let recDocID = "\(uid)_\(dayKey)"
             db.collection("daily_recommendation").document(recDocID)
-                .setData(["moon_intention": nonEmpty], merge: true) { _ in }
+                .setData(["moon_intention": nonEmpty], merge: true) { err in
+                    if let err = err {
+                        print("❌ [MOON_RITUAL] mirror to daily_recommendation failed: \(err.localizedDescription)")
+                    }
+                }
+        } else {
+            print("⚠️ [MOON_RITUAL] no authenticated user — ritual NOT saved to Firestore")
         }
 
         onComplete()
@@ -425,14 +483,31 @@ struct MoonRitualSheet: View {
             // Remove the ritual record
             db.collection("users").document(uid)
                 .collection("moon_rituals").document("\(phase.rawValue)_\(dayKey)")
-                .delete() { _ in }
+                .delete() { err in
+                    if let err = err {
+                        print("❌ [MOON_RITUAL] delete ritual failed: \(err.localizedDescription)")
+                    } else {
+                        print("✅ [MOON_RITUAL] cleared \(phase.rawValue) ritual for \(dayKey)")
+                    }
+                }
 
             // Remove moon_intention from daily_recommendation (FieldValue.delete())
             let recDocID = "\(uid)_\(dayKey)"
             db.collection("daily_recommendation").document(recDocID)
-                .updateData(["moon_intention": FieldValue.delete()]) { _ in }
+                .updateData(["moon_intention": FieldValue.delete()]) { err in
+                    // NotFound errors are expected if daily_recommendation
+                    // doesn't exist for today — log but don't treat as fatal.
+                    if let err = err {
+                        print("⚠️ [MOON_RITUAL] clear moon_intention in daily_recommendation: \(err.localizedDescription)")
+                    }
+                }
+        } else {
+            print("⚠️ [MOON_RITUAL] no authenticated user — delete NOT persisted to Firestore")
         }
 
+        // Clear local state so the sheet reflects the cleared state
+        // immediately without relying on the round-trip.
+        lines = ["", "", ""]
         onReset()
         dismiss()
     }
