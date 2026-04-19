@@ -53,6 +53,7 @@ struct FocusSelectionView: View {
         FocusGroup(key: "transitions",   labelKey: "focus.group.transitions"),
         FocusGroup(key: "inner",         labelKey: "focus.group.inner"),
         FocusGroup(key: "practical",     labelKey: "focus.group.practical"),
+        FocusGroup(key: "rituals",       labelKey: "focus.group.rituals"),
     ]
 
     // sandColor 由 themeManager.accent 替代，在各处直接使用

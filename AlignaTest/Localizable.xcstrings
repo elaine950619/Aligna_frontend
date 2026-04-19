@@ -2187,6 +2187,23 @@
         }
       }
     },
+    "focus.group.rituals" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rituals"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仪式"
+          }
+        }
+      }
+    },
     "focus.group.transitions" : {
       "extractionState" : "stale",
       "localizations" : {
