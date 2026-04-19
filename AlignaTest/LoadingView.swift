@@ -829,7 +829,7 @@ struct LoadingView: View {
                     .background(
                         RoundedRectangle(cornerRadius: 14)
                             .fill(selectedFocusID != nil
-                                ? themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.82)
+                                ? themeManager.accent
                                 : themeManager.panelFill.opacity(0.3))
                     )
             }
@@ -964,7 +964,7 @@ struct LoadingView: View {
                     .background(
                         RoundedRectangle(cornerRadius: 14)
                             .fill(selectedFocusID != nil
-                                ? themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.82)
+                                ? themeManager.accent
                                 : themeManager.panelFill.opacity(0.3))
                     )
             }
@@ -1006,7 +1006,7 @@ struct LoadingView: View {
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(isSelected
-                        ? themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.80)
+                        ? themeManager.accent
                         : themeManager.panelFill.opacity(themeManager.isNight ? 0.28 : 0.36))
             )
             .overlay(

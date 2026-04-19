@@ -625,22 +625,16 @@ private struct PrimaryGhostButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         let baseFill = themeManager.panelFill
-        let accentWash = themeManager.accent.opacity(themeManager.isNight ? 0.22 : 0.18)
         return configuration.label
             .foregroundStyle(disabled
                              ? themeManager.descriptionText.opacity(0.65)
-                             : themeManager.primaryText)
+                             : themeManager.buttonForegroundOnPrimary)
             .background(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(
-                        LinearGradient(colors: [
-                            disabled
-                                ? baseFill.opacity(0.7)
-                                : accentWash.opacity(configuration.isPressed ? 0.92 : 1.0),
-                            disabled
-                                ? baseFill.opacity(0.58)
-                                : baseFill.opacity(configuration.isPressed ? 0.82 : 0.68)
-                        ], startPoint: .top, endPoint: .bottom)
+                        disabled
+                            ? baseFill.opacity(0.7)
+                            : themeManager.accent.opacity(configuration.isPressed ? 0.85 : 1.0)
                     )
             )
             .overlay(
@@ -648,11 +642,11 @@ private struct PrimaryGhostButtonStyle: ButtonStyle {
                     .stroke(
                         disabled
                             ? themeManager.panelStrokeHi.opacity(0.7)
-                            : themeManager.accent.opacity(themeManager.isNight ? 0.45 : 0.35),
+                            : Color.white.opacity(0.18),
                         lineWidth: 1
                     )
             )
-            .shadow(color: .black.opacity(themeManager.isNight ? 0.35 : 0.12), radius: 12, x: 0, y: 8)
+            .shadow(color: themeManager.accent.opacity(themeManager.isNight ? 0.40 : 0.25), radius: 10, x: 0, y: 6)
             .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
     }
 }

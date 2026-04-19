@@ -170,7 +170,7 @@ struct LoginView: View {
                                 .foregroundColor(themeManager.buttonForegroundOnPrimary)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 50)
-                                .background(themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.82))
+                                .background(themeManager.accent)
                                 .cornerRadius(14)
                             }
                             .staggered(2, show: $showIntro)
@@ -418,7 +418,7 @@ struct LoginView: View {
                             .font(AlynnaTypography.font(.headline).weight(.semibold))
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.82))
+                            .background(themeManager.accent)
                             .foregroundColor(themeManager.buttonForegroundOnPrimary)
                             .cornerRadius(14)
                         }

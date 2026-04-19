@@ -184,7 +184,7 @@ struct SignUpView: View {
                                             .foregroundColor(themeManager.buttonForegroundOnPrimary)
                                             .frame(maxWidth: .infinity)
                                             .frame(height: 50)
-                                            .background(themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.82))
+                                            .background(themeManager.accent)
                                             .cornerRadius(14)
                                         }
                                         .disabled(authBusy)
@@ -345,7 +345,7 @@ struct SignUpView: View {
                                         .font(AlynnaTypography.font(.headline).weight(.semibold))
                                         .padding()
                                         .frame(maxWidth: .infinity)
-                                        .background(themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.82))
+                                        .background(themeManager.accent)
                                         .foregroundColor(themeManager.buttonForegroundOnPrimary)
                                         .cornerRadius(14)
                                     }

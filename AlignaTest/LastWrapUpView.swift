@@ -200,7 +200,7 @@ struct LastWrapUpView: View {
                                     .padding(.vertical, 16)
                                     .background(
                                         RoundedRectangle(cornerRadius: 14)
-                                            .fill(themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.80))
+                                            .fill(themeManager.accent)
                                     )
                             }
                             .buttonStyle(.plain)

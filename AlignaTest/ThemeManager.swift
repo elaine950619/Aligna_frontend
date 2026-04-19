@@ -22,28 +22,28 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
     @Published private(set) var isLove: Bool = false
     
     // MARK: – 文字与强调色（按你提供的映射）
-    // 全局前景（如通用标题/按钮文字）：夜 #E6D9BD；日 #8F643E；雨 #C8DCE8；绿 #2D5A3A；粉 #C05070
+    // 全局前景（如通用标题/按钮文字）：夜 #E6D9BD；日 #8B3A1A；雨 #B0CCD8；绿 #1E4230；粉 #8B2A42
     var foregroundColor: Color {
-        if isLove     { return Color(hex: "#C05070") }
-        if isVitality { return Color(hex: "#2D5A3A") }
-        if isRain     { return Color(hex: "#C8DCE8") }
-        return isNight ? Color(hex: "#E6D9BD") : Color(hex: "#B8721E")
+        if isLove     { return Color(hex: "#8B2A42") }
+        if isVitality { return Color(hex: "#1E4230") }
+        if isRain     { return Color(hex: "#B0CCD8") }
+        return isNight ? Color(hex: "#E6D9BD") : Color(hex: "#8B3A1A")
     }
     
-    // 图标/高亮：夜 #D4A574；日 #8F643E；雨 #7EB8D4；绿 #3A9457；粉 #E8607A
+    // 图标/高亮：夜 #D4A574；日 #C07828；雨 #5B9FBF；绿 #52A86A；粉 #E8607A
     var accent: Color {
         if isLove     { return Color(hex: "#E8607A") }
-        if isVitality { return Color(hex: "#3A9457") }
-        if isRain     { return Color(hex: "#7EB8D4") }
+        if isVitality { return Color(hex: "#52A86A") }
+        if isRain     { return Color(hex: "#5B9FBF") }
         return isNight ? Color(hex: "#D4A574") : Color(hex: "#C07828")
     }
     
-    // 大型水印文字：夜 #4A5A9E(40%)；日 secondary；雨 #4A6B8A(50%)；绿 #3A7A4E(35%)；粉 #C05070(25%)
+    // 大型水印文字：夜 #8B7A5E(40%)；日 #8B4513(42%)；雨 #4A6B8A(50%)；绿 #3A7A4E(35%)；粉 #8B2A42(25%)
     var watermark: Color {
-        if isLove     { return Color(hex: "#C05070").opacity(0.25) }
+        if isLove     { return Color(hex: "#8B2A42").opacity(0.25) }
         if isVitality { return Color(hex: "#3A7A4E").opacity(0.35) }
         if isRain     { return Color(hex: "#4A6B8A").opacity(0.50) }
-        return isNight ? Color(hex: "#4A5A9E").opacity(0.4)
+        return isNight ? Color(hex: "#8B7A5E").opacity(0.4)
                        : Color(hex: "#8B4513").opacity(0.42)
     }
     
@@ -73,15 +73,15 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
     
     var placeIcon: Color {
         if isLove     { return Color(hex: "#E8607A") }
-        if isVitality { return Color(hex: "#3A9457") }
-        if isRain     { return Color(hex: "#7EB8D4") }
+        if isVitality { return Color(hex: "#52A86A") }
+        if isRain     { return Color(hex: "#5B9FBF") }
         return isNight ? Color.accentColor : Color(hex: "#CD853F")
     }
     
     var placeIconText: Color {
-        if isLove     { return Color(hex: "#C05070") }
-        if isVitality { return Color(hex: "#2D6642") }
-        if isRain     { return Color(hex: "#A8C8E0") }
+        if isLove     { return Color(hex: "#8B2A42") }
+        if isVitality { return Color(hex: "#1E4230") }
+        if isRain     { return Color(hex: "#B0CCD8") }
         return isNight ? Color.accentColor : Color(hex: "#7A5A3A")
     }
     

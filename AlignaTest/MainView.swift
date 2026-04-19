@@ -2792,7 +2792,7 @@ struct MainView: View {
                                         .padding(.vertical, 15)
                                         .background(
                                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                                .fill(themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.80))
+                                                .fill(themeManager.accent)
                                         )
                                     }
                                     .buttonStyle(.plain)

@@ -64,7 +64,7 @@ struct FrontPageView: View {
                                         .font(AlynnaTypography.font(.headline).weight(.semibold))
                                         .frame(maxWidth: .infinity)
                                         .padding()
-                                        .background(themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.82))
+                                        .background(themeManager.accent)
                                         .foregroundColor(themeManager.buttonForegroundOnPrimary)
                                         .cornerRadius(14)
                                 }

@@ -174,7 +174,7 @@ struct FocusSelectionView: View {
                     .background(
                         RoundedRectangle(cornerRadius: 14)
                             .fill(selectedID != nil
-                                ? themeManager.accent.opacity(0.82)
+                                ? themeManager.accent
                                 : themeManager.panelFill.opacity(0.3))
                     )
             }
@@ -307,7 +307,7 @@ struct FocusSelectionView: View {
                         .background(
                             RoundedRectangle(cornerRadius: 14)
                                 .fill(canSaveCustom
-                                    ? themeManager.accent.opacity(0.82)
+                                    ? themeManager.accent
                                     : themeManager.panelFill.opacity(0.35))
                         )
                 }
