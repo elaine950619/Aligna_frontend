@@ -124,8 +124,6 @@ struct MoonRitualSheet: View {
     let phase: MoonPhase
     let isCompleted: Bool
     let onComplete: () -> Void
-    /// Called when the user clears a completed ritual. Caller resets lastMoonRitualDate.
-    let onReset: () -> Void
 
     @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
@@ -134,7 +132,6 @@ struct MoonRitualSheet: View {
     @State private var lines: [String] = ["", "", ""]
     @State private var isSaving = false
     @State private var isLoadingExisting = false
-    @State private var showResetConfirm = false
     @FocusState private var focusedIndex: Int?
 
     // MARK: Phase identity (independent of theme)
@@ -342,40 +339,12 @@ struct MoonRitualSheet: View {
                 .disabled(!canSave || isSaving)
                 .padding(.horizontal, 24)
 
-                // Clear button — only visible after ritual is completed
-                if isCompleted {
-                    Button {
-                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                        showResetConfirm = true
-                    } label: {
-                        Text(String(localized: "moon.clear"))
-                            .font(.custom("Merriweather-Regular", size: 13))
-                            .foregroundColor(bodyColor.opacity(0.55))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 24)
-                }
-
                 Spacer(minLength: 8).frame(height: 32)
             }
         }
         .onAppear {
             focusedIndex = 0
             loadExistingLinesIfAny()
-        }
-        .confirmationDialog(
-            String(localized: "moon.clear_confirm_title"),
-            isPresented: $showResetConfirm,
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: "moon.clear_confirm_action"), role: .destructive) {
-                deleteRitual()
-            }
-            Button(String(localized: "moon.clear_cancel"), role: .cancel) {}
-        } message: {
-            Text(String(localized: "moon.clear_confirm_message"))
         }
     }
 
@@ -472,45 +441,6 @@ struct MoonRitualSheet: View {
         dismiss()
     }
 
-    private func deleteRitual() {
-        let df = DateFormatter()
-        df.dateFormat = "yyyy-MM-dd"
-        let dayKey = df.string(from: Date())
-
-        if let uid = Auth.auth().currentUser?.uid {
-            let db = Firestore.firestore()
-
-            // Remove the ritual record
-            db.collection("users").document(uid)
-                .collection("moon_rituals").document("\(phase.rawValue)_\(dayKey)")
-                .delete() { err in
-                    if let err = err {
-                        print("❌ [MOON_RITUAL] delete ritual failed: \(err.localizedDescription)")
-                    } else {
-                        print("✅ [MOON_RITUAL] cleared \(phase.rawValue) ritual for \(dayKey)")
-                    }
-                }
-
-            // Remove moon_intention from daily_recommendation (FieldValue.delete())
-            let recDocID = "\(uid)_\(dayKey)"
-            db.collection("daily_recommendation").document(recDocID)
-                .updateData(["moon_intention": FieldValue.delete()]) { err in
-                    // NotFound errors are expected if daily_recommendation
-                    // doesn't exist for today — log but don't treat as fatal.
-                    if let err = err {
-                        print("⚠️ [MOON_RITUAL] clear moon_intention in daily_recommendation: \(err.localizedDescription)")
-                    }
-                }
-        } else {
-            print("⚠️ [MOON_RITUAL] no authenticated user — delete NOT persisted to Firestore")
-        }
-
-        // Clear local state so the sheet reflects the cleared state
-        // immediately without relying on the round-trip.
-        lines = ["", "", ""]
-        onReset()
-        dismiss()
-    }
 }
 
 // MARK: - MoonSymbolView

@@ -437,15 +437,24 @@ private struct DailyAssessmentRow: View {
                         isExpanded.toggle()
                     }
                 } label: {
-                    HStack(spacing: 5) {
-                        ForEach(0..<5, id: \.self) { i in
-                            FourPointStarShape()
-                                .fill(
-                                    i < filledStarCount
-                                    ? themeManager.accent.opacity(0.88)
-                                    : themeManager.accent.opacity(0.22)
-                                )
-                                .frame(width: 11, height: 11)
+                    HStack(spacing: 8) {
+                        HStack(spacing: 5) {
+                            ForEach(0..<5, id: \.self) { i in
+                                FourPointStarShape()
+                                    .fill(
+                                        i < filledStarCount
+                                        ? themeManager.accent.opacity(0.88)
+                                        : themeManager.accent.opacity(0.22)
+                                    )
+                                    .frame(width: 11, height: 11)
+                            }
+                        }
+                        if !keywordLine.isEmpty {
+                            Text(keywordLine)
+                                .font(.custom("Merriweather-Regular", size: 11))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.58))
+                                .tracking(1.0)
+                                .lineLimit(1)
                         }
                     }
                     .padding(.vertical, 6) // pad for ≥ 24pt tap target height
@@ -457,13 +466,6 @@ private struct DailyAssessmentRow: View {
                     filledStarCount
                 )))
                 .accessibilityHint(Text(String(localized: "daily_score.tap_hint")))
-
-                if !keywordLine.isEmpty {
-                    Text(keywordLine)
-                        .font(.custom("Merriweather-Regular", size: 11))
-                        .foregroundColor(themeManager.descriptionText.opacity(0.58))
-                        .tracking(1.0)
-                }
 
                 if isExpanded {
                     VStack(alignment: .leading, spacing: 8) {
@@ -3258,9 +3260,6 @@ struct MainView: View {
                             let df = DateFormatter()
                             df.dateFormat = "yyyy-MM-dd"
                             lastMoonRitualDate = df.string(from: Date())
-                        },
-                        onReset: {
-                            lastMoonRitualDate = ""
                         }
                     )
                     .environmentObject(themeManager)
