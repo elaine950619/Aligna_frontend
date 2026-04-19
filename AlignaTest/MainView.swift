@@ -1712,7 +1712,10 @@ struct MainView: View {
             howToEngage: viewModel.howToEngage,
             locationName: lastRecommendationPlace,
             savedAt: Date(),
-            isDefault: isDefaultRecommendation
+            isDefault: isDefaultRecommendation,
+            dailyScore: viewModel.dailyScore,
+            dailyKeywords: viewModel.dailyKeywords,
+            scoreExplanation: viewModel.scoreExplanation
         )
         cacheFocusedEntry(entry, for: dailyFocusID, day: day)
     }
@@ -5066,7 +5069,14 @@ struct MainView: View {
         data["isDefault"] = true
         data["fallbackReason"] = reason
         data["updatedAt"] = FieldValue.serverTimestamp()
-        
+
+        // Fallback 没有真实的 daily assessment——显式清除任何残留字段，
+        // 避免 Timeline 回看时看到"默认占位 + 陈旧分数"的不一致状态。
+        data["daily_score"]       = FieldValue.delete()
+        data["score_breakdown"]   = FieldValue.delete()
+        data["score_explanation"] = FieldValue.delete()
+        data["keywords"]          = FieldValue.delete()
+
         // ✅ NEW: default per-category reasoning map
         var reasoningMap: [String: String] = [:]
         for canonKey in normalized.keys {
