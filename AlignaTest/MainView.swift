@@ -2630,11 +2630,7 @@ struct MainView: View {
                                         }
                                         .padding(.horizontal, hPad)
                                         .padding(.top, geometry.size.height * 0.12)
-                                        .padding(.bottom, 0)
-
-                                        // spacer pushes mantra card to the lower portion
-                                        Spacer()
-                                            .frame(height: geometry.size.height * 0.20)
+                                        .padding(.bottom, 32)
 
                                         // ── 心语 card ──
                                         ZStack(alignment: .topLeading) {
@@ -2734,29 +2730,32 @@ struct MainView: View {
                                             .padding(.bottom, 20)
                                         }
 
-                                        // ── 打开今日指引 button ──
-                                        Button {
-                                            toggleMantraExpansion()
-                                        } label: {
-                                            HStack(spacing: 6) {
-                                                Text("home.today_guidance")
-                                                    .font(.custom("Merriweather-Regular", size: 14))
-                                                    .foregroundColor(themeManager.buttonForegroundOnPrimary.opacity(0.85))
-                                                GuidanceArrowView(color: themeManager.buttonForegroundOnPrimary)
-                                            }
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 15)
-                                            .background(
-                                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                                    .fill(themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.80))
-                                            )
-                                        }
-                                        .buttonStyle(.plain)
-                                        .padding(.horizontal, hPad)
-                                        .padding(.bottom, 48)
                                     }
                                 }
                                 .frame(maxWidth: .infinity)
+                                .safeAreaInset(edge: .bottom) {
+                                    // ── 打开今日指引 button（固定在底部）──
+                                    Button {
+                                        toggleMantraExpansion()
+                                    } label: {
+                                        HStack(spacing: 6) {
+                                            Text("home.today_guidance")
+                                                .font(.custom("Merriweather-Regular", size: 14))
+                                                .foregroundColor(themeManager.buttonForegroundOnPrimary.opacity(0.85))
+                                            GuidanceArrowView(color: themeManager.buttonForegroundOnPrimary)
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 15)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                .fill(themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.80))
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                    .padding(.horizontal, hPad)
+                                    .padding(.bottom, 32)
+                                    .padding(.top, 12)
+                                }
                             } else {
                                 // Card: full mantra text + share icon bottom-right
                                 ZStack(alignment: .bottomTrailing) {
