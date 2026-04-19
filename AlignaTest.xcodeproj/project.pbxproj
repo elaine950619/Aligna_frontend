@@ -475,7 +475,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.14;
+				MARKETING_VERSION = 2.18;
 				PRODUCT_BUNDLE_IDENTIFIER = Aligna.AlynnaWidgetExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -507,7 +507,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.14;
+				MARKETING_VERSION = 2.18;
 				PRODUCT_BUNDLE_IDENTIFIER = Aligna.AlynnaWidgetExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
