@@ -794,16 +794,19 @@ struct MainView: View {
         HStack(spacing: 8) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Color(red: 0.94, green: 0.88, blue: 0.72))
+                .foregroundColor(themeManager.accent.opacity(0.85))
             Text(actionCompleteToastMessage)
                 .font(.custom("Merriweather-Regular", size: 13))
                 .foregroundColor(themeManager.primaryText.opacity(0.95))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1))
-        .shadow(color: Color.black.opacity(0.22), radius: 12, x: 0, y: 6)
+        .background(
+            Capsule()
+                .fill(themeManager.panelFill.opacity(themeManager.isNight ? 0.82 : 0.88))
+        )
+        .overlay(Capsule().stroke(themeManager.panelStrokeHi.opacity(0.5), lineWidth: 1))
+        .shadow(color: Color.black.opacity(themeManager.isNight ? 0.32 : 0.14), radius: 12, x: 0, y: 6)
         .transition(.scale(scale: 0.88).combined(with: .opacity))
     }
 
@@ -817,11 +820,14 @@ struct MainView: View {
         .foregroundColor(themeManager.primaryText.opacity(0.9))
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(
-            Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1)
+        .background(
+            Capsule()
+                .fill(themeManager.panelFill.opacity(themeManager.isNight ? 0.82 : 0.88))
         )
-        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 6)
+        .overlay(
+            Capsule().stroke(themeManager.panelStrokeHi.opacity(0.5), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(themeManager.isNight ? 0.28 : 0.12), radius: 10, x: 0, y: 6)
         .accessibilityLabel("No sound recommendation")
     }
 
@@ -946,12 +952,12 @@ struct MainView: View {
            let activeFocus = mantraFocuses.first(where: { $0.id.uuidString == mantraActiveFocusByDay[todayKey] }) {
             HStack(alignment: .top, spacing: 6) {
                 Text("home.today_focus")
-                    .font(.custom("Merriweather-Regular", size: 10))
+                    .font(.custom("Merriweather-Regular", size: 12))
                     .foregroundColor(themeManager.descriptionText.opacity(0.52))
                     .padding(.top, 4)
 
                 Text(focusDisplayName(for: activeFocus))
-                    .font(.custom("Merriweather-Bold", size: 14))
+                    .font(.custom("Merriweather-Bold", size: 16))
                     .foregroundColor(themeManager.primaryText.opacity(0.88))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 5)
@@ -1002,7 +1008,7 @@ struct MainView: View {
                 if !dailyActionItems.isEmpty {
                     VStack(alignment: .leading, spacing: 0) {
                         Text("home.today_actions")
-                            .font(.custom("Merriweather-Regular", size: 10))
+                            .font(.custom("Merriweather-Regular", size: 12))
                             .foregroundColor(themeManager.descriptionText.opacity(0.45))
                             .tracking(1.4)
                             .textCase(.uppercase)
@@ -1067,7 +1073,7 @@ struct MainView: View {
 
                                     // Anchor text
                                     Text(item.anchor)
-                                        .font(.custom(done ? "Merriweather-Regular" : "Merriweather-Bold", size: actionFontSize))
+                                        .font(.custom("Merriweather-Regular", size: actionFontSize))
                                         .foregroundColor(done
                                             ? themeManager.descriptionText.opacity(0.35)
                                             : themeManager.primaryText.opacity(0.85))
@@ -1175,11 +1181,14 @@ struct MainView: View {
         .foregroundColor(themeManager.primaryText.opacity(0.95))
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(
-            Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1)
+        .background(
+            Capsule()
+                .fill(themeManager.panelFill.opacity(themeManager.isNight ? 0.82 : 0.88))
         )
-        .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 8)
+        .overlay(
+            Capsule().stroke(themeManager.panelStrokeHi.opacity(0.5), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(themeManager.isNight ? 0.32 : 0.14), radius: 12, x: 0, y: 8)
         .transition(.scale.combined(with: .opacity))
         .accessibilityLabel(Text(generationToastMessage))
     }
@@ -2603,18 +2612,18 @@ struct MainView: View {
                                         // ── 今日课题（顶部，清晰可见）──
                                         VStack(spacing: 8) {
                                             Text("home.today_focus")
-                                                .font(.custom("Merriweather-Regular", size: 10))
+                                                .font(.custom("Merriweather-Regular", size: 12))
                                                 .foregroundColor(themeManager.descriptionText.opacity(0.50))
                                                 .tracking(1.6)
                                                 .textCase(.uppercase)
                                             if let f = activeFocus {
                                                 Text(focusDisplayName(for: f))
-                                                    .font(.custom("Merriweather-Bold", size: 26))
+                                                    .font(.custom("Merriweather-Bold", size: 30))
                                                     .foregroundColor(themeManager.primaryText)
                                                     .multilineTextAlignment(.center)
                                             }
                                             Text("expanded.topic_subtitle")
-                                                .font(.custom("Merriweather-Regular", size: 12))
+                                                .font(.custom("Merriweather-Regular", size: 14))
                                                 .foregroundColor(themeManager.descriptionText.opacity(0.55))
                                                 .multilineTextAlignment(.center)
                                                 .lineSpacing(4)
@@ -2639,7 +2648,7 @@ struct MainView: View {
                                             VStack(alignment: .leading, spacing: 12) {
                                                 HStack {
                                                     Text("home.today_mantra")
-                                                        .font(.custom("Merriweather-Regular", size: 9))
+                                                        .font(.custom("Merriweather-Regular", size: 11))
                                                         .foregroundColor(themeManager.descriptionText.opacity(0.45))
                                                         .tracking(1.4)
                                                         .textCase(.uppercase)
@@ -4431,6 +4440,7 @@ struct MainView: View {
                         isManualRefreshFlow = false
                         isFullLoadingFlow = false
                         withAnimation(.easeInOut) { bootPhase = .main }
+                        markMantraReadyIfPossible()
                     },
                     onPersonalComplete: { didProvidePersonal in
                         // 判断是否走生成路径（用户点了生成，不是「暂不生成」）

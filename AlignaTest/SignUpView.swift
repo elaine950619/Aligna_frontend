@@ -61,7 +61,7 @@ struct SignUpView: View {
                 let focusExtraSpace: CGFloat = isKeyboardVisible ? 32 : 0
 
                 ZStack {
-                    AppBackgroundView(mode: .night)
+                    AppBackgroundView(nightMotion: .animated)
                         .environmentObject(starManager)
                         .environmentObject(themeManager)
                         .contentShape(Rectangle())
@@ -75,9 +75,9 @@ struct SignUpView: View {
                                         Button(action: { dismiss() }) {
                                             Image(systemName: "chevron.left")
                                                 .font(AlynnaTypography.font(.title2))
-                                                .foregroundColor(themeManager.fixedNightTextPrimary)
+                                                .foregroundColor(themeManager.primaryText)
                                                 .padding(10)
-                                                .background(Color.white.opacity(0.1))
+                                                .background(themeManager.panelFill.opacity(0.25))
                                                 .clipShape(Circle())
                                         }
                                         .disabled(authBusy)
@@ -92,19 +92,19 @@ struct SignUpView: View {
                                                 .resizable()
                                                 .scaledToFit()
                                                 .frame(width: minL * 0.14)
-                                                .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.92))
+                                                .foregroundColor(themeManager.primaryText.opacity(0.92))
                                                 .staggered(0, show: $showIntro)
                                         }
 
                                         AlignaHeading(
-                                            textColor: themeManager.fixedNightTextPrimary,
+                                            textColor: themeManager.primaryText,
                                             show: $showIntro,
                                             fontSize: minL * 0.12,
                                             letterSpacing: minL * 0.005
                                         )
                                         Text(String(localized: "signup.create_your_space"))
                                             .font(AlynnaTypography.font(.subheadline))
-                                            .foregroundColor(themeManager.fixedNightTextSecondary)
+                                            .foregroundColor(themeManager.descriptionText)
                                     }
                                     .padding(.top, h * 0.01)
                                     .staggered(1, show: $showIntro)
@@ -169,22 +169,22 @@ struct SignUpView: View {
                                                 if isActive(.google) {
                                                     ProgressView()
                                                         .progressViewStyle(.circular)
-                                                        .tint(themeManager.fixedNightTextPrimary)
+                                                        .tint(themeManager.buttonForegroundOnPrimary)
                                                         .scaleEffect(0.75)
                                                 }
                                                 Image("googleIcon")
                                                     .renderingMode(.template)
                                                     .resizable()
                                                     .frame(width: 16, height: 16)
-                                                    .foregroundColor(.black)
+                                                    .foregroundColor(themeManager.buttonForegroundOnPrimary)
                                                     .frame(width: 24, height: 24)
                                                 Text(String(localized: "signup.sign_up_google"))
                                                     .font(AlynnaTypography.font(.headline).weight(.semibold))
                                             }
-                                            .foregroundColor(.black)
+                                            .foregroundColor(themeManager.buttonForegroundOnPrimary)
                                             .frame(maxWidth: .infinity)
                                             .frame(height: 50)
-                                            .background(themeManager.fixedNightTextPrimary)
+                                            .background(themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.82))
                                             .cornerRadius(14)
                                         }
                                         .disabled(authBusy)
@@ -263,11 +263,11 @@ struct SignUpView: View {
                                     .padding(.top, 2)
 
                                     HStack {
-                                        Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
+                                        Rectangle().fill(themeManager.descriptionText.opacity(0.20)).frame(height: 1)
                                         Text(String(localized: "auth.or_with"))
                                             .font(AlynnaTypography.font(.footnote))
-                                            .foregroundColor(themeManager.fixedNightTextSecondary)
-                                        Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
+                                            .foregroundColor(themeManager.descriptionText)
+                                        Rectangle().fill(themeManager.descriptionText.opacity(0.20)).frame(height: 1)
                                     }
                                     .staggered(4, show: $showIntro)
 
@@ -279,18 +279,18 @@ struct SignUpView: View {
                                             .autocorrectionDisabled(true)
                                             .padding(.vertical, 14)
                                             .padding(.leading, 16)
-                                            .background(Color.white.opacity(0.1))
+                                            .background(themeManager.panelFill.opacity(0.25))
                                             .cornerRadius(14)
-                                            .foregroundColor(themeManager.fixedNightTextPrimary)
+                                            .foregroundColor(themeManager.primaryText)
                                             .placeholder(when: email.isEmpty) {
                                                 Text(String(localized: "auth.email_placeholder"))
-                                                    .foregroundColor(themeManager.fixedNightTextSecondary)
+                                                    .foregroundColor(themeManager.descriptionText)
                                                     .padding(.leading, 16)
                                             }
                                             .focused($registerFocus, equals: .email)
                                             .focusGlow(
                                                 active: registerFocus == .email,
-                                                color: themeManager.fixedNightTextPrimary,
+                                                color: themeManager.primaryText,
                                                 lineWidth: 2.2,
                                                 cornerRadius: 14
                                             )
@@ -305,18 +305,18 @@ struct SignUpView: View {
                                         SecureField("", text: $password)
                                             .padding(.vertical, 14)
                                             .padding(.leading, 16)
-                                            .background(Color.white.opacity(0.1))
+                                            .background(themeManager.panelFill.opacity(0.25))
                                             .cornerRadius(14)
-                                            .foregroundColor(themeManager.fixedNightTextPrimary)
+                                            .foregroundColor(themeManager.primaryText)
                                             .placeholder(when: password.isEmpty) {
                                                 Text(String(localized: "auth.password_placeholder"))
-                                                    .foregroundColor(themeManager.fixedNightTextSecondary)
+                                                    .foregroundColor(themeManager.descriptionText)
                                                     .padding(.leading, 16)
                                             }
                                             .focused($registerFocus, equals: .password)
                                             .focusGlow(
                                                 active: registerFocus == .password,
-                                                color: themeManager.fixedNightTextPrimary,
+                                                color: themeManager.primaryText,
                                                 lineWidth: 2.2,
                                                 cornerRadius: 14
                                             )
@@ -337,7 +337,7 @@ struct SignUpView: View {
                                             if isActive(.emailSignUp) {
                                                 ProgressView()
                                                     .progressViewStyle(.circular)
-                                                    .tint(.black)
+                                                    .tint(themeManager.buttonForegroundOnPrimary)
                                                     .scaleEffect(0.75)
                                             }
                                             Text(isActive(.emailSignUp) ? String(localized: "signup.creating") : String(localized: "signup.create_account"))
@@ -345,8 +345,8 @@ struct SignUpView: View {
                                         .font(AlynnaTypography.font(.headline).weight(.semibold))
                                         .padding()
                                         .frame(maxWidth: .infinity)
-                                        .background(themeManager.fixedNightTextPrimary)
-                                        .foregroundColor(.black)
+                                        .background(themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.82))
+                                        .foregroundColor(themeManager.buttonForegroundOnPrimary)
                                         .cornerRadius(14)
                                     }
                                     .disabled(authBusy)
@@ -379,7 +379,7 @@ struct SignUpView: View {
                             }
                         }
                     }
-                    .preferredColorScheme(.dark)
+                    .preferredColorScheme(themeManager.preferredColorScheme)
                     .transaction { $0.animation = nil }
 
                 }
@@ -455,11 +455,11 @@ struct SignUpView: View {
                             VStack(spacing: 12) {
                                 ProgressView()
                                     .progressViewStyle(.circular)
-                                    .tint(themeManager.fixedNightTextPrimary)
+                                    .tint(themeManager.primaryText)
                                     .scaleEffect(1.05)
                                 Text(showAuthOverlay ? String(localized: "signup.overlay_signing_up") : String(localized: "signup.overlay_checking"))
                                     .font(AlynnaTypography.font(.footnote))
-                                    .foregroundColor(themeManager.fixedNightTextPrimary)
+                                    .foregroundColor(themeManager.primaryText)
                             }
                             .padding(.horizontal, 20)
                             .padding(.vertical, 16)

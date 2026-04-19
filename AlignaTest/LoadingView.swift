@@ -530,39 +530,6 @@ struct LoadingView: View {
                 }
                 .padding(.horizontal, 16)
 
-                // === Confirm button pinned to bottom for focus selection ===
-                if stage == .focusSelection {
-                    let sandColor = Color(red: 0.94, green: 0.88, blue: 0.72)
-                    VStack {
-                        Spacer()
-                        Button {
-                            if let id = selectedFocusID {
-                                advanceFromFocusSelection(focusID: id)
-                            }
-                        } label: {
-                            Text("focus.confirm_button")
-                                .font(.custom("Merriweather-Regular", size: 16))
-                                .foregroundColor(selectedFocusID != nil
-                                    ? Color(red: 0.12, green: 0.10, blue: 0.08)
-                                    : themeManager.descriptionText.opacity(0.4))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .fill(selectedFocusID != nil
-                                            ? sandColor
-                                            : themeManager.panelFill.opacity(0.3))
-                                )
-                        }
-                        .disabled(selectedFocusID == nil)
-                        .buttonStyle(.plain)
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 48)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .ignoresSafeArea()
-                }
-
                 // === Personal stage back arrow (only in full loading flow) ===
                 if stage == .personal && forceFullLoading {
                     VStack {
@@ -761,7 +728,6 @@ struct LoadingView: View {
     // MARK: - Focus Selection Full Screen
     @ViewBuilder
     private var focusSelectionFullScreen: some View {
-        let sandColor = Color(red: 0.94, green: 0.88, blue: 0.72)
         let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
         let groupDefs: [(key: String, labelKey: String)] = [
             ("everyday",      "focus.group.everyday"),
@@ -778,7 +744,7 @@ struct LoadingView: View {
                 .font(.custom("Merriweather-Bold", size: 20))
                 .foregroundColor(themeManager.primaryText)
                 .multilineTextAlignment(.center)
-                .padding(.top, 56)
+                .padding(.top, 88)
                 .padding(.horizontal, 32)
                 .padding(.bottom, 24)
 
@@ -788,7 +754,7 @@ struct LoadingView: View {
                     // Presence focus — half-width in 2-col grid
                     if let presenceItem = focuses.first(where: { $0.id == presenceFocusID }) {
                         LazyVGrid(columns: columns, spacing: 12) {
-                            focusCardInline(presenceItem, sandColor: sandColor)
+                            focusCardInline(presenceItem)
                         }
                         .padding(.bottom, 12)
                     }
@@ -811,7 +777,7 @@ struct LoadingView: View {
 
                             LazyVGrid(columns: columns, spacing: 12) {
                                 ForEach(groupItems) { item in
-                                    focusCardInline(item, sandColor: sandColor)
+                                    focusCardInline(item)
                                 }
                             }
                             .padding(.bottom, 20)
@@ -835,14 +801,14 @@ struct LoadingView: View {
 
                         LazyVGrid(columns: columns, spacing: 12) {
                             ForEach(customItems) { item in
-                                focusCardInline(item, sandColor: sandColor)
+                                focusCardInline(item)
                             }
                         }
                         .padding(.bottom, 20)
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 24)
+                .padding(.bottom, 8)
             }
 
             // Confirm button pinned to bottom
@@ -854,14 +820,14 @@ struct LoadingView: View {
                 Text("focus.confirm_button")
                     .font(.custom("Merriweather-Regular", size: 16))
                     .foregroundColor(selectedFocusID != nil
-                        ? Color(red: 0.12, green: 0.10, blue: 0.08)
+                        ? themeManager.buttonForegroundOnPrimary.opacity(0.85)
                         : themeManager.descriptionText.opacity(0.4))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(
                         RoundedRectangle(cornerRadius: 14)
                             .fill(selectedFocusID != nil
-                                ? sandColor
+                                ? themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.82)
                                 : themeManager.panelFill.opacity(0.3))
                     )
             }
@@ -876,7 +842,6 @@ struct LoadingView: View {
     // MARK: - Focus Selection Stage (fixed-height, kept for stageContent switch)
     @ViewBuilder
     private var focusSelectionStage: some View {
-        let sandColor = Color(red: 0.94, green: 0.88, blue: 0.72)
         let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
         // Groups mirroring FocusSelectionView order
@@ -912,7 +877,7 @@ struct LoadingView: View {
                 .font(.custom("Merriweather-Bold", size: 20))
                 .foregroundColor(themeManager.primaryText)
                 .multilineTextAlignment(.center)
-                .padding(.top, 8)
+                .padding(.top, 40)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 16)
 
@@ -922,7 +887,7 @@ struct LoadingView: View {
                     // ── Presence focus — same 2-col grid as other cards ──
                     if let presenceItem = focuses.first(where: { $0.id == presenceFocusID }) {
                         LazyVGrid(columns: columns, spacing: 12) {
-                            focusCardInline(presenceItem, sandColor: sandColor)
+                            focusCardInline(presenceItem)
                         }
                         .padding(.bottom, 12)
                     }
@@ -946,7 +911,7 @@ struct LoadingView: View {
 
                             LazyVGrid(columns: columns, spacing: 12) {
                                 ForEach(groupItems) { item in
-                                    focusCardInline(item, sandColor: sandColor)
+                                    focusCardInline(item)
                                 }
                             }
                             .padding(.bottom, 20)
@@ -971,22 +936,47 @@ struct LoadingView: View {
 
                         LazyVGrid(columns: columns, spacing: 12) {
                             ForEach(customItems) { item in
-                                focusCardInline(item, sandColor: sandColor)
+                                focusCardInline(item)
                             }
                         }
                         .padding(.bottom, 20)
                     }
                 }
-                // Bottom padding so last cards clear the pinned confirm button
-                .padding(.bottom, 100)
+                .padding(.bottom, 16)
             }
+
+            // Confirm button pinned to bottom
+            Button {
+                if let id = selectedFocusID {
+                    advanceFromFocusSelection(focusID: id)
+                }
+            } label: {
+                Text("focus.confirm_button")
+                    .font(.custom("Merriweather-Regular", size: 16))
+                    .foregroundColor(selectedFocusID != nil
+                        ? themeManager.buttonForegroundOnPrimary.opacity(0.85)
+                        : themeManager.descriptionText.opacity(0.4))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(selectedFocusID != nil
+                                ? themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.82)
+                                : themeManager.panelFill.opacity(0.3))
+                    )
+            }
+            .disabled(selectedFocusID == nil)
+            .buttonStyle(.plain)
+            .padding(.horizontal, 24)
+            .padding(.top, 4)
+            .padding(.bottom, 48)
         }
     }
 
 
 
     @ViewBuilder
-    private func focusCardInline(_ item: FocusSelectionView.FocusItem, sandColor: Color) -> some View {
+    private func focusCardInline(_ item: FocusSelectionView.FocusItem) -> some View {
         let isSelected = selectedFocusID == item.id
         Button {
             withAnimation(.easeInOut(duration: 0.18)) {
@@ -997,13 +987,13 @@ struct LoadingView: View {
                 Text(item.name)
                     .font(.custom("Merriweather-Bold", size: 13))
                     .foregroundColor(isSelected
-                        ? Color(red: 0.12, green: 0.10, blue: 0.08)
+                        ? themeManager.buttonForegroundOnPrimary.opacity(0.90)
                         : themeManager.primaryText.opacity(0.88))
                     .lineLimit(1)
                 Text(item.description)
                     .font(.custom("Merriweather-Regular", size: 10))
                     .foregroundColor(isSelected
-                        ? Color(red: 0.12, green: 0.10, blue: 0.08).opacity(0.60)
+                        ? themeManager.buttonForegroundOnPrimary.opacity(0.60)
                         : themeManager.descriptionText.opacity(0.50))
                     .lineLimit(2)
                     .lineSpacing(2)
@@ -1013,12 +1003,12 @@ struct LoadingView: View {
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(isSelected
-                        ? sandColor.opacity(themeManager.isNight ? 0.88 : 0.80)
+                        ? themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.80)
                         : themeManager.panelFill.opacity(themeManager.isNight ? 0.28 : 0.36))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? sandColor : Color.white.opacity(0.10),
+                    .stroke(isSelected ? themeManager.accent.opacity(0.70) : Color.white.opacity(0.10),
                             lineWidth: isSelected ? 1.5 : 1)
             )
         }

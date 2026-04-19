@@ -818,7 +818,7 @@ struct RainBackgroundLayer: View {
                         path.addLine(to: CGPoint(x: x + 3, y: length))
                     }
                     .stroke(streakColor, lineWidth: 0.85)
-                    .offset(y: rainOffset + CGFloat((i * 53) % Int(geo.size.height)))
+                    .offset(y: rainOffset + (geo.size.height > 0 ? CGFloat((i * 53) % Int(geo.size.height)) : 0))
                     .animation(
                         .linear(duration: speed)
                         .repeatForever(autoreverses: false)
@@ -976,13 +976,8 @@ struct VitalityBackgroundLayer: View {
                     let sway = lean + Double(swayPhase) * (i % 2 == 0 ? 2.2 : -2.0)
                     let opacity = 0.14 + Double(i % 4) * 0.05
 
-                    // every 4th blade gets a warm yellow-green tint
-                    let bladeColor: Color = (i % 4 == 3)
-                        ? Color(hex: "#C8D44A").opacity(opacity * 0.9)
-                        : Color(hex: "#5DBB74").opacity(opacity)
-
                     VitalityGrassBlade()
-                        .fill(bladeColor)
+                        .fill(i % 4 == 3 ? Color(hex: "#C8D44A").opacity(0.42) : Color(hex: "#5DBB74").opacity(opacity))
                         .frame(width: 2.5 + CGFloat(i % 3) * 0.5, height: bladeH)
                         .rotationEffect(.degrees(sway), anchor: .bottom)
                         .position(x: x, y: h - bladeH / 2)
@@ -1022,19 +1017,14 @@ struct VitalityBackgroundLayer: View {
                 ForEach(0..<20, id: \.self) { i in
                     let xFrac = CGFloat((i * 31 + 7) % 89) / 89.0
                     let x = xFrac * w
-                    let baseY = h - CGFloat((i * 53 + 13) % Int(h))
+                    let baseY = h > 0 ? h - CGFloat((i * 53 + 13) % Int(h)) : h
                     let size = CGFloat(2 + (i % 3))
                     let opacity = 0.06 + Double(i % 4) * 0.02
                     let speed = 5.0 + Double(i % 5) * 0.9
                     let stagger = Double(i) * (speed / 20.0)
 
-                    // every 3rd particle is warm yellow (sunlight spore)
-                    let particleColor: Color = (i % 3 == 2)
-                        ? Color(hex: "#E8D84A").opacity(opacity * 1.2)
-                        : Color(hex: "#7DD890").opacity(opacity)
-
                     Circle()
-                        .fill(particleColor)
+                        .fill(i % 3 == 2 ? Color(hex: "#E8D84A").opacity(0.45) : Color(hex: "#7DD890").opacity(opacity))
                         .frame(width: size, height: size)
                         .blur(radius: size * 0.5)
                         .position(x: x, y: baseY)
@@ -1279,7 +1269,7 @@ struct LoveBackgroundLayer: View {
                 ForEach(0..<6, id: \.self) { i in
                     let xFrac = CGFloat((i * 47 + 9) % 97) / 97.0
                     let x = xFrac * w
-                    let baseY = h - CGFloat((i * 67 + 21) % Int(h * 0.7))
+                    let baseY = h * 0.7 > 0 ? h - CGFloat((i * 67 + 21) % Int(h * 0.7)) : h
                     let size = CGFloat(16 + (i % 5) * 8)
                     let opacity = 0.38 + Double(i % 4) * 0.08
                     let speed = 14.0 + Double(i % 5) * 1.6

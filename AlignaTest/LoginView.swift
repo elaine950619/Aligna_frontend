@@ -32,7 +32,7 @@ struct LoginView: View {
     @State private var keyboardHideObserver: NSObjectProtocol?
     private enum LoginField { case email, password }
     private enum AuthAction { case emailLogin, google, apple, resetPassword }
-    private var panelBG: Color { Color.white.opacity(0.10) }
+    private var panelBG: Color { themeManager.panelFill.opacity(0.25) }
     private func isActive(_ action: AuthAction) -> Bool {
         authBusy && activeAuthAction == action
     }
@@ -48,7 +48,7 @@ struct LoginView: View {
             let focusExtraSpace: CGFloat = isKeyboardVisible ? 32 : 0
 
             ZStack {
-                AppBackgroundView(mode: .night)
+                AppBackgroundView(nightMotion: .animated)
                     .environmentObject(starManager)
                     .environmentObject(themeManager)
                     .contentShape(Rectangle())
@@ -65,7 +65,7 @@ struct LoginView: View {
                                 .padding()
                                 .background(panelBG)
                                 .clipShape(Circle())
-                                .foregroundColor(themeManager.fixedNightTextPrimary)
+                                .foregroundColor(themeManager.primaryText)
                         }
                         .disabled(authBusy)
                         .padding(.leading, geometry.size.width * 0.05)
@@ -84,12 +84,12 @@ struct LoginView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: minLength * 0.14)
-                                .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.92))
+                                .foregroundColor(themeManager.primaryText.opacity(0.92))
                                 .staggered(0, show: $showIntro)
                         }
 
                         AlignaHeading(
-                            textColor: themeManager.fixedNightTextPrimary,
+                            textColor: themeManager.primaryText,
                             show: $showIntro,
                             fontSize: minLength * 0.12,
                             letterSpacing: minLength * 0.005
@@ -98,7 +98,7 @@ struct LoginView: View {
                         VStack(spacing: 6) {
                             Text(String(localized: "login.welcome_back"))
                                 .font(AlynnaTypography.font(.subheadline))
-                                .foregroundColor(themeManager.fixedNightTextSecondary)
+                                .foregroundColor(themeManager.descriptionText)
                         }
                         .multilineTextAlignment(.center)
                         .lineSpacing(6)
@@ -155,22 +155,22 @@ struct LoginView: View {
                                     if isActive(.google) {
                                         ProgressView()
                                             .progressViewStyle(.circular)
-                                            .tint(themeManager.fixedNightTextPrimary)
+                                            .tint(themeManager.buttonForegroundOnPrimary)
                                             .scaleEffect(0.75)
                                     }
                                     Image("googleIcon")
                                         .renderingMode(.template)
                                         .resizable()
                                         .frame(width: 16, height: 16)
-                                        .foregroundColor(.black)
+                                        .foregroundColor(themeManager.buttonForegroundOnPrimary)
                                         .frame(width: 24, height: 24)
                                     Text(String(localized: "login.sign_in_google"))
                                         .font(AlynnaTypography.font(.headline).weight(.semibold))
                                 }
-                                .foregroundColor(.black)
+                                .foregroundColor(themeManager.buttonForegroundOnPrimary)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 50)
-                                .background(themeManager.fixedNightTextPrimary)
+                                .background(themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.82))
                                 .cornerRadius(14)
                             }
                             .staggered(2, show: $showIntro)
@@ -240,11 +240,11 @@ struct LoginView: View {
 
                         // 分隔线
                         HStack {
-                            Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
+                            Rectangle().fill(themeManager.descriptionText.opacity(0.20)).frame(height: 1)
                             Text(String(localized: "auth.or_with"))
                                 .font(AlynnaTypography.font(.footnote))
-                                .foregroundColor(themeManager.fixedNightTextSecondary)
-                            Rectangle().fill(Color.white.opacity(0.30)).frame(height: 1)
+                                .foregroundColor(themeManager.descriptionText)
+                            Rectangle().fill(themeManager.descriptionText.opacity(0.20)).frame(height: 1)
                         }
                         .staggered(4, show: $showIntro)
 
@@ -258,16 +258,16 @@ struct LoginView: View {
                                 .padding(.leading, 16)
                                 .background(panelBG)
                                 .cornerRadius(14)
-                                .foregroundColor(themeManager.fixedNightTextPrimary)
+                                .foregroundColor(themeManager.primaryText)
                                 .placeholder(when: email.isEmpty) {
                                     Text(String(localized: "auth.email_placeholder"))
-                                        .foregroundColor(themeManager.fixedNightTextSecondary)
+                                        .foregroundColor(themeManager.descriptionText)
                                         .padding(.leading, 16)
                                 }
                                 .focused($loginFocus, equals: .email)
                                 .focusGlow(
                                     active: loginFocus == .email,
-                                    color: themeManager.fixedNightTextPrimary,
+                                    color: themeManager.primaryText,
                                     lineWidth: 2,
                                     cornerRadius: 14
                                 )
@@ -285,16 +285,16 @@ struct LoginView: View {
                                 .padding(.leading, 16)
                                 .background(panelBG)
                                 .cornerRadius(14)
-                                .foregroundColor(themeManager.fixedNightTextPrimary)
+                                .foregroundColor(themeManager.primaryText)
                                 .placeholder(when: password.isEmpty) {
                                     Text(String(localized: "auth.password_placeholder"))
-                                        .foregroundColor(themeManager.fixedNightTextSecondary)
+                                        .foregroundColor(themeManager.descriptionText)
                                         .padding(.leading, 16)
                                 }
                                 .focused($loginFocus, equals: .password)
                                 .focusGlow(
                                     active: loginFocus == .password,
-                                    color: themeManager.fixedNightTextPrimary,
+                                    color: themeManager.primaryText,
                                     lineWidth: 2,
                                     cornerRadius: 14
                                 )
@@ -330,7 +330,7 @@ struct LoginView: View {
                                 }
                             }
                             .font(AlynnaTypography.font(.footnote))
-                            .foregroundColor(themeManager.fixedNightTextSecondary)
+                            .foregroundColor(themeManager.descriptionText)
                             .underline()
                         }
                         .staggered(7, show: $showIntro)
@@ -410,7 +410,7 @@ struct LoginView: View {
                                 if isActive(.emailLogin) {
                                     ProgressView()
                                         .progressViewStyle(.circular)
-                                        .tint(.black)
+                                        .tint(themeManager.buttonForegroundOnPrimary)
                                         .scaleEffect(0.75)
                                 }
                                 Text(isActive(.emailLogin) ? String(localized: "login.signing_in") : String(localized: "login.log_in"))
@@ -418,8 +418,8 @@ struct LoginView: View {
                             .font(AlynnaTypography.font(.headline).weight(.semibold))
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(themeManager.fixedNightTextPrimary)
-                            .foregroundColor(.black)
+                            .background(themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.82))
+                            .foregroundColor(themeManager.buttonForegroundOnPrimary)
                             .cornerRadius(14)
                         }
                         .disabled(authBusy)
@@ -429,7 +429,7 @@ struct LoginView: View {
                         HStack {
                             Text(String(localized: "login.no_account"))
                                 .font(AlynnaTypography.font(.footnote))
-                                .foregroundColor(themeManager.fixedNightTextSecondary)
+                                .foregroundColor(themeManager.descriptionText)
                             NavigationLink(
                                 destination: SignUpView()
                                     .environmentObject(starManager)
@@ -438,7 +438,7 @@ struct LoginView: View {
                             ) {
                                 Text(String(localized: "login.create_account"))
                                     .font(AlynnaTypography.font(.footnote).weight(.semibold))
-                                    .foregroundColor(themeManager.fixedNightTextPrimary)
+                                    .foregroundColor(themeManager.primaryText)
                                     .underline()
                             }
                         }
@@ -480,7 +480,7 @@ struct LoginView: View {
                     .environmentObject(viewModel)
                     .navigationBarBackButtonHidden(true)
             }
-            .preferredColorScheme(.dark)
+            .preferredColorScheme(themeManager.preferredColorScheme)
             .onAppear {
                 starManager.animateStar = true
                 showIntro = false
@@ -500,11 +500,11 @@ struct LoginView: View {
                         VStack(spacing: 12) {
                             ProgressView()
                                 .progressViewStyle(.circular)
-                                .tint(themeManager.fixedNightTextPrimary)
+                                .tint(themeManager.primaryText)
                                 .scaleEffect(1.05)
                             Text(String(localized: "login.logging_in_overlay"))
                                 .font(AlynnaTypography.font(.footnote))
-                                .foregroundColor(themeManager.fixedNightTextPrimary)
+                                .foregroundColor(themeManager.primaryText)
                         }
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)

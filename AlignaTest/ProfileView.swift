@@ -1667,7 +1667,7 @@ struct ProfileView: View {
                         .ignoresSafeArea()
 
                     ScrollView(showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 18) {
+                        VStack(alignment: .leading, spacing: 12) {
                             headerCard
                             personalInfoCard
                             preferencesCard
@@ -2465,7 +2465,7 @@ private extension ProfileView {
     }
 
     var themeCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 Image(systemName: "sparkles").foregroundColor(themeManager.accent)
                 VStack(alignment: .leading, spacing: 2) {
@@ -2477,19 +2477,17 @@ private extension ProfileView {
                         .foregroundColor(themeManager.descriptionText)
                 }
             }
-            // 上排 3 个，下排 3 个
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 themeOption(.light)
                 themeOption(.dark)
                 themeOption(.auto)
-            }
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 themeOption(.rain)
                 themeOption(.vitality)
                 themeOption(.love)
             }
         }
-        .padding()
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .alignaCard()
     }
 
@@ -2715,9 +2713,8 @@ private extension ProfileView {
             Image(systemName: "chevron.right")
                 .foregroundColor(themeManager.primaryText.opacity(0.9))
         }
-        .padding()
-
-
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
         .alignaCard()
     }

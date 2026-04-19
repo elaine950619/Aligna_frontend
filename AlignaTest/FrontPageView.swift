@@ -17,7 +17,7 @@ struct FrontPageView: View {
                 let sectionGap = h * 0.07
 
                 ZStack {
-                    AppBackgroundView(mode: .night)
+                    AppBackgroundView(nightMotion: .animated)
                         .environmentObject(starManager)
                         .environmentObject(themeManager)
 
@@ -29,12 +29,12 @@ struct FrontPageView: View {
                                     .resizable()
                                     .scaledToFit()
                                     .frame(width: minLength * 0.14)
-                                    .foregroundColor(themeManager.fixedNightTextPrimary.opacity(0.92))
+                                    .foregroundColor(themeManager.primaryText.opacity(0.92))
                                     .staggered(0, show: $showIntro)
                             }
 
                             AlignaHeading(
-                                textColor: themeManager.fixedNightTextPrimary,
+                                textColor: themeManager.primaryText,
                                 show: $showIntro,
                                 fontSize: minLength * 0.12,
                                 letterSpacing: minLength * 0.005
@@ -42,7 +42,7 @@ struct FrontPageView: View {
 
                             Text("frontpage.tagline")
                                 .font(AlynnaTypography.font(.subheadline))
-                                .foregroundColor(themeManager.fixedNightTextSecondary)
+                                .foregroundColor(themeManager.descriptionText)
                                 .multilineTextAlignment(.center)
                                 .lineSpacing(4)
                                 .lineLimit(nil)
@@ -64,8 +64,8 @@ struct FrontPageView: View {
                                         .font(AlynnaTypography.font(.headline).weight(.semibold))
                                         .frame(maxWidth: .infinity)
                                         .padding()
-                                        .background(themeManager.fixedNightTextPrimary)
-                                        .foregroundColor(.black)
+                                        .background(themeManager.accent.opacity(themeManager.isNight ? 0.88 : 0.82))
+                                        .foregroundColor(themeManager.buttonForegroundOnPrimary)
                                         .cornerRadius(14)
                                 }
                                 .staggered(4, show: $showIntro)
@@ -78,26 +78,26 @@ struct FrontPageView: View {
                                         .font(AlynnaTypography.font(.headline).weight(.semibold))
                                         .frame(maxWidth: .infinity)
                                         .padding()
-                                        .background(Color.white.opacity(0.1))
+                                        .background(themeManager.panelFill.opacity(themeManager.isNight ? 0.22 : 0.30))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 14)
-                                                .stroke(Color.white.opacity(0.6), lineWidth: 1)
+                                                .stroke(themeManager.panelStrokeHi.opacity(0.6), lineWidth: 1)
                                         )
-                                        .foregroundColor(.white)
+                                        .foregroundColor(themeManager.primaryText)
                                         .cornerRadius(14)
                                 }
                                 .staggered(5, show: $showIntro)
 
                             Text("frontpage.disclaimer")
                                 .font(AlynnaTypography.font(.footnote))
-                                .foregroundColor(themeManager.fixedNightTextTertiary)
+                                .foregroundColor(themeManager.descriptionText.opacity(0.6))
                                 .padding(.top, 6)
                                 .staggered(6, show: $showIntro)
                         }
                         .padding(.horizontal, w * 0.10)
                         .padding(.bottom, h * 0.08)
                     }
-                    .preferredColorScheme(.dark)
+                    .preferredColorScheme(themeManager.preferredColorScheme)
                 }
             }
         }
