@@ -1681,6 +1681,7 @@ struct ProfileView: View {
                             deleteAccountCard
                             if isPrivilegedUser {
                                 debugRitualResetCard
+                                debugWrapUpCard
                             }
                         }
                         .padding(.horizontal, 20)
@@ -2533,16 +2534,55 @@ private extension ProfileView {
 
     var debugRitualResetCard: some View {
         Button {
-            UserDefaults.standard.removeObject(forKey: "hasSeenExpandedToday")
+            // 清除今日推荐内容
+            UserDefaults.standard.removeObject(forKey: "lastRecommendationDate")
+            UserDefaults.standard.removeObject(forKey: "cachedDailyMantra")
+            UserDefaults.standard.removeObject(forKey: "lastRecommendationTimestamp")
+            UserDefaults.standard.removeObject(forKey: "lastRecommendationHasFullSet")
+            UserDefaults.standard.removeObject(forKey: "todayFetchLock")
+            // 清除今日行动记录
             UserDefaults.standard.removeObject(forKey: "dailyActionsCompleted")
             UserDefaults.standard.removeObject(forKey: "dailyActionsDate")
-            dismiss()
-            onDevRefresh?()
+            // 清除 UI 状态缓存
+            UserDefaults.standard.removeObject(forKey: "mantraExpandHapticDay")
+            UserDefaults.standard.removeObject(forKey: "manualRefreshCountDay")
+            UserDefaults.standard.removeObject(forKey: "manualRefreshCountToday")
+            // 确保写入磁盘后再退出
+            UserDefaults.standard.synchronize()
+            exit(0)
         } label: {
             rowCard(
                 icon: "arrow.counterclockwise.circle",
-                title: "[DEV] 生成今天的推荐",
-                subtitle: "清除仪式态缓存，触发 Loading → 展开态"
+                title: "[DEV] 清除今日数据，退出 App",
+                subtitle: "下次启动走完整冷启动路径"
+            )
+        }
+    }
+
+    var debugWrapUpCard: some View {
+        Button {
+            // 把 dailyActionsDate 设成昨天（保证 != 今天）
+            // → hasPreviousSessionActions 返回 true → 下次启动进 LastWrapUpView
+            let df = DateFormatter()
+            df.dateFormat = "yyyy-MM-dd"
+            df.calendar = Calendar.current
+            df.timeZone = .current
+            let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
+            UserDefaults.standard.set(df.string(from: yesterday), forKey: "dailyActionsDate")
+            // 若当前没有行动记录，写入占位数据确保非空
+            if (UserDefaults.standard.string(forKey: "dailyActionsCompleted") ?? "").isEmpty {
+                if let data = try? JSONEncoder().encode(["Activity": true]),
+                   let str = String(data: data, encoding: .utf8) {
+                    UserDefaults.standard.set(str, forKey: "dailyActionsCompleted")
+                }
+            }
+            UserDefaults.standard.synchronize()
+            exit(0)
+        } label: {
+            rowCard(
+                icon: "clock.arrow.trianglehead.counterclockwise.rotate.90",
+                title: "[DEV] 模拟上次数据，退出 App",
+                subtitle: "下次启动进入 Last Wrap-Up 页面"
             )
         }
     }

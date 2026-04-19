@@ -68,7 +68,8 @@ func localizedMoonPhaseLabel(for date: Date = Date()) -> String {
 
 enum BootPhase {
     case loading
-    case onboarding   // ← 新增：需要走新手引导
+    case wrapUp       // 上次收尾（有历史行动数据时）
+    case onboarding   // 需要走新手引导
     case main
 }
 

@@ -373,10 +373,7 @@ private struct DailyFocusUsageEntry: Codable, Hashable {
     var generatedFocuses: [String: Int]
 }
 
-private enum DayPhase {
-    case wrapUp     // 上次收尾（有历史行动数据时）
-    case home       // 主页缩略态
-}
+
 
 struct MainView: View {
     private enum FocusFormField: Hashable {
@@ -469,6 +466,7 @@ struct MainView: View {
     @State private var showReasoningSheet = false
     @State private var showWallpaperPreview = false
     @State private var showProfileFromWrapUp = false
+
     @State private var showFocusManagerSheet = false
     @State private var showFocusHint = false
     @State private var showNewFocusForm = false
@@ -514,7 +512,9 @@ struct MainView: View {
     @State private var mainNavigationPath = NavigationPath()
     
     @State private var bootPhase: BootPhase = .loading
-    @State private var dayPhase: DayPhase = .home
+    /// True when the user has actively tapped "Start Today" in LastWrapUpView.
+    /// Tells attemptBootAdvance to route to .main even though dailyActionsDate is still old.
+    @State private var didConfirmWrapUp = false
 
     // Data snapshot for WrapUpView — captured from previous session before it's overwritten
     @State private var lastFocusName: String = ""
@@ -2604,7 +2604,7 @@ struct MainView: View {
                         .allowsHitTesting(!isMantraExpanded)
 
                         Group {
-                            if isMantraExpanded && dayPhase == .home {
+                            if isMantraExpanded {
                                 // ── 主页心语详读态（全居中重设计）──
                                 let hPad = geometry.size.width * 0.08
                                 ScrollView(showsIndicators: false) {
@@ -2919,56 +2919,6 @@ struct MainView: View {
         .navigationViewStyle(.stack)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
-        // ── 上次收尾 ── 展示上一次行动数据，然后进入 loading
-        .fullScreenCover(isPresented: Binding(
-            get: { bootPhase == .main && dayPhase == .wrapUp },
-            set: { _ in }
-        )) {
-            LastWrapUpView(
-                lastFocusName: lastFocusName,
-                actions: lastWrapUpActions,
-                onContinue: {
-                    // WrapUp seen — mark actions date as today so resolveDayPhase
-                    // won't loop back to wrapUp when attemptBootAdvance runs
-                    loadMantraFocusesIfNeeded()   // 确保 mantraActiveFocusByDay 有值再切 loading
-                    dailyActionsDate = todayKey
-                    dayPhase = .home
-                    isManualRefreshFlow = true
-                    isFullLoadingFlow = true
-                    showMainGenerationOverlay = true  // 确保 onPersonalComplete 走生成分支而非跳过
-                    didCompletePersonalCheckIn = false
-                    isMantraReady = false
-                    withAnimation(.easeInOut) { bootPhase = .loading }
-                },
-                dateString: {
-                    let parse = DateFormatter()
-                    parse.dateFormat = "yyyy-MM-dd"
-                    parse.locale = Locale(identifier: "en_US_POSIX")
-                    parse.timeZone = .current
-                    guard !dailyActionsDate.isEmpty,
-                          let date = parse.date(from: dailyActionsDate) else { return "" }
-                    let display = DateFormatter()
-                    display.locale = .current
-                    display.timeZone = .current
-                    display.setLocalizedDateFormatFromTemplate("EEEEMMMd")
-                    return display.string(from: date)
-                }(),
-                weatherCondition: viewModel.weatherCondition ?? "",
-                locationName: resolvedWidgetLocation(),
-                onProfileTap: {
-                    dayPhase = .home
-                    showProfileFromWrapUp = true
-                }
-            )
-            .environmentObject(themeManager)
-            .environmentObject(starManager)
-        }
-        .sheet(isPresented: $showProfileFromWrapUp) {
-            profileViewWithDevCallback()
-                .environmentObject(starManager)
-                .environmentObject(themeManager)
-                .presentationCornerRadius(24)
-        }
     }
 
 
@@ -4188,12 +4138,20 @@ struct MainView: View {
 
     private func attemptBootAdvance() {
         guard isBootDataReady, didCompletePersonalCheckIn else { return }
-        // Pre-resolve dayPhase before switching to .main so the fullScreenCover
-        // (ritualExpandedView) appears immediately without a collapsed-state flash.
-        resolveDayPhase()
-        withAnimation(.easeInOut) { bootPhase = .main }
-        pendingMantraExpansion = true
-        markMantraReadyIfPossible()
+        if hasPreviousSessionActions && !didConfirmWrapUp {
+            // Cold-start path: found previous session data, user hasn't confirmed wrapUp yet
+            buildWrapUpData()
+            withAnimation(.easeInOut) { bootPhase = .wrapUp }
+        } else {
+            // Either no previous session data, or user already tapped "Start Today"
+            if !dailyActionsDate.isEmpty && dailyActionsDate != todayKey {
+                dailyActionsDate = todayKey
+            }
+            didConfirmWrapUp = false
+            withAnimation(.easeInOut) { bootPhase = .main }
+            pendingMantraExpansion = true
+            markMantraReadyIfPossible()
+        }
         if shouldShowBootLoading {
             shouldShowBootLoading = false
         }
@@ -4205,12 +4163,13 @@ struct MainView: View {
     }
 
     private func devRefresh() {
-        // Always show wrapUp first in dev — synthesize mock data if none exists
-        if !hasPreviousSessionActions {
-            injectMockPreviousSessionData()
-        }
-        buildWrapUpData()
-        dayPhase = .wrapUp
+        isMantraReady = false
+        isBootDataReady = false
+        didCompletePersonalCheckIn = false
+        isManualRefreshFlow = false
+        isFullLoadingFlow = true
+        didResolveBootPath = false
+        withAnimation(.easeInOut) { bootPhase = .loading }
     }
 
     /// Writes fake yesterday actions + focus into AppStorage so wrapUp always has data in dev
@@ -4425,6 +4384,57 @@ struct MainView: View {
         }
     }
 
+    @ViewBuilder private var wrapUpContent: some View {
+        let parse: DateFormatter = {
+            let f = DateFormatter()
+            f.dateFormat = "yyyy-MM-dd"
+            f.locale = Locale(identifier: "en_US_POSIX")
+            f.timeZone = .current
+            return f
+        }()
+        let display: DateFormatter = {
+            let f = DateFormatter()
+            f.locale = .current
+            f.timeZone = .current
+            f.setLocalizedDateFormatFromTemplate("EEEEMMMd")
+            return f
+        }()
+        let dateString: String = {
+            guard !dailyActionsDate.isEmpty,
+                  let date = parse.date(from: dailyActionsDate) else { return "" }
+            return display.string(from: date)
+        }()
+
+        LastWrapUpView(
+            lastFocusName: lastFocusName,
+            actions: lastWrapUpActions,
+            onContinue: {
+                loadMantraFocusesIfNeeded()
+                didConfirmWrapUp = true
+                isManualRefreshFlow = true
+                isFullLoadingFlow = true
+                showMainGenerationOverlay = true
+                didCompletePersonalCheckIn = false
+                isMantraReady = false
+                withAnimation(.easeInOut) { bootPhase = .loading }
+            },
+            dateString: dateString,
+            weatherCondition: viewModel.weatherCondition ?? "",
+            locationName: resolvedWidgetLocation(),
+            onProfileTap: {
+                showProfileFromWrapUp = true
+            }
+        )
+        .environmentObject(themeManager)
+        .environmentObject(starManager)
+        .ignoresSafeArea()
+        .sheet(isPresented: $showProfileFromWrapUp) {
+            profileViewWithDevCallback()
+                .environmentObject(starManager)
+                .environmentObject(themeManager)
+        }
+    }
+
     // Extracted to avoid compiler type-check timeout on body
     @ViewBuilder private var bootGroup: some View {
         Group {
@@ -4438,8 +4448,13 @@ struct MainView: View {
                     onCancelLoading: {
                         isManualRefreshFlow = false
                         isFullLoadingFlow = false
-                        withAnimation(.easeInOut) { bootPhase = .main }
-                        markMantraReadyIfPossible()
+                        didConfirmWrapUp = false
+                        if hasPreviousSessionActions {
+                            withAnimation(.easeInOut) { bootPhase = .wrapUp }
+                        } else {
+                            withAnimation(.easeInOut) { bootPhase = .main }
+                            markMantraReadyIfPossible()
+                        }
                     },
                     onPersonalComplete: { didProvidePersonal in
                         // 判断是否走生成路径（用户点了生成，不是「暂不生成」）
@@ -4499,6 +4514,9 @@ struct MainView: View {
                     locationManager: locationManager
                 )
                 .ignoresSafeArea()
+
+            case .wrapUp:
+                wrapUpContent
 
             case .onboarding:
                 NavigationStack {
@@ -5447,7 +5465,6 @@ struct MainView: View {
     }
     private func handleBootPhaseChange(_ phase: BootPhase) {
         if phase == .main {
-            resolveDayPhase()
             if pendingGenerationToast {
                 pendingGenerationToast = false
                 triggerGenerationHapticIfNeeded()
@@ -5457,17 +5474,6 @@ struct MainView: View {
                 showCenterToast(String(localized: "Generating today's mantra and rhythm"), duration: 2.6, includeTime: false)
             }
         }
-    }
-
-    private func resolveDayPhase() {
-        // Has previous session actions not yet reviewed → show wrapUp first
-        if hasPreviousSessionActions {
-            buildWrapUpData()
-            dayPhase = .wrapUp
-            return
-        }
-        // Mantra ready or not → go straight to home
-        dayPhase = .home
     }
 
     private func toggleActionComplete(category: String) {
