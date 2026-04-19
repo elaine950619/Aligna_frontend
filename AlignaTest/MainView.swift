@@ -5417,6 +5417,13 @@ struct MainView: View {
                     }()
                     let parsedKeywords: [String] = (parsed["keywords"] as? [String]) ?? []
                     let parsedScoreExplanation: String = (parsed["score_explanation"] as? String) ?? ""
+                    let parsedScoreBreakdown: [String: Int] = {
+                        guard let raw = parsed["score_breakdown"] as? [String: Any] else { return [:] }
+                        return raw.reduce(into: [String: Int]()) { acc, pair in
+                            if let n = pair.value as? Int { acc[pair.key] = n }
+                            else if let n = pair.value as? Double { acc[pair.key] = Int(n.rounded()) }
+                        }
+                    }()
 
                     DispatchQueue.main.async {
                         // ✅ 把后端 recommendations 的 key 统一成规范写法
@@ -5516,8 +5523,20 @@ struct MainView: View {
 
                         recommendationData["reasoning_summary"] = reasoning
 
+                        // ✅ 今日运势分数 + 关键词 + 解释（后端已计算并强制覆盖过）
+                        if parsedDailyScore > 0 {
+                            recommendationData["daily_score"]       = parsedDailyScore
+                            recommendationData["score_breakdown"]   = parsedScoreBreakdown
+                            recommendationData["score_explanation"] = parsedScoreExplanation
+                            recommendationData["keywords"]          = parsedKeywords
+                        } else {
+                            recommendationData["daily_score"]       = FieldValue.delete()
+                            recommendationData["score_breakdown"]   = FieldValue.delete()
+                            recommendationData["score_explanation"] = FieldValue.delete()
+                            recommendationData["keywords"]          = FieldValue.delete()
+                        }
 
-                        // ✅ 如果之前写过默认值，这里要显式“转正”
+                        // ✅ 如果之前写过默认值，这里要显式"转正"
                         recommendationData["isDefault"] = false
                         recommendationData["fallbackReason"] = FieldValue.delete()
                         recommendationData["updatedAt"] = FieldValue.serverTimestamp()
@@ -5812,6 +5831,16 @@ struct MainView: View {
                 fetchedCompletedActionIDs = Set(rawCompleted)
             }
 
+            // Daily assessment: score / keywords / explanation / breakdown
+            let fetchedDailyScore: Int = {
+                if let n = data["daily_score"] as? Int { return n }
+                if let n = data["daily_score"] as? Double { return Int(n.rounded()) }
+                if let n = data["daily_score"] as? NSNumber { return n.intValue }
+                return 0
+            }()
+            let fetchedKeywords: [String] = (data["keywords"] as? [String]) ?? []
+            let fetchedScoreExplanation: String = (data["score_explanation"] as? String) ?? ""
+
             if let rawCheckIn = data["check_in_inputs"] as? [String: Any] {
                 func nonEmptyText(_ key: String) -> String? {
                     let raw = rawCheckIn[key] as? String ?? ""
@@ -5849,7 +5878,11 @@ struct MainView: View {
                     || key == "generatedPlace"
                     || key == "mantra"
                     || key == "reasoning_summary"
-                    || key == "reasoningSummary" {
+                    || key == "reasoningSummary"
+                    || key == "daily_score"
+                    || key == "score_breakdown"
+                    || key == "score_explanation"
+                    || key == "keywords" {
                     continue
                 }
 
@@ -5876,6 +5909,13 @@ struct MainView: View {
                 self.viewModel.checkInStress = fetchedStress
                 self.viewModel.checkInSleep = fetchedSleep
                 self.viewModel.checkInNotes = fetchedNotes
+                // Only overwrite if Firestore actually has a score; otherwise keep
+                // whatever is currently in viewModel (freshly generated or cached).
+                if fetchedDailyScore > 0 {
+                    self.viewModel.dailyScore = fetchedDailyScore
+                    self.viewModel.dailyKeywords = fetchedKeywords
+                    self.viewModel.scoreExplanation = fetchedScoreExplanation
+                }
 
                 // ✅ 只有在 Firestore 真有 mantra 时才覆盖；避免把已有 UI 文本刷成空
                 let mantraTrim = fetchedMantra.trimmingCharacters(in: .whitespacesAndNewlines)
