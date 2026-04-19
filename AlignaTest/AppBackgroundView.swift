@@ -848,18 +848,7 @@ struct RainBackgroundLayer: View {
             .animation(.easeInOut(duration: 1.2), value: isDark)
             .ignoresSafeArea()
 
-            // 5. Bottom water shimmer
-            VStack(spacing: 0) {
-                Spacer()
-                ForEach(0..<4, id: \.self) { i in
-                    Capsule()
-                        .fill(Color.white.opacity(max(0, 0.028 - Double(i) * 0.006)))
-                        .frame(height: 1)
-                        .padding(.horizontal, CGFloat(i) * 22)
-                        .padding(.bottom, CGFloat(i) * 12 + 55)
-                }
-            }
-            .ignoresSafeArea()
+
         }
         .onAppear {
             withAnimation(
