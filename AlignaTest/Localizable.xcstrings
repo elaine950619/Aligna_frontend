@@ -1607,13 +1607,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Today's score: %d of 5 stars"
+            "value": "Today's alignment: %d of 5 stars"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "今日运势：%d 星，共 5 星"
+            "value": "今日和度：%d 星，共 5 星"
           }
         }
       }
@@ -1631,6 +1631,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "双击查看原因"
+          }
+        }
+      }
+    },
+    "daily_alignment.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's Alignment"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日和度"
+          }
+        }
+      }
+    },
+    "daily_alignment.learn_more": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is Alignment?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "什么是和度?"
+          }
+        }
+      }
+    },
+    "daily_alignment.concept_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alignment measures how in sync you are today — with yourself, and with the day's natural rhythms. It weaves together your current state, today's cosmic energy, and the focus you've set.\n\nAlignment is not a fortune. A high score invites forward motion; a lower one invites stillness, turning inward, restoring.\n\nEvery day has its right note. It is only its shape that changes."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "和度衡量你今天与自己、与今日节律的同步程度。由你当下的状态、今日星象，以及你选择的课题共同汇成。\n\n和度不做好坏评判。高分是能量流畅、适合向前；低分是邀请你放缓、内收、休养。\n\n每天都是恰到好处的那个节拍，只是形态不同。"
+          }
+        }
+      }
+    },
+    "daily_alignment.close": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
           }
         }
       }

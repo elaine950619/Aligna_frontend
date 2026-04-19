@@ -411,6 +411,7 @@ private struct DailyAssessmentRow: View {
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isExpanded: Bool = false
+    @State private var showConceptSheet: Bool = false
 
     private var filledStarCount: Int {
         let rounded = (Double(score) / 20.0).rounded()
@@ -464,18 +465,153 @@ private struct DailyAssessmentRow: View {
                         .tracking(1.0)
                 }
 
-                if isExpanded, !explanation.isEmpty {
-                    Text(explanation)
-                        .font(.custom("Merriweather-Regular", size: 11))
-                        .foregroundColor(themeManager.descriptionText.opacity(0.75))
-                        .lineSpacing(3)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .transition(
-                            .opacity.combined(with: .move(edge: .top))
-                        )
+                if isExpanded {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if !explanation.isEmpty {
+                            Text(explanation)
+                                .font(.custom("Merriweather-Regular", size: 11))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.75))
+                                .lineSpacing(3)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        Button {
+                            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                            showConceptSheet = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text(String(localized: "daily_alignment.learn_more"))
+                                    .font(.custom("Merriweather-Regular", size: 10))
+                                    .foregroundColor(themeManager.accent.opacity(0.85))
+                                Image(systemName: "arrow.right")
+                                    .font(.system(size: 9, weight: .regular))
+                                    .foregroundColor(themeManager.accent.opacity(0.75))
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .transition(
+                        .opacity.combined(with: .move(edge: .top))
+                    )
                 }
             }
+            .sheet(isPresented: $showConceptSheet) {
+                AlignmentConceptSheet(onClose: { showConceptSheet = false })
+                    .environmentObject(themeManager)
+                    .presentationDetents([.medium])
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(24)
+            }
+        }
+    }
+}
+
+
+// MARK: - Alignment Concept Sheet
+// Half-screen bottom sheet that explains what "Alignment" means, shown when
+// the user taps "什么是和度?" under the daily assessment row. Combines a
+// decorative four-point star with concentric rings (matching Aligna's visual
+// language from AppBackgroundView) and the localized concept body text.
+private struct AlignmentConceptSheet: View {
+    let onClose: () -> Void
+
+    @EnvironmentObject var themeManager: ThemeManager
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var ringPulse: Bool = false
+
+    var body: some View {
+        ZStack {
+            themeManager.panelFill
+                .opacity(themeManager.isNight ? 0.98 : 1.0)
+                .ignoresSafeArea()
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    // Header: decorative four-point star with concentric rings
+                    ZStack {
+                        // Soft outer glow
+                        Circle()
+                            .fill(themeManager.accent.opacity(0.10))
+                            .frame(width: 150, height: 150)
+                            .blur(radius: 20)
+
+                        // Three subtle concentric rings
+                        ForEach(0..<3, id: \.self) { i in
+                            Circle()
+                                .stroke(
+                                    themeManager.accent.opacity(0.22 - Double(i) * 0.06),
+                                    lineWidth: 0.8
+                                )
+                                .frame(
+                                    width: 80 + CGFloat(i) * 28,
+                                    height: 80 + CGFloat(i) * 28
+                                )
+                                .scaleEffect(ringPulse ? 1.04 : 0.98)
+                                .animation(
+                                    reduceMotion
+                                        ? nil
+                                        : .easeInOut(duration: 5.0 + Double(i) * 0.6)
+                                            .repeatForever(autoreverses: true),
+                                    value: ringPulse
+                                )
+                        }
+
+                        // Central four-point star
+                        FourPointStarShape()
+                            .fill(themeManager.accent.opacity(0.80))
+                            .frame(width: 34, height: 34)
+                    }
+                    .frame(height: 160)
+                    .padding(.top, 12)
+
+                    // Title
+                    Text(String(localized: "daily_alignment.title"))
+                        .font(.custom("Merriweather-Bold", size: 22))
+                        .foregroundColor(themeManager.primaryText)
+                        .multilineTextAlignment(.center)
+
+                    // Body text
+                    Text(String(localized: "daily_alignment.concept_body"))
+                        .font(.custom("Merriweather-Regular", size: 14))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.85))
+                        .lineSpacing(5)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 28)
+
+                    Spacer(minLength: 12)
+                }
+                .padding(.top, 16)
+                .padding(.bottom, 32)
+            }
+
+            // Close button (top-right)
+            VStack {
+                HStack {
+                    Spacer()
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        onClose()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.55))
+                            .padding(10)
+                            .background(Circle().fill(themeManager.panelFill.opacity(0.5)))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(String(localized: "daily_alignment.close")))
+                    .padding(.trailing, 14)
+                    .padding(.top, 12)
+                }
+                Spacer()
+            }
+        }
+        .onAppear {
+            guard !reduceMotion else { return }
+            ringPulse = true
         }
     }
 }
