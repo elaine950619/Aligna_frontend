@@ -2188,14 +2188,24 @@ struct MainView: View {
                         ? self.viewModel.currentPlace.trimmingCharacters(in: .whitespacesAndNewlines)
                         : self.lastRecommendationPlace.trimmingCharacters(in: .whitespacesAndNewlines)
 
+                    // Score fields may be at the top level or nested inside "explanation".
+                    let explanationDict2 = parsed["explanation"] as? [String: Any]
+
                     let parsedDailyScore: Int = {
                         if let n = parsed["daily_score"] as? Int { return n }
                         if let n = parsed["daily_score"] as? Double { return Int(n.rounded()) }
+                        if let n = explanationDict2?["daily_score"] as? Int { return n }
+                        if let n = explanationDict2?["daily_score"] as? Double { return Int(n.rounded()) }
                         return 0
                     }()
-                    let parsedKeywords: [String] = (parsed["keywords"] as? [String]) ?? []
+                    let parsedKeywords: [String] = {
+                        if let kw = parsed["keywords"] as? [String] { return kw }
+                        if let kw = explanationDict2?["keywords"] as? [String] { return kw }
+                        return []
+                    }()
                     let parsedScoreExplanation: String = {
                         if let s = parsed["score_explanation"] as? String { return s }
+                        if let s = explanationDict2?["score_explanation"] as? String { return s }
                         return ""
                     }()
 
@@ -5451,33 +5461,44 @@ struct MainView: View {
                         }
                     }()
 
+                    // Score fields may be at the top level or nested inside "explanation".
+                    let explanationDict = parsed["explanation"] as? [String: Any]
+                    print("🧪 [ASSESS] explanation keys =", explanationDict?.keys.sorted() ?? [])
+
                     let parsedDailyScore: Int = {
                         if let n = parsed["daily_score"] as? Int { return n }
                         if let n = parsed["daily_score"] as? Double { return Int(n.rounded()) }
+                        if let n = explanationDict?["daily_score"] as? Int { return n }
+                        if let n = explanationDict?["daily_score"] as? Double { return Int(n.rounded()) }
                         return 0
                     }()
-                    let parsedKeywords: [String] = (parsed["keywords"] as? [String]) ?? []
-                    let parsedScoreExplanation: String = (parsed["score_explanation"] as? String) ?? ""
+                    let parsedKeywords: [String] = {
+                        if let kw = parsed["keywords"] as? [String] { return kw }
+                        if let kw = explanationDict?["keywords"] as? [String] { return kw }
+                        return []
+                    }()
+                    let parsedScoreExplanation: String = {
+                        if let s = parsed["score_explanation"] as? String { return s }
+                        if let s = explanationDict?["score_explanation"] as? String { return s }
+                        return ""
+                    }()
                     let parsedScoreBreakdown: [String: Int] = {
-                        guard let raw = parsed["score_breakdown"] as? [String: Any] else { return [:] }
+                        let raw: [String: Any]?
+                        if let r = parsed["score_breakdown"] as? [String: Any] {
+                            raw = r
+                        } else if let r = explanationDict?["score_breakdown"] as? [String: Any] {
+                            raw = r
+                        } else {
+                            raw = nil
+                        }
+                        guard let raw else { return [:] }
                         return raw.reduce(into: [String: Int]()) { acc, pair in
                             if let n = pair.value as? Int { acc[pair.key] = n }
                             else if let n = pair.value as? Double { acc[pair.key] = Int(n.rounded()) }
                         }
                     }()
 
-                    // 🔍 DIAGNOSTIC: one-shot visibility into whether the backend
-                    // actually returned the new fields. Safe to leave in place
-                    // until the feature is fully validated, then remove.
-                    let rawScore = parsed["daily_score"]
-                    let rawKeywords = parsed["keywords"]
-                    let rawExpl = parsed["score_explanation"]
-                    let rawBreakdown = parsed["score_breakdown"]
                     print("🧪 [ASSESS] response keys sorted = \(parsed.keys.sorted())")
-                    print("🧪 [ASSESS] raw daily_score       = \(String(describing: rawScore))")
-                    print("🧪 [ASSESS] raw keywords          = \(String(describing: rawKeywords))")
-                    print("🧪 [ASSESS] raw score_explanation = \(String(describing: rawExpl))")
-                    print("🧪 [ASSESS] raw score_breakdown   = \(String(describing: rawBreakdown))")
                     print("🧪 [ASSESS] parsed → score=\(parsedDailyScore) keywords=\(parsedKeywords) explanation_len=\(parsedScoreExplanation.count) breakdown=\(parsedScoreBreakdown)")
 
                     DispatchQueue.main.async {
