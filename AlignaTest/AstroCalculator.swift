@@ -25,6 +25,7 @@ public enum ZodiacSign: String, CaseIterable {
     case Aries, Taurus, Gemini, Cancer, Leo, Virgo, Libra, Scorpio, Sagittarius, Capricorn, Aquarius, Pisces
 }
 
+
 public struct AstroCalculator {
 
     // MARK: - 1) Birth time display
@@ -146,6 +147,19 @@ public struct AstroCalculator {
     // `BirthInfo.date` here should be the birthplace civil birth time, not UTC.
     public static func ascendantSign(info: BirthInfo) -> ZodiacSign {
         sign(fromEclipticLongitude: ascendantLongitudeDegrees(info))
+    }
+
+    // MARK: - Moon Ritual Detection
+
+    /// Returns `.new` or `.full` if today is a new/full moon, nil otherwise.
+    /// Reuses the synodic-cycle calculation already present in CalendarView.
+    static func moonRitualPhaseToday() -> MoonPhase? {
+        let phase = computeMoonPhase(on: Date())
+        switch phase {
+        case .new:  return .new
+        case .full: return .full
+        default:    return nil
+        }
     }
 
     /// Optional helper if you want to warn when near a cusp (±1°).

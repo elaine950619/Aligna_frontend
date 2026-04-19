@@ -27,6 +27,44 @@ enum MantraNotificationManager {
                  hour: times.eveningHour, minute: times.eveningMinute, center: center)
     }
 
+    // MARK: - Moon Ritual Notifications
+
+    /// Schedule an 8 AM notification on a new-moon or full-moon day.
+    /// Uses a date-stamped identifier so it fires only once per event.
+    static func scheduleMoonRitual(phase: MoonPhase, isChinese: Bool) {
+        let center = UNUserNotificationCenter.current()
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let dayKey = df.string(from: Date())
+        let identifier = "moon_ritual_\(phase.rawValue)_\(dayKey)"
+
+        // Don't schedule if already pending for today
+        center.getPendingNotificationRequests { requests in
+            guard !requests.contains(where: { $0.identifier == identifier }) else { return }
+
+            let content = UNMutableNotificationContent()
+            switch phase {
+            case .new:
+                content.title = isChinese ? "新月仪式" : "New Moon Ritual"
+                content.body  = isChinese ? "今天是新月。写下本月最想实现的三个意图。" : "It's a new moon. Write down 3 intentions for this month."
+            case .full:
+                content.title = isChinese ? "满月仪式" : "Full Moon Ritual"
+                content.body  = isChinese ? "今天是满月。写下你准备放下的三件事。" : "It's a full moon. Write down 3 things you're ready to release."
+            default:
+                return
+            }
+            content.sound = .default
+            content.userInfo = ["destination": "moon_ritual_\(phase.rawValue)"]
+
+            var comps = DateComponents()
+            comps.hour = 8
+            comps.minute = 0
+            let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+            let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+            center.add(request)
+        }
+    }
+
     /// Cancel both notifications.
     static func cancelFixed() {
         let center = UNUserNotificationCenter.current()

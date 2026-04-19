@@ -534,6 +534,14 @@ struct MainView: View {
     
     @State private var isMantraExpanded: Bool = false
     @State private var showGridItems: Bool = false
+    // Moon Ritual
+    @AppStorage("lastMoonRitualDate") private var lastMoonRitualDate: String = ""
+    @State private var showMoonRitualSheet: Bool = false
+    private var todayMoonPhase: MoonPhase? { AstroCalculator.moonRitualPhaseToday() }
+    private var moonRitualCompleted: Bool {
+        let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
+        return lastMoonRitualDate == df.string(from: Date())
+    }
     @State private var showTodaySoundPlayer: Bool = false
     @State private var isAutoDismissSoundPlayer = false
     @State private var soundPlayerAutoDismissTask: Task<Void, Never>? = nil
@@ -2769,6 +2777,18 @@ struct MainView: View {
                         .frame(height: isMantraExpanded ? 0 : nil)
                         .allowsHitTesting(!isMantraExpanded)
 
+                        // Moon Ritual Banner — collapsed state only, new/full moon days
+                        if let phase = todayMoonPhase, !isMantraExpanded {
+                            MoonRitualBanner(
+                                phase: phase,
+                                isCompleted: moonRitualCompleted,
+                                onTap: { showMoonRitualSheet = true }
+                            )
+                            .padding(.horizontal, geometry.size.width * 0.07)
+                            .padding(.top, 12)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+
                         Group {
                             if isMantraExpanded {
                                 // ── 主页心语详读态（全居中重设计）──
@@ -3080,6 +3100,18 @@ struct MainView: View {
                 WallpaperPreviewView(mantra: viewModel.dailyMantra, colorHex: todayColorHex() ?? "#CBBBA0")
                     .presentationDragIndicator(.visible)
                     .presentationCornerRadius(24)
+            }
+            .sheet(isPresented: $showMoonRitualSheet) {
+                if let phase = todayMoonPhase {
+                    MoonRitualSheet(phase: phase) {
+                        let df = DateFormatter()
+                        df.dateFormat = "yyyy-MM-dd"
+                        lastMoonRitualDate = df.string(from: Date())
+                    }
+                    .environmentObject(themeManager)
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(24)
+                }
             }
             .navigationDestination(for: RecCategory.self) { cat in
                 RecommendationPagerView(

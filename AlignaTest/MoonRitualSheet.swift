@@ -22,11 +22,13 @@ struct MoonRitualBanner: View {
         }
     }
 
+    // Crescent + stars for new moon (visible at any size);
+    // full moon disc for full moon.
     private var symbol: String {
         switch phase {
-        case .new:  return "moonphase.new.moon.inverse"
-        case .full: return "moonphase.full.moon.inverse"
-        default:    return "moonphase.new.moon.inverse"
+        case .new:  return "moon.stars.fill"
+        case .full: return "moonphase.full.moon"
+        default:    return "moon.stars.fill"
         }
     }
 
@@ -66,9 +68,8 @@ struct MoonRitualBanner: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                Image(systemName: symbol)
-                    .font(.system(size: 22, weight: .thin))
-                    .foregroundColor(labelColor.opacity(isCompleted ? 0.45 : 0.85))
+                MoonSymbolView(phase: phase, size: 22, accent: phaseAccent,
+                               opacity: isCompleted ? 0.45 : 0.90)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(String(localized: String.LocalizationValue(titleKey)))
@@ -144,9 +145,9 @@ struct MoonRitualSheet: View {
 
     private var symbol: String {
         switch phase {
-        case .new:  return "moonphase.new.moon.inverse"
-        case .full: return "moonphase.full.moon.inverse"
-        default:    return "moonphase.new.moon.inverse"
+        case .new:  return "moon.stars.fill"
+        case .full: return "moonphase.full.moon"
+        default:    return "moon.stars.fill"
         }
     }
 
@@ -250,9 +251,8 @@ struct MoonRitualSheet: View {
             VStack(spacing: 0) {
                 // Header
                 VStack(spacing: 12) {
-                    Image(systemName: symbol)
-                        .font(.system(size: 48, weight: .ultraLight))
-                        .foregroundColor(phaseAccent.opacity(0.85))
+                    MoonSymbolView(phase: phase, size: 48, accent: phaseAccent,
+                                   opacity: 0.88)
                         .padding(.top, 36)
 
                     Text(String(localized: String.LocalizationValue(titleKey)))
@@ -372,3 +372,41 @@ struct MoonRitualSheet: View {
         dismiss()
     }
 }
+
+// MARK: - MoonSymbolView
+// Renders a clearly legible moon icon for both phases.
+// New moon: crescent + stars (moon.stars.fill, monochrome accent).
+// Full moon: custom filled circle so color is fully controlled (avoids SF Symbol disc rendering issues).
+private struct MoonSymbolView: View {
+    let phase: MoonPhase
+    let size: CGFloat
+    let accent: Color
+    let opacity: Double
+
+    var body: some View {
+        Group {
+            switch phase {
+            case .full:
+                // Layered circle: filled disc with a subtle inner glow ring
+                ZStack {
+                    Circle()
+                        .fill(accent.opacity(opacity))
+                        .frame(width: size, height: size)
+                    Circle()
+                        .stroke(accent.opacity(min(opacity + 0.15, 1.0)), lineWidth: size * 0.04)
+                        .frame(width: size * 0.75, height: size * 0.75)
+                        .blur(radius: 1)
+                }
+                .frame(width: size, height: size)
+            default:
+                // Crescent + stars for new moon / fallback
+                Image(systemName: "moon.stars.fill")
+                    .font(.system(size: size, weight: .regular))
+                    .symbolRenderingMode(.monochrome)
+                    .foregroundColor(accent.opacity(opacity))
+            }
+        }
+    }
+}
+
+

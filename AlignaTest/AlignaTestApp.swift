@@ -307,8 +307,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let userInfo = response.notification.request.content.userInfo
-        if let destination = userInfo["destination"] as? String, destination == "main_expanded" {
-            UserDefaults.standard.set(true, forKey: "shouldExpandMantraFromNotification")
+        if let destination = userInfo["destination"] as? String {
+            if destination == "main_expanded" {
+                UserDefaults.standard.set(true, forKey: "shouldExpandMantraFromNotification")
+            } else if destination.hasPrefix("moon_ritual_") {
+                UserDefaults.standard.set(true, forKey: "shouldOpenMoonRitual")
+            }
         }
         completionHandler()
     }
@@ -462,6 +466,12 @@ struct RootRouter: View {
                 let nextIsAuthenticated = (user != nil)
                 setRouteState(isAuthenticated: nextIsAuthenticated)
                 print("Auth state -> isAuthenticated=\(nextIsAuthenticated)")
+
+                // Schedule moon ritual notification if today is new/full moon
+                if user != nil, let phase = AstroCalculator.moonRitualPhaseToday() {
+                    let isChinese = Locale.current.language.languageCode?.identifier == "zh"
+                    MantraNotificationManager.scheduleMoonRitual(phase: phase, isChinese: isChinese)
+                }
 
                 if user == nil {
                     setRouteState(needsOnboarding: nil, isReady: true)
