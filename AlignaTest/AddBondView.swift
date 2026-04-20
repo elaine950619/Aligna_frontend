@@ -67,7 +67,7 @@ struct AddBondView: View {
                     Spacer(minLength: 40)
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 12)
+                .padding(.top, 68)
             }
 
             // Custom back button overlay

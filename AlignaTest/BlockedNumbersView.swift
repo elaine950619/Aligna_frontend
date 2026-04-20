@@ -49,7 +49,7 @@ struct BlockedNumbersView: View {
                     Spacer(minLength: 40)
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 16)
+                .padding(.top, 68)
             }
             .refreshable {
                 await viewModel.loadBlockedNumbers()

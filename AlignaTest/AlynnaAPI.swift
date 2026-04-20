@@ -182,6 +182,7 @@ final class AlynnaAPI {
         }
         var req = URLRequest(url: url)
         req.httpMethod = method
+        req.cachePolicy = .reloadIgnoringLocalCacheData
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
         if let body = httpBody {

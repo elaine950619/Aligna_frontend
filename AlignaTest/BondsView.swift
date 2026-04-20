@@ -490,6 +490,13 @@ struct BondDetailView: View {
     @State private var clearHistoryImmediately = false
     @State private var isSeverInFlight = false
 
+    /// Always reflects the latest partner data from the live bonds list.
+    /// Falls back to the original snapshot if the bond is no longer in the list
+    /// (e.g. just severed, mid-animation).
+    private var currentBond: BondSummary {
+        viewModel.bonds.first(where: { $0.bond_id == bond.bond_id }) ?? bond
+    }
+
     var body: some View {
         ZStack {
             AppBackgroundView(nightMotion: .animated)
@@ -505,14 +512,14 @@ struct BondDetailView: View {
                             Circle()
                                 .fill(themeManager.accent.opacity(0.18))
                                 .frame(width: 72, height: 72)
-                            Text(bond.partner_nickname.first.map { String($0) } ?? "·")
+                            Text(currentBond.partner_nickname.first.map { String($0) } ?? "·")
                                 .font(.custom("Merriweather-Bold", size: 28))
                                 .foregroundColor(themeManager.accent.opacity(0.88))
                         }
-                        Text(bond.partner_nickname)
+                        Text(currentBond.partner_nickname)
                             .font(AlynnaTypography.font(.title2))
                             .foregroundColor(themeManager.primaryText)
-                        Text(bond.partner_alynna_number.alynnaNumberDisplay)
+                        Text(currentBond.partner_alynna_number.alynnaNumberDisplay)
                             .font(.custom("Merriweather-Regular", size: 12))
                             .foregroundColor(themeManager.descriptionText.opacity(0.65))
                             .monospacedDigit()
@@ -582,6 +589,9 @@ struct BondDetailView: View {
         .task {
             await loadCompatibility()
         }
+        .onAppear {
+            Task { await viewModel.refreshBonds() }
+        }
         .confirmationDialog(
             String(localized: "bonds.sever_confirm_title"),
             isPresented: $showSeverConfirm,
@@ -649,7 +659,7 @@ struct BondDetailView: View {
 
     /// Partner "today" card — their focus, keywords, daily score.
     private func partnerTodayCard(_ c: CompatibilityResponse) -> some View {
-        let nickname = bond.partner_nickname
+        let nickname = currentBond.partner_nickname
         let partnerFocus = partnerFocusTag(c)
         let partnerKeywords = partnerKeywordList(c) ?? []
         let partnerScore = partnerDailyScore(c)
@@ -787,7 +797,7 @@ struct BondDetailView: View {
         // Not carried in CompatibilityResponse, so fall back to: whichever of a/b differs
         // from the other is the partner. If exactly one is non-nil, use it.
         // Safer: use `bond.partner_focus_today` from the original BondSummary as the truth.
-        if let fromList = bond.partner_focus_today, !fromList.isEmpty {
+        if let fromList = currentBond.partner_focus_today, !fromList.isEmpty {
             return fromList
         }
         return c.focus_a ?? c.focus_b
