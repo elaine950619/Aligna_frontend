@@ -720,6 +720,12 @@ struct MainView: View {
     @State private var showWallpaperPreview = false
     @State private var showProfileFromWrapUp = false
 
+    // Deep link from bond-related push notifications (set by AppDelegate
+    // when user taps a push with kind=bond_*). When flipped true, we raise
+    // showBondsFromPush which presents BondsView as a full-screen cover.
+    @AppStorage("shouldOpenBondsView") private var shouldOpenBondsView: Bool = false
+    @State private var showBondsFromPush: Bool = false
+
     @State private var showFocusManagerSheet = false
     @State private var showFocusHint = false
     @State private var showNewFocusForm = false
@@ -5251,6 +5257,13 @@ struct MainView: View {
                 }
             case .main:
                 mainContent
+                    .task(id: "alynna-number-init") {
+                        // Fetch (or lazily allocate) the user's Alynna number as
+                        // soon as they reach the main screen. Safe if already
+                        // allocated via the migration script — the backend treats
+                        // this call as idempotent.
+                        await viewModel.ensureAlynnaNumberLoaded()
+                    }
             }
         }
         .overlay {
@@ -5348,6 +5361,10 @@ struct MainView: View {
                 withAnimation(.easeInOut(duration: 0.2)) { isMantraExpanded = true }
                 shouldExpandMantraFromNotification = false
             }
+            .onChange(of: shouldOpenBondsView) { _, newValue in
+                guard newValue else { return }
+                openBondsFromPushDeepLink()
+            }
             .onChange(of: locationPermissionCoordinator.authorizationStatus) { _, status in
                 if (status == .authorizedAlways || status == .authorizedWhenInUse),
                    showMainViewDialog,
@@ -5361,8 +5378,49 @@ struct MainView: View {
                 }
             }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { evaluateOnLaunch() }
+                if phase == .active {
+                    evaluateOnLaunch()
+                    // Cover cases where the AppDelegate wrote the flag while
+                    // the app was in background — AppStorage onChange may
+                    // already have fired, but this is idempotent.
+                    if shouldOpenBondsView { openBondsFromPushDeepLink() }
+                }
             }
+            .task {
+                // Cold-start case: flag may have been set by AppDelegate BEFORE
+                // SwiftUI began observing it, in which case onChange never fires.
+                if shouldOpenBondsView { openBondsFromPushDeepLink() }
+            }
+            .fullScreenCover(isPresented: $showBondsFromPush) {
+                NavigationStack {
+                    BondsView()
+                        .environmentObject(viewModel)
+                        .environmentObject(themeManager)
+                        .environmentObject(starManager)
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarLeading) {
+                                Button {
+                                    showBondsFromPush = false
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 14, weight: .regular))
+                                        .foregroundColor(themeManager.descriptionText.opacity(0.70))
+                                }
+                                .accessibilityLabel(Text(String(localized: "bonds.close_push_cover")))
+                            }
+                        }
+                }
+            }
+    }
+
+    /// Presents BondsView as a full-screen cover and clears the deep-link
+    /// flag so it doesn't re-fire. Called from onChange / scenePhase / task.
+    private func openBondsFromPushDeepLink() {
+        // Clear first so we're idempotent even if multiple observers trigger.
+        shouldOpenBondsView = false
+        if !showBondsFromPush {
+            showBondsFromPush = true
+        }
     }
     private func fetchAllRecommendationTitles() {
         #if DEBUG

@@ -18,6 +18,7 @@
 		54C65BCB2E6E22D100A41F9A /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 54C65BCA2E6E22D100A41F9A /* FirebaseFirestore */; };
 		54C65BCE2E6E230500A41F9A /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 54C65BCD2E6E230500A41F9A /* GoogleSignIn */; };
 		54C65BD02E6E230500A41F9A /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 54C65BCF2E6E230500A41F9A /* GoogleSignInSwift */; };
+		6E0491E52F95C59D00B4221F /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 6E0491E42F95C59D00B4221F /* FirebaseMessaging */; };
 		6E3988C92F64F01B00A8E2A1 /* Merriweather-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F352F219F1900E620E2 /* Merriweather-LightItalic.ttf */; };
 		6E3988CA2F64F01B00A8E2A1 /* CormorantGaramond-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23EF92F2199B300E620E2 /* CormorantGaramond-Bold.ttf */; };
 		6E3988CB2F64F01B00A8E2A1 /* Merriweather-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F442F21A19200E620E2 /* Merriweather-Light.ttf */; };
@@ -199,6 +200,7 @@
 				54C65BC92E6E22D100A41F9A /* FirebaseAuth in Frameworks */,
 				54C65BCB2E6E22D100A41F9A /* FirebaseFirestore in Frameworks */,
 				B966DC942F2BE69A00051926 /* FirebaseAI in Frameworks */,
+				6E0491E52F95C59D00B4221F /* FirebaseMessaging in Frameworks */,
 				B966DC982F2BE69A00051926 /* FirebaseAnalyticsCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -322,6 +324,7 @@
 				B966DC972F2BE69A00051926 /* FirebaseAnalyticsCore */,
 				B966DC992F2BE69A00051926 /* FirebaseAnalyticsIdentitySupport */,
 				B966DC9B2F2BE93700051926 /* FirebaseStorage */,
+				6E0491E42F95C59D00B4221F /* FirebaseMessaging */,
 			);
 			productName = AlignaTest;
 			productReference = 54DE58B02DC29A91008BE4B8 /* AlignaTest.app */;
@@ -795,6 +798,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 54C65BCC2E6E230500A41F9A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignInSwift;
+		};
+		6E0491E42F95C59D00B4221F /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 54C65BC52E6E22D100A41F9A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 		B966DC932F2BE69A00051926 /* FirebaseAI */ = {
 			isa = XCSwiftPackageProductDependency;

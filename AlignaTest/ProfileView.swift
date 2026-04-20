@@ -1570,6 +1570,8 @@ struct ProfileView: View {
     @State private var didSelectBirthPlaceResult = false
     @State private var pendingBirthPlaceCoordinate: CLLocationCoordinate2D?
     @State private var isPersonalInfoVisible = false
+    @State private var isAlynnaNumberRevealed: Bool = false
+    @State private var showAlynnaCopiedToast: Bool = false
 
     // Busy & Error
     @State private var isBusy = false
@@ -1671,6 +1673,8 @@ struct ProfileView: View {
                             headerCard
                             cosmicIdentityCard
                             personalInfoCard
+                            alynnaNumberCard
+                            innerCircleEntryCard
                             preferencesCard
                             timelineCard
                             notificationCard
@@ -1888,6 +1892,9 @@ struct ProfileView: View {
                     dailyMantraNotificationEnabled = true
                     notificationAuthStatus = settings.authorizationStatus
                     scheduleFixedNotifications()
+                    // Ensure we're registered for APNs remote push so bond
+                    // notifications can land. Safe to call repeatedly.
+                    UIApplication.shared.registerForRemoteNotifications()
                 }
             case .notDetermined:
                 UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
@@ -1896,6 +1903,9 @@ struct ProfileView: View {
                         updateNotificationAuthStatus()
                         if granted {
                             scheduleFixedNotifications()
+                            // First-time grant — kick off APNs registration so
+                            // the Firebase Messaging delegate starts receiving tokens.
+                            UIApplication.shared.registerForRemoteNotifications()
                         } else {
                             showNotificationSettingsAlert = true
                         }
@@ -2594,6 +2604,120 @@ private extension ProfileView {
                 title: String(localized: "profile.about_title"),
                 subtitle: String(localized: "profile.about_subtitle")
             )
+        }
+    }
+
+    // MARK: Inner Circle Entry Row
+    // Sits directly below the Alynna number card as the natural "now what?"
+    // — this is what the number is for.
+    var innerCircleEntryCard: some View {
+        NavigationLink {
+            BondsView()
+                .environmentObject(viewModel)
+                .environmentObject(themeManager)
+                .environmentObject(starManager)
+        } label: {
+            rowCard(
+                icon: "person.2",
+                title: String(localized: "profile.inner_circle_title"),
+                subtitle: String(localized: "profile.inner_circle_subtitle")
+            )
+        }
+    }
+
+    // MARK: Alynna Number Card
+    //
+    // Shows the user's permanent 8-digit Alynna number as a masked display
+    // (3847 **16) with tap-to-reveal and a copy button. Entry point to the
+    // bonding / inner circle feature.
+    var alynnaNumberCard: some View {
+        let rawNumber = viewModel.alynnaNumber
+        let isEmpty = rawNumber.isEmpty
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: "number.square")
+                    .foregroundColor(themeManager.accent)
+                    .font(.system(size: 18))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(localized: "profile.alynna_number_title"))
+                        .font(AlynnaTypography.font(.headline))
+                        .foregroundColor(themeManager.primaryText)
+                    Text(String(localized: "profile.alynna_number_subtitle"))
+                        .font(AlynnaTypography.font(.subheadline))
+                        .foregroundColor(themeManager.descriptionText)
+                }
+            }
+
+            HStack(spacing: 12) {
+                Text(
+                    isEmpty
+                        ? String(localized: "profile.alynna_number_loading")
+                        : (isAlynnaNumberRevealed
+                            ? rawNumber.alynnaNumberDisplay
+                            : rawNumber.alynnaNumberMasked)
+                )
+                .font(.custom("Merriweather-Bold", size: 20))
+                .foregroundColor(themeManager.primaryText.opacity(isEmpty ? 0.45 : 0.88))
+                .monospacedDigit()
+                .tracking(2)
+
+                Spacer()
+
+                if !isEmpty {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isAlynnaNumberRevealed.toggle()
+                        }
+                    } label: {
+                        Text(
+                            isAlynnaNumberRevealed
+                                ? String(localized: "profile.alynna_number_hide")
+                                : String(localized: "profile.alynna_number_show")
+                        )
+                        .font(AlynnaTypography.font(.subheadline))
+                        .foregroundColor(themeManager.accent)
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        UIPasteboard.general.string = rawNumber
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showAlynnaCopiedToast = true
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showAlynnaCopiedToast = false
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "doc.on.doc")
+                            .foregroundColor(themeManager.accent)
+                            .font(.system(size: 16))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(String(localized: "profile.alynna_number_copy")))
+                }
+            }
+
+            if showAlynnaCopiedToast {
+                Text(String(localized: "profile.alynna_number_copied"))
+                    .font(AlynnaTypography.font(.caption1))
+                    .foregroundColor(themeManager.accent.opacity(0.88))
+                    .transition(.opacity)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .alignaCard()
+        .task(id: "alynna-number-profile") {
+            // If we landed on Profile before MainView's init fetched the number
+            // (e.g. navigated straight here after login), try again here.
+            if viewModel.alynnaNumber.isEmpty {
+                await viewModel.ensureAlynnaNumberLoaded()
+            }
         }
     }
 
@@ -4466,6 +4590,11 @@ private extension ProfileView {
             viewModel.color_dislike = []
             viewModel.allergies = []
             viewModel.music_dislike = []
+            // Social bonding — drop the Alynna number + bond lists so the
+            // next user on this device doesn't flash the previous state.
+            viewModel.clearBondingState()
+            // Clear the FCM push token from the backend + local cache.
+            PushTokenRegistrar.shared.clearOnSignOut()
             birthRawTimeString = nil
 
             chartSunSign = ""

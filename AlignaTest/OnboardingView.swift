@@ -24,6 +24,29 @@ class OnboardingViewModel: ObservableObject {
     @Published var dailyScore: Int = 0
     @Published var dailyKeywords: [String] = []
     @Published var scoreExplanation: String = ""
+
+    // MARK: - Social Bonding (Alynna number + inner circle)
+
+    /// 8-digit Alynna number — permanent, unique per user, allocated lazily
+    /// on first app open (or via the one-time migration script).
+    @Published var alynnaNumber: String = ""
+
+    /// Currently active or cooling bonds with this user as one side.
+    @Published var bonds: [BondSummary] = []
+
+    /// Bond requests that are waiting for this user's response.
+    @Published var pendingReceivedRequests: [PendingRequestSummary] = []
+
+    /// Bond requests this user has sent, still pending.
+    @Published var pendingSentRequests: [PendingRequestSummary] = []
+
+    /// Last non-nil error from a bonding network call. UI can surface this
+    /// as a toast/alert, then clear it by assigning nil.
+    @Published var bondingErrorMessage: String? = nil
+
+    /// Alynna numbers this user has blocked. Populated from Firestore on
+    /// demand (BondedNumbersView / block-related actions).
+    @Published var blockedNumbers: [String] = []
     @Published var dailyActions: [DailyAction] = []
     @Published var completedActionIDs: Set<String> = []
     @Published var checkInMood: String? = nil

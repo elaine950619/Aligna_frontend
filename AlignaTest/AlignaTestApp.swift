@@ -5,6 +5,7 @@ import SwiftUI
 import FirebaseCore
 import FirebaseAuth
 import FirebaseFirestore
+import FirebaseMessaging   // NOTE: requires FirebaseMessaging added via SPM — see PUSH_SETUP.md Step 4
 import UIKit
 import GoogleSignIn
 import AVFoundation
@@ -110,7 +111,7 @@ struct ToggleWidgetSoundIntent: AudioPlaybackIntent {
 }
 
 // MARK: - AppDelegate（Firebase + Google 回调）
-class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
 
     static let bgTaskIdentifier = "com.aligna.dailymantrarefresh"
 
@@ -127,12 +128,71 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
         UNUserNotificationCenter.current().delegate = self
 
+        // Firebase Cloud Messaging — receive FCM tokens via MessagingDelegate.
+        Messaging.messaging().delegate = self
+
+        // If the user has previously authorized notifications, re-register
+        // for remote pushes on each cold launch so APNs token refreshes
+        // propagate to our backend. New users will register when they first
+        // grant permission (in Profile → notifications).
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            if settings.authorizationStatus == .authorized
+                || settings.authorizationStatus == .provisional {
+                DispatchQueue.main.async {
+                    application.registerForRemoteNotifications()
+                }
+            }
+        }
+
         // 注册后台处理任务（每日 mantra 静默更新）
         BGTaskScheduler.shared.register(forTaskWithIdentifier: AppDelegate.bgTaskIdentifier, using: nil) { task in
             AppDelegate.handleDailyMantraRefreshTask(task: task as! BGProcessingTask)
         }
 
         return true
+    }
+
+    // MARK: - APNs / FCM bridge
+
+    /// System hands us the APNs device token after registerForRemoteNotifications().
+    /// Forward it to Firebase Messaging so FCM can exchange it for an FCM token.
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        Messaging.messaging().apnsToken = deviceToken
+    }
+
+    /// Diagnostic — usually only fires in the simulator or bad provisioning profiles.
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        print("⚠️ [PUSH] APNs registration failed: \(error.localizedDescription)")
+    }
+
+    /// Called by Firebase Messaging when an FCM token is issued / refreshed.
+    /// We hand it off to PushTokenRegistrar which debounces + uploads to the
+    /// Alynna backend so the server can send targeted push notifications.
+    func messaging(
+        _ messaging: Messaging,
+        didReceiveRegistrationToken fcmToken: String?
+    ) {
+        guard let token = fcmToken else {
+            print("ℹ️ [PUSH] FCM token callback with nil token")
+            return
+        }
+        PushTokenRegistrar.shared.register(fcmToken: token)
+    }
+
+    /// Foreground delivery: show banner + sound even while the app is active,
+    /// so bond-request pushes aren't missed during a usage session.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound, .badge])
     }
 
     // 每次 app 进入后台时调度下一次后台更新任务
@@ -313,6 +373,13 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             } else if destination.hasPrefix("moon_ritual_") {
                 UserDefaults.standard.set(true, forKey: "shouldOpenMoonRitual")
             }
+        }
+        // Bonding pushes carry a "kind" payload from the backend
+        // (bond_request / bond_accepted / bond_severed). Any of these should
+        // land the user on BondsView after the app opens.
+        if let kind = userInfo["kind"] as? String,
+           kind.hasPrefix("bond_") {
+            UserDefaults.standard.set(true, forKey: "shouldOpenBondsView")
         }
         completionHandler()
     }
