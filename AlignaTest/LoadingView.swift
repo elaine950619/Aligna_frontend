@@ -1353,7 +1353,7 @@ struct LoadingView: View {
         let airQuality = airQualityText.trimmingCharacters(in: .whitespacesAndNewlines)
         let density = placeDensityText.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let locationLine = location.isEmpty || location == "Your Current Location" ? String(localized: "loading.sensing_place") : "I'm sensing \(location)."
+        let locationLine = location.isEmpty || location == "Your Current Location" ? String(localized: "loading.sensing_place") : String(format: String(localized: "loading.sensing_named_place"), location)
         let conditionLine = condition.isEmpty || condition == "Cloud · Wind · Rain" ? String(localized: "loading.sampling_air") : condition
         let airQualityLine = airQuality.isEmpty || airQuality == "Air quality —" ? String(localized: "loading.measuring_air_quality") : airQuality
         let densityLine = density.isEmpty ? "Water — · Green — · Built —" : density
@@ -1394,13 +1394,13 @@ struct LoadingView: View {
         let density = clean(placeDensityText)
 
         var lines: [String] = []
-        if let location  { lines.append("I’m sensing \(location).") }
+        if let location  { lines.append(String(format: String(localized: "loading.sensing_named_place"), location)) }
         if let condition { lines.append(condition) }
         if let airQuality { lines.append(airQuality) }
         if let density { lines.append(density) }
 
         if lines.isEmpty {
-            return "I’m locating your place…\nI’m sampling today’s air…"
+            return String(localized: "loading.sensing_place")
         }
         return lines.joined(separator: "\n")
     }
@@ -1720,7 +1720,9 @@ struct LoadingView: View {
 
     private var compactAirQualitySummary: String {
         let text = airQualityText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return text.isEmpty || text == "Air quality —" ? "Air quality is being sensed." : text
+        let isChinese = currentRecommendationLanguageCode() == "zh-Hans"
+        let fallback = isChinese ? "空气质量感知中。" : "Air quality is being sensed."
+        return text.isEmpty || text == "Air quality —" || text == "空气质量 —" ? fallback : text
     }
 
     private var compactWeatherSummaryValue: String {
@@ -1751,6 +1753,7 @@ struct LoadingView: View {
 
     private var compactAirQualityValue: String {
         metricValue(in: compactAirQualitySummary, prefix: "Air quality")
+            ?? metricValue(in: compactAirQualitySummary, prefix: "空气质量")
             ?? compactAirQualitySummary
     }
 
@@ -1759,28 +1762,35 @@ struct LoadingView: View {
     }
 
     private var compactHumidityValue: String? {
-        metricValue(in: compactConditionSummary, prefix: "Humidity")
+        guard let h = placeHumidity else { return metricValue(in: compactConditionSummary, prefix: "Humidity") }
+        return "\(Int(h.rounded()))%"
     }
 
     private var compactPressureValue: String? {
-        metricValue(in: compactConditionSummary, prefix: "Pressure")
+        guard let p = placePressure else { return metricValue(in: compactConditionSummary, prefix: "Pressure") }
+        return "\(Int(p.rounded())) hPa"
     }
 
     private var compactDensitySummary: String {
         let text = placeDensityText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return text.isEmpty || text == "Water — · Green — · Built —" ? "Landscape signals are being gathered." : text
+        let isChinese = currentRecommendationLanguageCode() == "zh—Hans"
+        let fallback = isChinese ? "地貌信号收集中。" : "Landscape signals are being gathered."
+        return text.isEmpty || text == "Water — · Green — · Built —" || text == "水体 —% · 绿地 —% · 建筑 —%" ? fallback : text
     }
 
     private var compactWaterValue: String? {
         metricValue(in: compactDensitySummary, prefix: "Water")
+            ?? metricValue(in: compactDensitySummary, prefix: "水体")
     }
 
     private var compactGreenValue: String? {
         metricValue(in: compactDensitySummary, prefix: "Green")
+            ?? metricValue(in: compactDensitySummary, prefix: "绿地")
     }
 
     private var compactBuiltValue: String? {
         metricValue(in: compactDensitySummary, prefix: "Built")
+            ?? metricValue(in: compactDensitySummary, prefix: "建筑")
     }
 
     private func metricValue(in source: String, prefix: String) -> String? {
@@ -1983,11 +1993,25 @@ struct LoadingView: View {
             // Build display strings (language-aware)
             let isChinese = currentRecommendationLanguageCode() == "zh-Hans"
             let displayDescription = isChinese ? descriptionZH : description
-            let tempStr = temp.map { "\(Int($0.rounded()))°F" } ?? ""
+            let tempStr: String = {
+                guard let t = temp else { return "" }
+                if isChinese {
+                    let celsius = (t - 32) * 5 / 9
+                    return "\(Int(celsius.rounded()))°C"
+                } else {
+                    return "\(Int(t.rounded()))°F"
+                }
+            }()
             let dirText = wdeg.map { windDirectionText(for: $0) } ?? ""
-            let windText = isChinese
-                ? "风向 \(dirText) · \(Int((wspd ?? 0).rounded())) mph"
-                : "Wind dir \(dirText) · \(Int((wspd ?? 0).rounded())) mph"
+            let windText: String = {
+                let speed = wspd ?? 0
+                if isChinese {
+                    let kmh = speed * 1.60934
+                    return "风向 \(dirText) · \(Int(kmh.rounded())) km/h"
+                } else {
+                    return "Wind dir \(dirText) · \(Int(speed.rounded())) mph"
+                }
+            }()
             let humidityText = isChinese
                 ? "湿度 \(Int((rhum ?? 0).rounded()))%"
                 : "Humidity \(Int((rhum ?? 0).rounded()))%"
@@ -2124,23 +2148,39 @@ struct LoadingView: View {
             let aqiText = aqiInt.map { "AQI \($0)" }
             let pmText = pmValue.map { "PM2.5 \(Int($0.rounded()))" }
 
+            let isChinese = currentRecommendationLanguageCode() == "zh-Hans"
+
             let combined: String
-            if let aqiText, let pmText {
-                combined = "Air quality \(aqiText) · \(pmText)"
-            } else if let aqiText {
-                combined = "Air quality \(aqiText)"
-            } else if let pmText {
-                combined = "Air quality \(pmText)"
+            if isChinese {
+                let aqiPart = aqiText ?? ""
+                let pmPart = pmText ?? ""
+                if !aqiPart.isEmpty, !pmPart.isEmpty {
+                    combined = "空气质量 \(aqiPart) · \(pmPart)"
+                } else if !aqiPart.isEmpty {
+                    combined = "空气质量 \(aqiPart)"
+                } else if !pmPart.isEmpty {
+                    combined = "空气质量 \(pmPart)"
+                } else {
+                    return
+                }
             } else {
-                return
+                if let aqiText, let pmText {
+                    combined = "Air quality \(aqiText) · \(pmText)"
+                } else if let aqiText {
+                    combined = "Air quality \(aqiText)"
+                } else if let pmText {
+                    combined = "Air quality \(pmText)"
+                } else {
+                    return
+                }
             }
 
             let readable: String
             if let aqi = aqiInt {
-                let label = airQualityLabel(for: aqi)
-                readable = "Air Quality: \(label)"
+                let label = airQualityLabel(for: aqi, isChinese: isChinese)
+                readable = isChinese ? "空气质量：\(label)" : "Air Quality: \(label)"
             } else if let pmText {
-                readable = "Air Quality: \(pmText)"
+                readable = isChinese ? "空气质量：\(pmText)" : "Air Quality: \(pmText)"
             } else {
                 readable = combined
             }
@@ -2154,14 +2194,24 @@ struct LoadingView: View {
         }.resume()
     }
 
-    private func airQualityLabel(for aqi: Int) -> String {
+    private func airQualityLabel(for aqi: Int, isChinese: Bool = false) -> String {
+        if isChinese {
+            switch aqi {
+            case ..<51:     return "优"
+            case 51..<101:  return "良"
+            case 101..<151: return "对敏感人群不健康"
+            case 151..<201: return "不健康"
+            case 201..<301: return "非常不健康"
+            default:        return "危险"
+            }
+        }
         switch aqi {
-        case ..<51: return "Good"
-        case 51..<101: return "Moderate"
+        case ..<51:     return "Good"
+        case 51..<101:  return "Moderate"
         case 101..<151: return "Unhealthy for Sensitive"
         case 151..<201: return "Unhealthy"
         case 201..<301: return "Very Unhealthy"
-        default: return "Hazardous"
+        default:        return "Hazardous"
         }
     }
 
@@ -2212,6 +2262,10 @@ struct LoadingView: View {
         let greenPct = Int((Double(greenCount) / Double(totalCount) * 100).rounded())
         let builtPct = Int((Double(builtCount) / Double(totalCount) * 100).rounded())
 
+        let isChinese = currentRecommendationLanguageCode() == "zh-Hans"
+        if isChinese {
+            return "水体 \(waterPct)% · 绿地 \(greenPct)% · 建筑 \(builtPct)%"
+        }
         return "Water \(waterPct)% · Green \(greenPct)% · Built \(builtPct)%"
     }
 
@@ -2500,14 +2554,22 @@ struct LoadingView: View {
     }
 
     private func windDirectionText(for degrees: Double) -> String {
-        let directions = [
-            "N", "NNE", "NE", "ENE",
-            "E", "ESE", "SE", "SSE",
-            "S", "SSW", "SW", "WSW",
-            "W", "WNW", "NW", "NNW"
-        ]
-        let index = Int((degrees + 11.25) / 22.5) % directions.count
-        return directions[index]
+        let isChinese = currentRecommendationLanguageCode() == "zh-Hans"
+        if isChinese {
+            let directions = ["北", "北偏东北", "东北", "东偏东北",
+                              "东", "东偏东南", "东南", "南偏东南",
+                              "南", "南偏西南", "西南", "西偏西南",
+                              "西", "西偏西北", "西北", "北偏西北"]
+            let index = Int((degrees + 11.25) / 22.5) % directions.count
+            return directions[index]
+        } else {
+            let directions = ["N", "NNE", "NE", "ENE",
+                              "E", "ESE", "SE", "SSE",
+                              "S", "SSW", "SW", "WSW",
+                              "W", "WNW", "NW", "NNW"]
+            let index = Int((degrees + 11.25) / 22.5) % directions.count
+            return directions[index]
+        }
     }
 
     private func completePersonal() {

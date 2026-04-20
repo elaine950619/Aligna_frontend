@@ -10,6 +10,9 @@
     " · " : {
 
     },
+    "·" : {
+
+    },
     "%@ " : {
 
     },
@@ -2972,7 +2975,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在测量空气质量…"
+            "value" : "正在读取空气质量…"
           }
         }
       }
@@ -3348,7 +3351,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "读取你的地点"
+            "value" : "感知你的所在"
           }
         }
       }
@@ -3364,7 +3367,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "地点信号来自本地环境和天气。"
+            "value" : "地点信号来自你周围的环境与天气。"
           }
         }
       }
@@ -3428,7 +3431,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在采集空气样本…"
+            "value" : "正在感受今日的气息…"
           }
         }
       }
@@ -3753,6 +3756,22 @@
         }
       }
     },
+    "loading.sensing_named_place" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I'm sensing %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在感知 %@…"
+          }
+        }
+      }
+    },
     "loading.sensing_place" : {
       "localizations" : {
         "en" : {
@@ -3764,7 +3783,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在感知你的地点…"
+            "value" : "正在感知你身边的世界…"
           }
         }
       }
@@ -4004,7 +4023,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在为你的空间预热…"
+            "value" : "正在唤醒你的空间…"
           }
         }
       }

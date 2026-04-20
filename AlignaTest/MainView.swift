@@ -437,7 +437,14 @@ private struct DailyAssessmentRow: View {
                         isExpanded.toggle()
                     }
                 } label: {
-                    HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if !keywordLine.isEmpty {
+                            Text(keywordLine)
+                                .font(.custom("Merriweather-Regular", size: 11))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.58))
+                                .tracking(1.0)
+                                .lineLimit(1)
+                        }
                         HStack(spacing: 5) {
                             ForEach(0..<5, id: \.self) { i in
                                 FourPointStarShape()
@@ -448,13 +455,6 @@ private struct DailyAssessmentRow: View {
                                     )
                                     .frame(width: 11, height: 11)
                             }
-                        }
-                        if !keywordLine.isEmpty {
-                            Text(keywordLine)
-                                .font(.custom("Merriweather-Regular", size: 11))
-                                .foregroundColor(themeManager.descriptionText.opacity(0.58))
-                                .tracking(1.0)
-                                .lineLimit(1)
                         }
                     }
                     .padding(.vertical, 6) // pad for ≥ 24pt tap target height
@@ -3247,9 +3247,23 @@ struct MainView: View {
                     .presentationCornerRadius(24)
             }
             .sheet(isPresented: $showWallpaperPreview) {
-                WallpaperPreviewView(mantra: viewModel.dailyMantra, colorHex: todayColorHex() ?? "#CBBBA0")
-                    .presentationDragIndicator(.visible)
-                    .presentationCornerRadius(24)
+                WallpaperPreviewView(
+                    mantra: viewModel.dailyMantra,
+                    colorHex: todayColorHex() ?? "#CBBBA0",
+                    mode: .shareCard(
+                        score: viewModel.dailyScore,
+                        keywords: viewModel.dailyKeywords,
+                        focusName: activeFocus.map { focusDisplayName(for: $0) } ?? "",
+                        locationName: resolvedWidgetLocation(),
+                        weatherCondition: viewModel.weatherCondition ?? "",
+                        environmentSummary: widgetEnvironmentSummary.trimmingCharacters(in: .whitespacesAndNewlines),
+                        sunSign: widgetSunSign.trimmingCharacters(in: .whitespacesAndNewlines),
+                        moonSign: widgetMoonSign.trimmingCharacters(in: .whitespacesAndNewlines),
+                        risingSign: widgetRisingSign.trimmingCharacters(in: .whitespacesAndNewlines)
+                    )
+                )
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(24)
             }
             .sheet(isPresented: $showMoonRitualSheet) {
                 if let phase = todayMoonPhase {
@@ -3654,9 +3668,25 @@ struct MainView: View {
     /// Full-screen wallpaper preview sheet.
     /// Displays today's color as a gradient background with the mantra in the lower third
     /// and the Alynna brand mark at the bottom.
+    private enum WallpaperMode {
+        case wallpaper
+        case shareCard(
+            score: Int,
+            keywords: [String],
+            focusName: String,
+            locationName: String,
+            weatherCondition: String,
+            environmentSummary: String,
+            sunSign: String,
+            moonSign: String,
+            risingSign: String
+        )
+    }
+
     private struct WallpaperPreviewView: View {
         let mantra: String
         let colorHex: String
+        var mode: WallpaperMode = .wallpaper
 
         @Environment(\.dismiss) private var dismiss
 
@@ -3808,6 +3838,24 @@ struct MainView: View {
 
         var body: some View {
             GeometryReader { geo in
+                // shareCard 模式：直接展示卡片预览 + 分享按钮，不走壁纸全屏路径
+                if case .shareCard(let score, let keywords, let focusName, let locationName, let weatherCondition, let environmentSummary, let sunSign, let moonSign, let risingSign) = mode {
+                    ShareCardPreviewWrapper(
+                        mantra: mantra,
+                        colorHex: colorHex,
+                        score: score,
+                        keywords: keywords,
+                        focusName: focusName,
+                        locationName: locationName,
+                        weatherCondition: weatherCondition,
+                        environmentSummary: environmentSummary,
+                        sunSign: sunSign,
+                        moonSign: moonSign,
+                        risingSign: risingSign,
+                        onDismiss: { dismiss() }
+                    )
+                } else {
+
                 ZStack(alignment: .bottom) {
                     // Widget-style background
                     WallpaperBackground(hex: colorHex)
@@ -3892,7 +3940,9 @@ struct MainView: View {
                     }
                     .padding(.bottom, geo.safeAreaInsets.bottom + 140)
                 }
-            }
+                .ignoresSafeArea()
+                } // else wallpaper
+            } // GeometryReader
             .ignoresSafeArea()
         }
 
@@ -4097,8 +4147,307 @@ struct MainView: View {
         }
     }
 
+    // MARK: - ShareCardPreviewWrapper
+    // 分享卡预览容器：居中展示卡片 + 底部分享按钮
+    private struct ShareCardPreviewWrapper: View {
+        let mantra: String
+        let colorHex: String
+        let score: Int
+        let keywords: [String]
+        let focusName: String
+        let locationName: String
+        let weatherCondition: String
+        let environmentSummary: String
+        let sunSign: String
+        let moonSign: String
+        let risingSign: String
+        let onDismiss: () -> Void
 
-    
+        @State private var shareMessage: String = ""
+        @State private var showShareMessage = false
+
+        private let textColor = Color(hex: "#F7F3EC")
+        private let cardWidth:  CGFloat = 390
+        private let cardHeight: CGFloat = 693
+
+        var body: some View {
+            GeometryReader { geo in
+                ZStack {
+                    Color.black.opacity(0.78).ignoresSafeArea()
+
+                    VStack(spacing: 20) {
+                        // 卡片预览
+                        let scale = min((geo.size.width - 48) / cardWidth,
+                                        (geo.size.height * 0.74) / cardHeight)
+                        ShareCardRenderView(
+                            mantra: mantra,
+                            colorHex: colorHex,
+                            score: score,
+                            keywords: keywords,
+                            focusName: focusName,
+                            locationName: locationName,
+                            weatherCondition: weatherCondition,
+                            environmentSummary: environmentSummary,
+                            sunSign: sunSign,
+                            moonSign: moonSign,
+                            risingSign: risingSign
+                        )
+                        .frame(width: cardWidth, height: cardHeight)
+                        .scaleEffect(scale)
+                        .frame(width: cardWidth * scale, height: cardHeight * scale)
+                        .clipShape(RoundedRectangle(cornerRadius: 24 / scale, style: .continuous))
+                        .shadow(color: Color.black.opacity(0.50), radius: 28, x: 0, y: 14)
+
+                        // 操作行
+                        HStack(spacing: 16) {
+                            Button { onDismiss() } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(textColor.opacity(0.7))
+                                    .frame(width: 44, height: 44)
+                                    .background(Color.white.opacity(0.12))
+                                    .clipShape(Circle())
+                            }
+                            Button { shareCard() } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.system(size: 15, weight: .medium))
+                                    Text(String(localized: "main.share"))
+                                        .font(.custom("Merriweather-Regular", size: 15))
+                                }
+                                .foregroundColor(textColor)
+                                .padding(.horizontal, 28)
+                                .padding(.vertical, 13)
+                                .background(Color.white.opacity(0.18))
+                                .clipShape(Capsule())
+                            }
+                        }
+
+                        if showShareMessage {
+                            Text(shareMessage)
+                                .font(.system(size: 13))
+                                .foregroundColor(textColor.opacity(0.80))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color.white.opacity(0.14))
+                                .clipShape(Capsule())
+                                .transition(.opacity)
+                        }
+                    }
+                    .padding(.bottom, geo.safeAreaInsets.bottom + 8)
+                }
+            }
+            .ignoresSafeArea()
+        }
+
+        private func shareCard() {
+            FontRegistrar.registerAllFonts()
+            let renderSize = CGSize(width: cardWidth, height: cardHeight)
+            let renderView = ShareCardRenderView(
+                mantra: mantra,
+                colorHex: colorHex,
+                score: score,
+                keywords: keywords,
+                focusName: focusName,
+                locationName: locationName,
+                weatherCondition: weatherCondition,
+                environmentSummary: environmentSummary,
+                sunSign: sunSign,
+                moonSign: moonSign,
+                risingSign: risingSign
+            )
+            let controller = UIHostingController(rootView: renderView)
+            controller.safeAreaRegions = []
+            controller.view.bounds = CGRect(origin: .zero, size: renderSize)
+            controller.view.frame  = CGRect(origin: .zero, size: renderSize)
+            controller.view.backgroundColor = .clear
+            controller.view.setNeedsLayout()
+            controller.view.layoutIfNeeded()
+            RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
+
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 3.0
+            let renderer = UIGraphicsImageRenderer(size: renderSize, format: format)
+            let image = renderer.image { _ in
+                controller.view.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: true)
+            }
+
+            guard let scene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }),
+                  let root = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController else {
+                return
+            }
+            var presenter: UIViewController = root
+            while let next = presenter.presentedViewController { presenter = next }
+
+            let activity = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+            if let popover = activity.popoverPresentationController {
+                popover.sourceView = presenter.view
+                popover.sourceRect = CGRect(x: presenter.view.bounds.midX,
+                                           y: presenter.view.bounds.maxY,
+                                           width: 0, height: 0)
+                popover.permittedArrowDirections = []
+            }
+            presenter.present(activity, animated: true)
+        }
+    }
+
+    // MARK: - ShareCardRenderView
+    // 离屏渲染目标：390x693 (9:16) 分享卡，居中构图，底部品牌块
+    private struct ShareCardRenderView: View {
+        let mantra: String
+        let colorHex: String
+        let score: Int
+        let keywords: [String]
+        let focusName: String
+        let locationName: String
+        let weatherCondition: String
+        let environmentSummary: String
+        let sunSign: String
+        let moonSign: String
+        let risingSign: String
+
+        private let cardWidth:  CGFloat = 390
+        private let cardHeight: CGFloat = 693
+        private let textColor = Color(hex: "#F7F3EC")
+        private var isChinese: Bool { currentRecommendationLanguageCode() == "zh-Hans" }
+
+        // 主文字体：中文减轻笔划用 Regular，英文用 BoldItalic 增加文学质感
+        private var mantraFont: Font {
+            isChinese
+                ? .custom("LXGWWenKaiTC-Regular", size: 21)
+                : .custom("Merriweather-Bold", size: 18).italic()
+        }
+        private var mantraLineSpacing: CGFloat { isChinese ? 13 : 10 }
+
+        // Focus 标签字体：中文用思源黑体 Light（清晰），英文用 Merriweather-Regular + 大间距
+        private var focusFont: Font {
+            isChinese
+                ? .custom("SourceHanSansSCVF-Light", size: 10)
+                : .custom("Merriweather-Regular", size: 9)
+        }
+        private var focusTracking: CGFloat { isChinese ? 1.0 : 2.4 }
+
+        // 关键词字体：中文用霞鹜文楷 Light，英文用 Merriweather-Light
+        private var keywordFont: Font {
+            isChinese
+                ? .custom("LXGWWenKaiTC-Light", size: 10)
+                : .custom("Merriweather-Light", size: 10)
+        }
+
+        private var filledStarCount: Int {
+            min(5, max(0, Int((Double(score) / 20.0).rounded())))
+        }
+
+        private var keywordLine: String {
+            keywords.prefix(3).joined(separator: "  ·  ")
+        }
+
+        private var dateLine: String {
+            let df = DateFormatter()
+            df.locale = .current
+            df.setLocalizedDateFormatFromTemplate("MMMd")
+            return df.string(from: Date())
+        }
+
+        var body: some View {
+            ZStack(alignment: .bottom) {
+                WallpaperBackground(hex: colorHex)
+                    .frame(width: cardWidth, height: cardHeight)
+
+                VStack(spacing: 0) {
+                    Spacer()
+
+                    // 主内容区
+                    VStack(spacing: 0) {
+                        // Focus 标签：中英文分别处理
+                        if !focusName.isEmpty {
+                            Text(isChinese ? focusName : focusName.uppercased())
+                                .font(focusFont)
+                                .tracking(focusTracking)
+                                .foregroundColor(textColor.opacity(0.36))
+                                .padding(.bottom, 18)
+                        }
+
+                        // Mantra 正文
+                        Text(mantra)
+                            .font(mantraFont)
+                            .lineSpacing(mantraLineSpacing)
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(textColor.opacity(0.94))
+                            .padding(.horizontal, 44)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        // 和度星级 + 关键词
+                        if score > 0 {
+                            VStack(spacing: 10) {
+                                HStack(spacing: 5) {
+                                    ForEach(0..<5, id: \.self) { i in
+                                        FourPointStarShape()
+                                            .fill(i < filledStarCount
+                                                  ? textColor.opacity(0.84)
+                                                  : textColor.opacity(0.18))
+                                            .frame(width: 9, height: 9)
+                                    }
+                                }
+                                if !keywordLine.isEmpty {
+                                    Text(keywordLine)
+                                        .font(keywordFont)
+                                        .tracking(0.6)
+                                        .foregroundColor(textColor.opacity(0.50))
+                                }
+                            }
+                            .padding(.top, 28)
+                        }
+                    }
+
+                    Spacer()
+
+                    // 底部信息块：日期地点 / 品牌
+                    VStack(spacing: 8) {
+                        // 日期 + 地点
+                        HStack(spacing: 6) {
+                            Text(dateLine)
+                            if !locationName.isEmpty {
+                                Text("·")
+                                    .foregroundColor(textColor.opacity(0.18))
+                                Text(locationName)
+                            }
+                        }
+                        .font(.custom("Merriweather-Light", size: 10))
+                        .tracking(0.4)
+                        .foregroundColor(textColor.opacity(0.30))
+
+                        // logo + 品牌名
+                        HStack(spacing: 5) {
+                            if UIImage(named: "alignaSymbol") != nil {
+                                Image("alignaSymbol")
+                                    .resizable()
+                                    .renderingMode(.template)
+                                    .scaledToFit()
+                                    .frame(width: 12, height: 12)
+                                    .foregroundColor(textColor.opacity(0.46))
+                            } else {
+                                FourPointStarShape()
+                                    .fill(textColor.opacity(0.46))
+                                    .frame(width: 10, height: 10)
+                            }
+                            Text("Alynna")
+                                .font(.custom("Merriweather-Regular", size: 11))
+                                .tracking(2.0)
+                                .foregroundColor(textColor.opacity(0.46))
+                        }
+                    }
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, 46)
+                }
+                .frame(width: cardWidth, height: cardHeight)
+            }
+            .frame(width: cardWidth, height: cardHeight)
+        }
+    }
+
     // 冷启动只看"是否已登录 + 本地标记"来分流；不再在这里查 Firestore 决定是否强拉 Onboarding。
     // === 替换你原来的 startInitialLoad()（整段替换） ===
     private func startInitialLoad() {

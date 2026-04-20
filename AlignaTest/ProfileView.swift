@@ -108,7 +108,7 @@ struct ZodiacInlineRow: View {
 
     @ViewBuilder
     private func segment(systemIcon: String, text: String, italic: Bool = true) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 4) {
             Image(systemName: systemIcon)
                 .imageScale(.small)
                 .fixedSize(horizontal: true, vertical: false)
@@ -153,7 +153,7 @@ struct ZodiacInlineRow: View {
     }
 
     private var rowContent: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 6) {
             segment(systemIcon: "sun.max.fill", text: sunText)
             separator
             segment(systemIcon: "moon.fill", text: moonText)
@@ -172,7 +172,7 @@ struct ZodiacInlineRow: View {
                     .padding(.horizontal, 2)
             }
         }
-        .font(.custom("Merriweather-Regular", size: UIFont.preferredFont(forTextStyle: .callout).pointSize, relativeTo: .callout))
+        .font(.custom("Merriweather-Regular", size: UIFont.preferredFont(forTextStyle: .footnote).pointSize, relativeTo: .footnote))
         .foregroundColor(themeManager.primaryText)
         .accessibilityLabel(Text("Zodiac: Sun \(sunText), Moon \(moonText), Ascendant \(normalizedAscText)"))
     }
@@ -1539,7 +1539,7 @@ struct ProfileView: View {
     @State private var sunSignDisplay = "..."
     @State private var moonSignDisplay = "..."
     @State private var ascSignDisplay = "..."
-
+    @State private var cosmicIdentity: CosmicIdentity? = nil
 
     // 编辑状态
     @State private var editingNickname = false
@@ -1669,6 +1669,7 @@ struct ProfileView: View {
                     ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 12) {
                             headerCard
+                            cosmicIdentityCard
                             personalInfoCard
                             preferencesCard
                             timelineCard
@@ -1947,6 +1948,70 @@ struct ProfileView: View {
 
 // MARK: - UI Sections
 private extension ProfileView {
+
+    // MARK: Cosmic Identity Card
+    var cosmicIdentityCard: some View {
+        Group {
+            if let identity = cosmicIdentity {
+                let isChinese = appLanguage == "zh-Hans"
+                let title   = isChinese ? identity.titleZH   : identity.titleEN
+                let tagline = isChinese ? identity.taglineZH : identity.taglineEN
+
+                VStack(spacing: 0) {
+                    // Decorative top rule
+                    HStack {
+                        Rectangle()
+                            .fill(themeManager.accent.opacity(0.25))
+                            .frame(height: 0.5)
+                        Image(systemName: "sparkle")
+                            .font(.system(size: 10, weight: .light))
+                            .foregroundColor(themeManager.accent.opacity(0.5))
+                        Rectangle()
+                            .fill(themeManager.accent.opacity(0.25))
+                            .frame(height: 0.5)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 14)
+
+                    VStack(spacing: 6) {
+                        Text(title)
+                            .font(.custom("Gloock-Regular", size: 20))
+                            .foregroundColor(themeManager.primaryText)
+                            .multilineTextAlignment(.center)
+                            .tracking(0.4)
+
+                        Text(tagline)
+                            .font(.custom("Merriweather-Light", size: 12))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.75))
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(4)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 12)
+                    }
+
+                    // Decorative bottom rule
+                    HStack {
+                        Rectangle()
+                            .fill(themeManager.accent.opacity(0.25))
+                            .frame(height: 0.5)
+                        Image(systemName: "sparkle")
+                            .font(.system(size: 10, weight: .light))
+                            .foregroundColor(themeManager.accent.opacity(0.5))
+                        Rectangle()
+                            .fill(themeManager.accent.opacity(0.25))
+                            .frame(height: 0.5)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 14)
+                }
+                .padding(.vertical, 4)
+                .frame(maxWidth: .infinity)
+                .transition(.opacity.combined(with: .scale(scale: 0.97)))
+            }
+        }
+        .animation(.easeInOut(duration: 0.4), value: cosmicIdentity?.titleEN)
+    }
+
     var headerCard: some View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
@@ -3730,6 +3795,14 @@ private extension ProfileView {
         moonSignDisplay = moon.isEmpty ? "..." : moon
         ascSignDisplay = asc.isEmpty ? "..." : asc
         isZodiacReady = true
+
+        // Generate cosmic identity from raw English sign names
+        let rawSun = (chartSunSign.isEmpty ? fallbackSunSignText : chartSunSign)
+        let rawMoon = (chartMoonSign.isEmpty ? fallbackMoonSignText : chartMoonSign)
+        let rawAsc = (chartAscSign.isEmpty ? fallbackAscSignText : chartAscSign)
+        if !rawSun.isEmpty && !rawMoon.isEmpty {
+            cosmicIdentity = CosmicIdentityEngine.generate(sun: rawSun, moon: rawMoon, ascendant: rawAsc)
+        }
     }
 
     private func syncChartDataIfNeeded(force: Bool = false, completion: (() -> Void)? = nil) {

@@ -73,19 +73,10 @@ private struct TimelineHeader: View {
 
             ZStack {
                 
-                // back button (leading) + search button (trailing)
+                // search button (trailing only — back button is a fixed overlay in parent)
                 HStack {
-                    Button(action: onBack) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(themeManager.foregroundColor)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-//                            .padding(paddingSize)
-    //                        .background(backgroundColor)
-                            .clipShape(Circle())
-                            
-                    }
+                    // Placeholder to keep the title centred
+                    Color.clear.frame(width: 44, height: 44)
                     Spacer()
                     if let onSearch {
                         Button(action: onSearch) {
@@ -795,6 +786,24 @@ struct TimelineView: View {
                     .padding(.top)
                 }
             }
+
+                // Fixed back button overlay — stays pinned while content scrolls
+                VStack {
+                    HStack {
+                        Button(action: { dismiss() }) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(themeManager.foregroundColor)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                                .clipShape(Circle())
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    Spacer()
+                }
             }
             .toolbar(.hidden, for: .navigationBar)
             .sheet(item: $selectedSuggestion) { item in
