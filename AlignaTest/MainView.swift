@@ -949,27 +949,57 @@ struct MainView: View {
         return !dict.isEmpty
     }
 
-    // Builds the wrapup snapshot from stored previous-session data + anchorCache
-    private func buildWrapUpData() {
+    // Builds the wrapup snapshot by fetching previous-session data from Firestore.
+    // Calls onComplete when the data is ready (may be async).
+    private func buildWrapUpData(onComplete: (() -> Void)? = nil) {
         let dateKey = dailyActionsDate  // e.g. "2026-04-15"
+
         // Focus name from that day
         let focusID = mantraActiveFocusByDay[dateKey] ?? ""
         let focus = mantraFocuses.first { $0.id.uuidString == focusID }
         lastFocusName = focus.map { focusDisplayName(for: $0) } ?? dateKey
 
-        // Actions from stored JSON
-        guard let data = dailyActionsCompleted.data(using: .utf8),
-              let dict = try? JSONDecoder().decode([String: Bool].self, from: data)
-        else {
+        guard let uid = Auth.auth().currentUser?.uid else {
             lastWrapUpActions = []
+            onComplete?()
             return
         }
-        let order = ["Activity", "Place", "Sound", "Scent", "Gemstone", "Color", "Career", "Relationship"]
-        lastWrapUpActions = order.compactMap { cat -> (String, String, Bool)? in
-            guard dict[cat] != nil else { return nil }
-            let anchor = anchorCache[cat] ?? ""
-            guard !anchor.isEmpty else { return nil }
-            return (cat, anchor, dict[cat] ?? false)
+
+        let docRef = Firestore.firestore()
+            .collection("daily_recommendation")
+            .document("\(uid)_\(dateKey)")
+
+        docRef.getDocument { snap, err in
+            DispatchQueue.main.async {
+                defer { onComplete?() }
+
+                guard err == nil,
+                      let data = snap?.data(),
+                      let rawActions = data["daily_actions"] as? [[String: Any]] else {
+                    self.lastWrapUpActions = []
+                    return
+                }
+
+                let completedIDs = Set((data["completed_action_ids"] as? [String]) ?? [])
+                let order = ["Activity", "Place", "Sound", "Scent", "Gemstone", "Color", "Career", "Relationship"]
+                let actionsByCategory: [String: DailyAction] = Dictionary(
+                    uniqueKeysWithValues: rawActions.compactMap { dict -> (String, DailyAction)? in
+                        guard
+                            let id  = dict["id"]            as? String, !id.isEmpty,
+                            let cat = dict["category"]      as? String,
+                            let doc = dict["document_name"] as? String,
+                            let eng = dict["how_to_engage"] as? String
+                        else { return nil }
+                        let canonical = canonicalCategory(from: cat) ?? cat.capitalized
+                        return (canonical, DailyAction(id: id, category: canonical, documentName: doc, howToEngage: eng))
+                    }
+                )
+
+                self.lastWrapUpActions = order.compactMap { cat -> (String, String, Bool)? in
+                    guard let action = actionsByCategory[cat] else { return nil }
+                    return (cat, action.howToEngage, completedIDs.contains(action.id))
+                }
+            }
         }
     }
     // Fixed: Activity, Place, Career (always); 4th slot: first non-empty from Gemstone/Scent
@@ -4937,8 +4967,10 @@ struct MainView: View {
         guard isBootDataReady, didCompletePersonalCheckIn else { return }
         if hasPreviousSessionActions && !didConfirmWrapUp {
             // Cold-start path: found previous session data, user hasn't confirmed wrapUp yet
-            buildWrapUpData()
-            withAnimation(.easeInOut) { bootPhase = .wrapUp }
+            // Fetch from Firestore first, then transition to wrapUp
+            buildWrapUpData {
+                withAnimation(.easeInOut) { self.bootPhase = .wrapUp }
+            }
         } else {
             // Either no previous session data, or user already tapped "Start Today"
             if !dailyActionsDate.isEmpty && dailyActionsDate != todayKey {

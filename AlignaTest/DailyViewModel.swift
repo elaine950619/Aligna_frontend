@@ -23,6 +23,8 @@ struct SuggestionItem: Identifiable {
 final class DailyViewModel: ObservableObject {
     @Published var mantra = ""
     @Published var items: [SuggestionItem] = []
+    @Published var actions: [DailyAction] = []
+    @Published var completedActionIDs: Set<String> = []
 
     private let db = Firestore.firestore()
     private static let fmt: DateFormatter = {
@@ -53,6 +55,8 @@ final class DailyViewModel: ObservableObject {
         DispatchQueue.main.async {
             self.mantra = ""
             self.items.removeAll()
+            self.actions.removeAll()
+            self.completedActionIDs.removeAll()
         }
 
         guard let userId = Auth.auth().currentUser?.uid else {
@@ -107,6 +111,24 @@ final class DailyViewModel: ObservableObject {
 
             self.mantra = data["mantra"] as? String ?? ""
             self.fetchDetails(pairs: nonEmpty)
+
+            // Read daily actions and completed IDs
+            if let rawActions = data["daily_actions"] as? [[String: Any]] {
+                let parsedActions = rawActions.compactMap { dict -> DailyAction? in
+                    guard
+                        let id  = dict["id"]            as? String, !id.isEmpty,
+                        let cat = dict["category"]      as? String,
+                        let doc = dict["document_name"] as? String,
+                        let eng = dict["how_to_engage"] as? String
+                    else { return nil }
+                    return DailyAction(id: id, category: cat, documentName: doc, howToEngage: eng)
+                }
+                let completedIDs = Set((data["completed_action_ids"] as? [String]) ?? [])
+                DispatchQueue.main.async {
+                    self.actions = parsedActions
+                    self.completedActionIDs = completedIDs
+                }
+            }
         }
 
         func retryByFixedDocId(reason: String) {

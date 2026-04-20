@@ -729,10 +729,13 @@ struct TimelineView: View {
                         sectionHeader(title: String(localized: "timeline.section_actions"), systemName: "checkmark.circle")
                             .padding(.top, 10)
 
-                        let todayActions: [DailyAction] = Calendar.current.isDateInToday(selectedDate)
-                            ? viewModel.dailyActions : []
+                        // For today use the live viewModel; for past dates use dailyVM (loaded from Firestore)
+                        let displayActions: [DailyAction] = Calendar.current.isDateInToday(selectedDate)
+                            ? viewModel.dailyActions : dailyVM.actions
+                        let displayCompletedIDs: Set<String> = Calendar.current.isDateInToday(selectedDate)
+                            ? viewModel.completedActionIDs : dailyVM.completedActionIDs
 
-                        if todayActions.isEmpty {
+                        if displayActions.isEmpty {
                             Text(String(localized: "timeline.no_actions"))
                                 .font(AlynnaTypography.font(.subheadline))
                                 .foregroundColor(themeManager.descriptionText.opacity(0.6))
@@ -740,8 +743,8 @@ struct TimelineView: View {
                                 .padding(.bottom, 8)
                         } else {
                             LazyVStack(spacing: 8) {
-                                ForEach(todayActions) { action in
-                                    let done = viewModel.completedActionIDs.contains(action.id)
+                                ForEach(displayActions) { action in
+                                    let done = displayCompletedIDs.contains(action.id)
                                     Button {
                                         selectedAction = action
                                     } label: {
