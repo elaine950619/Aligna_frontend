@@ -75,13 +75,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Take actions that match your current energy level, such as focus, slow down, or reset."
+            "value" : "A small act you can begin right now."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "采取与你当前能量水平相匹配的行动，如专注、放慢或重置。"
+            "value" : "一个小到可立即开始的动作。"
           }
         }
       }
@@ -91,13 +91,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alynna helps you align your inner rhythm with the world around you, guided by context, not just intuition. A personalized rhythm card each day offers a short message with clear, actionable guidance to help you adjust your day."
+            "value" : "Alynna does not predict your future or judge your days.\n\nEach morning it invites you to pause — to listen to your body's rhythm, the temperature of your feelings, the quiet pull of the stars — and then meets you with one line of spirit, a set of small recommendations, and a focus for the day.\n\nIt isn't here to change you. It's here to help you see yourself more clearly."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alynna 帮助你将内在节奏与周围世界对齐，由背景指导，而不仅仅是直觉。每天的个性化节奏卡提供简短信息和明确的可操作指导，帮助你调整你的一天。"
+            "value" : "Alynna 不做预测，不给评判。\n\n它每天邀请你停下一秒，倾听自己——身体的节律、心情的温度、星象的细微牵引——再用一句心语、一组推荐、一天的课题，帮你与当下对齐。\n\n不是要改变你，只是让你更清楚地看见自己。"
           }
         }
       }
@@ -107,13 +107,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Align Your Inner Rhythm"
+            "value" : "What Alynna Is"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "调整你的内在节奏"
+            "value" : "什么是 Alynna"
           }
         }
       }
@@ -139,13 +139,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Align your work style with the day, such as deep work, planning, or lighter tasks."
+            "value" : "A direction to move work forward."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "将你的工作风格与当天对齐，如深度工作、规划或轻松的任务。"
+            "value" : "工作的一个推进方向。"
           }
         }
       }
@@ -171,13 +171,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use specific colors to stabilize mood and support attention."
+            "value" : "Today's visual tone."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用特定颜色来稳定情绪并支持注意力。"
+            "value" : "今日视觉上的基调。"
           }
         }
       }
@@ -194,6 +194,198 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "© 2026 Alynna. 以宇宙之意创作"
+          }
+        }
+      }
+    },
+    "about.alignment_body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "At the top of today's mantra card, you'll see five stars and three keywords — this is Today's Alignment.\n\nAlignment is not a fortune. It measures how in sync you are with yourself and the day's natural rhythms, drawn from your current state, today's cosmic energy, and the focus you've chosen.\n\nA higher reading invites forward motion — a day when energy flows.\nA lower reading invites stillness, turning inward, restoring — a softer day.\n\nEvery day has its right note. Only its shape changes."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "折叠态的心语卡片上，你会看到五颗星与三个关键词——这是今日和度。\n\n它不是运势。和度衡量你今天与自己、与今日节律的同步程度，由你当下的状态、今日星象，以及你选择的课题共同汇成。\n\n高分邀请你向前——是能量流畅的日子。\n低分邀请你放缓、内收、休养——是一个更柔软的日子。\n\n每天都是恰到好处的节拍，只是形态不同。"
+          }
+        }
+      }
+    },
+    "about.alignment_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's Alignment"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日和度"
+          }
+        }
+      }
+    },
+    "about.daily_flow_eight_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eight small anchors"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "八类推荐"
+          }
+        }
+      }
+    },
+    "about.daily_flow_focus_desc" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick one lens for the day, from 41 options — heartbreak, solitude, deep work, friendship, gratitude, a solar term, job search... It shapes the tone of your mantra and the direction of your recommendations."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从 41 个候选中选一个作为今日的透镜——心碎、独处、深度专注、挚友、感恩、节气、求业……它决定了心语的语气，也决定了推荐的方向。"
+          }
+        }
+      }
+    },
+    "about.daily_flow_focus_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日课题"
+          }
+        }
+      }
+    },
+    "about.daily_flow_intro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every morning, Alynna offers three things —"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每一天，Alynna 给你三样东西——"
+          }
+        }
+      }
+    },
+    "about.daily_flow_mantra_desc" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One sentence that begins with \"I\" — a quiet promise or reminder drawn from your present state and today's focus, written in a restrained voice."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一句以「我」开始的句子。是今天你对自己的承诺或提醒，摘自你当下的状态与课题，用内敛、克制的中文写成。"
+          }
+        }
+      }
+    },
+    "about.daily_flow_mantra_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantra"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "心语"
+          }
+        }
+      }
+    },
+    "about.daily_flow_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Three Companions, Each Day"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每日的三重陪伴"
+          }
+        }
+      }
+    },
+    "about.moon_body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Twice a month, when the new moon or full moon arrives, a quiet banner appears at the top of your card, inviting you to pause.\n\nThe new moon is for setting — write down three intentions you want to hold this month.\nThe full moon is for releasing — write down three things you're ready to let go of.\n\nWhat you write stays with you. It is your private pact with this month."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每月两次，当新月或满月到来，Alynna 会在卡片顶端静静地出现一条横幅，邀请你停下来。\n\n新月是立心之时——写下你本月最想实现的三个意图。\n满月是放下之时——写下你愿意释放的三件事。\n\n你写下的话只留在你自己的地方。它们是你与这个月份的约定。"
+          }
+        }
+      }
+    },
+    "about.moon_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The New Moon and the Full Moon"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "月圆与新月的仪式"
+          }
+        }
+      }
+    },
+    "about.privacy_moon" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your moon intentions, journal entries, and focus history live only inside Alynna — never shared with any third party."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的月相心愿、日记、课题记录只存在于你的 Alynna，不与任何第三方共享。"
           }
         }
       }
@@ -235,13 +427,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use symbolic objects as simple anchors for focus and steadiness."
+            "value" : "An anchor to keep or wear."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用象征性物品作为专注和稳定的简单锚点。"
+            "value" : "静置或佩戴的能量锚。"
           }
         }
       }
@@ -251,13 +443,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alynna is not about prediction or pressure. It helps you make small, practical adjustments so you can move through the day with more clarity, balance, and ease."
+            "value" : "Alynna speaks softly. It does not hype, and it does not sell urgency.\n\nWe won't tell you what you \"must\" do today. We won't label your score as good or bad. We won't flood you with notifications.\n\nWe simply sit with you, for a moment, when you choose to open us."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alynna 不关乎预测或压力。它帮助你做出小的实用调整，让你能以更清晰、平衡和从容的方式度过每一天。"
+            "value" : "Alynna 的语气克制、不鼓吹、不贩卖焦虑。\n\n我们不会说「你今天一定要做什么」，不会给分数配「差/好」的标签，不会用通知轰炸你。\n\n只是每天在你愿意打开时，安静地陪你片刻。"
           }
         }
       }
@@ -299,13 +491,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose or adjust your environment to improve focus, rest, or recovery."
+            "value" : "A space to stay in, for today."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "选择或调整你的环境以改善专注、休息或恢复。"
+            "value" : "一个今日合宜停留的空间。"
           }
         }
       }
@@ -347,13 +539,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your privacy is paramount. All sensor data is processed locally on your device. We do not collect, store, or share your personal information or location data."
+            "value" : "Everything you write is yours."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你的隐私至关重要。所有传感器数据均在你的设备上本地处理。我们不收集、存储或共享你的个人信息或位置数据。"
+            "value" : "你写下的一切，都是你的。"
           }
         }
       }
@@ -427,13 +619,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Adjust how you engage with others, such as connect, hold space, or set boundaries."
+            "value" : "The tone to bring to others today."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "调整你与他人互动的方式，如连接、给予空间或设定边界。"
+            "value" : "今日与他人相处的基调。"
           }
         }
       }
@@ -459,13 +651,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use scent to reset mood and support transitions, like work to rest."
+            "value" : "A subtle guidance by scent."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用香氛重置情绪并支持过渡，如从工作到休息。"
+            "value" : "气味的细微引导。"
           }
         }
       }
@@ -491,13 +683,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Reduce distractions and create a calmer mental space."
+            "value" : "A sound to stay with, through focus or rest."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "减少干扰，创造更平静的心理空间。"
+            "value" : "陪伴你一段专注或休息的声音。"
           }
         }
       }
@@ -507,13 +699,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"Before you wake up, Alynna has already sensed the rhythm of your day.\""
+            "value" : "Align with yourself, and with the rhythm of the day."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"在你醒来之前，Alynna 已经感知到了你一天的节奏。\""
+            "value" : "对齐当下的你与今日的节律。"
           }
         }
       }

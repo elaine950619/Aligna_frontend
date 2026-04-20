@@ -73,6 +73,7 @@ struct AboutView: View {
                     }
                     .padding(.top, 10)
 
+                    // Tagline
                     card {
                         Text("about.tagline")
                             .font(.custom("Merriweather-Italic", size: 18))
@@ -81,6 +82,7 @@ struct AboutView: View {
                             .padding(.vertical, 4)
                     }
 
+                    // What Alynna Is
                     card {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("about.align_inner_rhythm")
@@ -88,68 +90,160 @@ struct AboutView: View {
                                 .foregroundColor(titleColor)
 
                             Text("about.align_description")
-                            .font(AlynnaTypography.font(.subheadline))
-                            .foregroundColor(bodyColor)
-                            .lineSpacing(3)
+                                .font(AlynnaTypography.font(.subheadline))
+                                .foregroundColor(bodyColor)
+                                .lineSpacing(4)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
 
+                    // Today's Alignment (new)
                     card {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("about.eight_areas")
+                            HStack(spacing: 10) {
+                                Text("✦")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(titleColor)
+                                Text("about.alignment_title")
+                                    .font(AlynnaTypography.font(.headline))
+                                    .foregroundColor(titleColor)
+                            }
+
+                            // Example stars + keyword row, as a visual anchor.
+                            // Mirrors exactly what users see on the mantra card.
+                            HStack(spacing: 5) {
+                                ForEach(0..<5, id: \.self) { i in
+                                    FourPointStarShape()
+                                        .fill(
+                                            i < 4
+                                                ? themeManager.accent.opacity(0.88)
+                                                : themeManager.accent.opacity(0.22)
+                                        )
+                                        .frame(width: 11, height: 11)
+                                }
+                                Text(verbatim: "  柔软 · 起步 · 微光")
+                                    .font(.custom("Merriweather-Regular", size: 11))
+                                    .foregroundColor(bodyColor.opacity(0.58))
+                                    .tracking(1.0)
+                            }
+                            .padding(.top, 2)
+
+                            Text("about.alignment_body")
+                                .font(AlynnaTypography.font(.subheadline))
+                                .foregroundColor(bodyColor)
+                                .lineSpacing(4)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
+                    // Three Companions Each Day: Mantra, Focus, Eight
+                    card {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("about.daily_flow_title")
                                 .font(AlynnaTypography.font(.headline))
                                 .foregroundColor(titleColor)
 
-                            featureRow(
-                                emoji: "📍",
-                                title: String(localized: "about.place"),
-                                desc: String(localized: "about.place_desc")
-                            )
+                            Text("about.daily_flow_intro")
+                                .font(AlynnaTypography.font(.subheadline))
+                                .foregroundColor(bodyColor)
 
-                            featureRow(
-                                emoji: "🎨",
-                                title: String(localized: "about.color"),
-                                desc: String(localized: "about.color_desc")
-                            )
+                            // Mantra sub-section
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("about.daily_flow_mantra_title")
+                                    .font(AlynnaTypography.font(.headline))
+                                    .foregroundColor(titleColor)
+                                Text("about.daily_flow_mantra_desc")
+                                    .font(AlynnaTypography.font(.subheadline))
+                                    .foregroundColor(bodyColor)
+                                    .lineSpacing(3)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .padding(.top, 4)
 
-                            featureRow(
-                                emoji: "🎧",
-                                title: String(localized: "about.sound"),
-                                desc: String(localized: "about.sound_desc")
-                            )
+                            // Focus sub-section
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("about.daily_flow_focus_title")
+                                    .font(AlynnaTypography.font(.headline))
+                                    .foregroundColor(titleColor)
+                                Text("about.daily_flow_focus_desc")
+                                    .font(AlynnaTypography.font(.subheadline))
+                                    .foregroundColor(bodyColor)
+                                    .lineSpacing(3)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
 
-                            featureRow(
-                                emoji: "🕯️",
-                                title: String(localized: "about.scent"),
-                                desc: String(localized: "about.scent_desc")
-                            )
+                            // Eight anchors sub-section
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("about.daily_flow_eight_title")
+                                    .font(AlynnaTypography.font(.headline))
+                                    .foregroundColor(titleColor)
+                                    .padding(.top, 2)
 
-                            featureRow(
-                                emoji: "🚶",
-                                title: String(localized: "about.activity"),
-                                desc: String(localized: "about.activity_desc")
-                            )
-
-                            featureRow(
-                                emoji: "🤝",
-                                title: String(localized: "about.relationship"),
-                                desc: String(localized: "about.relationship_desc")
-                            )
-
-                            featureRow(
-                                emoji: "💼",
-                                title: String(localized: "about.career"),
-                                desc: String(localized: "about.career_desc")
-                            )
-
-                            featureRow(
-                                emoji: "💎",
-                                title: String(localized: "about.gemstone"),
-                                desc: String(localized: "about.gemstone_desc")
-                            )
+                                featureRow(
+                                    emoji: "📍",
+                                    title: String(localized: "about.place"),
+                                    desc: String(localized: "about.place_desc")
+                                )
+                                featureRow(
+                                    emoji: "🎨",
+                                    title: String(localized: "about.color"),
+                                    desc: String(localized: "about.color_desc")
+                                )
+                                featureRow(
+                                    emoji: "🎵",
+                                    title: String(localized: "about.sound"),
+                                    desc: String(localized: "about.sound_desc")
+                                )
+                                featureRow(
+                                    emoji: "🕯",
+                                    title: String(localized: "about.scent"),
+                                    desc: String(localized: "about.scent_desc")
+                                )
+                                featureRow(
+                                    emoji: "🫖",
+                                    title: String(localized: "about.activity"),
+                                    desc: String(localized: "about.activity_desc")
+                                )
+                                featureRow(
+                                    emoji: "🤝",
+                                    title: String(localized: "about.relationship"),
+                                    desc: String(localized: "about.relationship_desc")
+                                )
+                                featureRow(
+                                    emoji: "💼",
+                                    title: String(localized: "about.career"),
+                                    desc: String(localized: "about.career_desc")
+                                )
+                                featureRow(
+                                    emoji: "💎",
+                                    title: String(localized: "about.gemstone"),
+                                    desc: String(localized: "about.gemstone_desc")
+                                )
+                            }
                         }
                     }
 
+                    // Moon Rituals (new)
+                    card {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack(spacing: 10) {
+                                Image(systemName: "moon.stars.fill")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(titleColor.opacity(0.80))
+                                Text("about.moon_title")
+                                    .font(AlynnaTypography.font(.headline))
+                                    .foregroundColor(titleColor)
+                            }
+
+                            Text("about.moon_body")
+                                .font(AlynnaTypography.font(.subheadline))
+                                .foregroundColor(bodyColor)
+                                .lineSpacing(4)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
+                    // A Gentler Way
                     card {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("about.gentle_way")
@@ -157,12 +251,14 @@ struct AboutView: View {
                                 .foregroundColor(titleColor)
 
                             Text("about.gentle_description")
-                            .font(AlynnaTypography.font(.subheadline))
-                            .foregroundColor(bodyColor)
-                            .lineSpacing(3)
+                                .font(AlynnaTypography.font(.subheadline))
+                                .foregroundColor(bodyColor)
+                                .lineSpacing(4)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
 
+                    // Privacy
                     card {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack(spacing: 10) {
@@ -174,15 +270,16 @@ struct AboutView: View {
                             }
 
                             Text("about.privacy_description")
-                            .font(AlynnaTypography.font(.subheadline))
-                            .foregroundColor(bodyColor)
-                            .lineSpacing(3)
+                                .font(AlynnaTypography.font(.subheadline))
+                                .foregroundColor(bodyColor)
+                                .lineSpacing(3)
 
                             VStack(alignment: .leading, spacing: 10) {
                                 bullet(String(localized: "about.privacy_location"))
                                 bullet(String(localized: "about.privacy_chart"))
                                 bullet(String(localized: "about.privacy_transmission"))
                                 bullet(String(localized: "about.privacy_control"))
+                                bullet(String(localized: "about.privacy_moon"))
                             }
                             .padding(.top, 2)
                         }
