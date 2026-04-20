@@ -916,11 +916,7 @@ struct BondDetailView: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            let c = try await AlynnaAPI.shared.compatibility(bondId: bond.bond_id)
-            print("🔍 [COMPAT] partner_focus=\(c.partner_focus ?? "nil") partner_keywords=\(c.partner_keywords ?? []) partner_daily_score=\(c.partner_daily_score.map{"\($0)"} ?? "nil")")
-            print("🔍 [COMPAT] focus_a=\(c.focus_a ?? "nil") focus_b=\(c.focus_b ?? "nil") kw_a=\(c.keywords_a ?? []) kw_b=\(c.keywords_b ?? []) score_a=\(c.daily_score_a.map{"\($0)"} ?? "nil") score_b=\(c.daily_score_b.map{"\($0)"} ?? "nil")")
-            print("🔍 [COMPAT] BondSummary.partner_focus_today=\(currentBond.partner_focus_today ?? "nil")")
-            compatibility = c
+            compatibility = try await AlynnaAPI.shared.compatibility(bondId: bond.bond_id)
         } catch {
             errorMessage = error.localizedDescription
         }
