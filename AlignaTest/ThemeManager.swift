@@ -131,6 +131,8 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
     private var timerCancellable: AnyCancellable?
     private let locationManager = CLLocationManager()
     private var solarCoordinate: CLLocationCoordinate2D?
+    /// 最新的 iOS 系统外观（由 setSystemColorScheme 写入）
+    private var systemColorScheme: ColorScheme = .light
     
     // MARK: - 生命周期
     override init() {
@@ -170,8 +172,9 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
         timerCancellable?.cancel()
     }
     
-    // 与系统外观同步：为兼容旧代码保留，但现在不再影响主题
+    // 与系统外观同步：.system 模式下直接跟随 iOS Dark Mode
     func setSystemColorScheme(_ scheme: ColorScheme) {
+        systemColorScheme = scheme
         if selected == .system || selected == .autoClock {
             recomputeNight()
         }
@@ -216,7 +219,15 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
             isLove     = true
             isNight    = false  // 浅色背景
             rainIsDark = false
-        case .system, .autoClock:
+        case .system:
+            // 跟随 iOS 系统 Dark Mode（用户在"系统设置→显示"里切换立即生效）
+            isRain     = false
+            isVitality = false
+            isLove     = false
+            rainIsDark = false
+            isNight    = systemColorScheme == .dark
+        case .autoClock:
+            // 按日出日落自动切换（与系统外观无关）
             isRain     = false
             isVitality = false
             isLove     = false
@@ -231,7 +242,8 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
         timerCancellable?.cancel()
         timerCancellable = nil
         
-        guard selected == .system || selected == .autoClock || selected == .rain || selected == .vitality || selected == .love else { return }
+        // .system 跟随 iOS 外观，不需要定时轮询（onChange 实时响应）
+        guard selected == .autoClock || selected == .rain || selected == .vitality || selected == .love else { return }
         
         // 5 分钟刷新一次；进入前台时也会主动刷新位置和日夜状态。
         timerCancellable = Timer.publish(every: 300, on: .main, in: .common)

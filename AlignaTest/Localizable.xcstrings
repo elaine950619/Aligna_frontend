@@ -35,6 +35,9 @@
     "⚠️ Unknown Category" : {
 
     },
+    "✦" : {
+
+    },
     "🔒" : {
 
     },
@@ -118,6 +121,38 @@
         }
       }
     },
+    "about.alignment_body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "At the top of today's mantra card, you'll see five stars and three keywords — this is Today's Alignment.\n\nAlignment is not a fortune. It measures how in sync you are with yourself and the day's natural rhythms, drawn from your current state, today's cosmic energy, and the focus you've chosen.\n\nA higher reading invites forward motion — a day when energy flows.\nA lower reading invites stillness, turning inward, restoring — a softer day.\n\nEvery day has its right note. Only its shape changes."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "折叠态的心语卡片上，你会看到五颗星与三个关键词——这是今日和度。\n\n它不是运势。和度衡量你今天与自己、与今日节律的同步程度，由你当下的状态、今日星象，以及你选择的课题共同汇成。\n\n高分邀请你向前——是能量流畅的日子。\n低分邀请你放缓、内收、休养——是一个更柔软的日子。\n\n每天都是恰到好处的节拍，只是形态不同。"
+          }
+        }
+      }
+    },
+    "about.alignment_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's Alignment"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日和度"
+          }
+        }
+      }
+    },
     "about.career" : {
       "localizations" : {
         "en" : {
@@ -194,38 +229,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "© 2026 Alynna. 以宇宙之意创作"
-          }
-        }
-      }
-    },
-    "about.alignment_body" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "At the top of today's mantra card, you'll see five stars and three keywords — this is Today's Alignment.\n\nAlignment is not a fortune. It measures how in sync you are with yourself and the day's natural rhythms, drawn from your current state, today's cosmic energy, and the focus you've chosen.\n\nA higher reading invites forward motion — a day when energy flows.\nA lower reading invites stillness, turning inward, restoring — a softer day.\n\nEvery day has its right note. Only its shape changes."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "折叠态的心语卡片上，你会看到五颗星与三个关键词——这是今日和度。\n\n它不是运势。和度衡量你今天与自己、与今日节律的同步程度，由你当下的状态、今日星象，以及你选择的课题共同汇成。\n\n高分邀请你向前——是能量流畅的日子。\n低分邀请你放缓、内收、休养——是一个更柔软的日子。\n\n每天都是恰到好处的节拍，只是形态不同。"
-          }
-        }
-      }
-    },
-    "about.alignment_title" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today's Alignment"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "今日和度"
           }
         }
       }
@@ -342,55 +345,8 @@
         }
       }
     },
-    "about.moon_body" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Twice a month, when the new moon or full moon arrives, a quiet banner appears at the top of your card, inviting you to pause.\n\nThe new moon is for setting — write down three intentions you want to hold this month.\nThe full moon is for releasing — write down three things you're ready to let go of.\n\nWhat you write stays with you. It is your private pact with this month."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "每月两次，当新月或满月到来，Alynna 会在卡片顶端静静地出现一条横幅，邀请你停下来。\n\n新月是立心之时——写下你本月最想实现的三个意图。\n满月是放下之时——写下你愿意释放的三件事。\n\n你写下的话只留在你自己的地方。它们是你与这个月份的约定。"
-          }
-        }
-      }
-    },
-    "about.moon_title" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The New Moon and the Full Moon"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "月圆与新月的仪式"
-          }
-        }
-      }
-    },
-    "about.privacy_moon" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your moon intentions, journal entries, and focus history live only inside Alynna — never shared with any third party."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "你的月相心愿、日记、课题记录只存在于你的 Alynna，不与任何第三方共享。"
-          }
-        }
-      }
-    },
     "about.eight_areas" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -466,6 +422,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "温和地度过每一天"
+          }
+        }
+      }
+    },
+    "about.moon_body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Twice a month, when the new moon or full moon arrives, a quiet banner appears at the top of your card, inviting you to pause.\n\nThe new moon is for setting — write down three intentions you want to hold this month.\nThe full moon is for releasing — write down three things you're ready to let go of.\n\nWhat you write stays with you. It is your private pact with this month."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每月两次，当新月或满月到来，Alynna 会在卡片顶端静静地出现一条横幅，邀请你停下来。\n\n新月是立心之时——写下你本月最想实现的三个意图。\n满月是放下之时——写下你愿意释放的三件事。\n\n你写下的话只留在你自己的地方。它们是你与这个月份的约定。"
+          }
+        }
+      }
+    },
+    "about.moon_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The New Moon and the Full Moon"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "月圆与新月的仪式"
           }
         }
       }
@@ -562,6 +550,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "位置数据仅用于本地天气和宇宙计算"
+          }
+        }
+      }
+    },
+    "about.privacy_moon" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your moon intentions, journal entries, and focus history live only inside Alynna — never shared with any third party."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的月相心愿、日记、课题记录只存在于你的 Alynna，不与任何第三方共享。"
           }
         }
       }

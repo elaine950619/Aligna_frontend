@@ -111,6 +111,7 @@ struct AboutView: View {
 
                             // Example stars + keyword row, as a visual anchor.
                             // Mirrors exactly what users see on the mantra card.
+                            let isChinese = Locale.current.language.languageCode?.identifier == "zh"
                             HStack(spacing: 5) {
                                 ForEach(0..<5, id: \.self) { i in
                                     FourPointStarShape()
@@ -121,10 +122,12 @@ struct AboutView: View {
                                         )
                                         .frame(width: 11, height: 11)
                                 }
-                                Text(verbatim: "  柔软 · 起步 · 微光")
-                                    .font(.custom("Merriweather-Regular", size: 11))
+                                Text(verbatim: isChinese ? "  柔软 · 起步 · 微光" : "  gentle · begin · glow")
+                                    .font(isChinese
+                                          ? .custom("LXGWWenKaiTC-Light", size: 11)
+                                          : .custom("Merriweather-Light", size: 11))
                                     .foregroundColor(bodyColor.opacity(0.58))
-                                    .tracking(1.0)
+                                    .tracking(isChinese ? 0.6 : 0.8)
                             }
                             .padding(.top, 2)
 

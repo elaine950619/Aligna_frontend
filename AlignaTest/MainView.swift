@@ -4324,10 +4324,10 @@ struct MainView: View {
         // Focus 标签字体：中文用思源黑体 Light（清晰），英文用 Merriweather-Regular + 大间距
         private var focusFont: Font {
             isChinese
-                ? .custom("SourceHanSansSCVF-Light", size: 10)
-                : .custom("Merriweather-Regular", size: 9)
+                ? .custom("SourceHanSansSCVF-Light", size: 12)
+                : .custom("Merriweather-Regular", size: 11)
         }
-        private var focusTracking: CGFloat { isChinese ? 1.0 : 2.4 }
+        private var focusTracking: CGFloat { isChinese ? 1.2 : 2.0 }
 
         // 关键词字体：中文用霞鹜文楷 Light，英文用 Merriweather-Light
         private var keywordFont: Font {
@@ -4367,7 +4367,7 @@ struct MainView: View {
                                 .font(focusFont)
                                 .tracking(focusTracking)
                                 .foregroundColor(textColor.opacity(0.36))
-                                .padding(.bottom, 18)
+                                .padding(.bottom, 16)
                         }
 
                         // Mantra 正文

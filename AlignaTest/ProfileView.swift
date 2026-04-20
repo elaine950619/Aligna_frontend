@@ -3777,6 +3777,9 @@ private extension ProfileView {
         chartMoonSign = (chartData["moon"] as? String ?? chartData["moonSign"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         chartAscSign = (chartData["ascendant"] as? String ?? chartData["ascendantSign"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         chartSignature = (data["signature"] as? String ?? chartData["signature"] as? String ?? "")
+
+        // 星座写入后立即重算宇宙身份，确保任何数据更新路径都能同步
+        updateZodiacDisplay()
     }
 
     private func clearChartData() {
