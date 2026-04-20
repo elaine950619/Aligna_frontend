@@ -1020,15 +1020,16 @@ struct BondDetailView: View {
         return min(5, max(0, Int(rounded)))
     }
 
-    /// Best-effort display name for a focus tag. Uses `focus.name.<tag>` if
-    /// localized, otherwise humanizes the snake_case.
+    /// Display name for a focus tag, always in the current user's app language.
+    /// Delegates to focusLocalizedName(for:) which uses the app's active locale,
+    /// so the display is independent of the partner's language setting.
     private func focusDisplayName(for tag: String) -> String {
-        let key = "focus.name.\(tag)"
-        let localized = String(localized: String.LocalizationValue(key))
-        if localized != key, !localized.isEmpty {
-            return localized
+        let name = focusLocalizedName(for: tag)
+        // focusLocalizedName returns the raw key unchanged for unknown tags — humanize as fallback.
+        if name == tag {
+            return tag.replacingOccurrences(of: "_", with: " ").capitalized
         }
-        return tag.replacingOccurrences(of: "_", with: " ").capitalized
+        return name
     }
 
     /// Translates intent family (e.g. "restore") into a short noun for UI.

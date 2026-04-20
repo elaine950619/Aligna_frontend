@@ -1288,11 +1288,7 @@ struct MainView: View {
                     withAnimation(.easeInOut(duration: 0.5)) {
                         journalSpinAngle += 360
                     }
-                    isManualRefreshFlow = true
-                    isFullLoadingFlow = true
-                    didCompletePersonalCheckIn = false
-                    isMantraReady = false
-                    withAnimation(.easeInOut) { bootPhase = .loading }
+                    handleManualRefreshTap()
                 } label: {
                     Image(systemName: "arrow.triangle.2.circlepath")
                         .font(.system(size: 13, weight: .regular))
@@ -2923,11 +2919,7 @@ struct MainView: View {
                                         withAnimation(.easeInOut(duration: 0.5)) {
                                             journalSpinAngle += 360
                                         }
-                                        isManualRefreshFlow = true
-                                        isFullLoadingFlow = true
-                                        didCompletePersonalCheckIn = false
-                                        isMantraReady = false
-                                        withAnimation(.easeInOut) { bootPhase = .loading }
+                                        handleManualRefreshTap()
                                     } label: {
                                         Image(systemName: "arrow.triangle.2.circlepath")
                                             .font(.system(size: 11, weight: .regular))
@@ -4980,6 +4972,11 @@ struct MainView: View {
             withAnimation(.easeInOut) { bootPhase = .main }
             pendingMantraExpansion = true
             markMantraReadyIfPossible()
+            // 首次登录或 Firestore 无数据时会带着 isDefaultRecommendation=true 进入 main，
+            // 立即触发补救加载，避免用户看到 default mantra。
+            if isDefaultRecommendation {
+                triggerRemedialLoading()
+            }
         }
         if shouldShowBootLoading {
             shouldShowBootLoading = false
