@@ -1016,9 +1016,9 @@ struct VitalityBackgroundLayer: View {
             // 1. 清晨薄雾底色（浅雾绿 → 冷白绿）
             LinearGradient(
                 stops: [
-                    .init(color: Color(hex: "#D8EDD8"), location: 0.0),
-                    .init(color: Color(hex: "#E8F4E4"), location: 0.45),
-                    .init(color: Color(hex: "#EEF7EA"), location: 1.0),
+                    .init(color: Color(hex: "#E3E9E0"), location: 0.0),
+                    .init(color: Color(hex: "#EDF2EA"), location: 0.45),
+                    .init(color: Color(hex: "#F3F6F1"), location: 1.0),
                 ],
                 startPoint: .top, endPoint: .bottom
             )
@@ -1028,21 +1028,21 @@ struct VitalityBackgroundLayer: View {
             GeometryReader { geo in
                 // 顶部左侧大光斑
                 Ellipse()
-                    .fill(Color(hex: "#A8D8A8").opacity(0.22))
+                    .fill(Color(hex: "#B7C8B4").opacity(0.18))
                     .frame(width: geo.size.width * 0.75, height: 240)
                     .blur(radius: 60)
                     .position(x: geo.size.width * 0.3, y: 80)
 
                 // 右侧中部光斑
                 Ellipse()
-                    .fill(Color(hex: "#B8E0B0").opacity(0.16))
+                    .fill(Color(hex: "#C5D2C0").opacity(0.14))
                     .frame(width: geo.size.width * 0.55, height: 200)
                     .blur(radius: 50)
                     .position(x: geo.size.width * 0.78, y: geo.size.height * 0.35)
 
                 // 底部中央暖黄光（晨光穿透叶隙打在地面）
                 Ellipse()
-                    .fill(Color(hex: "#EDE89A").opacity(0.22))
+                    .fill(Color(hex: "#DDD5AF").opacity(0.15))
                     .frame(width: geo.size.width * 0.60, height: 160)
                     .blur(radius: 50)
                     .position(x: geo.size.width * 0.5, y: geo.size.height * 0.82)
@@ -1056,7 +1056,7 @@ struct VitalityBackgroundLayer: View {
 
                 // 左侧主叶（偏大，低透明度）
                 VitalityLeafShape(curve: 0.22)
-                    .fill(Color(hex: "#6BBD80").opacity(0.18))
+                    .fill(Color(hex: "#89A18B").opacity(0.16))
                     .frame(width: 180, height: 260)
                     .rotationEffect(.degrees(-22 + Double(swayPhase) * 1.0), anchor: .bottom)
                     .position(x: w * 0.10, y: h - 50)
@@ -1322,9 +1322,9 @@ struct LoveBackgroundLayer: View {
             // 1. 底层渐变（浅玫瑰白 → 粉白雾气）
             LinearGradient(
                 stops: [
-                    .init(color: Color(hex: "#FDE8F0"), location: 0.0),
-                    .init(color: Color(hex: "#FAF0F4"), location: 0.48),
-                    .init(color: Color(hex: "#F7ECF1"), location: 1.0),
+                    .init(color: Color(hex: "#F4ECEE"), location: 0.0),
+                    .init(color: Color(hex: "#F6F0F1"), location: 0.48),
+                    .init(color: Color(hex: "#F2EBEE"), location: 1.0),
                 ],
                 startPoint: .top, endPoint: .bottom
             )
@@ -1333,19 +1333,19 @@ struct LoveBackgroundLayer: View {
             // 2. 晕染光斑（大面积柔光晕）
             GeometryReader { geo in
                 Ellipse()
-                    .fill(Color(hex: "#FABABC").opacity(0.22))
+                    .fill(Color(hex: "#DDB8BE").opacity(0.18))
                     .frame(width: geo.size.width * 0.72, height: 220)
                     .blur(radius: 55)
                     .position(x: geo.size.width * 0.28, y: 90)
 
                 Ellipse()
-                    .fill(Color(hex: "#F8C0CC").opacity(0.16))
+                    .fill(Color(hex: "#DDBFC8").opacity(0.14))
                     .frame(width: geo.size.width * 0.52, height: 190)
                     .blur(radius: 45)
                     .position(x: geo.size.width * 0.80, y: geo.size.height * 0.38)
 
                 Ellipse()
-                    .fill(Color(hex: "#FABCC8").opacity(0.19))
+                    .fill(Color(hex: "#D8B7C0").opacity(0.15))
                     .frame(width: geo.size.width * 0.60, height: 170)
                     .blur(radius: 40)
                     .position(x: geo.size.width * 0.48, y: geo.size.height * 0.80)

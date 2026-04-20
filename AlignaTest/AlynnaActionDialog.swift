@@ -236,10 +236,10 @@ struct AlynnaActionDialog: View {
 
     private var cardFill: Color {
         if themeManager.isRain     { return Color(hex: "#131F2E").opacity(0.98) }
-        if themeManager.isVitality { return Color(hex: "#EDF7EC").opacity(0.98) }
-        if themeManager.isLove     { return Color(hex: "#FDE8F0").opacity(0.98) }
+        if themeManager.isVitality { return Color(hex: "#EFF4ED").opacity(0.98) }
+        if themeManager.isLove     { return Color(hex: "#F5EEF0").opacity(0.98) }
         if themeManager.isNight    { return Color(hex: "#0F1726").opacity(0.98) }
-        return Color(hex: "#F5E6C8").opacity(0.98)
+        return Color(hex: "#F1E7DA").opacity(0.98)
     }
 
     private var iconForegroundColor: Color {

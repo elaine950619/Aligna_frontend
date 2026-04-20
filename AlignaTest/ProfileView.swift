@@ -59,7 +59,7 @@ private struct ProfilePreviewContainer<Content: View>: View {
     }
 
     private var previewBaseColor: Color {
-        themeManager.isRain ? Color(hex: "#1A2636") : themeManager.isVitality ? Color(hex: "#E8F4E4") : themeManager.isLove ? Color(hex: "#FDE8F0") : themeManager.isNight ? Color(hex: "#1a1a2e") : Color(hex: "#E6D9BD")
+        themeManager.isRain ? Color(hex: "#1D2A34") : themeManager.isVitality ? Color(hex: "#EDF2EA") : themeManager.isLove ? Color(hex: "#F5EEF0") : themeManager.isNight ? Color(hex: "#1A1C27") : Color(hex: "#ECE2D6")
     }
 }
 

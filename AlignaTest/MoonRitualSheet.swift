@@ -190,13 +190,13 @@ struct MoonRitualSheet: View {
         if themeManager.isNight {
             return Color(hex: "#0D0D1A")       // deep indigo-black
         } else if themeManager.isRain {
-            return Color(hex: "#0E1620")       // deep slate
+            return Color(hex: "#17222B")       // muted slate
         } else if themeManager.isVitality {
-            return Color(hex: "#EEF6EF")       // soft sage white
+            return Color(hex: "#EFF4ED")       // soft sage white
         } else if themeManager.isLove {
-            return Color(hex: "#FDE8F0")       // rose blush
+            return Color(hex: "#F5EEF0")       // dusty rose blush
         } else {
-            return Color(hex: "#FBF5EC")       // warm ivory (day)
+            return Color(hex: "#F4ECE1")       // warm muted ivory
         }
     }
 

@@ -21,77 +21,71 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
     @Published private(set) var isVitality: Bool = false
     @Published private(set) var isLove: Bool = false
     
-    // MARK: – 文字与强调色（按你提供的映射）
-    // 全局前景（如通用标题/按钮文字）：夜 #E6D9BD；日 #8B3A1A；雨 #B0CCD8；绿 #1E4230；粉 #8B2A42
+    // MARK: – 文字与强调色
     var foregroundColor: Color {
-        if isLove     { return Color(hex: "#8B2A42") }
-        if isVitality { return Color(hex: "#1E4230") }
-        if isRain     { return Color(hex: "#B0CCD8") }
-        return isNight ? Color(hex: "#E6D9BD") : Color(hex: "#8B3A1A")
+        if isLove     { return Color(hex: "#7D5C66") }
+        if isVitality { return Color(hex: "#55685C") }
+        if isRain     { return Color(hex: "#AABAC3") }
+        return isNight ? Color(hex: "#D9CDBC") : Color(hex: "#725743")
     }
     
-    // 图标/高亮：夜 #D4A574；日 #C07828；雨 #5B9FBF；绿 #52A86A；粉 #E8607A
     var accent: Color {
-        if isLove     { return Color(hex: "#E8607A") }
-        if isVitality { return Color(hex: "#52A86A") }
-        if isRain     { return Color(hex: "#5B9FBF") }
-        return isNight ? Color(hex: "#D4A574") : Color(hex: "#C07828")
+        if isLove     { return Color(hex: "#B78A95") }
+        if isVitality { return Color(hex: "#7E9B83") }
+        if isRain     { return Color(hex: "#7E98A6") }
+        return isNight ? Color(hex: "#B79A7B") : Color(hex: "#A27B58")
     }
     
-    // 大型水印文字：夜 #8B7A5E(40%)；日 #8B4513(42%)；雨 #4A6B8A(50%)；绿 #3A7A4E(35%)；粉 #8B2A42(25%)
     var watermark: Color {
-        if isLove     { return Color(hex: "#8B2A42").opacity(0.25) }
-        if isVitality { return Color(hex: "#3A7A4E").opacity(0.35) }
-        if isRain     { return Color(hex: "#4A6B8A").opacity(0.50) }
-        return isNight ? Color(hex: "#8B7A5E").opacity(0.4)
-                       : Color(hex: "#8B4513").opacity(0.42)
+        if isLove     { return Color(hex: "#8E6F77").opacity(0.20) }
+        if isVitality { return Color(hex: "#6F8572").opacity(0.26) }
+        if isRain     { return Color(hex: "#6E808D").opacity(0.34) }
+        return isNight ? Color(hex: "#847865").opacity(0.34)
+                       : Color(hex: "#8C7258").opacity(0.28)
     }
     
-    // 主标题：夜 #E6D7C3；日 #8B4513；雨 #D6E4F0；绿 #1E4A2C；粉 #7A2A45
     var primaryText: Color {
-        if isLove     { return Color(hex: "#7A2A45") }
-        if isVitality { return Color(hex: "#1E4A2C") }
-        if isRain     { return Color(hex: "#D6E4F0") }
-        return isNight ? Color(hex: "#E6D7C3") : Color(hex: "#6B3418")
+        if isLove     { return Color(hex: "#70535B") }
+        if isVitality { return Color(hex: "#435648") }
+        if isRain     { return Color(hex: "#D4DFE5") }
+        return isNight ? Color(hex: "#E3D8C9") : Color(hex: "#6C5441")
     }
     
-    // 副标题：夜 #B8C5D6；日 secondary；雨 #8FA8C0；绿 #4A7C5A；粉 #A0526A
     var descriptionText: Color {
-        if isLove     { return Color(hex: "#A0526A") }
-        if isVitality { return Color(hex: "#4A7C5A") }
-        if isRain     { return Color(hex: "#8FA8C0") }
-        return isNight ? Color(hex: "#B8C5D6") : Color(hex: "#B07048")
+        if isLove     { return Color(hex: "#977882") }
+        if isVitality { return Color(hex: "#718474") }
+        if isRain     { return Color(hex: "#91A2AD") }
+        return isNight ? Color(hex: "#A8B1BE") : Color(hex: "#9A7D67")
     }
     
-    // 正文：夜 #A8B5C8；日 primary；雨 #8FA8C0；绿 #4A7C5A；粉 #A0526A
     var bodyText: Color {
-        if isLove     { return Color(hex: "#A0526A") }
-        if isVitality { return Color(hex: "#4A7C5A") }
-        if isRain     { return Color(hex: "#8FA8C0") }
-        return isNight ? Color(hex: "#A8B5C8") : Color.primary
+        if isLove     { return Color(hex: "#977882") }
+        if isVitality { return Color(hex: "#718474") }
+        if isRain     { return Color(hex: "#91A2AD") }
+        return isNight ? Color(hex: "#9FA9B5") : Color(hex: "#6B5E54")
     }
     
     var placeIcon: Color {
-        if isLove     { return Color(hex: "#E8607A") }
-        if isVitality { return Color(hex: "#52A86A") }
-        if isRain     { return Color(hex: "#5B9FBF") }
-        return isNight ? Color.accentColor : Color(hex: "#CD853F")
+        if isLove     { return Color(hex: "#B78A95") }
+        if isVitality { return Color(hex: "#7E9B83") }
+        if isRain     { return Color(hex: "#7E98A6") }
+        return isNight ? Color(hex: "#B79A7B") : Color(hex: "#AA8361")
     }
     
     var placeIconText: Color {
-        if isLove     { return Color(hex: "#8B2A42") }
-        if isVitality { return Color(hex: "#1E4230") }
-        if isRain     { return Color(hex: "#B0CCD8") }
-        return isNight ? Color.accentColor : Color(hex: "#7A5A3A")
+        if isLove     { return Color(hex: "#7D5C66") }
+        if isVitality { return Color(hex: "#55685C") }
+        if isRain     { return Color(hex: "#AABAC3") }
+        return isNight ? Color(hex: "#D9CDBC") : Color(hex: "#725743")
     }
     
     /// Text/tint color for content placed ON TOP of a `primaryText`-colored background
     /// (e.g. filled action buttons whose background = primaryText).
     var buttonForegroundOnPrimary: Color {
-        if isLove     { return Color.white }             // white on rose-red button
-        if isVitality { return Color.white }             // white on deep-green button
-        if isRain     { return Color(hex: "#1A2636") }   // dark ink on rain-blue button
-        return isNight ? Color.black : Color.white
+        if isLove     { return Color(hex: "#FFF9F8") }
+        if isVitality { return Color(hex: "#FAFCF8") }
+        if isRain     { return Color(hex: "#22303A") }
+        return isNight ? Color(hex: "#11161B") : Color(hex: "#FFF9F2")
     }
 
     // 全局强制：任何选项都返回 .dark/.light（不再随系统）
@@ -101,19 +95,25 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
     
     // card/panel behind the calendar
     var panelFill: Color {
-        if isLove { return Color.white.opacity(0.55) }
-        return isNight ? Color.white.opacity(0.04)
-                       : Color.black.opacity(0.06)
+        if isLove     { return Color(hex: "#FBF3F5").opacity(0.82) }
+        if isVitality { return Color(hex: "#F1F4EE").opacity(0.82) }
+        if isRain     { return Color(hex: "#273640").opacity(0.42) }
+        return isNight ? Color.white.opacity(0.05)
+                       : Color(hex: "#F4EDE4").opacity(0.78)
     }
     var panelStrokeHi: Color {
-        if isLove { return Color(hex: "#D4899A").opacity(0.30) }
-        return isNight ? Color.white.opacity(0.12)
-                       : Color.black.opacity(0.18)
+        if isLove     { return Color(hex: "#C5A8B0").opacity(0.34) }
+        if isVitality { return Color(hex: "#B4C1B1").opacity(0.34) }
+        if isRain     { return Color(hex: "#8AA0AC").opacity(0.30) }
+        return isNight ? Color.white.opacity(0.11)
+                       : Color(hex: "#C7B6A6").opacity(0.34)
     }
     var panelStrokeLo: Color {
-        if isLove { return Color(hex: "#D4899A").opacity(0.12) }
+        if isLove     { return Color(hex: "#C5A8B0").opacity(0.16) }
+        if isVitality { return Color(hex: "#B4C1B1").opacity(0.16) }
+        if isRain     { return Color(hex: "#8AA0AC").opacity(0.16) }
         return isNight ? Color.white.opacity(0.04)
-                       : Color.black.opacity(0.07)
+                       : Color(hex: "#C7B6A6").opacity(0.14)
     }
     
     // 当前选择
