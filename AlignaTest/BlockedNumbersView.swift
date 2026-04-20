@@ -129,10 +129,10 @@ struct BlockedNumbersView: View {
     private func blockedRow(_ number: String) -> some View {
         HStack(spacing: 12) {
             Text(number.alynnaNumberDisplay)
-                .font(.custom("Merriweather-Bold", size: 18))
-                .foregroundColor(themeManager.primaryText.opacity(0.82))
+                .font(.custom("Merriweather-Bold", size: 22))
+                .foregroundColor(themeManager.primaryText.opacity(0.88))
                 .monospacedDigit()
-                .tracking(2)
+                .tracking(3)
 
             Spacer()
 
