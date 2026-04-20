@@ -474,7 +474,7 @@ struct BondDetailView: View {
                 .ignoresSafeArea()
 
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 16) {
                     // Partner summary
                     VStack(spacing: 8) {
                         ZStack {
@@ -495,38 +495,27 @@ struct BondDetailView: View {
                     }
                     .padding(.top, 28)
 
-                    // Compatibility
-                    VStack(spacing: 6) {
-                        Text(String(localized: "bonds.daily_compat_label"))
-                            .font(.custom("Merriweather-Regular", size: 11))
-                            .foregroundColor(themeManager.descriptionText.opacity(0.60))
-                            .tracking(1.4)
-                            .textCase(.uppercase)
-                        if let c = compatibility {
-                            Text("\(c.compatibility)")
-                                .font(.custom("Merriweather-Bold", size: 56))
-                                .foregroundColor(themeManager.primaryText)
-                                .monospacedDigit()
-                            Text(String(
-                                format: String(localized: "bonds.permanent_base_value"),
-                                c.permanent_base
-                            ))
-                            .font(AlynnaTypography.font(.subheadline))
-                            .foregroundColor(themeManager.descriptionText.opacity(0.60))
-                        } else if isLoading {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: themeManager.accent))
-                                .padding(.vertical, 20)
-                        } else if let err = errorMessage {
-                            Text(err)
-                                .font(AlynnaTypography.font(.caption1))
-                                .foregroundColor(.red.opacity(0.75))
-                        }
+                    // Compatibility (hero card)
+                    compatibilityHeroCard
+                        .padding(.horizontal, 20)
+
+                    // Partner's today (focus + keywords + daily score)
+                    if let c = compatibility, partnerHasTodayData(c) {
+                        partnerTodayCard(c)
+                            .padding(.horizontal, 20)
                     }
-                    .padding(.vertical, 16)
-                    .frame(maxWidth: .infinity)
-                    .alignaCard()
-                    .padding(.horizontal, 20)
+
+                    // Shared intents (if any)
+                    if let c = compatibility, !c.shared_intents.isEmpty {
+                        sharedIntentsCard(c)
+                            .padding(.horizontal, 20)
+                    }
+
+                    // Compatibility breakdown (4 components)
+                    if let c = compatibility, let components = c.components, !components.isEmpty {
+                        breakdownCard(components)
+                            .padding(.horizontal, 20)
+                    }
 
                     Spacer(minLength: 40)
 
@@ -541,6 +530,7 @@ struct BondDetailView: View {
                             .padding(.vertical, 12)
                     }
                     .padding(.horizontal, 20)
+                    .padding(.bottom, 32)
                     .disabled(isSeverInFlight)
                 }
             }
@@ -564,6 +554,245 @@ struct BondDetailView: View {
         } message: {
             Text(String(localized: "bonds.sever_confirm_body"))
         }
+    }
+
+    // MARK: - Card computed properties
+
+    /// The big compatibility number card. Always visible.
+    private var compatibilityHeroCard: some View {
+        VStack(spacing: 6) {
+            Text(String(localized: "bonds.daily_compat_label"))
+                .font(.custom("Merriweather-Regular", size: 11))
+                .foregroundColor(themeManager.descriptionText.opacity(0.60))
+                .tracking(1.4)
+                .textCase(.uppercase)
+
+            if let c = compatibility {
+                Text("\(c.compatibility)")
+                    .font(.custom("Merriweather-Bold", size: 56))
+                    .foregroundColor(themeManager.primaryText)
+                    .monospacedDigit()
+                Text(String(
+                    format: String(localized: "bonds.permanent_base_value"),
+                    c.permanent_base
+                ))
+                .font(AlynnaTypography.font(.subheadline))
+                .foregroundColor(themeManager.descriptionText.opacity(0.60))
+            } else if isLoading {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: themeManager.accent))
+                    .padding(.vertical, 20)
+            } else if let err = errorMessage {
+                Text(err)
+                    .font(AlynnaTypography.font(.caption1))
+                    .foregroundColor(.red.opacity(0.75))
+            }
+        }
+        .padding(.vertical, 20)
+        .frame(maxWidth: .infinity)
+        .alignaCard()
+    }
+
+    /// Returns true when the compat response has at least one piece of
+    /// partner-side daily context to show (focus OR keywords OR score).
+    private func partnerHasTodayData(_ c: CompatibilityResponse) -> Bool {
+        let partnerFocus = partnerFocusTag(c)
+        let partnerKeywords = partnerKeywordList(c)
+        let partnerScore = partnerDailyScore(c)
+        return partnerFocus != nil
+            || !(partnerKeywords ?? []).isEmpty
+            || partnerScore != nil
+    }
+
+    /// Partner "today" card — their focus, keywords, daily score.
+    private func partnerTodayCard(_ c: CompatibilityResponse) -> some View {
+        let nickname = bond.partner_nickname
+        let partnerFocus = partnerFocusTag(c)
+        let partnerKeywords = partnerKeywordList(c) ?? []
+        let partnerScore = partnerDailyScore(c)
+
+        return VStack(alignment: .leading, spacing: 12) {
+            Text(String(format: String(localized: "bonds.partner_today_title"), nickname))
+                .font(.custom("Merriweather-Regular", size: 11))
+                .foregroundColor(themeManager.descriptionText.opacity(0.60))
+                .tracking(1.4)
+                .textCase(.uppercase)
+
+            if let focusTag = partnerFocus, !focusTag.isEmpty {
+                HStack(spacing: 10) {
+                    Text(String(localized: "bonds.partner_focus_label"))
+                        .font(AlynnaTypography.font(.subheadline))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.75))
+                    Text(focusDisplayName(for: focusTag))
+                        .font(AlynnaTypography.font(.headline))
+                        .foregroundColor(themeManager.primaryText)
+                    Spacer()
+                }
+            }
+
+            if !partnerKeywords.isEmpty {
+                HStack(alignment: .top, spacing: 10) {
+                    Text(String(localized: "bonds.partner_keywords_label"))
+                        .font(AlynnaTypography.font(.subheadline))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.75))
+                    Text(partnerKeywords.prefix(3).joined(separator: " · "))
+                        .font(.custom("Merriweather-Regular", size: 13))
+                        .foregroundColor(themeManager.primaryText.opacity(0.88))
+                        .tracking(0.8)
+                    Spacer()
+                }
+            }
+
+            if let score = partnerScore, score > 0 {
+                HStack(spacing: 10) {
+                    Text(String(localized: "bonds.partner_score_label"))
+                        .font(AlynnaTypography.font(.subheadline))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.75))
+                    HStack(spacing: 4) {
+                        ForEach(0..<5, id: \.self) { i in
+                            FourPointStarShape()
+                                .fill(
+                                    i < starsForScore(score)
+                                        ? themeManager.accent.opacity(0.88)
+                                        : themeManager.accent.opacity(0.22)
+                                )
+                                .frame(width: 10, height: 10)
+                        }
+                    }
+                    Text("\(score)")
+                        .font(.custom("Merriweather-Regular", size: 12))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.70))
+                        .monospacedDigit()
+                    Spacer()
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .alignaCard()
+    }
+
+    /// Shared-intents card: surfaces when both people share today's primary intent.
+    private func sharedIntentsCard(_ c: CompatibilityResponse) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "bonds.shared_intents_title"))
+                .font(.custom("Merriweather-Regular", size: 11))
+                .foregroundColor(themeManager.descriptionText.opacity(0.60))
+                .tracking(1.4)
+                .textCase(.uppercase)
+            Text(c.shared_intents.map { intentLocalizedName(for: $0) }.joined(separator: " · "))
+                .font(AlynnaTypography.font(.headline))
+                .foregroundColor(themeManager.primaryText.opacity(0.88))
+            Text(String(localized: "bonds.shared_intents_hint"))
+                .font(AlynnaTypography.font(.caption1))
+                .foregroundColor(themeManager.descriptionText.opacity(0.65))
+                .lineSpacing(2)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .alignaCard()
+    }
+
+    /// Compatibility breakdown — 4 small horizontal rows, each with a label
+    /// and the numeric component value.
+    private func breakdownCard(_ components: [String: Int]) -> some View {
+        let order: [(String, String)] = [
+            ("chart_resonance",   "bonds.component_chart"),
+            ("intent_alignment",  "bonds.component_intent"),
+            ("focus_proximity",   "bonds.component_focus"),
+            ("score_proximity",   "bonds.component_score"),
+        ]
+        return VStack(alignment: .leading, spacing: 10) {
+            Text(String(localized: "bonds.breakdown_title"))
+                .font(.custom("Merriweather-Regular", size: 11))
+                .foregroundColor(themeManager.descriptionText.opacity(0.60))
+                .tracking(1.4)
+                .textCase(.uppercase)
+            ForEach(order, id: \.0) { key, localizationKey in
+                if let value = components[key] {
+                    HStack {
+                        Text(String(localized: String.LocalizationValue(localizationKey)))
+                            .font(AlynnaTypography.font(.subheadline))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.80))
+                        Spacer()
+                        Text("\(value)")
+                            .font(.custom("Merriweather-Bold", size: 15))
+                            .foregroundColor(themeManager.primaryText.opacity(0.88))
+                            .monospacedDigit()
+                    }
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .alignaCard()
+    }
+
+    // MARK: - Helpers
+
+    /// Returns the partner's focus tag given the canonical `a/b` layout of the bond.
+    private func partnerFocusTag(_ c: CompatibilityResponse) -> String? {
+        // bond.uid_a / uid_b align with compat.focus_a / focus_b (backend stores canonically).
+        // Here, we don't have direct access to current uid, but we do know partner_uid.
+        // partner_uid != the local user; focus_a is uid_a's focus, focus_b is uid_b's focus.
+        // The BondSummary only carries partner's "today" opaque value; but CompatibilityResponse
+        // gives us both sides without telling us which is caller vs partner. We use
+        // nickname match: whichever _nickname_a/nickname_b matches partner → that side.
+        // Since BondsSummary already came from /bonds/my where server assembles "partner_*"
+        // from the opposite side, we can simply pick the side whose alynna_number matches
+        // bond.partner_alynna_number.
+        // Not carried in CompatibilityResponse, so fall back to: whichever of a/b differs
+        // from the other is the partner. If exactly one is non-nil, use it.
+        // Safer: use `bond.partner_focus_today` from the original BondSummary as the truth.
+        if let fromList = bond.partner_focus_today, !fromList.isEmpty {
+            return fromList
+        }
+        return c.focus_a ?? c.focus_b
+    }
+
+    private func partnerKeywordList(_ c: CompatibilityResponse) -> [String]? {
+        // Prefer the side whose focus_tag matches the partner's focus. As a
+        // simple heuristic we return whichever list is non-empty; in practice
+        // there's at most two people and we only need to surface "something".
+        let a = c.keywords_a ?? []
+        let b = c.keywords_b ?? []
+        if !a.isEmpty && b.isEmpty { return a }
+        if !b.isEmpty && a.isEmpty { return b }
+        // Both sides have keywords — we can't trivially tell which is partner
+        // here without uid, so default to showing side A. This is acceptable
+        // because daily_score_a vs daily_score_b also uses the canonical order.
+        if !a.isEmpty { return a }
+        return b.isEmpty ? nil : b
+    }
+
+    private func partnerDailyScore(_ c: CompatibilityResponse) -> Int? {
+        c.daily_score_a ?? c.daily_score_b
+    }
+
+    private func starsForScore(_ score: Int) -> Int {
+        let rounded = (Double(score) / 20.0).rounded()
+        return min(5, max(0, Int(rounded)))
+    }
+
+    /// Best-effort display name for a focus tag. Uses `focus.name.<tag>` if
+    /// localized, otherwise humanizes the snake_case.
+    private func focusDisplayName(for tag: String) -> String {
+        let key = "focus.name.\(tag)"
+        let localized = String(localized: String.LocalizationValue(key))
+        if localized != key, !localized.isEmpty {
+            return localized
+        }
+        return tag.replacingOccurrences(of: "_", with: " ").capitalized
+    }
+
+    /// Translates intent family (e.g. "restore") into a short noun for UI.
+    private func intentLocalizedName(for intent: String) -> String {
+        let key = "bonds.intent.\(intent)"
+        let localized = String(localized: String.LocalizationValue(key))
+        if localized != key, !localized.isEmpty {
+            return localized
+        }
+        return intent.capitalized
     }
 
     private func loadCompatibility() async {

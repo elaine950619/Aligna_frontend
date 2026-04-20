@@ -1513,6 +1513,108 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关闭" } }
       }
     },
+    "bonds.partner_today_title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ today" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@ 今日的状态" } }
+      }
+    },
+    "bonds.partner_focus_label" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Focus" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "课题" } }
+      }
+    },
+    "bonds.partner_keywords_label" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keywords" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关键词" } }
+      }
+    },
+    "bonds.partner_score_label" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alignment" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "和度" } }
+      }
+    },
+    "bonds.shared_intents_title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "In sync today" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今日同频" } }
+      }
+    },
+    "bonds.shared_intents_hint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "You both lean toward the same inner direction today." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你们今天都倾向于同一种内在方向。" } }
+      }
+    },
+    "bonds.breakdown_title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alignment breakdown" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "合盘构成" } }
+      }
+    },
+    "bonds.component_chart" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Chart resonance" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "星盘相合" } }
+      }
+    },
+    "bonds.component_intent" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Today's intent" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今日意图" } }
+      }
+    },
+    "bonds.component_focus" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Focus fit" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "课题契合" } }
+      }
+    },
+    "bonds.component_score" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Energy closeness" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "和度接近" } }
+      }
+    },
+    "bonds.intent.restore" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "restoring" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "休养" } }
+      }
+    },
+    "bonds.intent.clarify" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "clarifying" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "厘清" } }
+      }
+    },
+    "bonds.intent.commit" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "committing" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "前行" } }
+      }
+    },
+    "bonds.intent.protect" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "protecting" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "守护" } }
+      }
+    },
+    "bonds.intent.connect" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "connecting" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "联结" } }
+      }
+    },
+    "bonds.intent.discern" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "discerning" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "审辨" } }
+      }
+    },
     "profile.blocked_numbers_title" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Blocked Numbers" } },

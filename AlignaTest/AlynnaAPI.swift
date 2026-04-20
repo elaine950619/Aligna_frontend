@@ -68,6 +68,14 @@ struct CompatibilityResponse: Codable {
     let shared_intents: [String]
     let focus_a: String?
     let focus_b: String?
+    // Partner daily context — empty if they haven't generated today's mantra.
+    let keywords_a: [String]?
+    let keywords_b: [String]?
+    let daily_score_a: Int?
+    let daily_score_b: Int?
+    // Component breakdown of `compatibility`. Keys expected:
+    // chart_resonance, intent_alignment, focus_proximity, score_proximity.
+    let components: [String: Int]?
     let generated_at: String
 }
 
