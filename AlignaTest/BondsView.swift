@@ -126,8 +126,8 @@ struct BondsView: View {
                             .environmentObject(starManager)
                     } label: {
                         Image(systemName: "hand.raised")
-                            .font(.system(size: 16, weight: .regular))
-                            .foregroundColor(themeManager.descriptionText.opacity(0.65))
+                            .font(.title3.weight(.semibold))
+                            .foregroundColor(themeManager.primaryText)
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     }
@@ -491,6 +491,36 @@ struct BondDetailView: View {
     @State private var isSeverInFlight = false
     @State private var showBreakdownInfo = false
 
+    // Read active focus name directly from UserDefaults (same keys MainView uses).
+    @AppStorage("mantraActiveFocusStorage") private var mantraActiveFocusStorage: String = ""
+    @AppStorage("mantraTagLibraryStorage")  private var mantraTagLibraryStorage: String = ""
+
+    /// Today's focus raw tag for the current user, read from UserDefaults.
+    /// Returns the raw `name` (e.g. "presence", "dating") so it can be passed
+    /// to `focusDisplayName(for:)` — the same translation path as partner focus.
+    /// Falls back to empty string if no focus is set or library hasn't loaded.
+    private var myTodayFocusTag: String {
+        let todayKey = {
+            let f = DateFormatter()
+            f.dateFormat = "yyyy-MM-dd"
+            return f.string(from: Date())
+        }()
+        guard
+            let data = mantraActiveFocusStorage.data(using: .utf8),
+            let activeMap = try? JSONDecoder().decode([String: String].self, from: data),
+            let focusID = activeMap[todayKey]
+        else { return "" }
+
+        struct FocusStub: Decodable { let id: UUID; let name: String }
+        guard
+            let libData = mantraTagLibraryStorage.data(using: .utf8),
+            let library = try? JSONDecoder().decode([FocusStub].self, from: libData),
+            let focus = library.first(where: { $0.id.uuidString == focusID })
+        else { return "" }
+
+        return focus.name
+    }
+
     /// Always reflects the latest partner data from the live bonds list.
     /// Falls back to the original snapshot if the bond is no longer in the list
     /// (e.g. just severed, mid-animation).
@@ -707,7 +737,9 @@ struct BondDetailView: View {
         let partnerScore = partnerDailyScore(c)
         let partnerFocus = partnerFocusTag(c)
 
-        let hasMyData      = !myKeywords.isEmpty || myScore > 0
+        let myFocusTag     = myTodayFocusTag
+        let myFocusName    = myFocusTag.isEmpty ? "" : focusDisplayName(for: myFocusTag)
+        let hasMyData      = !myKeywords.isEmpty || myScore > 0 || !myFocusName.isEmpty
         let hasPartnerData = !partnerKws.isEmpty || (partnerScore ?? 0) > 0 || partnerFocus != nil
 
         if hasMyData || hasPartnerData {
@@ -726,6 +758,12 @@ struct BondDetailView: View {
                             .foregroundColor(themeManager.primaryText.opacity(0.70))
                             .lineLimit(1)
 
+                        if !myFocusName.isEmpty {
+                            Text(myFocusName)
+                                .font(.custom("Merriweather-Regular", size: 11))
+                                .foregroundColor(themeManager.accent.opacity(0.80))
+                                .lineLimit(1)
+                        }
                         if !myKeywords.isEmpty {
                             keywordCapsules(myKeywords)
                         }

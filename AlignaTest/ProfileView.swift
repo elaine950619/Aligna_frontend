@@ -2052,13 +2052,13 @@ private extension ProfileView {
 
                 VStack(spacing: 5) {
                     Text(title)
-                        .font(.custom("Gloock-Regular", size: 18))
+                        .font(.custom("Gloock-Regular", size: 22))
                         .foregroundColor(themeManager.primaryText.opacity(0.9))
                         .multilineTextAlignment(.center)
                         .tracking(0.4)
 
                     Text(tagline)
-                        .font(.custom("Merriweather-Light", size: 11.5))
+                        .font(.custom("Merriweather-Light", size: 13.5))
                         .foregroundColor(themeManager.descriptionText.opacity(0.7))
                         .multilineTextAlignment(.center)
                         .lineSpacing(4)

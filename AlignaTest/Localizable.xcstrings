@@ -2988,7 +2988,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "最多选择 3 个生活主题，指定这个心语应关注的方向。"
+            "value" : "最多选择三个生活主题，指定这个心语应关注的方向。"
           }
         }
       }
@@ -3375,6 +3375,12 @@
             "state" : "translated",
             "value" : "Anxiety"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焦虑"
+          }
         }
       }
     },
@@ -3384,6 +3390,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Career"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "事业"
           }
         }
       }
@@ -3395,6 +3407,12 @@
             "state" : "translated",
             "value" : "Caregiving"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "照料他人"
+          }
         }
       }
     },
@@ -3404,6 +3422,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chronic Pain"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "慢性疼痛"
           }
         }
       }
@@ -3415,6 +3439,12 @@
             "state" : "translated",
             "value" : "Clarity"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清明"
+          }
         }
       }
     },
@@ -3424,6 +3454,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Conflict"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "冲突"
           }
         }
       }
@@ -3435,6 +3471,12 @@
             "state" : "translated",
             "value" : "Connection"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连结"
+          }
         }
       }
     },
@@ -3444,6 +3486,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Creativity"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创造力"
           }
         }
       }
@@ -3455,6 +3503,12 @@
             "state" : "translated",
             "value" : "End of Life"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生命终章"
+          }
         }
       }
     },
@@ -3464,6 +3518,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Family"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "家庭"
           }
         }
       }
@@ -3475,6 +3535,12 @@
             "state" : "translated",
             "value" : "Fertility"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生育"
+          }
         }
       }
     },
@@ -3484,6 +3550,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Finance"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "财务"
           }
         }
       }
@@ -3495,6 +3567,12 @@
             "state" : "translated",
             "value" : "Deep Work"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "深度专注"
+          }
         }
       }
     },
@@ -3504,6 +3582,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Grief"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "哀伤"
           }
         }
       }
@@ -3515,6 +3599,12 @@
             "state" : "translated",
             "value" : "Identity"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自我认同"
+          }
         }
       }
     },
@@ -3524,6 +3614,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parenting"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "育儿"
           }
         }
       }
@@ -3535,6 +3631,12 @@
             "state" : "translated",
             "value" : "Presence"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当下临在"
+          }
         }
       }
     },
@@ -3544,6 +3646,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Purpose"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "人生意义"
           }
         }
       }
@@ -3555,6 +3663,12 @@
             "state" : "translated",
             "value" : "Breaking Free"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "戒断与解脱"
+          }
         }
       }
     },
@@ -3564,6 +3678,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Recovery"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "康复"
           }
         }
       }
@@ -3575,6 +3695,12 @@
             "state" : "translated",
             "value" : "New Place"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搬迁新居"
+          }
         }
       }
     },
@@ -3584,6 +3710,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Research"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "研究"
           }
         }
       }
@@ -3595,6 +3727,12 @@
             "state" : "translated",
             "value" : "Rest"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "休息"
+          }
         }
       }
     },
@@ -3604,6 +3742,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Transition"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "人生过渡"
           }
         }
       }
@@ -6307,7 +6451,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "写下你准备放下的 3 件事"
+            "value" : "写下你准备放下的三件事"
           }
         }
       }
@@ -6409,7 +6553,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "写下本月的 3 个意图"
+            "value" : "写下本月的三个心愿"
           }
         }
       }
@@ -9757,7 +9901,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "超过10秒，请重试。"
+            "value" : "超过十秒，请重试。"
           }
         }
       }
@@ -10588,7 +10732,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "心语下方最多显示 3 个主题，请先移除一个再添加。"
+            "value" : "心语下方最多显示三个主题，请先移除一个再添加。"
           }
         }
       }
