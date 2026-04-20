@@ -506,33 +506,14 @@ struct BondDetailView: View {
 
             ScrollView {
                 VStack(spacing: 16) {
-                    // Partner summary
-                    VStack(spacing: 8) {
-                        ZStack {
-                            Circle()
-                                .fill(themeManager.accent.opacity(0.18))
-                                .frame(width: 72, height: 72)
-                            Text(currentBond.partner_nickname.first.map { String($0) } ?? "·")
-                                .font(.custom("Merriweather-Bold", size: 28))
-                                .foregroundColor(themeManager.accent.opacity(0.88))
-                        }
-                        Text(currentBond.partner_nickname)
-                            .font(AlynnaTypography.font(.title2))
-                            .foregroundColor(themeManager.primaryText)
-                        Text(currentBond.partner_alynna_number.alynnaNumberDisplay)
-                            .font(.custom("Merriweather-Regular", size: 12))
-                            .foregroundColor(themeManager.descriptionText.opacity(0.65))
-                            .monospacedDigit()
-                    }
-                    .padding(.top, 68)
-
-                    // Compatibility (hero card)
-                    compatibilityHeroCard
+                    // Hero: two avatar bubbles + star connector + score
+                    heroSection
+                        .padding(.top, 68)
                         .padding(.horizontal, 20)
 
-                    // Partner's today (focus + keywords + daily score)
-                    if let c = compatibility, partnerHasTodayData(c) {
-                        partnerTodayCard(c)
+                    // Today comparison: me vs partner
+                    if let c = compatibility {
+                        todayComparisonCard(c)
                             .padding(.horizontal, 20)
                     }
 
@@ -611,118 +592,192 @@ struct BondDetailView: View {
 
     // MARK: - Card computed properties
 
-    /// The big compatibility number card. Always visible.
-    private var compatibilityHeroCard: some View {
+    /// Avatar bubble view: circle bg + initial letter + name below.
+    private func avatarBubble(nickname: String, size: CGFloat) -> some View {
         VStack(spacing: 6) {
-            Text(String(localized: "bonds.daily_compat_label"))
-                .font(.custom("Merriweather-Regular", size: 11))
-                .foregroundColor(themeManager.descriptionText.opacity(0.60))
-                .tracking(1.4)
-                .textCase(.uppercase)
-
-            if let c = compatibility {
-                Text("\(c.compatibility)")
-                    .font(.custom("Merriweather-Bold", size: 56))
-                    .foregroundColor(themeManager.primaryText)
-                    .monospacedDigit()
-                Text(String(
-                    format: String(localized: "bonds.permanent_base_value"),
-                    c.permanent_base
-                ))
+            ZStack {
+                Circle()
+                    .fill(themeManager.accent.opacity(0.18))
+                    .frame(width: size, height: size)
+                Text(nickname.first.map { String($0) } ?? "·")
+                    .font(.custom("Merriweather-Bold", size: size * 0.4))
+                    .foregroundColor(themeManager.accent.opacity(0.88))
+            }
+            Text(nickname)
                 .font(AlynnaTypography.font(.subheadline))
-                .foregroundColor(themeManager.descriptionText.opacity(0.60))
-            } else if isLoading {
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: themeManager.accent))
-                    .padding(.vertical, 20)
-            } else if let err = errorMessage {
-                Text(err)
-                    .font(AlynnaTypography.font(.caption1))
-                    .foregroundColor(.red.opacity(0.75))
+                .foregroundColor(themeManager.primaryText)
+                .lineLimit(1)
+        }
+    }
+
+    /// Hero section: two avatar bubbles flanking a star connector + compatibility score.
+    private var heroSection: some View {
+        HStack(alignment: .center, spacing: 0) {
+            // Self bubble (smaller)
+            avatarBubble(nickname: viewModel.nickname, size: 56)
+                .frame(maxWidth: .infinity)
+
+            // Center: star + score
+            VStack(spacing: 4) {
+                FourPointStarShape()
+                    .fill(themeManager.accent.opacity(0.70))
+                    .frame(width: 18, height: 18)
+
+                if let c = compatibility {
+                    Text("\(c.compatibility)")
+                        .font(.custom("Merriweather-Bold", size: 44))
+                        .foregroundColor(themeManager.primaryText)
+                        .monospacedDigit()
+                    Text(String(
+                        format: String(localized: "bonds.permanent_base_value"),
+                        c.permanent_base
+                    ))
+                    .font(.custom("Merriweather-Regular", size: 11))
+                    .foregroundColor(themeManager.descriptionText.opacity(0.60))
+                    .multilineTextAlignment(.center)
+                } else if isLoading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: themeManager.accent))
+                        .padding(.vertical, 8)
+                } else if let err = errorMessage {
+                    Text(err)
+                        .font(AlynnaTypography.font(.caption1))
+                        .foregroundColor(.red.opacity(0.75))
+                        .multilineTextAlignment(.center)
+                }
+
+                Text(String(localized: "bonds.daily_compat_label"))
+                    .font(.custom("Merriweather-Regular", size: 9))
+                    .foregroundColor(themeManager.descriptionText.opacity(0.50))
+                    .tracking(1.2)
+                    .textCase(.uppercase)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+
+            // Partner bubble (larger)
+            avatarBubble(nickname: currentBond.partner_nickname, size: 72)
+                .frame(maxWidth: .infinity)
+        }
+        .padding(.vertical, 16)
+    }
+
+    /// Star row: filled stars for a 0–100 score + numeric value.
+    private func starRow(score: Int) -> some View {
+        HStack(spacing: 4) {
+            ForEach(0..<5, id: \.self) { i in
+                FourPointStarShape()
+                    .fill(
+                        i < starsForScore(score)
+                            ? themeManager.accent.opacity(0.88)
+                            : themeManager.accent.opacity(0.20)
+                    )
+                    .frame(width: 9, height: 9)
+            }
+            Text("\(score)")
+                .font(.custom("Merriweather-Regular", size: 11))
+                .foregroundColor(themeManager.descriptionText.opacity(0.65))
+                .monospacedDigit()
+        }
+    }
+
+    /// Small capsule keyword tags.
+    private func keywordCapsules(_ keywords: [String]) -> some View {
+        HStack(spacing: 5) {
+            ForEach(Array(keywords.prefix(3).enumerated()), id: \.offset) { _, kw in
+                Text(kw)
+                    .font(.custom("Merriweather-Regular", size: 10))
+                    .foregroundColor(themeManager.primaryText.opacity(0.85))
+                    .lineLimit(1)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(themeManager.accent.opacity(0.13)))
+                    .overlay(Capsule().strokeBorder(themeManager.accent.opacity(0.22), lineWidth: 0.5))
             }
         }
-        .padding(.vertical, 20)
-        .frame(maxWidth: .infinity)
-        .alignaCard()
     }
 
-    /// Returns true when the compat response has at least one piece of
-    /// partner-side daily context to show (focus OR keywords OR score).
-    private func partnerHasTodayData(_ c: CompatibilityResponse) -> Bool {
-        let partnerFocus = partnerFocusTag(c)
-        let partnerKeywords = partnerKeywordList(c)
+    /// Today comparison card — me (left) vs partner (right), split by a thin divider.
+    @ViewBuilder
+    private func todayComparisonCard(_ c: CompatibilityResponse) -> some View {
+        let myKeywords  = viewModel.dailyKeywords
+        let myScore     = viewModel.dailyScore
+        let partnerKws  = partnerKeywordList(c) ?? []
         let partnerScore = partnerDailyScore(c)
-        return partnerFocus != nil
-            || !(partnerKeywords ?? []).isEmpty
-            || partnerScore != nil
-    }
-
-    /// Partner "today" card — their focus, keywords, daily score.
-    private func partnerTodayCard(_ c: CompatibilityResponse) -> some View {
-        let nickname = currentBond.partner_nickname
         let partnerFocus = partnerFocusTag(c)
-        let partnerKeywords = partnerKeywordList(c) ?? []
-        let partnerScore = partnerDailyScore(c)
 
-        return VStack(alignment: .leading, spacing: 12) {
-            Text(String(format: String(localized: "bonds.partner_today_title"), nickname))
-                .font(.custom("Merriweather-Regular", size: 11))
-                .foregroundColor(themeManager.descriptionText.opacity(0.60))
-                .tracking(1.4)
-                .textCase(.uppercase)
+        let hasMyData      = !myKeywords.isEmpty || myScore > 0
+        let hasPartnerData = !partnerKws.isEmpty || (partnerScore ?? 0) > 0 || partnerFocus != nil
 
-            if let focusTag = partnerFocus, !focusTag.isEmpty {
-                HStack(spacing: 10) {
-                    Text(String(localized: "bonds.partner_focus_label"))
-                        .font(AlynnaTypography.font(.subheadline))
-                        .foregroundColor(themeManager.descriptionText.opacity(0.75))
-                    Text(focusDisplayName(for: focusTag))
-                        .font(AlynnaTypography.font(.headline))
-                        .foregroundColor(themeManager.primaryText)
-                    Spacer()
-                }
-            }
+        if hasMyData || hasPartnerData {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(String(localized: "bonds.today_comparison_title"))
+                    .font(.custom("Merriweather-Regular", size: 11))
+                    .foregroundColor(themeManager.descriptionText.opacity(0.60))
+                    .tracking(1.4)
+                    .textCase(.uppercase)
 
-            if !partnerKeywords.isEmpty {
-                HStack(alignment: .top, spacing: 10) {
-                    Text(String(localized: "bonds.partner_keywords_label"))
-                        .font(AlynnaTypography.font(.subheadline))
-                        .foregroundColor(themeManager.descriptionText.opacity(0.75))
-                    Text(partnerKeywords.prefix(3).joined(separator: " · "))
-                        .font(.custom("Merriweather-Regular", size: 13))
-                        .foregroundColor(themeManager.primaryText.opacity(0.88))
-                        .tracking(0.8)
-                    Spacer()
-                }
-            }
+                HStack(alignment: .top, spacing: 0) {
+                    // ── Left: Me ──────────────────────────────────
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(viewModel.nickname)
+                            .font(.custom("Merriweather-Bold", size: 12))
+                            .foregroundColor(themeManager.primaryText.opacity(0.70))
+                            .lineLimit(1)
 
-            if let score = partnerScore, score > 0 {
-                HStack(spacing: 10) {
-                    Text(String(localized: "bonds.partner_score_label"))
-                        .font(AlynnaTypography.font(.subheadline))
-                        .foregroundColor(themeManager.descriptionText.opacity(0.75))
-                    HStack(spacing: 4) {
-                        ForEach(0..<5, id: \.self) { i in
-                            FourPointStarShape()
-                                .fill(
-                                    i < starsForScore(score)
-                                        ? themeManager.accent.opacity(0.88)
-                                        : themeManager.accent.opacity(0.22)
-                                )
-                                .frame(width: 10, height: 10)
+                        if !myKeywords.isEmpty {
+                            keywordCapsules(myKeywords)
+                        }
+                        if myScore > 0 {
+                            starRow(score: myScore)
+                        }
+                        if !hasMyData {
+                            Text(String(localized: "bonds.today_no_data"))
+                                .font(.custom("Merriweather-Regular", size: 11))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.40))
                         }
                     }
-                    Text("\(score)")
-                        .font(.custom("Merriweather-Regular", size: 12))
-                        .foregroundColor(themeManager.descriptionText.opacity(0.70))
-                        .monospacedDigit()
-                    Spacer()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    // ── Centre divider ────────────────────────────
+                    Rectangle()
+                        .fill(themeManager.accent.opacity(0.18))
+                        .frame(width: 1)
+                        .padding(.vertical, 2)
+                        .padding(.horizontal, 12)
+
+                    // ── Right: Partner ────────────────────────────
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(currentBond.partner_nickname)
+                            .font(.custom("Merriweather-Bold", size: 12))
+                            .foregroundColor(themeManager.primaryText.opacity(0.70))
+                            .lineLimit(1)
+
+                        if let tag = partnerFocus, !tag.isEmpty {
+                            Text(focusDisplayName(for: tag))
+                                .font(.custom("Merriweather-Regular", size: 11))
+                                .foregroundColor(themeManager.accent.opacity(0.80))
+                                .lineLimit(1)
+                        }
+                        if !partnerKws.isEmpty {
+                            keywordCapsules(partnerKws)
+                        }
+                        if let score = partnerScore, score > 0 {
+                            starRow(score: score)
+                        }
+                        if !hasPartnerData {
+                            Text(String(localized: "bonds.today_no_data"))
+                                .font(.custom("Merriweather-Regular", size: 11))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.40))
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .alignaCard()
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .alignaCard()
     }
 
     /// Shared-intents card: surfaces when both people share today's primary intent.
@@ -746,8 +801,7 @@ struct BondDetailView: View {
         .alignaCard()
     }
 
-    /// Compatibility breakdown — 4 small horizontal rows, each with a label
-    /// and the numeric component value.
+    /// Compatibility breakdown — 4 rows with animated fill bars + values.
     private func breakdownCard(_ components: [String: Int]) -> some View {
         let order: [(String, String)] = [
             ("chart_resonance",   "bonds.component_chart"),
@@ -755,7 +809,7 @@ struct BondDetailView: View {
             ("focus_proximity",   "bonds.component_focus"),
             ("score_proximity",   "bonds.component_score"),
         ]
-        return VStack(alignment: .leading, spacing: 10) {
+        return VStack(alignment: .leading, spacing: 14) {
             Text(String(localized: "bonds.breakdown_title"))
                 .font(.custom("Merriweather-Regular", size: 11))
                 .foregroundColor(themeManager.descriptionText.opacity(0.60))
@@ -763,20 +817,45 @@ struct BondDetailView: View {
                 .textCase(.uppercase)
             ForEach(order, id: \.0) { key, localizationKey in
                 if let value = components[key] {
-                    HStack {
+                    let fraction = min(CGFloat(value) / 100.0, 1.0)
+                    HStack(spacing: 10) {
                         Text(String(localized: String.LocalizationValue(localizationKey)))
                             .font(AlynnaTypography.font(.subheadline))
                             .foregroundColor(themeManager.descriptionText.opacity(0.80))
-                        Spacer()
+                            .frame(width: 72, alignment: .leading)
+                        // Progress bar
+                        GeometryReader { geo in
+                            ZStack(alignment: .leading) {
+                                // Track
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(themeManager.accent.opacity(0.10))
+                                    .frame(height: 7)
+                                // Fill — gradient so mid-values feel distinct from full
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                themeManager.accent.opacity(0.50),
+                                                themeManager.accent.opacity(0.85)
+                                            ],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .frame(width: max(7, geo.size.width * fraction), height: 7)
+                            }
+                        }
+                        .frame(height: 7)
                         Text("\(value)")
-                            .font(.custom("Merriweather-Bold", size: 15))
+                            .font(.custom("Merriweather-Bold", size: 13))
                             .foregroundColor(themeManager.primaryText.opacity(0.88))
                             .monospacedDigit()
+                            .frame(width: 28, alignment: .trailing)
                     }
                 }
             }
         }
-        .padding(14)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .alignaCard()
     }

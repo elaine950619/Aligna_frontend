@@ -1213,12 +1213,6 @@
         }
       }
     },
-    "bonds.pending_badge_a11y" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d pending bond request(s)" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d 条待处理的绑定请求" } }
-      }
-    },
     "bonds.component_chart" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1614,6 +1608,7 @@
       }
     },
     "bonds.partner_focus_label" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1630,6 +1625,7 @@
       }
     },
     "bonds.partner_keywords_label" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1646,6 +1642,7 @@
       }
     },
     "bonds.partner_score_label" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1662,6 +1659,7 @@
       }
     },
     "bonds.partner_today_title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1673,6 +1671,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ 今日的状态"
+          }
+        }
+      }
+    },
+    "bonds.pending_badge_a11y" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d pending bond request(s)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d 条待处理的绑定请求"
           }
         }
       }
@@ -1929,6 +1943,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "今日同频"
+          }
+        }
+      }
+    },
+    "bonds.today_comparison_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TODAY"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日"
+          }
+        }
+      }
+    },
+    "bonds.today_no_data" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No data yet"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无数据"
           }
         }
       }

@@ -49,7 +49,6 @@ extension OnboardingViewModel {
         guard Auth.auth().currentUser != nil else { return }
         do {
             let resp = try await AlynnaAPI.shared.myBonds()
-            print("🔗 [BONDS] fetched \(resp.bonds.count) bonds: \(resp.bonds.map { "\($0.bond_id)=\($0.partner_nickname)" })")
             bonds = resp.bonds
             pendingReceivedRequests = resp.pending_received
             pendingSentRequests = resp.pending_sent
