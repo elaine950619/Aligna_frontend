@@ -1417,7 +1417,7 @@ enum ThemePreference: String, CaseIterable, Identifiable {
         switch self {
         case .light:    return "sun.max"
         case .dark:     return "moon.stars"
-        case .auto:     return "gearshape"
+        case .auto:     return "sun.and.horizon"
         case .rain:     return "cloud.drizzle"
         case .vitality: return "leaf"
         case .love:     return "heart"
@@ -3264,7 +3264,7 @@ private extension ProfileView {
                 switch pref {
                 case .light:    themeManager.selected = .day
                 case .dark:     themeManager.selected = .night
-                case .auto:     themeManager.selected = .system
+                case .auto:     themeManager.selected = .autoClock
                 case .rain:     themeManager.selected = .rain
                 case .vitality: themeManager.selected = .vitality
                 case .love:     themeManager.selected = .love
