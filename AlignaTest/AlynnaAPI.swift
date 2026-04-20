@@ -73,6 +73,11 @@ struct CompatibilityResponse: Codable {
     let keywords_b: [String]?
     let daily_score_a: Int?
     let daily_score_b: Int?
+    // Caller-oriented convenience fields — always point to the OTHER party
+    // from the caller's perspective (backend resolves a/b orientation).
+    let partner_focus: String?
+    let partner_keywords: [String]?
+    let partner_daily_score: Int?
     // Component breakdown of `compatibility`. Keys expected:
     // chart_resonance, intent_alignment, focus_proximity, score_proximity.
     let components: [String: Int]?

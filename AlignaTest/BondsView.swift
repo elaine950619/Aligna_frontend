@@ -862,43 +862,28 @@ struct BondDetailView: View {
 
     // MARK: - Helpers
 
-    /// Returns the partner's focus tag given the canonical `a/b` layout of the bond.
+    /// Partner's focus tag. Uses the backend-resolved `partner_focus` field
+    /// which is always the OTHER party from the caller's perspective. Falls
+    /// back to the BondSummary snapshot for legacy compatibility.
     private func partnerFocusTag(_ c: CompatibilityResponse) -> String? {
-        // bond.uid_a / uid_b align with compat.focus_a / focus_b (backend stores canonically).
-        // Here, we don't have direct access to current uid, but we do know partner_uid.
-        // partner_uid != the local user; focus_a is uid_a's focus, focus_b is uid_b's focus.
-        // The BondSummary only carries partner's "today" opaque value; but CompatibilityResponse
-        // gives us both sides without telling us which is caller vs partner. We use
-        // nickname match: whichever _nickname_a/nickname_b matches partner → that side.
-        // Since BondsSummary already came from /bonds/my where server assembles "partner_*"
-        // from the opposite side, we can simply pick the side whose alynna_number matches
-        // bond.partner_alynna_number.
-        // Not carried in CompatibilityResponse, so fall back to: whichever of a/b differs
-        // from the other is the partner. If exactly one is non-nil, use it.
-        // Safer: use `bond.partner_focus_today` from the original BondSummary as the truth.
+        if let partner = c.partner_focus, !partner.isEmpty {
+            return partner
+        }
         if let fromList = currentBond.partner_focus_today, !fromList.isEmpty {
             return fromList
         }
-        return c.focus_a ?? c.focus_b
+        return nil
     }
 
+    /// Partner's today keywords — uses backend-resolved `partner_keywords`.
     private func partnerKeywordList(_ c: CompatibilityResponse) -> [String]? {
-        // Prefer the side whose focus_tag matches the partner's focus. As a
-        // simple heuristic we return whichever list is non-empty; in practice
-        // there's at most two people and we only need to surface "something".
-        let a = c.keywords_a ?? []
-        let b = c.keywords_b ?? []
-        if !a.isEmpty && b.isEmpty { return a }
-        if !b.isEmpty && a.isEmpty { return b }
-        // Both sides have keywords — we can't trivially tell which is partner
-        // here without uid, so default to showing side A. This is acceptable
-        // because daily_score_a vs daily_score_b also uses the canonical order.
-        if !a.isEmpty { return a }
-        return b.isEmpty ? nil : b
+        let resolved = c.partner_keywords ?? []
+        return resolved.isEmpty ? nil : resolved
     }
 
+    /// Partner's today daily_score — uses backend-resolved `partner_daily_score`.
     private func partnerDailyScore(_ c: CompatibilityResponse) -> Int? {
-        c.daily_score_a ?? c.daily_score_b
+        c.partner_daily_score
     }
 
     private func starsForScore(_ score: Int) -> Int {
