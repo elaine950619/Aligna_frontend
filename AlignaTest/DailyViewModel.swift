@@ -208,8 +208,17 @@ final class DailyViewModel: ObservableObject {
 
                     // build a *guaranteed* unique SwiftUI id
                     let uniqueID = "\(category)-\(snap.documentID)"
-                    let title = data["title"] as? String ?? ""
-                    let desc  = data["description"] as? String ?? ""
+                    let isChinese = currentRecommendationLanguageCode() == "zh-Hans"
+                    let rawTitle = data["title"] as? String ?? ""
+                    let rawDesc  = data["description"] as? String ?? ""
+                    let titleZh  = data["title_zh"] as? String ?? ""
+                    let descZh   = data["description_zh"] as? String ?? ""
+                    let title = isChinese && !titleZh.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        ? titleZh.trimmingCharacters(in: .whitespacesAndNewlines)
+                        : rawTitle
+                    let desc = isChinese && !descZh.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        ? descZh.trimmingCharacters(in: .whitespacesAndNewlines)
+                        : rawDesc
 
                     let item = SuggestionItem(
                         id: uniqueID,

@@ -19,7 +19,7 @@ private struct ProfilePreviewContainer<Content: View>: View {
         case .dark:
             themeManager.selected = .night
         case .auto:
-            themeManager.selected = .system
+            themeManager.selected = .autoClock
         case .rain:
             themeManager.selected = .rain
         case .vitality:
@@ -3370,8 +3370,9 @@ private extension ProfileView {
                     .font(AlynnaTypography.font(.body))
             }
             .foregroundColor(themeManager.accent)
-            .padding(.horizontal)
         }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
         .preferredColorScheme(themeManager.preferredColorScheme)
         .presentationDetents([.height(320)])
         .presentationBackground(.ultraThinMaterial)
@@ -3598,7 +3599,7 @@ private extension ProfileView {
         switch ThemePreference(rawValue: themePreferenceRaw) ?? .auto {
         case .light:    themeManager.selected = .day
         case .dark:     themeManager.selected = .night
-        case .auto:     themeManager.selected = .system
+        case .auto:     themeManager.selected = .autoClock
         case .rain:     themeManager.selected = .rain
         case .vitality: themeManager.selected = .vitality
         case .love:     themeManager.selected = .love

@@ -150,8 +150,8 @@ final class ThemeManager: NSObject, ObservableObject, CLLocationManagerDelegate 
             case "dark":
                 selected = .night
             case "auto":
-                // UI 上叫 System，实际上就是按时段自动
-                selected = .system
+                // 随节律：按日出日落自动切换
+                selected = .autoClock
             // 兼容未来如果你改成直接存 ThemeOption 的 rawValue
             case "system", "day", "night", "autoClock", "rain", "vitality", "love":
                 selected = ThemeOption(rawValue: raw) ?? .system

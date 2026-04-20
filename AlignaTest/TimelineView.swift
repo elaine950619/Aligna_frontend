@@ -927,7 +927,7 @@ private struct TimelineActionDetailSheet: View {
             }
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text(action.category.capitalized)
+                    Text(categoryDisplayName(for: action.category))
                         .font(AlynnaTypography.font(.headline))
                         .foregroundColor(themeManager.primaryText)
                 }

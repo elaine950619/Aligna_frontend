@@ -604,20 +604,29 @@ struct BondDetailView: View {
         .onAppear {
             Task { await viewModel.refreshBonds() }
         }
-        .confirmationDialog(
-            String(localized: "bonds.sever_confirm_title"),
-            isPresented: $showSeverConfirm,
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: "bonds.sever_confirm_action"), role: .destructive) {
-                Task { await performSever(clearNow: false) }
+        .overlay {
+            if showSeverConfirm {
+                AlynnaActionDialog(
+                    title: String(localized: "bonds.sever_confirm_title"),
+                    message: String(localized: "bonds.sever_confirm_body"),
+                    symbol: "person.2.slash",
+                    tone: .destructive,
+                    primaryButtonTitle: String(localized: "bonds.sever_confirm_action"),
+                    primaryAction: {
+                        Task { await performSever(clearNow: false) }
+                    },
+                    secondaryButtonTitle: String(localized: "bonds.sever_confirm_action_clear_now"),
+                    secondaryAction: {
+                        Task { await performSever(clearNow: true) }
+                    },
+                    dismissButtonTitle: String(localized: "bonds.sever_confirm_cancel"),
+                    onDismiss: { showSeverConfirm = false }
+                )
+                .environmentObject(themeManager)
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .zIndex(20)
+                .animation(.easeInOut(duration: 0.18), value: showSeverConfirm)
             }
-            Button(String(localized: "bonds.sever_confirm_action_clear_now"), role: .destructive) {
-                Task { await performSever(clearNow: true) }
-            }
-            Button(String(localized: "bonds.sever_confirm_cancel"), role: .cancel) {}
-        } message: {
-            Text(String(localized: "bonds.sever_confirm_body"))
         }
     }
 

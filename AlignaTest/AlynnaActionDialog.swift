@@ -125,11 +125,13 @@ struct AlynnaActionDialog: View {
                 }
             }
 
-            // Thin separator between the two destructive/primary actions
+            // Gap + thin separator + gap between the two destructive/primary actions
+            Spacer().frame(height: 8)
             Rectangle()
                 .fill(themeManager.panelStrokeHi.opacity(0.18))
                 .frame(height: 1)
                 .padding(.horizontal, 8)
+            Spacer().frame(height: 8)
 
             // Secondary action — same tone fill but lower opacity
             if let title = secondaryButtonTitle {
@@ -146,7 +148,7 @@ struct AlynnaActionDialog: View {
             }
 
             // Visual gap before dismiss — signals "safe zone below"
-            Spacer().frame(height: 10)
+            Spacer().frame(height: 16)
 
             // Dismiss — ghost style (no fill, only border) to signal safety
             Button { onDismiss() } label: {

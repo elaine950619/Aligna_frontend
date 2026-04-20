@@ -1930,7 +1930,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "解除亲近圈"
+            "value" : "解除亲近关系"
           }
         }
       }
@@ -1978,7 +1978,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "这段关系不会再显示在任何一方的 Alynna 里。历史数据默认保留 30 天。"
+            "value" : "这段关系不会再显示在任何一方的 Alynna 里。历史数据默认保留三十天。"
           }
         }
       }
@@ -2010,7 +2010,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "解除亲近圈"
+            "value" : "解除亲近关系"
           }
         }
       }
@@ -2847,7 +2847,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "主题名称最多可使用 2 个字。"
+            "value" : "主题名称最多可使用两个字。"
           }
         }
       }
@@ -3847,7 +3847,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "目前，非每日主题每天最多可刷新 2 次，每个已选主题每天只能更新一次。如需探索更多，请谨慎选择，明天再来。我们也在努力推出订阅计划以提供更多使用次数，感谢你的耐心等待。"
+            "value" : "目前，非每日主题每天最多可刷新两次，每个已选主题每天只能更新一次。如需探索更多，请谨慎选择，明天再来。我们也在努力推出订阅计划以提供更多使用次数，感谢你的耐心等待。"
           }
         }
       }
@@ -5935,7 +5935,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "请使用不超过 2 个词。"
+            "value" : "请使用不超过两个词。"
           }
         }
       }
@@ -6112,6 +6112,102 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "分享"
+          }
+        }
+      }
+    },
+    "main.empty_state.action.retry" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Again"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新生成"
+          }
+        }
+      }
+    },
+    "main.empty_state.action.settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前往设置"
+          }
+        }
+      }
+    },
+    "main.empty_state.generation_failed.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong while generating your guidance. Tap below to try again."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日内容生成时遇到问题，请点击下方重试。"
+          }
+        }
+      }
+    },
+    "main.empty_state.generation_failed.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's Guidance Unavailable"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日指引暂时无法生成"
+          }
+        }
+      }
+    },
+    "main.empty_state.location_denied.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aligna uses your location to tailor guidance to your time and place. Please enable location access in Settings."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aligna 需要您的位置来生成与当下时空契合的指引，请在设置中开启位置权限。"
+          }
+        }
+      }
+    },
+    "main.empty_state.location_denied.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location Access Needed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要位置权限"
           }
         }
       }

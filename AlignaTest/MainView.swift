@@ -1024,8 +1024,10 @@ struct MainView: View {
 
     private func ensureDefaultsIfMissing() {
         // If nothing loaded yet, supply local demo content
+        // Skip filling with DesignRecs when backend returned a default (fallback) recommendation —
+        // in that case we prefer to show an empty state rather than deceptive placeholder content.
         if viewModel.recommendations.isEmpty {
-            if !isGenerationInProgress {
+            if !isGenerationInProgress && !isDefaultRecommendation {
                 viewModel.recommendations = DesignRecs.docs
                 viewModel.dailyMantra = viewModel.dailyMantra.isEmpty ? DesignRecs.mantra : viewModel.dailyMantra
             }
@@ -3167,6 +3169,78 @@ struct MainView: View {
                         .opacity(isMantraReady ? 1 : 0)
                         .allowsHitTesting(isMantraReady)
 
+                        // ── Empty state: shown when backend returned a default (fallback) ──
+                        if isDefaultRecommendation && !isMantraReady && bootPhase == .main && !isGenerationInProgress {
+                            let isLocationDenied: Bool = {
+                                let s = locationManager.authorizationStatus
+                                return s == .denied || s == .restricted
+                            }()
+
+                            VStack(spacing: 20) {
+                                // Icon
+                                Image(systemName: isLocationDenied ? "location.slash" : "sparkles.slash")
+                                    .font(.system(size: 32, weight: .thin))
+                                    .foregroundColor(themeManager.descriptionText.opacity(0.45))
+
+                                // Message
+                                VStack(spacing: 6) {
+                                    Text(isLocationDenied
+                                         ? String(localized: "main.empty_state.location_denied.title")
+                                         : String(localized: "main.empty_state.generation_failed.title"))
+                                        .font(.custom("Merriweather-Bold", size: 15))
+                                        .foregroundColor(themeManager.primaryText.opacity(0.70))
+                                        .multilineTextAlignment(.center)
+
+                                    Text(isLocationDenied
+                                         ? String(localized: "main.empty_state.location_denied.body")
+                                         : String(localized: "main.empty_state.generation_failed.body"))
+                                        .font(.custom("Merriweather-Light", size: 13))
+                                        .foregroundColor(themeManager.descriptionText.opacity(0.55))
+                                        .multilineTextAlignment(.center)
+                                        .lineSpacing(3)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+
+                                // Action button
+                                if isLocationDenied {
+                                    Button {
+                                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                                            UIApplication.shared.open(url)
+                                        }
+                                    } label: {
+                                        Text("main.empty_state.action.settings")
+                                            .font(.custom("Merriweather-Regular", size: 13))
+                                            .foregroundColor(themeManager.buttonForegroundOnPrimary)
+                                            .padding(.horizontal, 24)
+                                            .padding(.vertical, 10)
+                                            .background(
+                                                Capsule()
+                                                    .fill(themeManager.accent)
+                                            )
+                                    }
+                                    .buttonStyle(.plain)
+                                } else {
+                                    Button {
+                                        triggerRemedialLoading()
+                                    } label: {
+                                        Text("main.empty_state.action.retry")
+                                            .font(.custom("Merriweather-Regular", size: 13))
+                                            .foregroundColor(themeManager.buttonForegroundOnPrimary)
+                                            .padding(.horizontal, 24)
+                                            .padding(.vertical, 10)
+                                            .background(
+                                                Capsule()
+                                                    .fill(themeManager.accent)
+                                            )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.horizontal, geometry.size.width * 0.12)
+                            .padding(.vertical, 32)
+                            .frame(maxWidth: .infinity)
+                            .transition(.opacity)
+                        }
 
                     }
                     .padding(.top, 16)
@@ -4991,7 +5065,8 @@ struct MainView: View {
 
     private func markMantraReadyIfPossible() {
         let trimmed = viewModel.dailyMantra.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard bootPhase == .main, !trimmed.isEmpty else { return }
+        // Don't mark ready when backend returned a default — show empty state instead.
+        guard bootPhase == .main, !trimmed.isEmpty, !isDefaultRecommendation else { return }
         if !isMantraReady {
             isMantraReady = true
         }
