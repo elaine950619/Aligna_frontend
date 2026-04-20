@@ -9237,13 +9237,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "My Inner Circle"
+            "value" : "Inner Circle"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "我的亲近圈"
+            "value" : "亲近圈"
           }
         }
       }

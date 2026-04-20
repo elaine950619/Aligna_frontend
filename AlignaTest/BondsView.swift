@@ -14,8 +14,10 @@ struct BondsView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var starManager: StarAnimationManager
 
+    @Environment(\.dismiss) private var dismiss
     @State private var isRefreshing: Bool = false
     @State private var rowError: [String: String] = [:]  // bondId/requestId → message
+    @State private var appearCount: Int = 0  // incremented on every appear to retrigger .task
 
     var body: some View {
         ZStack {
@@ -73,7 +75,7 @@ struct BondsView: View {
                         Spacer(minLength: 120)
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 16)
+                    .padding(.top, 68)
                 }
                 .refreshable {
                     await viewModel.refreshBonds()
@@ -102,27 +104,45 @@ struct BondsView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 12)
                 }
-                .disabled(viewModel.alynnaNumber.isEmpty)
-                .opacity(viewModel.alynnaNumber.isEmpty ? 0.5 : 1.0)
+                .disabled(viewModel.alynnaNumber.isEmpty || totalBondCount >= 10)
+                .opacity((viewModel.alynnaNumber.isEmpty || totalBondCount >= 10) ? 0.5 : 1.0)
             }
-        }
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink {
-                    BlockedNumbersView()
-                        .environmentObject(viewModel)
-                        .environmentObject(themeManager)
-                        .environmentObject(starManager)
-                } label: {
-                    Image(systemName: "hand.raised")
-                        .font(.system(size: 16, weight: .regular))
-                        .foregroundColor(themeManager.descriptionText.opacity(0.65))
+
+            // Custom navigation bar overlay
+            VStack {
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.title3.weight(.semibold))
+                            .foregroundColor(themeManager.primaryText)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    Spacer()
+                    NavigationLink {
+                        BlockedNumbersView()
+                            .environmentObject(viewModel)
+                            .environmentObject(themeManager)
+                            .environmentObject(starManager)
+                    } label: {
+                        Image(systemName: "hand.raised")
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(themeManager.descriptionText.opacity(0.65))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel(Text(String(localized: "profile.blocked_numbers_title")))
                 }
-                .accessibilityLabel(Text(String(localized: "profile.blocked_numbers_title")))
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                Spacer()
             }
         }
-        .task {
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .onAppear { appearCount += 1 }
+        .task(id: appearCount) {
             await viewModel.refreshBonds()
         }
     }
@@ -143,6 +163,10 @@ struct BondsView: View {
             && viewModel.pendingSentRequests.isEmpty
     }
 
+    private var totalBondCount: Int {
+        viewModel.bonds.count + viewModel.pendingSentRequests.count
+    }
+
     // MARK: - Header
 
     private var headerSection: some View {
@@ -152,7 +176,7 @@ struct BondsView: View {
                 .foregroundColor(themeManager.primaryText)
             Text(String(
                 format: String(localized: "bonds.max_hint"),
-                2  // matches backend _MAX_BONDS_PER_USER
+                10  // max inner circle members
             ))
             .font(AlynnaTypography.font(.subheadline))
             .foregroundColor(themeManager.descriptionText.opacity(0.75))
@@ -493,7 +517,7 @@ struct BondDetailView: View {
                             .foregroundColor(themeManager.descriptionText.opacity(0.65))
                             .monospacedDigit()
                     }
-                    .padding(.top, 28)
+                    .padding(.top, 68)
 
                     // Compatibility (hero card)
                     compatibilityHeroCard
@@ -534,8 +558,27 @@ struct BondDetailView: View {
                     .disabled(isSeverInFlight)
                 }
             }
+
+            // Custom back button overlay
+            VStack {
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.title3.weight(.semibold))
+                            .foregroundColor(themeManager.primaryText)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                Spacer()
+            }
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .task {
             await loadCompatibility()
         }

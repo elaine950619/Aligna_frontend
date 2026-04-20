@@ -8,47 +8,191 @@ struct DecorativeRings: View {
     @State private var outerAngle: Double = 0
     @State private var middleAngle: Double = 0
     @State private var innerAngle: Double = 0
-    @State private var pulse = false
+    @State private var pulseOuter = false
+    @State private var pulseMiddle = false
+    @State private var pulseInner = false
+
+    // 外环：冷蓝轨道色
+    private let outerColor  = Color(hex: "#7CA5C8")
+    // 中环：原金棕，主视觉焦点
+    private let middleColor = Color(hex: "#D4A574")
+    // 内环：淡紫，最内核
+    private let innerColor  = Color(hex: "#A89BC2")
 
     var body: some View {
         ZStack {
+
+            // ── 外环光晕底座 ──
             Circle()
-                .stroke(Color(hex: "#D4A574").opacity(pulse ? 0.04 : 0.14), lineWidth: 1)
+                .fill(
+                    RadialGradient(
+                        gradient: Gradient(colors: [
+                            outerColor.opacity(pulseOuter ? 0.04 : 0.01),
+                            Color.clear
+                        ]),
+                        center: .center,
+                        startRadius: 120,
+                        endRadius: 160
+                    )
+                )
+                .frame(width: 320, height: 320)
+                .scaleEffect(pulseOuter ? 1.08 : 0.97)
+                .animation(
+                    isAnimated ? .easeInOut(duration: 6 * speedMultiplier).repeatForever(autoreverses: true) : nil,
+                    value: pulseOuter
+                )
+
+            // ── 外环 stroke ──
+            Circle()
+                .stroke(outerColor.opacity(pulseOuter ? 0.16 : 0.07), lineWidth: 0.75)
                 .frame(width: 300, height: 300)
                 .rotationEffect(.degrees(isAnimated ? outerAngle : 0))
-                .scaleEffect(pulse ? 1.12 : 0.96)
+                .scaleEffect(pulseOuter ? 1.06 : 0.97)
                 .animation(
-                    isAnimated ? .linear(duration: 50 * speedMultiplier).repeatForever(autoreverses: false) : nil,
+                    isAnimated ? .linear(duration: 80 * speedMultiplier).repeatForever(autoreverses: false) : nil,
                     value: outerAngle
                 )
-
-            Circle()
-                .stroke(Color(hex: "#D4A574").opacity(pulse ? 0.03 : 0.11), lineWidth: 1)
-                .frame(width: 260, height: 260)
-                .rotationEffect(.degrees(isAnimated ? middleAngle : 0))
-                .scaleEffect(pulse ? 1.10 : 0.98)
                 .animation(
-                    isAnimated ? .linear(duration: 38 * speedMultiplier).repeatForever(autoreverses: false) : nil,
-                    value: middleAngle
+                    isAnimated ? .easeInOut(duration: 6 * speedMultiplier).repeatForever(autoreverses: true) : nil,
+                    value: pulseOuter
                 )
 
+            // ── 外环刻度点（12个，代表黄道十二宫）──
+            ForEach(0..<12) { i in
+                let angle = Double(i) * 30.0
+                let rad = angle * .pi / 180.0
+                let r: CGFloat = 150
+                Circle()
+                    .fill(outerColor.opacity(pulseOuter ? 0.30 : 0.13))
+                    .frame(width: i % 3 == 0 ? 3 : 1.5,
+                           height: i % 3 == 0 ? 3 : 1.5)
+                    .offset(x: r * CGFloat(sin(rad)),
+                            y: -r * CGFloat(cos(rad)))
+                    .rotationEffect(.degrees(isAnimated ? outerAngle : 0))
+                    .animation(
+                        isAnimated ? .linear(duration: 80 * speedMultiplier).repeatForever(autoreverses: false) : nil,
+                        value: outerAngle
+                    )
+                    .animation(
+                        isAnimated ? .easeInOut(duration: 6 * speedMultiplier).repeatForever(autoreverses: true) : nil,
+                        value: pulseOuter
+                    )
+            }
+
+            // ── 中环光晕底座（最强，金色核心）──
             Circle()
-                .stroke(Color(hex: "#D4A574").opacity(pulse ? 0.02 : 0.09), lineWidth: 1)
-                .frame(width: 220, height: 220)
-                .rotationEffect(.degrees(isAnimated ? innerAngle : 0))
-                .scaleEffect(pulse ? 1.08 : 0.99)
+                .fill(
+                    RadialGradient(
+                        gradient: Gradient(colors: [
+                            middleColor.opacity(pulseMiddle ? 0.06 : 0.02),
+                            Color.clear
+                        ]),
+                        center: .center,
+                        startRadius: 90,
+                        endRadius: 140
+                    )
+                )
+                .frame(width: 280, height: 280)
+                .scaleEffect(pulseMiddle ? 1.07 : 0.98)
                 .animation(
-                    isAnimated ? .linear(duration: 26 * speedMultiplier).repeatForever(autoreverses: false) : nil,
+                    isAnimated ? .easeInOut(duration: 5 * speedMultiplier).repeatForever(autoreverses: true) : nil,
+                    value: pulseMiddle
+                )
+
+            // ── 中环 stroke（主环，线宽最粗）──
+            Circle()
+                .stroke(middleColor.opacity(pulseMiddle ? 0.24 : 0.12), lineWidth: 1.0)
+                .frame(width: 260, height: 260)
+                .shadow(color: middleColor.opacity(pulseMiddle ? 0.14 : 0.05), radius: pulseMiddle ? 6 : 3)
+                .rotationEffect(.degrees(isAnimated ? middleAngle : 0))
+                .scaleEffect(pulseMiddle ? 1.05 : 0.98)
+                .animation(
+                    isAnimated ? .linear(duration: 45 * speedMultiplier).repeatForever(autoreverses: false) : nil,
+                    value: middleAngle
+                )
+                .animation(
+                    isAnimated ? .easeInOut(duration: 5 * speedMultiplier).repeatForever(autoreverses: true) : nil,
+                    value: pulseMiddle
+                )
+
+            // ── 中环刻度点（4个，四元素方位）──
+            ForEach(0..<4) { i in
+                let angle = Double(i) * 90.0
+                let rad = angle * .pi / 180.0
+                let r: CGFloat = 130
+                Circle()
+                    .fill(middleColor.opacity(pulseMiddle ? 0.42 : 0.20))
+                    .frame(width: 4, height: 4)
+                    .shadow(color: middleColor.opacity(0.22), radius: 3)
+                    .offset(x: r * CGFloat(sin(rad)),
+                            y: -r * CGFloat(cos(rad)))
+                    .rotationEffect(.degrees(isAnimated ? middleAngle : 0))
+                    .animation(
+                        isAnimated ? .linear(duration: 45 * speedMultiplier).repeatForever(autoreverses: false) : nil,
+                        value: middleAngle
+                    )
+                    .animation(
+                        isAnimated ? .easeInOut(duration: 5 * speedMultiplier).repeatForever(autoreverses: true) : nil,
+                        value: pulseMiddle
+                    )
+            }
+
+            // ── 内环光晕底座 ──
+            Circle()
+                .fill(
+                    RadialGradient(
+                        gradient: Gradient(colors: [
+                            innerColor.opacity(pulseInner ? 0.07 : 0.02),
+                            Color.clear
+                        ]),
+                        center: .center,
+                        startRadius: 60,
+                        endRadius: 120
+                    )
+                )
+                .frame(width: 240, height: 240)
+                .scaleEffect(pulseInner ? 1.06 : 0.99)
+                .animation(
+                    isAnimated ? .easeInOut(duration: 4 * speedMultiplier).repeatForever(autoreverses: true) : nil,
+                    value: pulseInner
+                )
+
+            // ── 内环 stroke（trim 缺口，仪表盘感）──
+            Circle()
+                .trim(from: 0.0, to: 0.92)
+                .stroke(innerColor.opacity(pulseInner ? 0.26 : 0.12), lineWidth: 1.25)
+                .frame(width: 220, height: 220)
+                .shadow(color: innerColor.opacity(pulseInner ? 0.16 : 0.05), radius: pulseInner ? 5 : 2)
+                .rotationEffect(.degrees(isAnimated ? innerAngle : 0))
+                .scaleEffect(pulseInner ? 1.04 : 0.99)
+                .animation(
+                    isAnimated ? .linear(duration: 25 * speedMultiplier).repeatForever(autoreverses: false) : nil,
                     value: innerAngle
+                )
+                .animation(
+                    isAnimated ? .easeInOut(duration: 4 * speedMultiplier).repeatForever(autoreverses: true) : nil,
+                    value: pulseInner
                 )
         }
         .onAppear {
             guard isAnimated else { return }
-            outerAngle = 360
+            outerAngle  =  360
             middleAngle = -360
-            innerAngle = 360
-            withAnimation(.easeInOut(duration: 5 * speedMultiplier).repeatForever(autoreverses: true)) {
-                pulse = true
+            innerAngle  =  360
+
+            // 三环错峰呼吸，间隔 1.5s，避免同步抖动
+            withAnimation(.easeInOut(duration: 6 * speedMultiplier).repeatForever(autoreverses: true)) {
+                pulseOuter = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5 * speedMultiplier) {
+                withAnimation(.easeInOut(duration: 5 * speedMultiplier).repeatForever(autoreverses: true)) {
+                    pulseMiddle = true
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0 * speedMultiplier) {
+                withAnimation(.easeInOut(duration: 4 * speedMultiplier).repeatForever(autoreverses: true)) {
+                    pulseInner = true
+                }
             }
         }
     }

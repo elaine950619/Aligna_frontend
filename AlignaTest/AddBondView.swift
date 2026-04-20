@@ -69,8 +69,27 @@ struct AddBondView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
             }
+
+            // Custom back button overlay
+            VStack {
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.title3.weight(.semibold))
+                            .foregroundColor(themeManager.primaryText)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                Spacer()
+            }
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .onAppear {
             numberFieldFocused = true
         }
@@ -108,12 +127,12 @@ struct AddBondView: View {
                         }
                     )
                 )
-                .font(.custom("Merriweather-Bold", size: 24))
+                .font(.custom("Merriweather-Bold", size: 17))
                 .foregroundColor(themeManager.primaryText)
                 .keyboardType(.numberPad)
                 .focused($numberFieldFocused)
                 .monospacedDigit()
-                .tracking(3)
+                .tracking(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)

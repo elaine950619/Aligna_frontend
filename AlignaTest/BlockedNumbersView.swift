@@ -14,6 +14,7 @@ struct BlockedNumbersView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var starManager: StarAnimationManager
 
+    @Environment(\.dismiss) private var dismiss
     @State private var isLoading = false
     @State private var rowError: [String: String] = [:]
     @State private var pendingUnblock: String?    // number awaiting confirmation
@@ -53,8 +54,27 @@ struct BlockedNumbersView: View {
             .refreshable {
                 await viewModel.loadBlockedNumbers()
             }
+
+            // Custom back button overlay
+            VStack {
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.title3.weight(.semibold))
+                            .foregroundColor(themeManager.primaryText)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                Spacer()
+            }
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .task {
             isLoading = true
             await viewModel.loadBlockedNumbers()
