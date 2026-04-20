@@ -2,12 +2,21 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.aligna.dailymantrarefresh</string>
+	</array>
 	<key>CFBundleDisplayName</key>
 	<string>Alynna</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>zh-Hans</string>
+	</array>
 	<key>CFBundleName</key>
 	<string>Alynna</string>
 	<key>CFBundlePackageType</key>
@@ -55,22 +64,13 @@
 		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>We need to obtain your current location to generate personalized recommendations.</string>
+	<string>Allow location access to receive more accurate, context-aware guidance for your day.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Save your mantra screenshot to Photos.</string>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>com.aligna.dailymantrarefresh</string>
-	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
 		<string>processing</string>
-	</array>
-	<key>CFBundleLocalizations</key>
-	<array>
-		<string>en</string>
-		<string>zh-Hans</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
