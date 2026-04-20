@@ -957,6 +957,102 @@
         }
       }
     },
+    "blocked.confirm_unblock_body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Once unblocked, they can send you bond requests again."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解除后对方可以再次向你发送绑定请求。"
+          }
+        }
+      }
+    },
+    "blocked.confirm_unblock_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unblock?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解除屏蔽?"
+          }
+        }
+      }
+    },
+    "blocked.empty_state" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No blocked numbers"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有屏蔽的号"
+          }
+        }
+      }
+    },
+    "blocked.unblock_button" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unblock"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解除屏蔽"
+          }
+        }
+      }
+    },
+    "blocked.unblock_cancel" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消"
+          }
+        }
+      }
+    },
+    "blocked.unblock_confirm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unblock"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确认解除"
+          }
+        }
+      }
+    },
     "bonds.accept" : {
       "localizations" : {
         "en" : {
@@ -1021,6 +1117,38 @@
         }
       }
     },
+    "bonds.block_sender" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decline and block this number"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拒绝并屏蔽此号"
+          }
+        }
+      }
+    },
+    "bonds.breakdown_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alignment breakdown"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "合盘构成"
+          }
+        }
+      }
+    },
     "bonds.cancel_cooling" : {
       "localizations" : {
         "en" : {
@@ -1065,6 +1193,90 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "当前无法发送请求。"
+          }
+        }
+      }
+    },
+    "bonds.close_push_cover" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭"
+          }
+        }
+      }
+    },
+    "bonds.component_chart" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chart resonance"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "星盘相合"
+          }
+        }
+      }
+    },
+    "bonds.component_focus" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus fit"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "课题契合"
+          }
+        }
+      }
+    },
+    "bonds.component_intent" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's intent"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日意图"
+          }
+        }
+      }
+    },
+    "bonds.component_score" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Energy closeness"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "和度接近"
           }
         }
       }
@@ -1213,6 +1425,108 @@
         }
       }
     },
+    "bonds.intent.clarify" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "clarifying"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "厘清"
+          }
+        }
+      }
+    },
+    "bonds.intent.commit" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "committing"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前行"
+          }
+        }
+      }
+    },
+    "bonds.intent.connect" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "connecting"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "联结"
+          }
+        }
+      }
+    },
+    "bonds.intent.discern" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "discerning"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "审辨"
+          }
+        }
+      }
+    },
+    "bonds.intent.protect" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "protecting"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "守护"
+          }
+        }
+      }
+    },
+    "bonds.intent.restore" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "restoring"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "休养"
+          }
+        }
+      }
+    },
     "bonds.join_days" : {
       "localizations" : {
         "en" : {
@@ -1289,6 +1603,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "此号无效。"
+          }
+        }
+      }
+    },
+    "bonds.partner_focus_label" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "课题"
+          }
+        }
+      }
+    },
+    "bonds.partner_keywords_label" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keywords"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关键词"
+          }
+        }
+      }
+    },
+    "bonds.partner_score_label" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alignment"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "和度"
+          }
+        }
+      }
+    },
+    "bonds.partner_today_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ today"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 今日的状态"
           }
         }
       }
@@ -1501,168 +1879,6 @@
         }
       }
     },
-    "bonds.block_sender" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Decline and block this number" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "拒绝并屏蔽此号" } }
-      }
-    },
-    "bonds.close_push_cover" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Close" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关闭" } }
-      }
-    },
-    "bonds.partner_today_title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ today" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@ 今日的状态" } }
-      }
-    },
-    "bonds.partner_focus_label" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Focus" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "课题" } }
-      }
-    },
-    "bonds.partner_keywords_label" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keywords" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关键词" } }
-      }
-    },
-    "bonds.partner_score_label" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alignment" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "和度" } }
-      }
-    },
-    "bonds.shared_intents_title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "In sync today" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今日同频" } }
-      }
-    },
-    "bonds.shared_intents_hint" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "You both lean toward the same inner direction today." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你们今天都倾向于同一种内在方向。" } }
-      }
-    },
-    "bonds.breakdown_title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alignment breakdown" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "合盘构成" } }
-      }
-    },
-    "bonds.component_chart" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Chart resonance" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "星盘相合" } }
-      }
-    },
-    "bonds.component_intent" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Today's intent" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今日意图" } }
-      }
-    },
-    "bonds.component_focus" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Focus fit" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "课题契合" } }
-      }
-    },
-    "bonds.component_score" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Energy closeness" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "和度接近" } }
-      }
-    },
-    "bonds.intent.restore" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "restoring" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "休养" } }
-      }
-    },
-    "bonds.intent.clarify" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "clarifying" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "厘清" } }
-      }
-    },
-    "bonds.intent.commit" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "committing" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "前行" } }
-      }
-    },
-    "bonds.intent.protect" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "protecting" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "守护" } }
-      }
-    },
-    "bonds.intent.connect" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "connecting" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "联结" } }
-      }
-    },
-    "bonds.intent.discern" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "discerning" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "审辨" } }
-      }
-    },
-    "profile.blocked_numbers_title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Blocked Numbers" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已屏蔽的号" } }
-      }
-    },
-    "profile.blocked_numbers_subtitle" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Manage blocked Alynna numbers" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "管理被屏蔽的 Alynna 号" } }
-      }
-    },
-    "blocked.empty_state" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No blocked numbers" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有屏蔽的号" } }
-      }
-    },
-    "blocked.unblock_button" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unblock" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "解除屏蔽" } }
-      }
-    },
-    "blocked.confirm_unblock_title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unblock?" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "解除屏蔽?" } }
-      }
-    },
-    "blocked.confirm_unblock_body" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Once unblocked, they can send you bond requests again." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "解除后对方可以再次向你发送绑定请求。" } }
-      }
-    },
-    "blocked.unblock_confirm" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unblock" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "确认解除" } }
-      }
-    },
-    "blocked.unblock_cancel" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "取消" } }
-      }
-    },
     "bonds.sever_confirm_title" : {
       "localizations" : {
         "en" : {
@@ -1675,6 +1891,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "解除亲近圈"
+          }
+        }
+      }
+    },
+    "bonds.shared_intents_hint" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You both lean toward the same inner direction today."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你们今天都倾向于同一种内在方向。"
+          }
+        }
+      }
+    },
+    "bonds.shared_intents_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In sync today"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日同频"
           }
         }
       }
@@ -8398,6 +8646,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选择出生地"
+          }
+        }
+      }
+    },
+    "profile.blocked_numbers_subtitle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage blocked Alynna numbers"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理被屏蔽的 Alynna 号"
+          }
+        }
+      }
+    },
+    "profile.blocked_numbers_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocked Numbers"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已屏蔽的号"
           }
         }
       }
