@@ -12,12 +12,12 @@ struct DecorativeRings: View {
     @State private var pulseMiddle = false
     @State private var pulseInner = false
 
-    // 外环：冷蓝轨道色
-    private let outerColor  = Color(hex: "#7CA5C8")
-    // 中环：原金棕，主视觉焦点
-    private let middleColor = Color(hex: "#D4A574")
-    // 内环：淡紫，最内核
-    private let innerColor  = Color(hex: "#A89BC2")
+    // 外环：雾蓝灰轨道色
+    private let outerColor  = Color(hex: "#8EA4B0")
+    // 中环：柔金麻布色，保留焦点但降饱和
+    private let middleColor = Color(hex: "#B79A7B")
+    // 内环：烟紫灰，最内核
+    private let innerColor  = Color(hex: "#A79DB0")
 
     var body: some View {
         ZStack {
@@ -701,16 +701,16 @@ struct DayStarField: View {
 
         // warm palette: gold (primary) + rose-orange accent (~30%)
         let fills: [Color] = [
-            Color(hex: "#FFF4B3").opacity(0.38),   // pale gold
-            Color(hex: "#FFD700").opacity(0.45),   // bright gold
-            Color(hex: "#F4D69D").opacity(0.44),   // apricot gold
-            Color(hex: "#F4A882").opacity(0.36),   // rose-orange accent
-            Color(hex: "#FFDAB0").opacity(0.40)    // soft peach accent
+            Color(hex: "#E8DDC0").opacity(0.30),
+            Color(hex: "#D8C59E").opacity(0.34),
+            Color(hex: "#DCC7AA").opacity(0.32),
+            Color(hex: "#D2B29E").opacity(0.28),
+            Color(hex: "#E5D2BE").opacity(0.30)
         ]
         let strokes: [Color] = [
-            Color(hex: "#D4A574").opacity(0.45),   // warm brown
-            Color(hex: "#C8925F").opacity(0.42),   // amber
-            Color(hex: "#D4816A").opacity(0.40)    // rose-orange stroke
+            Color(hex: "#B79A7B").opacity(0.34),
+            Color(hex: "#B29172").opacity(0.30),
+            Color(hex: "#B3897F").opacity(0.28)
         ]
 
         func makeRandomStar() {
@@ -825,7 +825,7 @@ struct AppBackgroundView: View {
                     )
                     .ignoresSafeArea()
                 } else if !effectiveIsNight && !themeManager.isVitality && !themeManager.isLove {
-                    Color(hex: "#E6D9BD").ignoresSafeArea()
+                    Color(hex: "#ECE2D6").ignoresSafeArea()
                 }
 
                 // ===== 日间贴图 =====
@@ -899,15 +899,15 @@ struct RainBackgroundLayer: View {
 
     // 日间：蓝灰色调偏亮
     private let dayGradient: [Gradient.Stop] = [
-        .init(color: Color(hex: "#1E2E42"), location: 0.0),
-        .init(color: Color(hex: "#263A52"), location: 0.5),
-        .init(color: Color(hex: "#2E4660"), location: 1.0),
+        .init(color: Color(hex: "#26333D"), location: 0.0),
+        .init(color: Color(hex: "#30404C"), location: 0.5),
+        .init(color: Color(hex: "#394B59"), location: 1.0),
     ]
     // 夜间：墨蓝更深
     private let nightGradient: [Gradient.Stop] = [
-        .init(color: Color(hex: "#0E1820"), location: 0.0),
-        .init(color: Color(hex: "#131F2E"), location: 0.5),
-        .init(color: Color(hex: "#192840"), location: 1.0),
+        .init(color: Color(hex: "#10171D"), location: 0.0),
+        .init(color: Color(hex: "#17222B"), location: 0.5),
+        .init(color: Color(hex: "#21303C"), location: 1.0),
     ]
 
     private var gradientStops: [Gradient.Stop] { isDark ? nightGradient : dayGradient }

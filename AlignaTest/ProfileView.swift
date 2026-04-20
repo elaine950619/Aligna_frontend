@@ -260,7 +260,7 @@ struct ZodiacInfoDialog: View {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
                     .fill(themeManager.isNight
                           ? Color(hex: "#0F1726").opacity(0.98)
-                          : Color(hex: "#F5E6C8").opacity(0.98))
+                          : Color(hex: "#F1E7DA").opacity(0.98))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -2539,7 +2539,7 @@ private extension ProfileView {
             .frame(maxWidth: 320)
             .background(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(themeManager.isRain ? Color(hex: "#131F2E").opacity(0.98) : themeManager.isNight ? Color(hex: "#101726").opacity(0.98) : Color(hex: "#F7F1E3").opacity(0.985))
+                    .fill(themeManager.isRain ? Color(hex: "#17222B").opacity(0.98) : themeManager.isNight ? Color(hex: "#141A24").opacity(0.98) : Color(hex: "#F2EBE2").opacity(0.985))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)

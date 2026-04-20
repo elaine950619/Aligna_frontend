@@ -343,7 +343,7 @@ struct AlynnaGenerationOverlayCard: View {
         .frame(maxWidth: 300)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(themeManager.isNight ? Color(hex: "#131F2E").opacity(0.96) : Color.white.opacity(0.96))
+                .fill(themeManager.isNight ? Color(hex: "#17222B").opacity(0.96) : Color(hex: "#F6F2EC").opacity(0.96))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .stroke(themeManager.isNight ? Color.white.opacity(0.16) : Color.black.opacity(0.10), lineWidth: 1)

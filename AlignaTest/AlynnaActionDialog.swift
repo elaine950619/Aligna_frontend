@@ -235,10 +235,10 @@ struct AlynnaActionDialog: View {
     // MARK: - Colour helpers
 
     private var cardFill: Color {
-        if themeManager.isRain     { return Color(hex: "#131F2E").opacity(0.98) }
+        if themeManager.isRain     { return Color(hex: "#17222B").opacity(0.98) }
         if themeManager.isVitality { return Color(hex: "#EFF4ED").opacity(0.98) }
         if themeManager.isLove     { return Color(hex: "#F5EEF0").opacity(0.98) }
-        if themeManager.isNight    { return Color(hex: "#0F1726").opacity(0.98) }
+        if themeManager.isNight    { return Color(hex: "#141A24").opacity(0.98) }
         return Color(hex: "#F1E7DA").opacity(0.98)
     }
 

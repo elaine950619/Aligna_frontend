@@ -694,7 +694,7 @@ private struct BackgroundSky: View {
                 gradient: Gradient(colors:
                     themeManager.isNight
                         ? [.clear, Color.purple.opacity(0.10), Color.indigo.opacity(0.18)]
-                        : [.clear, Color(hex: "#D4A574").opacity(0.12), Color(hex: "#8F643E").opacity(0.10)]
+                        : [.clear, Color(hex: "#B79A7B").opacity(0.10), Color(hex: "#8F7762").opacity(0.08)]
                 ),
                 startPoint: .top, endPoint: .bottom
             ).ignoresSafeArea()
@@ -704,9 +704,9 @@ private struct BackgroundSky: View {
                 center: .center, startRadius: 10, endRadius: 420
             ).ignoresSafeArea()
 
-            Nebula(color: themeManager.isRain ? Color(hex: "#3A5470").opacity(0.18) : themeManager.isNight ? Color.blue.opacity(0.10) : Color(hex: "#8F643E").opacity(0.12),
+                 Nebula(color: themeManager.isRain ? Color(hex: "#506674").opacity(0.16) : themeManager.isNight ? Color.blue.opacity(0.10) : Color(hex: "#8F7762").opacity(0.10),
                    size: 320, x: 0.15, y: 0.28, blur: 90)
-            Nebula(color: themeManager.isRain ? Color(hex: "#7EB8D4").opacity(0.10) : themeManager.isNight ? Color.purple.opacity(0.10) : Color(hex: "#D4A574").opacity(0.12),
+                 Nebula(color: themeManager.isRain ? Color(hex: "#8AA0AC").opacity(0.10) : themeManager.isNight ? Color.purple.opacity(0.10) : Color(hex: "#B79A7B").opacity(0.10),
                    size: 280, x: 0.82, y: 0.68, blur: 80)
 
             StarField(starColor: themeManager.isNight ? .white : Color.black.opacity(0.7))

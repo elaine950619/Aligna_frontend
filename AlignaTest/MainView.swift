@@ -3736,13 +3736,13 @@ struct MainView: View {
                 let isCross = unit(Double(index) * 11.17) > 0.55
 
                 let fillPalette: [Color] = [
-                    Color(hex: "#FFF4B3"),
-                    Color(hex: "#FFD700"),
-                    Color(hex: "#F4D69D")
+                    Color(hex: "#E8DDC0"),
+                    Color(hex: "#D8C59E"),
+                    Color(hex: "#DCC7AA")
                 ]
                 let strokePalette: [Color] = [
-                    Color(hex: "#D4A574"),
-                    Color(hex: "#C8925F")
+                    Color(hex: "#B79A7B"),
+                    Color(hex: "#B29172")
                 ]
 
                 let fill = fillPalette[index % fillPalette.count]
