@@ -969,8 +969,7 @@ private struct ContentViewPreviewContainer: View {
         themeManager.selected = isNight ? .night : .day
         _themeManager = StateObject(wrappedValue: themeManager)
 
-        _onboardingViewModel = StateObject(wrappedValue: OnboardingViewModel())
-    }
+        _onboardingViewModel = StateObject(wrappedValue: OnboardingViewModel())    }
 
     var body: some View {
         TimelineView(dailyVM: dailyVM, enableLoading: enableLoading)

@@ -1670,10 +1670,9 @@ struct ProfileView: View {
 
                     ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 12) {
-                            headerCard
-                            cosmicIdentityCard
+                            profileIdentityCard
                             personalInfoCard
-                            alynnaNumberCard
+                            alynnaNumberLoader
                             innerCircleEntryCard
                             preferencesCard
                             timelineCard
@@ -1963,71 +1962,10 @@ struct ProfileView: View {
 // MARK: - UI Sections
 private extension ProfileView {
 
-    // MARK: Cosmic Identity Card
-    var cosmicIdentityCard: some View {
-        Group {
-            if let identity = cosmicIdentity {
-                let isChinese = appLanguage == "zh-Hans"
-                let title   = isChinese ? identity.titleZH   : identity.titleEN
-                let tagline = isChinese ? identity.taglineZH : identity.taglineEN
-
-                VStack(spacing: 0) {
-                    // Decorative top rule
-                    HStack {
-                        Rectangle()
-                            .fill(themeManager.accent.opacity(0.25))
-                            .frame(height: 0.5)
-                        Image(systemName: "sparkle")
-                            .font(.system(size: 10, weight: .light))
-                            .foregroundColor(themeManager.accent.opacity(0.5))
-                        Rectangle()
-                            .fill(themeManager.accent.opacity(0.25))
-                            .frame(height: 0.5)
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 14)
-
-                    VStack(spacing: 6) {
-                        Text(title)
-                            .font(.custom("Gloock-Regular", size: 20))
-                            .foregroundColor(themeManager.primaryText)
-                            .multilineTextAlignment(.center)
-                            .tracking(0.4)
-
-                        Text(tagline)
-                            .font(.custom("Merriweather-Light", size: 12))
-                            .foregroundColor(themeManager.descriptionText.opacity(0.75))
-                            .multilineTextAlignment(.center)
-                            .lineSpacing(4)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 12)
-                    }
-
-                    // Decorative bottom rule
-                    HStack {
-                        Rectangle()
-                            .fill(themeManager.accent.opacity(0.25))
-                            .frame(height: 0.5)
-                        Image(systemName: "sparkle")
-                            .font(.system(size: 10, weight: .light))
-                            .foregroundColor(themeManager.accent.opacity(0.5))
-                        Rectangle()
-                            .fill(themeManager.accent.opacity(0.25))
-                            .frame(height: 0.5)
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 14)
-                }
-                .padding(.vertical, 4)
-                .frame(maxWidth: .infinity)
-                .transition(.opacity.combined(with: .scale(scale: 0.97)))
-            }
-        }
-        .animation(.easeInOut(duration: 0.4), value: cosmicIdentity?.titleEN)
-    }
-
-    var headerCard: some View {
-        VStack(spacing: 8) {
+    // MARK: Profile Identity Card (nickname + zodiac + cosmic identity merged)
+    var profileIdentityCard: some View {
+        VStack(spacing: 0) {
+            // — Nickname row —
             HStack(spacing: 8) {
                 if editingNickname {
                     TextField(String(localized: "profile.nickname_placeholder"), text: $nickname)
@@ -2059,7 +1997,7 @@ private extension ProfileView {
                     .foregroundColor(themeManager.accent)
                 } else {
                     Text(nickname.isEmpty ? "—" : nickname)
-                        .font(.custom("Merriweather-Regular", size: 36)) // ✅ 与编辑态完全一致
+                        .font(.custom("Merriweather-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
 
                     Button { editingNickname = true } label: {
@@ -2069,7 +2007,9 @@ private extension ProfileView {
                     }
                 }
             }
+            .padding(.bottom, 8)
 
+            // — Zodiac row —
             Button {
                 showZodiacInfoDialog = true
             } label: {
@@ -2087,10 +2027,78 @@ private extension ProfileView {
                 }
             }
             .buttonStyle(.plain)
+
+            // — Cosmic identity (shown once ready) —
+            if let identity = cosmicIdentity {
+                let isChinese = appLanguage == "zh-Hans"
+                let title   = isChinese ? identity.titleZH   : identity.titleEN
+                let tagline = isChinese ? identity.taglineZH : identity.taglineEN
+
+                // Divider leading into cosmic layer
+                HStack {
+                    Rectangle()
+                        .fill(themeManager.accent.opacity(0.22))
+                        .frame(height: 0.5)
+                    Image(systemName: "sparkle")
+                        .font(.system(size: 10, weight: .light))
+                        .foregroundColor(themeManager.accent.opacity(0.45))
+                    Rectangle()
+                        .fill(themeManager.accent.opacity(0.22))
+                        .frame(height: 0.5)
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+                .padding(.bottom, 12)
+
+                VStack(spacing: 5) {
+                    Text(title)
+                        .font(.custom("Gloock-Regular", size: 18))
+                        .foregroundColor(themeManager.primaryText.opacity(0.9))
+                        .multilineTextAlignment(.center)
+                        .tracking(0.4)
+
+                    Text(tagline)
+                        .font(.custom("Merriweather-Light", size: 11.5))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.7))
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(4)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 16)
+
+                    // Alynna number — below cosmic identity
+                    let rawNumber = viewModel.alynnaNumber
+                    if !rawNumber.isEmpty {
+                        HStack(spacing: 5) {
+                            Image(systemName: "number")
+                                .font(.system(size: 10, weight: .regular))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.7))
+                            Text(isAlynnaNumberRevealed ? rawNumber.alynnaNumberDisplay : rawNumber.alynnaNumberMasked)
+                                .font(.custom("Merriweather-Regular", size: 12))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.75))
+                                .monospacedDigit()
+                                .tracking(1.5)
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.18)) {
+                                    isAlynnaNumberRevealed.toggle()
+                                }
+                            } label: {
+                                Image(systemName: isAlynnaNumberRevealed ? "eye.slash" : "eye")
+                                    .font(.system(size: 10, weight: .regular))
+                                    .foregroundColor(themeManager.descriptionText.opacity(0.6))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.top, 6)
+                    }
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.97)))
+                .padding(.bottom, 4)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 16)
-        .padding(.bottom, 0)
+        .padding(.bottom, 4)
+        .animation(.easeInOut(duration: 0.4), value: cosmicIdentity?.titleEN)
     }
 
     var personalInfoCard: some View {
@@ -2629,6 +2637,17 @@ private extension ProfileView {
         }
     }
 
+    // MARK: Alynna Number Loader (invisible – triggers number fetch only)
+    var alynnaNumberLoader: some View {
+        Color.clear
+            .frame(height: 0)
+            .task(id: "alynna-number-profile") {
+                if viewModel.alynnaNumber.isEmpty {
+                    await viewModel.ensureAlynnaNumberLoaded()
+                }
+            }
+    }
+
     // MARK: Alynna Number Card
     //
     // Shows the user's permanent 8-digit Alynna number as a masked display
@@ -2716,13 +2735,6 @@ private extension ProfileView {
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .alignaCard()
-        .task(id: "alynna-number-profile") {
-            // If we landed on Profile before MainView's init fetched the number
-            // (e.g. navigated straight here after login), try again here.
-            if viewModel.alynnaNumber.isEmpty {
-                await viewModel.ensureAlynnaNumberLoaded()
-            }
-        }
     }
 
     var debugRitualResetCard: some View {
