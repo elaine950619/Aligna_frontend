@@ -997,8 +997,17 @@ struct BondDetailView: View {
     private func loadCompatibility() async {
         isLoading = true
         defer { isLoading = false }
+        // Pass the client's LOCAL date so the backend looks up each user's
+        // daily_recommendation doc under the same key the writer used
+        // (daily docs are written by appDayKey = local tz). Without this, a
+        // Cloud Run server in UTC may resolve "today" to a date for which no
+        // user has yet generated a mantra, yielding empty partner fields.
+        let localToday = DateFormatter.appDayKey.string(from: Date())
         do {
-            compatibility = try await AlynnaAPI.shared.compatibility(bondId: bond.bond_id)
+            compatibility = try await AlynnaAPI.shared.compatibility(
+                bondId: bond.bond_id,
+                date: localToday
+            )
         } catch {
             errorMessage = error.localizedDescription
         }
