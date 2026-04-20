@@ -126,10 +126,12 @@ struct AlynnaActionDialog: View {
             }
 
             // Thin separator between the two destructive/primary actions
-            Rectangle()
-                .fill(themeManager.panelStrokeHi.opacity(0.18))
-                .frame(height: 1)
-                .padding(.horizontal, 8)
+            if primaryButtonTitle != nil, secondaryButtonTitle != nil {
+                Rectangle()
+                    .fill(themeManager.panelStrokeHi.opacity(0.18))
+                    .frame(height: 1)
+                    .padding(.horizontal, 8)
+            }
 
             // Secondary action — same tone fill but lower opacity
             if let title = secondaryButtonTitle {
@@ -233,10 +235,10 @@ struct AlynnaActionDialog: View {
     // MARK: - Colour helpers
 
     private var cardFill: Color {
-        if themeManager.isRain     { return Color(hex: "#131F2E").opacity(0.98) }
+        if themeManager.isRain    { return Color(hex: "#131F2E").opacity(0.98) }
         if themeManager.isVitality { return Color(hex: "#EDF7EC").opacity(0.98) }
-        if themeManager.isLove     { return Color(hex: "#FDE8F0").opacity(0.98) }
-        if themeManager.isNight    { return Color(hex: "#0F1726").opacity(0.98) }
+        if themeManager.isLove    { return Color(hex: "#FDE8F0").opacity(0.98) }
+        if themeManager.isNight   { return Color(hex: "#0F1726").opacity(0.98) }
         return Color(hex: "#F5E6C8").opacity(0.98)
     }
 
@@ -262,9 +264,9 @@ struct AlynnaActionDialog: View {
 
     private var iconStrokeColor: Color {
         switch tone {
-        case .success:     return Color(hex: "#7DB58A").opacity(themeManager.isNight ? 0.65 : 0.40)
-        case .warning:     return Color(hex: "#D4AE67").opacity(themeManager.isNight ? 0.65 : 0.40)
-        case .error:       return Color(hex: "#D98E8A").opacity(themeManager.isNight ? 0.65 : 0.40)
+        case .success:     return Color(hex: "#7DB58A").opacity(themeManager.isNight ? 0.65 : 0.4)
+        case .warning:     return Color(hex: "#D4AE67").opacity(themeManager.isNight ? 0.65 : 0.4)
+        case .error:       return Color(hex: "#D98E8A").opacity(themeManager.isNight ? 0.65 : 0.4)
         case .destructive: return Color(hex: "#D45C63").opacity(themeManager.isNight ? 0.72 : 0.45)
         case .info:        return themeManager.panelStrokeHi.opacity(0.8)
         }
@@ -290,7 +292,7 @@ struct AlynnaActionDialog: View {
         }
     }
 
-    // Secondary: same hue as primary at roughly half opacity — visually subordinate but tonally related
+    // Secondary uses the same hue as primary but at roughly half the opacity — visually subordinate
     private var secondaryButtonFill: Color {
         switch tone {
         case .success:     return Color(hex: "#7DB58A").opacity(themeManager.isNight ? 0.16 : 0.10)
