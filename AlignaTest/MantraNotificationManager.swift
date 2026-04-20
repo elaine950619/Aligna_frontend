@@ -3,21 +3,24 @@ import UserNotifications
 import CoreLocation
 
 enum MantraNotificationManager {
-    static let morningIdentifier = "alynna_morning_sunrise"
-    static let eveningIdentifier = "alynna_evening_sunset"
+    static let morningIdentifier   = "alynna_morning_sunrise"
+    static let afternoonIdentifier = "alynna_afternoon_focus"
+    static let eveningIdentifier   = "alynna_evening_sunset"
 
     // MARK: - Public API
 
-    /// Schedule two daily notifications with personalised content.
-    /// - Morning: shows the mantra preview (first ~40 chars).
-    /// - Evening: adapts based on score, keywords and moon sign.
+    /// Schedule three daily notifications with personalised content.
+    /// - Morning:   shows the mantra preview (first ~40 chars).
+    /// - Afternoon: short focus encouragement at 15:30.
+    /// - Evening:   adapts based on score, keywords and moon sign.
     /// Call whenever mantra or score/keywords change.
     static func scheduleFixed(
         mantra: String,
         isChinese: Bool,
         score: Int = 0,
         keywords: [String] = [],
-        moonSign: String = ""
+        moonSign: String = "",
+        focusName: String = ""
     ) {
         let center = UNUserNotificationCenter.current()
         let times = notificationTimes()
@@ -28,6 +31,15 @@ enum MantraNotificationManager {
         schedule(identifier: morningIdentifier,
                  title: morningTitle, body: morningBody,
                  hour: times.morningHour, minute: times.morningMinute,
+                 center: center)
+
+        // ── Afternoon ─────────────────────────────────────────────
+        let (afternoonTitle, afternoonBody) = afternoonContent(
+            focusName: focusName, isChinese: isChinese
+        )
+        schedule(identifier: afternoonIdentifier,
+                 title: afternoonTitle, body: afternoonBody,
+                 hour: 15, minute: 30,
                  center: center)
 
         // ── Evening ───────────────────────────────────────────────
@@ -80,11 +92,12 @@ enum MantraNotificationManager {
         }
     }
 
-    /// Cancel both daily notifications.
+    /// Cancel all three daily notifications.
     static func cancelFixed() {
         let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: [morningIdentifier, eveningIdentifier])
-        center.removeDeliveredNotifications(withIdentifiers: [morningIdentifier, eveningIdentifier])
+        let ids = [morningIdentifier, afternoonIdentifier, eveningIdentifier]
+        center.removePendingNotificationRequests(withIdentifiers: ids)
+        center.removeDeliveredNotifications(withIdentifiers: ids)
     }
 
     // MARK: - Solar time helpers
@@ -125,6 +138,54 @@ enum MantraNotificationManager {
         if trimmed.count <= limit { return trimmed }
         let idx = trimmed.index(trimmed.startIndex, offsetBy: limit)
         return String(trimmed[..<idx]) + "…"
+    }
+
+    /// Afternoon content: short focus encouragement for the 15:00–16:00 energy low-point.
+    /// If focusName is provided the message gently references it.
+    private static func afternoonContent(focusName: String, isChinese: Bool) -> (title: String, body: String) {
+        let focus = focusName.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if isChinese {
+            let title = "下午好"
+            let body: String
+            if focus.isEmpty {
+                let options = [
+                    "能量低谷是正常的。喝口水，深呼吸，你已经做得很好了。",
+                    "午后是身体在提醒你慢下来。让自己休息一分钟也没关系。",
+                    "此刻不需要高效——只需要待在这里。",
+                    "下午的疲倦不是失败，是信号。听一听它想说什么。"
+                ]
+                body = options[Calendar.current.component(.day, from: Date()) % options.count]
+            } else {
+                let options = [
+                    "记得今天的方向：\(focus)。一小步也算前进。",
+                    "下午的低谷会过去。回到你的焦点——\(focus)。",
+                    "此刻停顿一下，再回到 \(focus) 时你会更清醒。"
+                ]
+                body = options[Calendar.current.component(.day, from: Date()) % options.count]
+            }
+            return (title, body)
+        } else {
+            let title = "Afternoon Check-in"
+            let body: String
+            if focus.isEmpty {
+                let options = [
+                    "Energy dips are normal. Drink some water, breathe — you're doing fine.",
+                    "Your body is asking for a pause. Even one minute of rest counts.",
+                    "You don't have to be productive right now. Just be here.",
+                    "Afternoon fatigue is a signal, not a failure. Listen to it."
+                ]
+                body = options[Calendar.current.component(.day, from: Date()) % options.count]
+            } else {
+                let options = [
+                    "Remember your focus today: \(focus). One small step still counts.",
+                    "The afternoon dip will pass. Come back to \(focus) when you're ready.",
+                    "A short pause now will bring you back to \(focus) with more clarity."
+                ]
+                body = options[Calendar.current.component(.day, from: Date()) % options.count]
+            }
+            return (title, body)
+        }
     }
 
     /// Evening content: adapts to score, keywords and moon sign.

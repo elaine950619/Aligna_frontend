@@ -5285,7 +5285,11 @@ struct MainView: View {
                         if dailyMantraNotificationEnabled {
                             MantraNotificationManager.scheduleFixed(
                                 mantra: trimmed,
-                                isChinese: currentRecommendationLanguageCode() == "zh-Hans"
+                                isChinese: currentRecommendationLanguageCode() == "zh-Hans",
+                                score: viewModel.dailyScore,
+                                keywords: viewModel.dailyKeywords,
+                                moonSign: widgetMoonSign.trimmingCharacters(in: .whitespacesAndNewlines),
+                                focusName: activeFocus.map { focusDisplayName(for: $0) } ?? ""
                             )
                         }
                     }
@@ -5308,7 +5312,11 @@ struct MainView: View {
                 if dailyMantraNotificationEnabled {
                     MantraNotificationManager.scheduleFixed(
                         mantra: newValue,
-                        isChinese: currentRecommendationLanguageCode() == "zh-Hans"
+                        isChinese: currentRecommendationLanguageCode() == "zh-Hans",
+                        score: viewModel.dailyScore,
+                        keywords: viewModel.dailyKeywords,
+                        moonSign: widgetMoonSign.trimmingCharacters(in: .whitespacesAndNewlines),
+                        focusName: activeFocus.map { focusDisplayName(for: $0) } ?? ""
                     )
                 }
             }
@@ -5318,7 +5326,11 @@ struct MainView: View {
                     let text = mantra.isEmpty ? cachedDailyMantra : mantra
                     MantraNotificationManager.scheduleFixed(
                         mantra: text,
-                        isChinese: currentRecommendationLanguageCode() == "zh-Hans"
+                        isChinese: currentRecommendationLanguageCode() == "zh-Hans",
+                        score: viewModel.dailyScore,
+                        keywords: viewModel.dailyKeywords,
+                        moonSign: widgetMoonSign.trimmingCharacters(in: .whitespacesAndNewlines),
+                        focusName: activeFocus.map { focusDisplayName(for: $0) } ?? ""
                     )
                 }
             }
