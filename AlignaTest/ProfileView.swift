@@ -2621,7 +2621,8 @@ private extension ProfileView {
 
     // MARK: Inner Circle Entry Row
     // Sits directly below the Alynna number card as the natural "now what?"
-    // — this is what the number is for.
+    // — this is what the number is for. Shows a red dot with count when
+    // there are pending bond requests waiting for the user's response.
     var innerCircleEntryCard: some View {
         NavigationLink {
             BondsView()
@@ -2629,11 +2630,33 @@ private extension ProfileView {
                 .environmentObject(themeManager)
                 .environmentObject(starManager)
         } label: {
-            rowCard(
-                icon: "person.2",
-                title: String(localized: "profile.inner_circle_title"),
-                subtitle: String(localized: "profile.inner_circle_subtitle")
-            )
+            ZStack(alignment: .topTrailing) {
+                rowCard(
+                    icon: "person.2",
+                    title: String(localized: "profile.inner_circle_title"),
+                    subtitle: String(localized: "profile.inner_circle_subtitle")
+                )
+                let pendingCount = viewModel.pendingReceivedRequests.count
+                if pendingCount > 0 {
+                    Text("\(min(pendingCount, 9))")
+                        .font(.custom("Merriweather-Bold", size: 10))
+                        .foregroundColor(.white)
+                        .frame(minWidth: 18, minHeight: 18)
+                        .padding(.horizontal, 4)
+                        .background(Circle().fill(Color.red.opacity(0.88)))
+                        .overlay(
+                            Circle()
+                                .stroke(themeManager.onboardingPanelFill, lineWidth: 1.5)
+                        )
+                        .offset(x: 6, y: -6)
+                        .accessibilityLabel(
+                            Text(String(
+                                format: String(localized: "bonds.pending_badge_a11y"),
+                                pendingCount
+                            ))
+                        )
+                }
+            }
         }
     }
 

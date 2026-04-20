@@ -1,5 +1,7 @@
 import Foundation
 import SwiftUI
+import UIKit
+import UserNotifications
 import FirebaseAuth
 import FirebaseFirestore
 
@@ -107,5 +109,44 @@ extension OnboardingViewModel {
         try await AlynnaAPI.shared.unblockNumber(number)
         let digits = number.filter(\.isNumber)
         blockedNumbers.removeAll { $0 == digits }
+    }
+
+    // MARK: - Real-time listener (fallback for push)
+
+    /// Start the Firestore listener for incoming bond requests. Any change
+    /// triggers a `refreshBonds()` + updates the app icon badge to reflect
+    /// the current pending-received count. Safe to call repeatedly.
+    @MainActor
+    func attachBondListener() {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+
+        BondRequestListener.shared.onChange = { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self = self else { return }
+                await self.refreshBonds()
+                Self.updateAppIconBadge(count: self.pendingReceivedRequests.count)
+            }
+        }
+        BondRequestListener.shared.start(for: uid)
+    }
+
+    /// Detach the listener and clear the badge. Call on sign-out.
+    @MainActor
+    func detachBondListener() {
+        BondRequestListener.shared.stop()
+        Self.updateAppIconBadge(count: 0)
+    }
+
+    /// Set the iOS app icon badge. Uses the new UserNotifications API on
+    /// iOS 16+ and falls back to the deprecated UIApplication API otherwise.
+    private static func updateAppIconBadge(count: Int) {
+        let safe = max(0, count)
+        if #available(iOS 16.0, *) {
+            UNUserNotificationCenter.current().setBadgeCount(safe) { _ in }
+        } else {
+            DispatchQueue.main.async {
+                UIApplication.shared.applicationIconBadgeNumber = safe
+            }
+        }
     }
 }

@@ -534,6 +534,19 @@ struct RootRouter: View {
                 setRouteState(isAuthenticated: nextIsAuthenticated)
                 print("Auth state -> isAuthenticated=\(nextIsAuthenticated)")
 
+                // Bond-request real-time listener — our push-notification
+                // fallback. When authenticated, listen for incoming requests;
+                // when signed out, stop and clear the icon badge.
+                if nextIsAuthenticated {
+                    Task { @MainActor in
+                        onboardingViewModel.attachBondListener()
+                    }
+                } else {
+                    Task { @MainActor in
+                        onboardingViewModel.detachBondListener()
+                    }
+                }
+
                 // Schedule moon ritual notification if today is new/full moon
                 if user != nil, let phase = AstroCalculator.moonRitualPhaseToday() {
                     let isChinese = Locale.current.language.languageCode?.identifier == "zh"
