@@ -489,6 +489,7 @@ struct BondDetailView: View {
     @State private var showSeverConfirm = false
     @State private var clearHistoryImmediately = false
     @State private var isSeverInFlight = false
+    @State private var showBreakdownInfo = false
 
     /// Always reflects the latest partner data from the live bonds list.
     /// Falls back to the original snapshot if the bond is no longer in the list
@@ -810,11 +811,23 @@ struct BondDetailView: View {
             ("score_proximity",   "bonds.component_score"),
         ]
         return VStack(alignment: .leading, spacing: 14) {
-            Text(String(localized: "bonds.breakdown_title"))
-                .font(.custom("Merriweather-Regular", size: 11))
-                .foregroundColor(themeManager.descriptionText.opacity(0.60))
-                .tracking(1.4)
-                .textCase(.uppercase)
+            // Title row + info button
+            HStack {
+                Text(String(localized: "bonds.breakdown_title"))
+                    .font(.custom("Merriweather-Regular", size: 11))
+                    .foregroundColor(themeManager.descriptionText.opacity(0.60))
+                    .tracking(1.4)
+                    .textCase(.uppercase)
+                Spacer()
+                Button {
+                    showBreakdownInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.45))
+                }
+                .accessibilityLabel(Text(String(localized: "bonds.breakdown_info_label")))
+            }
             ForEach(order, id: \.0) { key, localizationKey in
                 if let value = components[key] {
                     let fraction = min(CGFloat(value) / 100.0, 1.0)
@@ -858,6 +871,75 @@ struct BondDetailView: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .alignaCard()
+        .sheet(isPresented: $showBreakdownInfo) {
+            breakdownInfoSheet
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
+    }
+
+    /// Half-sheet explaining each compatibility dimension.
+    private var breakdownInfoSheet: some View {
+        let items: [(String, String, String)] = [
+            ("bonds.component_chart",  "chart.pie",         "bonds.component_chart_desc"),
+            ("bonds.component_intent", "target",            "bonds.component_intent_desc"),
+            ("bonds.component_focus",  "sparkles",          "bonds.component_focus_desc"),
+            ("bonds.component_score",  "waveform.path.ecg", "bonds.component_score_desc"),
+        ]
+        return VStack(alignment: .leading, spacing: 0) {
+            // Handle + header
+            HStack {
+                Text(String(localized: "bonds.breakdown_info_title"))
+                    .font(.custom("Merriweather-Bold", size: 16))
+                    .foregroundColor(themeManager.primaryText)
+                Spacer()
+                Button { showBreakdownInfo = false } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(themeManager.descriptionText.opacity(0.40))
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
+            .padding(.bottom, 20)
+
+            Divider()
+                .background(themeManager.accent.opacity(0.15))
+                .padding(.horizontal, 24)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(items.enumerated()), id: \.offset) { idx, item in
+                        let (nameKey, icon, descKey) = item
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: 10) {
+                                Image(systemName: icon)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(themeManager.accent.opacity(0.80))
+                                    .frame(width: 20)
+                                Text(String(localized: String.LocalizationValue(nameKey)))
+                                    .font(.custom("Merriweather-Bold", size: 13))
+                                    .foregroundColor(themeManager.primaryText)
+                            }
+                            Text(String(localized: String.LocalizationValue(descKey)))
+                                .font(AlynnaTypography.font(.subheadline))
+                                .foregroundColor(themeManager.descriptionText.opacity(0.75))
+                                .lineSpacing(3)
+                                .padding(.leading, 30)
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 16)
+
+                        if idx < items.count - 1 {
+                            Divider()
+                                .background(themeManager.accent.opacity(0.10))
+                                .padding(.horizontal, 24)
+                        }
+                    }
+                }
+            }
+        }
+        .background(themeManager.panelFill.ignoresSafeArea())
     }
 
     // MARK: - Helpers

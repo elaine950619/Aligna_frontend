@@ -1133,6 +1133,38 @@
         }
       }
     },
+    "bonds.breakdown_info_label" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About these dimensions"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "了解各维度"
+          }
+        }
+      }
+    },
+    "bonds.breakdown_info_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How alignment is calculated"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "合盘是怎么算的"
+          }
+        }
+      }
+    },
     "bonds.breakdown_title" : {
       "localizations" : {
         "en" : {
@@ -1230,6 +1262,23 @@
         }
       }
     },
+    "bonds.component_chart_desc" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Based on both birth charts, this reflects your long-term natural resonance — how your personalities and energies complement each other at the astrological level."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "基于双方出生星盘，反映你们在性格与能量层面的天然共鸣。分数越高，说明星盘结构越契合。"
+          }
+        }
+      }
+    },
     "bonds.component_focus" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1243,6 +1292,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "课题契合"
+          }
+        }
+      }
+    },
+    "bonds.component_focus_desc" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Measures how closely your chosen focus areas overlap or complement each other today. Shared or complementary focuses tend to create stronger daily synergy."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "衡量双方今日所选课题的交集或互补程度。课题相近或互补，往往意味着今天的协同效果更强。"
           }
         }
       }
@@ -1264,6 +1330,23 @@
         }
       }
     },
+    "bonds.component_intent_desc" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compares your primary intentions for today — such as rest, connection, or growth. Higher alignment means you're moving in a similar direction right now."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "对比双方今日的主要意图（如恢复、连接、成长）。分数越高，说明你们今天的行动方向越一致。"
+          }
+        }
+      }
+    },
     "bonds.component_score" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1277,6 +1360,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "和度接近"
+          }
+        }
+      }
+    },
+    "bonds.component_score_desc" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compares your today's energy scores. The closer your scores, the more in-sync your day's rhythms are — making it easier to connect and collaborate."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "对比双方今日的能量评分差距。评分越接近，说明今天的状态越同步，彼此沟通和配合的效果也越好。"
           }
         }
       }
