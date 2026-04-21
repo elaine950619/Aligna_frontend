@@ -62,7 +62,7 @@ public struct AstroCalculator {
     }
 
     // MARK: - 3) Sun ecliptic longitude (approx)
-    private static func sunLongitudeDegrees(_ date: Date) -> Double {
+    public static func sunLongitudeDegrees(_ date: Date) -> Double {
         let T = centuriesSinceJ2000(date)
         let L0 = normalize(280.46646 + 36000.76983 * T + 0.0003032 * T*T)
         let M  = normalize(357.52911 + 35999.05029 * T - 0.0001537 * T*T)
@@ -74,7 +74,7 @@ public struct AstroCalculator {
     }
 
     // MARK: - 4) Moon ecliptic longitude (approx)
-    private static func moonLongitudeDegrees(_ date: Date) -> Double {
+    public static func moonLongitudeDegrees(_ date: Date) -> Double {
         let T = centuriesSinceJ2000(date)
         let L0 = normalize(218.3164477 + 481267.88123421 * T - 0.0015786 * T*T)
         let D  = normalize(297.8501921 + 445267.1114034 * T - 0.0018819 * T*T)
@@ -101,10 +101,11 @@ public struct AstroCalculator {
     }
 
     // MARK: - 5) Ascendant ecliptic longitude (approx)
-    // Convert the birthplace civil time into an absolute UTC instant for sidereal-time math.
-    private static func ascendantLongitudeDegrees(_ info: BirthInfo) -> Double {
-        let utcDate = info.date.addingTimeInterval(-Double(info.timezoneOffsetMinutes * 60))
-        let jd = julianDay(utcDate)
+
+    /// Direct UTC + observer-coordinate variant, used for current-transit ascendant.
+    public static func ascendantLongitudeDegrees(dateUTC: Date,
+                                                 coordinate: CLLocationCoordinate2D) -> Double {
+        let jd = julianDay(dateUTC)
         let T  = (jd - 2451545.0) / 36525.0
 
         var gmst = 280.46061837
@@ -113,10 +114,10 @@ public struct AstroCalculator {
                 - (T*T*T) / 38710000.0
         gmst = normalize(gmst)
 
-        let lst = normalize(gmst + info.longitude)
+        let lst = normalize(gmst + coordinate.longitude)
         let eps = 23.439291 - 0.0130042 * T
         let epsR = deg2rad(eps)
-        let latR = deg2rad(info.latitude)
+        let latR = deg2rad(coordinate.latitude)
         let lstR = deg2rad(lst)
 
         let numerator = -cos(lstR)
@@ -125,6 +126,15 @@ public struct AstroCalculator {
         var ascDeg = normalize(rad2deg(asc))
         if ascDeg < 0 { ascDeg += 360.0 }
         return ascDeg
+    }
+
+    // Convert the birthplace civil time into an absolute UTC instant for sidereal-time math.
+    public static func ascendantLongitudeDegrees(_ info: BirthInfo) -> Double {
+        let utcDate = info.date.addingTimeInterval(-Double(info.timezoneOffsetMinutes * 60))
+        return ascendantLongitudeDegrees(
+            dateUTC: utcDate,
+            coordinate: CLLocationCoordinate2D(latitude: info.latitude, longitude: info.longitude)
+        )
     }
 
     // MARK: - 6) Map ecliptic longitude to sign
@@ -147,6 +157,58 @@ public struct AstroCalculator {
     // `BirthInfo.date` here should be the birthplace civil birth time, not UTC.
     public static func ascendantSign(info: BirthInfo) -> ZodiacSign {
         sign(fromEclipticLongitude: ascendantLongitudeDegrees(info))
+    }
+
+    // For current-transit ascendant: pass a UTC instant and the observer's coordinate.
+    public static func ascendantSign(dateUTC: Date, coordinate: CLLocationCoordinate2D) -> ZodiacSign {
+        sign(fromEclipticLongitude: ascendantLongitudeDegrees(dateUTC: dateUTC, coordinate: coordinate))
+    }
+
+    // MARK: - 7) Ecliptic longitude → compass azimuth
+
+    /// Converts an ecliptic longitude (degrees) to a compass azimuth (degrees, 0 = N, 90 = E, 180 = S, 270 = W)
+    /// for a given observer location and moment in time.
+    public static func azimuth(
+        eclipticLongitude lon: Double,
+        date: Date,
+        coordinate: CLLocationCoordinate2D
+    ) -> Double {
+        let T = centuriesSinceJ2000(date)
+        let lonR = deg2rad(lon)
+
+        // Obliquity of the ecliptic
+        let eps  = 23.439291 - 0.013004 * T
+        let epsR = deg2rad(eps)
+
+        // Ecliptic → equatorial (β = 0, on the ecliptic plane)
+        let raR  = atan2(sin(lonR) * cos(epsR), cos(lonR))  // Right Ascension (radians)
+        let decR = asin(sin(epsR) * sin(lonR))              // Declination (radians)
+
+        // Greenwich Mean Sidereal Time (degrees)
+        let jd = julianDay(date)
+        var gmst = 280.46061837
+                 + 360.98564736629 * (jd - 2451545.0)
+                 + 0.000387933 * T * T
+                 - (T * T * T) / 38710000.0
+        gmst = normalize(gmst)
+
+        // Hour Angle (degrees → radians)
+        let lst = normalize(gmst + coordinate.longitude)
+        let H   = deg2rad(normalize(lst - rad2deg(raR)))
+
+        let latR = deg2rad(coordinate.latitude)
+
+        // Azimuth from North, clockwise
+        let az = atan2(-sin(H), tan(decR) * cos(latR) - sin(latR) * cos(H))
+        return normalize(rad2deg(az))
+    }
+
+    public static func sunAzimuth(date: Date, coordinate: CLLocationCoordinate2D) -> Double {
+        azimuth(eclipticLongitude: sunLongitudeDegrees(date), date: date, coordinate: coordinate)
+    }
+
+    public static func moonAzimuth(date: Date, coordinate: CLLocationCoordinate2D) -> Double {
+        azimuth(eclipticLongitude: moonLongitudeDegrees(date), date: date, coordinate: coordinate)
     }
 
     // MARK: - Moon Ritual Detection

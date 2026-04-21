@@ -2268,6 +2268,1017 @@
     "Copy" : {
 
     },
+    "cosmic_map.aspect.conjunction.meaning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Energy merged"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "能量叠加"
+          }
+        }
+      }
+    },
+    "cosmic_map.aspect.conjunction.name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conjunction"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "合相"
+          }
+        }
+      }
+    },
+    "cosmic_map.aspect.opposition.meaning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Balancing poles"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平衡拉扯"
+          }
+        }
+      }
+    },
+    "cosmic_map.aspect.opposition.name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opposition"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "对冲"
+          }
+        }
+      }
+    },
+    "cosmic_map.aspect.sextile.meaning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opportunity"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "机会显现"
+          }
+        }
+      }
+    },
+    "cosmic_map.aspect.sextile.name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sextile"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "六分"
+          }
+        }
+      }
+    },
+    "cosmic_map.aspect.square.meaning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tension-driven growth"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "张力推动"
+          }
+        }
+      }
+    },
+    "cosmic_map.aspect.square.name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Square"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "四分"
+          }
+        }
+      }
+    },
+    "cosmic_map.aspect.trine.meaning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Harmonic flow"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "和谐流动"
+          }
+        }
+      }
+    },
+    "cosmic_map.aspect.trine.name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trine"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "三分"
+          }
+        }
+      }
+    },
+    "cosmic_map.body.ascendant.label" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asc"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上升"
+          }
+        }
+      }
+    },
+    "cosmic_map.body.moon.label" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moon"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "月亮"
+          }
+        }
+      }
+    },
+    "cosmic_map.body.sun.label" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sun"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "太阳"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.aspects.harmonic.meaning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Harmonic · energies aligned"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "吉相 · 能量共振"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.aspects.harmonic.name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conjunction / Trine"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "合相 / 三分"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.aspects.none.meaning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Runs at its own pace"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按自身节奏"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.aspects.none.name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No aspect"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无显著"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.aspects.sextile.meaning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opportunity · step forward"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "机会相 · 主动把握"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.aspects.sextile.name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sextile"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "六分"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.aspects.tense.meaning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tension · needs adjustment"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "张力相 · 需要调整"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.aspects.tense.name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Square / Opposition"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "四分 / 对冲"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.bodies.asc.desc" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outward persona · your social shell"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "对外呈现、人格外壳"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.bodies.moon.desc" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Emotional core · how feelings flow"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "情感内核、情绪流动的方式"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.bodies.note" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Each body appears twice on the map: **transit** + **natal**."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每个天体在图上显示两次:**流年位置** + **本命位置**。"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.bodies.sun.desc" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Core will · who you aspire to be"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "核心意志、你想成为的样子"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.colors.natal.desc" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where it was at the moment of birth"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "出生时刻的快照"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.colors.natal.label" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Natal color"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本命色"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.colors.transit.desc" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where it sits in the sky right now"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当下天空中的位置"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.colors.transit.label" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transit color"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "流年色"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.footer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap ☉ / ☽ / ↑ at the bottom to toggle each aspect sector."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轻点底部 ☉ / ☽ / ↑ 卡片可单独开关对应扇形。"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.ring.bullet1" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The outer black-and-white band is the **zodiac**, Aries → Pisces in ecliptic order."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "外圈的黑白斑马带是**十二宫**,白羊 → 双鱼按黄道顺序排列。"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.ring.bullet2" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Each 30° segment holds one sign; its glyph floats within."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每段 30°,星座符号浮在对应宫位上。"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.section.aspects" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aspects · sector colors"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "相位 · 扇形色"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.section.bodies" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Three key points"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "三个关键天体"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.section.colors" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transit vs Natal"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "流年 vs 本命"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.section.ring" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zodiac ring"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "星座环"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.subtitle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read the sky above you"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "读懂你头顶的天空"
+          }
+        }
+      }
+    },
+    "cosmic_map.info.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cosmic Orientation"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "星盘罗盘"
+          }
+        }
+      }
+    },
+    "cosmic_map.legend_hint" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "natal → now"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本命 → 当下"
+          }
+        }
+      }
+    },
+    "cosmic_map.legend_natal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Natal"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本命"
+          }
+        }
+      }
+    },
+    "cosmic_map.legend_now" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Now"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "天象"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.ascendant.conjunction" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Persona refresh — transit ASC meets natal ASC, your outward shell and first impression renew."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "人格焕新 — 流年上升接续本命,外在形象与人格外壳发生更新。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.ascendant.none" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No notable aspect — transit ASC and natal ASC are out of alignment; your outward persona runs at baseline."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无显著相位 — 流年上升与本命暂无角度关联,对外呈现的人格外壳处于常态。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.ascendant.opposition" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mirrored by others — 180° opposition, others' perceptions reflect your hidden edges; practice accepting difference."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "他者镜照 — 180° 对冲,通过他人如何看你反过来理解自己,学习接纳差异。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.ascendant.sextile" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Social opening — 60° harmonic, social doors open, easier to be seen and well-received."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "社交契机 — 60° 和谐角,人际场域打开,容易被看见并获得积极回应。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.ascendant.square" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Image friction — 90° tension, how you present clashes with your core self; identity feels strained."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "形象摩擦 — 90° 紧张角,对外呈现与本命人格不一致,感受到身份拉扯。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.ascendant.trine" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Natural presence — 120° harmonic flow, express your true self effortlessly; actions feel smooth."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自然呈现 — 120° 和谐流动,无需用力就能表达真实的自己,举止流畅自然。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.moon.conjunction" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Emotional reset — transit Moon activates natal Moon, sensitivity rises; good for healing and self-care."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "情感重置 — 流年月亮激活本命月亮,情绪敏感度升高,适合疗愈与自我关照。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.moon.none" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No notable aspect — transit Moon and natal Moon aren't resonating; emotions run on their own cycle."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无显著相位 — 流年月亮与本命暂无共振,情绪维度在自己的周期中自由流转。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.moon.opposition" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inner / outer pull — 180° opposition, emotional needs clash with outside demands; integrate the two rhythms."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "内外拉扯 — 180° 对冲,情感需求与现实要求两极对峙,需整合内外节奏。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.moon.sextile" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feelings open up — 60° harmonic, emotions find expression and get received; good for deep talks."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "情绪开启 — 60° 和谐角,感受容易被表达与接纳,适合深度交流。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.moon.square" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Emotional turbulence — 90° tension, inner feelings and outer circumstances pull against each other; easy to overreact."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "情绪波动 — 90° 紧张角,内在感受与外部情境拉扯,容易情绪化反应。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.moon.trine" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Emotional calm — 120° harmonic flow, inner and outer rhythms are in sync; steady, open mood."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "情绪平顺 — 120° 和谐流动,内外节奏同步,心绪平稳开朗。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.sun.conjunction" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Will refresh — transit Sun returns to natal position, core goals reset; time to re-set direction."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "意志刷新 — 流年太阳回到本命位置,核心目标归零重启,适合重新设定方向。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.sun.none" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No notable aspect — transit Sun and natal Sun aren't resonating right now; core will runs on its own rhythm."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无显著相位 — 流年太阳与本命暂无明确角度共振,核心意志按自身节奏独立运行。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.sun.opposition" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Self mirrored — 180° opposition, relationships reflect you back; balance inner and outer."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自我映照 — 180° 对冲,通过与他人关系镜照看清自己,平衡内外张力。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.sun.sextile" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expression channel — 60° harmonic, assert your will freely; positive response likely."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "表达机会 — 60° 和谐角,可主动表达自我意志,容易得到积极回应。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.sun.square" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Will conflict — 90° tension, action direction clashes with natal identity; re-calibrate choices."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "意志对抗 — 90° 紧张相位,行动方向与本命定位冲突,需要校准取舍。"
+          }
+        }
+      }
+    },
+    "cosmic_map.meaning.sun.trine" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Will in flow — 120° harmonic, inner drive and outer rhythm align; good for long-term progress."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "意志顺流 — 120° 和谐流动,内在动力与外在节奏共振,适合推进长期目标。"
+          }
+        }
+      }
+    },
+    "cosmic_map.no_natal_hint" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No natal chart yet — fill in your birth details in Profile to unlock full aspect analysis."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未设置本命盘,暂无相位对照。请在个人资料里填写出生资料解锁完整分析。"
+          }
+        }
+      }
+    },
+    "cosmic_map.subtitle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sky, right now"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你与当下的天象方位"
+          }
+        }
+      }
+    },
+    "cosmic_map.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cosmic Orientation"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "星图罗盘"
+          }
+        }
+      }
+    },
     "Could not capture the screenshot." : {
       "localizations" : {
         "zh-Hans" : {
@@ -3368,6 +4379,22 @@
         }
       }
     },
+    "focus.name.anniversary" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anniversary"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "纪念日"
+          }
+        }
+      }
+    },
     "focus.name.anxiety" : {
       "localizations" : {
         "en" : {
@@ -3380,6 +4407,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "焦虑"
+          }
+        }
+      }
+    },
+    "focus.name.birthday" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Birthday"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生日"
           }
         }
       }
@@ -3496,6 +4539,38 @@
         }
       }
     },
+    "focus.name.digital_detox" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Digital Detox"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "数字排毒"
+          }
+        }
+      }
+    },
+    "focus.name.empty_nest" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empty Nest"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "空巢"
+          }
+        }
+      }
+    },
     "focus.name.end_of_life" : {
       "localizations" : {
         "en" : {
@@ -3508,6 +4583,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "生命终章"
+          }
+        }
+      }
+    },
+    "focus.name.entrepreneurship" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entrepreneurship"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创业"
+          }
+        }
+      }
+    },
+    "focus.name.exam" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exam"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "考试"
           }
         }
       }
@@ -3576,6 +4683,54 @@
         }
       }
     },
+    "focus.name.friendship" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Friendship"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "友情"
+          }
+        }
+      }
+    },
+    "focus.name.graduation" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Graduation"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "毕业"
+          }
+        }
+      }
+    },
+    "focus.name.gratitude" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gratitude"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "感恩"
+          }
+        }
+      }
+    },
     "focus.name.grief" : {
       "localizations" : {
         "en" : {
@@ -3592,6 +4747,22 @@
         }
       }
     },
+    "focus.name.heartbreak" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heartbreak"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "心碎"
+          }
+        }
+      }
+    },
     "focus.name.identity" : {
       "localizations" : {
         "en" : {
@@ -3604,6 +4775,86 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "自我认同"
+          }
+        }
+      }
+    },
+    "focus.name.job_search" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Job Search"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "求职"
+          }
+        }
+      }
+    },
+    "focus.name.loneliness" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loneliness"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "孤独"
+          }
+        }
+      }
+    },
+    "focus.name.long_distance" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Long Distance"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "异地"
+          }
+        }
+      }
+    },
+    "focus.name.menopause" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menopause"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更年期"
+          }
+        }
+      }
+    },
+    "focus.name.menstrual" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menstrual Cycle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生理周期"
           }
         }
       }
@@ -3736,54 +4987,6 @@
         }
       }
     },
-    "focus.name.transition" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Transition"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "人生过渡"
-          }
-        }
-      }
-    },
-    "focus.name.heartbreak" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Heartbreak"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "心碎"
-          }
-        }
-      }
-    },
-    "focus.name.friendship" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Friendship"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "友情"
-          }
-        }
-      }
-    },
     "focus.name.singlehood" : {
       "localizations" : {
         "en" : {
@@ -3796,198 +4999,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "独身生活"
-          }
-        }
-      }
-    },
-    "focus.name.long_distance" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Long Distance"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "异地"
-          }
-        }
-      }
-    },
-    "focus.name.menstrual" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Menstrual Cycle"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "生理周期"
-          }
-        }
-      }
-    },
-    "focus.name.menopause" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Menopause"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "更年期"
-          }
-        }
-      }
-    },
-    "focus.name.graduation" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Graduation"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "毕业"
-          }
-        }
-      }
-    },
-    "focus.name.empty_nest" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Empty Nest"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "空巢"
-          }
-        }
-      }
-    },
-    "focus.name.loneliness" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loneliness"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "孤独"
-          }
-        }
-      }
-    },
-    "focus.name.job_search" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Job Search"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "求职"
-          }
-        }
-      }
-    },
-    "focus.name.exam" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Exam"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "考试"
-          }
-        }
-      }
-    },
-    "focus.name.entrepreneurship" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Entrepreneurship"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "创业"
-          }
-        }
-      }
-    },
-    "focus.name.gratitude" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gratitude"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "感恩"
-          }
-        }
-      }
-    },
-    "focus.name.birthday" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Birthday"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "生日"
-          }
-        }
-      }
-    },
-    "focus.name.anniversary" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Anniversary"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "纪念日"
           }
         }
       }
@@ -4008,18 +5019,18 @@
         }
       }
     },
-    "focus.name.digital_detox" : {
+    "focus.name.transition" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Digital Detox"
+            "value" : "Transition"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "数字排毒"
+            "value" : "人生过渡"
           }
         }
       }
@@ -6164,6 +7175,102 @@
         }
       }
     },
+    "main.empty_state.action.retry" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Again"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新生成"
+          }
+        }
+      }
+    },
+    "main.empty_state.action.settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前往设置"
+          }
+        }
+      }
+    },
+    "main.empty_state.generation_failed.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong while generating your guidance. Tap below to try again."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日内容生成时遇到问题，请点击下方重试。"
+          }
+        }
+      }
+    },
+    "main.empty_state.generation_failed.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's Guidance Unavailable"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日指引暂时无法生成"
+          }
+        }
+      }
+    },
+    "main.empty_state.location_denied.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aligna uses your location to tailor guidance to your time and place. Please enable location access in Settings."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aligna 需要您的位置来生成与当下时空契合的指引，请在设置中开启位置权限。"
+          }
+        }
+      }
+    },
+    "main.empty_state.location_denied.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location Access Needed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要位置权限"
+          }
+        }
+      }
+    },
     "main.focus_explanation" : {
       "localizations" : {
         "en" : {
@@ -6384,102 +7491,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "分享"
-          }
-        }
-      }
-    },
-    "main.empty_state.action.retry" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Try Again"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重新生成"
-          }
-        }
-      }
-    },
-    "main.empty_state.action.settings" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open Settings"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "前往设置"
-          }
-        }
-      }
-    },
-    "main.empty_state.generation_failed.body" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Something went wrong while generating your guidance. Tap below to try again."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "今日内容生成时遇到问题，请点击下方重试。"
-          }
-        }
-      }
-    },
-    "main.empty_state.generation_failed.title" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today's Guidance Unavailable"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "今日指引暂时无法生成"
-          }
-        }
-      }
-    },
-    "main.empty_state.location_denied.body" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aligna uses your location to tailor guidance to your time and place. Please enable location access in Settings."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aligna 需要您的位置来生成与当下时空契合的指引，请在设置中开启位置权限。"
-          }
-        }
-      }
-    },
-    "main.empty_state.location_denied.title" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Location Access Needed"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "需要位置权限"
           }
         }
       }

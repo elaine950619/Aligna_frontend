@@ -1672,6 +1672,7 @@ struct ProfileView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             profileIdentityCard
                             personalInfoCard
+                            cosmicMapCard
                             alynnaNumberLoader
                             innerCircleEntryCard
                             preferencesCard
@@ -2099,6 +2100,23 @@ private extension ProfileView {
         .padding(.top, 16)
         .padding(.bottom, 4)
         .animation(.easeInOut(duration: 0.4), value: cosmicIdentity?.titleEN)
+    }
+
+    // MARK: Cosmic Map Card
+    var cosmicMapCard: some View {
+        NavigationLink {
+            CosmicMapView(
+                natalBirthInfo: (birthLat != 0 || birthLng != 0) ? birthInfo : nil
+            )
+            .environmentObject(themeManager)
+            .environmentObject(starManager)
+        } label: {
+            rowCard(
+                icon: "sparkles",
+                title: String(localized: "cosmic_map.title"),
+                subtitle: String(localized: "cosmic_map.subtitle")
+            )
+        }
     }
 
     var personalInfoCard: some View {

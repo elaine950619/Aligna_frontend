@@ -49,6 +49,8 @@
 		B9B23F2F2F219EB800E620E2 /* Merriweather-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F2B2F219EB800E620E2 /* Merriweather-Black.ttf */; };
 		B9B23F372F219F1900E620E2 /* Merriweather-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F352F219F1900E620E2 /* Merriweather-LightItalic.ttf */; };
 		B9B23F482F21A19200E620E2 /* Merriweather-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9B23F442F21A19200E620E2 /* Merriweather-Light.ttf */; };
+		F233C3CA2F97206E00A6A64C /* NotoSansSymbols2-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F233C3C92F97206E00A6A64C /* NotoSansSymbols2-Regular.ttf */; };
+		F233C3CB2F97206E00A6A64C /* NotoSansSymbols2-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F233C3C92F97206E00A6A64C /* NotoSansSymbols2-Regular.ttf */; };
 		F28F7F342F906F1000CA28D8 /* SourceHanSansSC-VF.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F28F7F332F906F1000CA28D8 /* SourceHanSansSC-VF.ttf */; };
 		F28F7F352F906F1000CA28D8 /* SourceHanSansSC-VF.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F28F7F332F906F1000CA28D8 /* SourceHanSansSC-VF.ttf */; };
 		F28F7F392F906F1A00CA28D8 /* LXGWWenKaiTC-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F28F7F362F906F1A00CA28D8 /* LXGWWenKaiTC-Bold.ttf */; };
@@ -111,6 +113,7 @@
 		B9B23F2B2F219EB800E620E2 /* Merriweather-Black.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Merriweather-Black.ttf"; sourceTree = "<group>"; };
 		B9B23F352F219F1900E620E2 /* Merriweather-LightItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Merriweather-LightItalic.ttf"; sourceTree = "<group>"; };
 		B9B23F442F21A19200E620E2 /* Merriweather-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Merriweather-Light.ttf"; sourceTree = "<group>"; };
+		F233C3C92F97206E00A6A64C /* NotoSansSymbols2-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NotoSansSymbols2-Regular.ttf"; sourceTree = "<group>"; };
 		F28F7F332F906F1000CA28D8 /* SourceHanSansSC-VF.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SourceHanSansSC-VF.ttf"; sourceTree = "<group>"; };
 		F28F7F362F906F1A00CA28D8 /* LXGWWenKaiTC-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "LXGWWenKaiTC-Bold.ttf"; sourceTree = "<group>"; };
 		F28F7F372F906F1A00CA28D8 /* LXGWWenKaiTC-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "LXGWWenKaiTC-Light.ttf"; sourceTree = "<group>"; };
@@ -266,6 +269,7 @@
 				F28F7F382F906F1A00CA28D8 /* LXGWWenKaiTC-Regular.ttf */,
 				F28F7F3F2F90773F00CA28D8 /* ZhanKuWenYiTi.ttf */,
 				F28F7F422F9077DE00CA28D8 /* AiDianFengYaHei（ShangYongMianFei）.ttf */,
+				F233C3C92F97206E00A6A64C /* NotoSansSymbols2-Regular.ttf */,
 			);
 			path = Fonts;
 			sourceTree = "<group>";
@@ -393,6 +397,7 @@
 				F28F7F432F9077DE00CA28D8 /* AiDianFengYaHei（ShangYongMianFei）.ttf in Resources */,
 				F28F7F412F90773F00CA28D8 /* ZhanKuWenYiTi.ttf in Resources */,
 				F28F7F3B2F906F1A00CA28D8 /* LXGWWenKaiTC-Regular.ttf in Resources */,
+				F233C3CA2F97206E00A6A64C /* NotoSansSymbols2-Regular.ttf in Resources */,
 				54C65B922E6E12AD00A41F9A /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
 				B9B23EF82F2199B200E620E2 /* CormorantGaramond-SemiBold.ttf in Resources */,
 				B9B23F482F21A19200E620E2 /* Merriweather-Light.ttf in Resources */,
@@ -410,6 +415,7 @@
 				6E3988CA2F64F01B00A8E2A1 /* CormorantGaramond-Bold.ttf in Resources */,
 				6E3988CB2F64F01B00A8E2A1 /* Merriweather-Light.ttf in Resources */,
 				F28F7F442F9077DE00CA28D8 /* AiDianFengYaHei（ShangYongMianFei）.ttf in Resources */,
+				F233C3CB2F97206E00A6A64C /* NotoSansSymbols2-Regular.ttf in Resources */,
 				6E3988CC2F64F01B00A8E2A1 /* PlayfairDisplay-VariableFont_wght.ttf in Resources */,
 				6E3988CD2F64F01B00A8E2A1 /* Gloock-Regular.ttf in Resources */,
 				F28F7F342F906F1000CA28D8 /* SourceHanSansSC-VF.ttf in Resources */,

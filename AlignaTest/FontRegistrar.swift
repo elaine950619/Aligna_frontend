@@ -26,7 +26,9 @@ enum FontRegistrar {
         // 展库文艺体
         "zcoolwenyiti",
         // 爱点峰雅黑
-        "AidianFengYaHei"
+        "AidianFengYaHei",
+        // Noto Sans Symbols 2 — 12 zodiac glyphs + planet symbols for CosmicMapView
+        "NotoSansSymbols2-Regular"
     ]
 
     private static var didRegister = false
