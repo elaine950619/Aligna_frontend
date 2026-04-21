@@ -235,15 +235,18 @@ struct AstroGlobeChart: UIViewRepresentable {
     let showMoonSector: Bool
     let showAscSector: Bool
 
-    // Camera — street/neighborhood-level zoom for 2D flat map
-    static let initialCameraAlt: Double = 3_000   // 3 km altitude → clear view
+    // Camera — city-level zoom (shows central city + adjacent districts)
+    static let initialCameraAlt: Double = 15_000   // 15 km altitude → ~city coverage
     // Tell MapKit the bottom strip is obscured by the Legend so the user pin rises above centre.
     static let mapBottomInset: CGFloat = 180
 
     // Dynamic geometry — outer zodiac ring (zebra) + sectors radiating from center
-    static func zodiacOuter(cameraAlt: Double) -> Double { cameraAlt * 0.105 }     // ring closer to user
-    static func zodiacInner(cameraAlt: Double) -> Double { cameraAlt * 0.097 }     // thin stripe (width 0.008)
-    static func sectorStart(cameraAlt: Double) -> Double { cameraAlt * 0.008 }     // sector starts near center (skip user dot)
+    static func zodiacOuter(cameraAlt: Double) -> Double { cameraAlt * 0.105 }     // ring outer edge
+    static func zodiacInner(cameraAlt: Double) -> Double { cameraAlt * 0.097 }     // ring inner edge
+    /// Body token centres — offset inward from the ring so the whole disk sits inside the ring,
+    /// not overlapping the zebra band.
+    static func bodyRadius(cameraAlt: Double)  -> Double { cameraAlt * 0.083 }
+    static func sectorStart(cameraAlt: Double) -> Double { cameraAlt * 0.008 }     // aspect sector starts near user dot
 
     // Zodiac glyphs — U+FE0E forces TEXT presentation, not Apple Color Emoji.
     private static let zodiacGlyphs = [
@@ -437,6 +440,7 @@ struct AstroGlobeChart: UIViewRepresentable {
             let cameraAlt = map.camera.centerCoordinateDistance
             let zodOuter  = AstroGlobeChart.zodiacOuter(cameraAlt: cameraAlt)
             let zodInner  = AstroGlobeChart.zodiacInner(cameraAlt: cameraAlt)
+            let bodyR     = AstroGlobeChart.bodyRadius(cameraAlt: cameraAlt)
             let sectStart = AstroGlobeChart.sectorStart(cameraAlt: cameraAlt)
 
             // Rotation: natal ascendant → compass 270° (screen 9 o'clock); no natal → 0° Aries at 9 o'clock.
@@ -515,7 +519,7 @@ struct AstroGlobeChart: UIViewRepresentable {
                 ]
             }
             for body in bodies {
-                let coord = destinationCoord(from: center, azimuth: bearing(from: body.lon), distance: zodInner)
+                let coord = destinationCoord(from: center, azimuth: bearing(from: body.lon), distance: bodyR)
                 map.addAnnotation(AstroWheelAnnotation(
                     coordinate: coord, glyph: body.glyph,
                     color: body.color, fontSize: body.fontSize,
@@ -648,7 +652,17 @@ struct AstroGlobeChart: UIViewRepresentable {
             //  • Body → always BLACK (sits on colored circle → maximum contrast)
             //  • Zodiac → whatever colour the annotation carries (caller picks black or white
             //    depending on zebra band parity) with a complementary shadow.
-            let label = UILabel(frame: CGRect(x: 0, y: 0, width: viewSize, height: viewSize))
+            //
+            // Body glyphs get a small upward nudge because UILabel vertically centres the line
+            // box (ascender + descender), whereas the visible glyph for ☉ ☽ ↑ sits inside the
+            // cap-height region — leaving them looking ~8% lower than the coloured circle centre.
+            let bodyYNudge: CGFloat = a.isBody ? -a.fontSize * 0.07 : 0
+            let label = UILabel(frame: CGRect(
+                x: 0,
+                y: bodyYNudge,
+                width: viewSize,
+                height: viewSize
+            ))
             label.text          = a.glyph
             label.textAlignment = .center
             label.textColor     = a.isBody
@@ -693,22 +707,37 @@ private struct AspectToggleCard: View {
     let natalColor:   Color
     @Binding var isOn: Bool
 
-    // Toggle background colour MATCHES the map sector colour exactly.
-    // OFF   → deep, dim (clearly "not active")
-    // ON+nil → neutral white 0.28 (matches the white nil-sector on map)
-    // ON+aspect → the same UIColor.systemGreen/Orange/Cyan used by the map polygon
+    // Legend cards use a **dark, muted "forest" palette** — decoupled from the map sectors
+    // so white text stays highly readable. The vivid aspect colour re-enters through the
+    // border as an "electric rim" so the aspect signal isn't lost.
+    //
+    // OFF and ON+nil go in OPPOSITE directions on the material: OFF darkens (black overlay),
+    // ON+nil lifts (white overlay). This keeps them clearly distinguishable even without
+    // an aspect tint.
     private var bgColor: Color {
-        guard isOn else { return Color.black.opacity(0.45) }
-        guard let aspect else { return Color.white.opacity(0.28) }
+        guard isOn else { return Color.black.opacity(0.55) }
+        guard let aspect else { return Color.white.opacity(0.22) }
         switch aspect {
         case .conjunction, .trine:
-            return Color(uiColor: .systemGreen).opacity(0.55)
+            return Color(red: 0.13, green: 0.36, blue: 0.22, opacity: 0.92)  // deep forest green
         case .square, .opposition:
-            return Color(uiColor: .systemOrange).opacity(0.55)
+            return Color(red: 0.52, green: 0.30, blue: 0.12, opacity: 0.92)  // burnt sienna
         case .sextile:
-            return Color(uiColor: .systemCyan).opacity(0.45)
+            return Color(red: 0.18, green: 0.40, blue: 0.50, opacity: 0.90)  // deep teal
         }
     }
+
+    private var borderColor: Color {
+        guard isOn else { return Color.white.opacity(0.08) }
+        guard let aspect else { return Color.white.opacity(0.65) }   // bright white rim for nil-aspect active state
+        switch aspect {
+        case .conjunction, .trine:   return Color(uiColor: .systemGreen).opacity(0.70)
+        case .square, .opposition:   return Color(uiColor: .systemOrange).opacity(0.70)
+        case .sextile:               return Color(uiColor: .systemCyan).opacity(0.60)
+        }
+    }
+
+    private var borderWidth: CGFloat { isOn ? 1.2 : 0.5 }
 
     var body: some View {
         Button { isOn.toggle() } label: {
@@ -746,24 +775,24 @@ private struct AspectToggleCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(
-                        isOn ? Color.white.opacity(0.50) : Color.white.opacity(0.10),
-                        lineWidth: isOn ? 1.2 : 0.6
-                    )
+                    .stroke(borderColor, lineWidth: borderWidth)
             )
         }
         .buttonStyle(.plain)
     }
 
     private func signTag(label: String, sign: String, color: Color) -> some View {
-        HStack(spacing: 3) {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(color)
+                .frame(width: 5, height: 5)
             Text(label)
                 .font(.custom("Merriweather-Light", size: 9.5))
-                .opacity(0.80)
+                .foregroundColor(.white.opacity(0.65))
             Text(sign)
                 .font(.custom("Merriweather-Regular", size: 10.5))
+                .foregroundColor(.white)
         }
-        .foregroundColor(color)
         .lineLimit(1)
     }
 }
@@ -1127,8 +1156,10 @@ struct CosmicMapView: View {
                 showMoonSector: showMoonSector,
                 showAscSector:  showAscSector
             )
-            .saturation(0.2)
-            .brightness(-0.15)
+            // No saturation filter — transit/natal colors show at full strength on body tokens.
+            // Modest positive brightness lifts the map out of deep black while keeping the
+            // native dark + muted MapKit look.
+            .brightness(0.08)
             .ignoresSafeArea()
 
             // Themed chrome: top bar + compass above legend + bottom legend panel
