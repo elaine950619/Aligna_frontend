@@ -243,9 +243,10 @@ struct AstroGlobeChart: UIViewRepresentable {
     // Dynamic geometry — outer zodiac ring (zebra) + sectors radiating from center
     static func zodiacOuter(cameraAlt: Double) -> Double { cameraAlt * 0.105 }     // ring outer edge
     static func zodiacInner(cameraAlt: Double) -> Double { cameraAlt * 0.097 }     // ring inner edge
-    /// Body token centres — offset inward from the ring so the whole disk sits inside the ring,
-    /// not overlapping the zebra band.
-    static func bodyRadius(cameraAlt: Double)  -> Double { cameraAlt * 0.083 }
+    /// Body token centres — sit just inside the ring's inner edge. After shrinking the disks
+    /// to fontSize × 1.5 we can push closer; the small remaining gap keeps disks from
+    /// touching the zebra band.
+    static func bodyRadius(cameraAlt: Double)  -> Double { cameraAlt * 0.090 }
     static func sectorStart(cameraAlt: Double) -> Double { cameraAlt * 0.008 }     // aspect sector starts near user dot
 
     // Zodiac glyphs — U+FE0E forces TEXT presentation, not Apple Color Emoji.
@@ -473,7 +474,7 @@ struct AstroGlobeChart: UIViewRepresentable {
                     endBearing:   bearing(from: endL)
                 )
                 sector.title = i % 2 == 0 ? "zodiac_even" : "zodiac_odd"
-                map.addOverlay(sector)
+                map.addOverlay(sector, level: .aboveLabels)   // sit above street/place labels
             }
 
             // 12 zodiac symbols at ring centre radius — colour depends on zebra band parity:
@@ -544,7 +545,7 @@ struct AstroGlobeChart: UIViewRepresentable {
                 // so the toggle's visual effect is always obvious.
                 // Use titleID (stable English identifier) so sectorColor() stays locale-safe.
                 sector.title = "\(prefix)_\(aspect?.titleID ?? "none")"
-                map.addOverlay(sector)
+                map.addOverlay(sector, level: .aboveLabels)   // sit above street/place labels
             }
 
             if showSunSector {
@@ -631,7 +632,8 @@ struct AstroGlobeChart: UIViewRepresentable {
             if a.isBody {
                 // Body markers — fill circle with body's COLOR (transit vs natal distinction),
                 // glyph inside is BLACK for high contrast and clear identity.
-                let bgSize = a.fontSize * 2.0
+                // bgSize = fontSize × 1.5 → very tight; centering must be exact.
+                let bgSize = a.fontSize * 1.5
                 let bg = UIView(frame: CGRect(
                     x: (viewSize - bgSize) / 2,
                     y: (viewSize - bgSize) / 2,
@@ -652,27 +654,36 @@ struct AstroGlobeChart: UIViewRepresentable {
             //  • Body → always BLACK (sits on colored circle → maximum contrast)
             //  • Zodiac → whatever colour the annotation carries (caller picks black or white
             //    depending on zebra band parity) with a complementary shadow.
-            //
-            // Body glyphs get a small upward nudge because UILabel vertically centres the line
-            // box (ascender + descender), whereas the visible glyph for ☉ ☽ ↑ sits inside the
-            // cap-height region — leaving them looking ~8% lower than the coloured circle centre.
-            let bodyYNudge: CGFloat = a.isBody ? -a.fontSize * 0.07 : 0
-            let label = UILabel(frame: CGRect(
-                x: 0,
-                y: bodyYNudge,
-                width: viewSize,
-                height: viewSize
-            ))
+            let label = UILabel(frame: CGRect(x: 0, y: 0, width: viewSize, height: viewSize))
             label.text          = a.glyph
             label.textAlignment = .center
             label.textColor     = a.isBody
                 ? UIColor.black.withAlphaComponent(0.90)
                 : a.color
-            if a.useAstroFont,
-               let f = UIFont(name: AstroGlobeChart.astroFont, size: a.fontSize) {
-                label.font = f
-            } else {
-                label.font = .systemFont(ofSize: a.fontSize, weight: .semibold)
+            let glyphFont: UIFont = {
+                if a.useAstroFont,
+                   let f = UIFont(name: AstroGlobeChart.astroFont, size: a.fontSize) {
+                    return f
+                }
+                return .systemFont(ofSize: a.fontSize, weight: .semibold)
+            }()
+            label.font = glyphFont
+
+            // Center body glyph EXACTLY using CoreText ink bounds (not empirical guess).
+            // UILabel centres the typographic line box (ascender + descender), but the visible
+            // glyph rectangle for ☉ / ☽ / ↑ doesn't fill that box — so we calculate the precise
+            // y-offset that makes the glyph's actual ink-rect midpoint coincide with the
+            // container's geometric centre.
+            if a.isBody {
+                let attr = NSAttributedString(string: a.glyph, attributes: [.font: glyphFont])
+                let line = CTLineCreateWithAttributedString(attr)
+                let inkBounds = CTLineGetBoundsWithOptions(line, [.useGlyphPathBounds])
+                let lineHeight = glyphFont.ascender + abs(glyphFont.descender) + glyphFont.leading
+                // Derivation:
+                //   baseline_y_in_label = (label.h - lineHeight)/2 + ascender
+                //   visible glyph centre y = baseline_y - inkBounds.midY  (CT y-up flipped)
+                //   want visible centre = label.h / 2  →  origin shift = lineHeight/2 - ascender + inkBounds.midY
+                label.frame.origin.y = lineHeight / 2 - glyphFont.ascender + inkBounds.midY
             }
             // Complementary shadow: dark glyph → white glow; light glyph → black glow.
             if !a.isBody {
