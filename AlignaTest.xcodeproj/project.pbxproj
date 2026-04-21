@@ -473,7 +473,7 @@
 				CODE_SIGN_ENTITLEMENTS = AlignaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = J58VC5CY3K;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AlignaWidget/Info.plist;
@@ -484,7 +484,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.18;
+				MARKETING_VERSION = 2.20;
 				PRODUCT_BUNDLE_IDENTIFIER = Aligna.AlynnaWidgetExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -505,7 +505,7 @@
 				CODE_SIGN_ENTITLEMENTS = AlignaWidgetExtensionRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = J58VC5CY3K;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AlignaWidget/Info.plist;
@@ -516,7 +516,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.18;
+				MARKETING_VERSION = 2.20;
 				PRODUCT_BUNDLE_IDENTIFIER = Aligna.AlynnaWidgetExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

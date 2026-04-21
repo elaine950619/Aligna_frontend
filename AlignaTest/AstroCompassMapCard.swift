@@ -1208,7 +1208,7 @@ struct CosmicMapView: View {
         .onDisappear {
             fetcher.stopTracking()
         }
-        .onChange(of: fetcher.coordinate) { coord in
+        .onChange(of: fetcher.coordinate) { _, coord in
             guard let coord else { return }
             mapCenter = coord
             compute()

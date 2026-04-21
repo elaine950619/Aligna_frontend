@@ -65,7 +65,7 @@ final class PushTokenRegistrar {
                 try await AlynnaAPI.shared.registerFcmToken(trimmed, languageCode: lang)
                 self.lastRegisteredToken = trimmed
                 self.lastRegisteredLanguage = lang
-                print("✓ [PUSH] FCM token registered (lang=\(lang ?? "?"))")
+                print("✓ [PUSH] FCM token registered (lang=\(lang))")
             } catch {
                 print("⚠️ [PUSH] registerFcmToken failed: \(error.localizedDescription)")
                 // Don't cache on failure — will retry on next token refresh.
