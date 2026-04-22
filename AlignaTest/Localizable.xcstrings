@@ -1,9 +1,23 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "": {},
     " ": {},
     " · ": {},
     "·": {},
+    "· %@": {},
+    "%@ ": {},
+    "%@ %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%lld": {},
     "•": {},
     "⚠️ Unknown Category": {},
     "✦": {},
@@ -3282,6 +3296,7 @@
         }
       }
     },
+    "Delete \"%@\" Focus": {},
     "Delete Focus?": {
       "localizations": {
         "zh-Hans": {
@@ -3694,6 +3709,102 @@
           "stringUnit": {
             "state": "translated",
             "value": "无法生成壁纸。"
+          }
+        }
+      }
+    },
+    "favorites.delete": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除"
+          }
+        }
+      }
+    },
+    "favorites.deleted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已删除"
+          }
+        }
+      }
+    },
+    "favorites.empty_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the heart on today's mantra to save it here."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在首页点心形，把喜欢的心语收进这里。"
+          }
+        }
+      }
+    },
+    "favorites.empty_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No favorites yet"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这里还没有收藏"
+          }
+        }
+      }
+    },
+    "favorites.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Favorites"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我的收藏"
+          }
+        }
+      }
+    },
+    "favorites.undo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "撤销"
           }
         }
       }
@@ -11701,6 +11812,7 @@
         }
       }
     },
+    "Refresh %@": {},
     "Save": {
       "localizations": {
         "zh-Hans": {
@@ -12851,12 +12963,12 @@
         }
       }
     },
-    "You've used all 2 refreshes for today. Come back tomorrow to update your rhythm. We're also working on a subscription plan with more access. Thank you for your patience.": {
+    "Zodiac: Sun %@, Moon %@, Ascendant %@": {
       "localizations": {
-        "zh-Hans": {
+        "en": {
           "stringUnit": {
-            "state": "translated",
-            "value": "今天的更新次数已用完，明天再来探索新的节奏吧。我们也在筹备订阅计划，届时将带来更多次数。感谢你的耐心。"
+            "state": "new",
+            "value": "Zodiac: Sun %1$@, Moon %2$@, Ascendant %3$@"
           }
         }
       }
@@ -13053,7 +13165,7 @@
         }
       }
     },
-    "favorites.title": {
+    "profile.favorites_title": {
       "localizations": {
         "en": {
           "stringUnit": {
@@ -13069,82 +13181,34 @@
         }
       }
     },
-    "favorites.delete": {
+    "profile.favorites_subtitle": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete"
+            "value": "Saved mantras you've hearted"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "删除"
+            "value": "翻看你收藏的心语"
           }
         }
       }
     },
-    "favorites.deleted": {
+    "You've used all %d refreshes for today. Come back tomorrow to update your rhythm. We're also working on a subscription plan with more access. Thank you for your patience.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Removed"
+            "value": "You've used all %d refreshes for today. Come back tomorrow to update your rhythm. We're also working on a subscription plan with more access. Thank you for your patience."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已删除"
-          }
-        }
-      }
-    },
-    "favorites.undo": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Undo"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "撤销"
-          }
-        }
-      }
-    },
-    "favorites.empty_title": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No favorites yet"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "这里还没有收藏"
-          }
-        }
-      }
-    },
-    "favorites.empty_hint": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tap the heart on today's mantra to save it here."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在首页点心形，把喜欢的心语收进这里。"
+            "value": "今天的更新次数已用完，明天再来探索新的节奏吧。我们也在筹备订阅计划，届时将带来更多次数。感谢你的耐心。"
           }
         }
       }

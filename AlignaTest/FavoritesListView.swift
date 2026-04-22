@@ -38,6 +38,7 @@ extension FavoriteMantraItem {
 // MARK: - FavoritesListView
 
 struct FavoritesListView: View {
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var starManager: StarAnimationManager
     @StateObject private var store = FavoritesStore.shared
@@ -53,9 +54,17 @@ struct FavoritesListView: View {
                 .environmentObject(themeManager)
                 .ignoresSafeArea()
 
-            Group {
+            VStack(spacing: 0) {
+                Color.clear.frame(height: 56)
+
+                headerSection
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 14)
+
                 if store.items.isEmpty && !store.isLoading {
+                    Spacer()
                     emptyState
+                    Spacer()
                 } else {
                     list
                 }
@@ -66,11 +75,43 @@ struct FavoritesListView: View {
                     .padding(.bottom, 24)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+
+            // Custom back button overlay
+            VStack {
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.title3.weight(.semibold))
+                            .foregroundColor(themeManager.primaryText)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                Spacer()
+            }
         }
-        .navigationTitle(Text("favorites.title"))
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .task { await store.refresh() }
         .refreshable { await store.refresh() }
+    }
+
+    // MARK: - Header
+
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(String(localized: "favorites.title"))
+                .font(.custom("Merriweather-Bold", size: 22))
+                .foregroundColor(themeManager.primaryText)
+            Text(String(localized: "profile.favorites_subtitle"))
+                .font(.custom("Merriweather-Light", size: 12))
+                .foregroundColor(themeManager.descriptionText.opacity(0.70))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - List

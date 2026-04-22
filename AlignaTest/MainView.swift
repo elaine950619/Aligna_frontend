@@ -635,7 +635,6 @@ struct MainView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     @StateObject private var favoritesStore = FavoritesStore.shared
-    @State private var showFavoritesList: Bool = false
     
     @AppStorage("lastRecommendationDate") var lastRecommendationDate: String = ""
     @AppStorage("lastRecommendationPlace") var lastRecommendationPlace: String = ""   // ✅ NEW
@@ -2877,17 +2876,6 @@ struct MainView: View {
                             HStack(spacing: geometry.size.width * 0.02) {
                                 if isLoggedIn {
                                     NavigationLink(
-                                        destination: FavoritesListView()
-                                            .environmentObject(starManager)
-                                            .environmentObject(themeManager)
-                                    ) {
-                                        Image(systemName: "heart")
-                                            .font(.system(size: 20, weight: .regular))
-                                            .frame(width: 28, height: 28)
-                                            .foregroundColor(themeManager.primaryText)
-                                    }
-
-                                    NavigationLink(
                                         destination: profileViewWithDevCallback()
                                             .environmentObject(starManager)
                                             .environmentObject(themeManager)
@@ -4670,7 +4658,7 @@ struct MainView: View {
         bootPhase = .loading
     }
 
-    private let maxDailyManualRefreshes = 1
+    private let maxDailyManualRefreshes = 3
 
     private func todayRefreshCount() -> Int {
         let today = todayString()
@@ -4699,7 +4687,7 @@ struct MainView: View {
         if remaining > 0 {
             return String(format: String(localized: "You have %d refresh(es) remaining today."), remaining)
         }
-        return String(localized: "You've used all 2 refreshes for today. Come back tomorrow to update your rhythm. We're also working on a subscription plan with more access. Thank you for your patience.")
+        return String(format: String(localized: "You've used all %d refreshes for today. Come back tomorrow to update your rhythm. We're also working on a subscription plan with more access. Thank you for your patience."), maxDailyManualRefreshes)
     }
 
     private func expandMantraIfNeeded() {

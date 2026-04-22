@@ -1673,10 +1673,10 @@ struct ProfileView: View {
                             profileIdentityCard
                             personalInfoCard
                             cosmicMapCard
-                            alynnaNumberLoader
                             innerCircleEntryCard
                             preferencesCard
                             timelineCard
+                            favoritesCard
                             notificationCard
                             locationAccessCard
                             themeCard
@@ -1692,6 +1692,11 @@ struct ProfileView: View {
                         .padding(.horizontal, 20)
                         .padding(.top, 16)
                         .padding(.bottom, 36)
+                    }
+                    .task(id: "alynna-number-profile") {
+                        if viewModel.alynnaNumber.isEmpty {
+                            await viewModel.ensureAlynnaNumberLoaded()
+                        }
                     }
 
                     if isBusy {
@@ -2323,6 +2328,20 @@ private extension ProfileView {
         }
     }
 
+    var favoritesCard: some View {
+        NavigationLink {
+            FavoritesListView()
+                .environmentObject(starManager)
+                .environmentObject(themeManager)
+        } label: {
+            rowCard(
+                icon: "heart",
+                title: String(localized: "profile.favorites_title"),
+                subtitle: String(localized: "profile.favorites_subtitle")
+            )
+        }
+    }
+
     private var personalInfoMaskText: String {
         "********"
     }
@@ -2676,17 +2695,6 @@ private extension ProfileView {
                 }
             }
         }
-    }
-
-    // MARK: Alynna Number Loader (invisible – triggers number fetch only)
-    var alynnaNumberLoader: some View {
-        Color.clear
-            .frame(height: 0)
-            .task(id: "alynna-number-profile") {
-                if viewModel.alynnaNumber.isEmpty {
-                    await viewModel.ensureAlynnaNumberLoaded()
-                }
-            }
     }
 
     // MARK: Alynna Number Card

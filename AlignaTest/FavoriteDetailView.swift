@@ -23,6 +23,8 @@ struct FavoriteDetailView: View {
                 .ignoresSafeArea()
 
             ScrollView {
+                Color.clear.frame(height: 56)
+
                 VStack(spacing: 20) {
                     // Scaled preview of the exact ShareCardRenderView.
                     GeometryReader { geo in
@@ -82,9 +84,33 @@ struct FavoriteDetailView: View {
                 }
                 .padding(.bottom, 36)
             }
+
+            // Custom back button overlay
+            VStack {
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.title3.weight(.semibold))
+                            .foregroundColor(themeManager.primaryText)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    Spacer()
+                    Text(formattedTitle())
+                        .font(.custom("Merriweather-Regular", size: 13))
+                        .foregroundColor(themeManager.primaryText.opacity(0.85))
+                        .tracking(0.6)
+                    Spacer()
+                    Color.clear.frame(width: 44, height: 44)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                Spacer()
+            }
         }
-        .navigationTitle(Text(formattedTitle()))
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 
     // MARK: - Actions
