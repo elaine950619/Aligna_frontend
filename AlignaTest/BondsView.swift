@@ -384,6 +384,11 @@ struct BondsView: View {
                             _ = try await AlynnaAPI.shared.acceptBondRequest(req.request_id)
                             UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                             await viewModel.refreshBonds()
+                        } catch AlynnaAPIError.emailNotVerified {
+                            // Server-side gate fired (e.g., client clock or
+                            // creation_timestamp disagreed with us). Surface
+                            // the same lock dialog we'd show locally.
+                            showBondLockedDialog = true
                         } catch {
                             rowError[req.request_id] = error.localizedDescription
                         }

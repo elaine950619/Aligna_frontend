@@ -124,6 +124,7 @@ enum AlynnaAPIError: Error, LocalizedError {
     case networkError(Error)
     case invalidURL
     case serverError(statusCode: Int, detail: String?)
+    case emailNotVerified(daysSinceCreation: Int, gracePeriodDays: Int)
     case decodingError(Error)
 
     var errorDescription: String? {
@@ -139,6 +140,8 @@ enum AlynnaAPIError: Error, LocalizedError {
         case .serverError(let code, let detail):
             if let d = detail, !d.isEmpty { return d }
             return "Server returned \(code)."
+        case .emailNotVerified:
+            return String(localized: "bonds.locked_message")
         case .decodingError(let e):
             return "Response decoding failed: \(e.localizedDescription)"
         }
@@ -242,6 +245,14 @@ final class AlynnaAPI {
         }
 
         if !(200..<300).contains(http.statusCode) {
+            // Structured-detail 403 from our email-verification gate:
+            // {"detail": {"code": "email_not_verified", ...}} — surface as
+            // a typed error so UI can show the lock dialog instead of raw
+            // text.
+            if http.statusCode == 403,
+               let typed = Self.extractEmailNotVerified(from: data) {
+                throw typed
+            }
             // FastAPI error format: {"detail": "..."} or {"detail": [...]}
             let detail = Self.extractDetailString(from: data)
             throw AlynnaAPIError.serverError(statusCode: http.statusCode, detail: detail)
@@ -270,6 +281,20 @@ final class AlynnaAPI {
             return arr.compactMap { $0["msg"] as? String }.first
         }
         return nil
+    }
+
+    /// If the response body is the backend's structured
+    /// `{"detail": {"code": "email_not_verified", ...}}` payload, build the
+    /// typed `.emailNotVerified` error. Otherwise return nil.
+    private static func extractEmailNotVerified(from data: Data) -> AlynnaAPIError? {
+        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let detail = obj["detail"] as? [String: Any],
+              let code = detail["code"] as? String,
+              code == "email_not_verified"
+        else { return nil }
+        let days = (detail["days_since_creation"] as? Int) ?? 0
+        let grace = (detail["grace_period_days"] as? Int) ?? 7
+        return .emailNotVerified(daysSinceCreation: days, gracePeriodDays: grace)
     }
 
     // MARK: Request helpers (body / no body overloads)

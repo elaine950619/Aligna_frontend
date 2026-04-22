@@ -21,6 +21,7 @@ struct AddBondView: View {
     @State private var isSending: Bool = false
     @State private var errorMessage: String?
     @State private var successMessage: String?
+    @State private var showBondLockedDialog: Bool = false
 
     private var normalizedDigits: String {
         rawInput.filter(\.isNumber)
@@ -90,6 +91,29 @@ struct AddBondView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .overlay {
+            if showBondLockedDialog {
+                AlynnaActionDialog(
+                    title: String(localized: "bonds.locked_title"),
+                    message: String(localized: "bonds.locked_message"),
+                    symbol: "lock.fill",
+                    tone: .warning,
+                    primaryButtonTitle: String(localized: "verify.banner_resend"),
+                    primaryAction: {
+                        EmailVerificationGate.resendVerificationEmail(nil)
+                        showBondLockedDialog = false
+                    },
+                    dismissButtonTitle: String(localized: "auth.dialog_ok"),
+                    onDismiss: {
+                        showBondLockedDialog = false
+                        dismiss()
+                    }
+                )
+                .environmentObject(themeManager)
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .zIndex(20)
+            }
+        }
         .onAppear {
             numberFieldFocused = true
         }
@@ -292,6 +316,10 @@ struct AddBondView: View {
             // Auto-dismiss after a short delay so user sees the success.
             try? await Task.sleep(nanoseconds: 900_000_000)
             dismiss()
+        } catch AlynnaAPIError.emailNotVerified {
+            // Server-side gate fired — surface the same lock dialog the
+            // client-side gate would show.
+            showBondLockedDialog = true
         } catch let api as AlynnaAPIError {
             switch api.httpStatusCode {
             case 404:
