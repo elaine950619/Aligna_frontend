@@ -87,6 +87,35 @@ struct CompatibilityResponse: Codable {
 // Placeholder for endpoints that return `{}`.
 struct EmptyResponse: Codable {}
 
+// --- Favorite mantras ---
+
+struct FavoriteMantraItem: Codable, Identifiable, Equatable {
+    let id: String
+    let mantra: String
+    let color_hex: String?
+    let score: Int
+    let keywords: [String]
+    let focus_id: String?
+    let focus_name: String?
+    let location_name: String?
+    let weather_condition: String?
+    let environment_summary: String?
+    let sun_sign: String?
+    let moon_sign: String?
+    let rising_sign: String?
+    let locale: String?
+    let saved_at: String   // ISO 8601
+}
+
+struct FavoriteMantraToggleResponse: Codable {
+    let toggled: String          // "added" | "removed"
+    let item: FavoriteMantraItem?
+}
+
+struct FavoriteMantrasListResponse: Codable {
+    let items: [FavoriteMantraItem]
+}
+
 // MARK: - Error Type
 
 enum AlynnaAPIError: Error, LocalizedError {
@@ -423,6 +452,67 @@ final class AlynnaAPI {
             method: "GET",
             queryItems: items,
             responseType: CompatibilityResponse.self
+        )
+    }
+
+    // --- Favorite mantras ---
+
+    /// Toggle-save the given snapshot: same (uid, today, mantra) → removes,
+    /// else adds. Returns `"added"` or `"removed"` plus the new item on add.
+    func toggleFavoriteMantra(_ snapshot: MantraSnapshot) async throws -> FavoriteMantraToggleResponse {
+        struct Body: Encodable {
+            let mantra: String
+            let color_hex: String?
+            let score: Int
+            let keywords: [String]
+            let focus_id: String?
+            let focus_name: String?
+            let location_name: String?
+            let weather_condition: String?
+            let environment_summary: String?
+            let sun_sign: String?
+            let moon_sign: String?
+            let rising_sign: String?
+            let locale: String?
+        }
+        let body = Body(
+            mantra: snapshot.mantra,
+            color_hex: snapshot.colorHex,
+            score: snapshot.score,
+            keywords: snapshot.keywords,
+            focus_id: snapshot.focusId,
+            focus_name: snapshot.focusName.isEmpty ? nil : snapshot.focusName,
+            location_name: snapshot.locationName.isEmpty ? nil : snapshot.locationName,
+            weather_condition: snapshot.weatherCondition.isEmpty ? nil : snapshot.weatherCondition,
+            environment_summary: snapshot.environmentSummary.isEmpty ? nil : snapshot.environmentSummary,
+            sun_sign: snapshot.sunSign.isEmpty ? nil : snapshot.sunSign,
+            moon_sign: snapshot.moonSign.isEmpty ? nil : snapshot.moonSign,
+            rising_sign: snapshot.risingSign.isEmpty ? nil : snapshot.risingSign,
+            locale: snapshot.localeCode
+        )
+        return try await send(
+            path: "/users/me/favorites/mantras",
+            method: "POST",
+            body: body,
+            responseType: FavoriteMantraToggleResponse.self
+        )
+    }
+
+    /// List this user's saved mantras, newest first.
+    func listFavoriteMantras() async throws -> FavoriteMantrasListResponse {
+        return try await send(
+            path: "/users/me/favorites/mantras",
+            method: "GET",
+            responseType: FavoriteMantrasListResponse.self
+        )
+    }
+
+    /// Delete a single favorite by its server-assigned id.
+    func deleteFavoriteMantra(id: String) async throws {
+        _ = try await send(
+            path: "/users/me/favorites/mantras/\(id)",
+            method: "DELETE",
+            responseType: EmptyResponse.self
         )
     }
 }
