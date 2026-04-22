@@ -13,8 +13,12 @@ struct LoginView: View {
 
     @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
 
-    @State private var email = ""
+    @State private var email: String
     @State private var password = ""
+
+    init(initialEmail: String = "") {
+        _email = State(initialValue: initialEmail)
+    }
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var showInfoAlert = false

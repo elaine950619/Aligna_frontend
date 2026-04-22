@@ -14,6 +14,7 @@ struct SignUpView: View {
 
     @State private var email = ""
     @State private var password = ""
+    @State private var confirmPassword = ""
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var showInfoAlert = false
@@ -25,6 +26,10 @@ struct SignUpView: View {
     @State private var showAuthOverlay = false
     @State private var navigateToLogin = false
     @State private var navigateToLoginOnDismiss = false
+    @State private var prefillLoginEmail: String = ""
+    @State private var showEmailInUseDialog = false
+    @State private var showResetSentDialog = false
+    @State private var resetSentMessage: String = ""
     @State private var currentNonce: String? = nil
     @State private var authBusy = false
     @State private var activeAuthAction: AuthAction? = nil
@@ -40,7 +45,7 @@ struct SignUpView: View {
     @State private var keyboardShowObserver: NSObjectProtocol?
     @State private var keyboardHideObserver: NSObjectProtocol?
 
-    private enum RegisterField { case email, password }
+    private enum RegisterField { case email, password, confirmPassword }
     private enum AuthAction { case emailSignUp, google, apple }
     private func isActive(_ action: AuthAction) -> Bool {
         authBusy && activeAuthAction == action
@@ -303,6 +308,7 @@ struct SignUpView: View {
 
                                     Group {
                                         SecureField("", text: $password)
+                                            .textContentType(.newPassword)
                                             .padding(.vertical, 14)
                                             .padding(.leading, 16)
                                             .background(themeManager.panelFill.opacity(0.25))
@@ -320,12 +326,46 @@ struct SignUpView: View {
                                                 lineWidth: 2.2,
                                                 cornerRadius: 14
                                             )
-                                            .submitLabel(.done)
-                                            .onSubmit { registerFocus = nil }
+                                            .submitLabel(.next)
+                                            .onSubmit { registerFocus = .confirmPassword }
                                             .id(RegisterField.password)
                                     }
                                     .staggered(6, show: $showIntro)
                                     .animation(nil, value: registerFocus)
+
+                                    Group {
+                                        SecureField("", text: $confirmPassword)
+                                            .textContentType(.newPassword)
+                                            .padding(.vertical, 14)
+                                            .padding(.leading, 16)
+                                            .background(themeManager.panelFill.opacity(0.25))
+                                            .cornerRadius(14)
+                                            .foregroundColor(themeManager.primaryText)
+                                            .placeholder(when: confirmPassword.isEmpty) {
+                                                Text(String(localized: "auth.confirm_password_placeholder"))
+                                                    .foregroundColor(themeManager.descriptionText)
+                                                    .padding(.leading, 16)
+                                            }
+                                            .focused($registerFocus, equals: .confirmPassword)
+                                            .focusGlow(
+                                                active: registerFocus == .confirmPassword,
+                                                color: themeManager.primaryText,
+                                                lineWidth: 2.2,
+                                                cornerRadius: 14
+                                            )
+                                            .submitLabel(.done)
+                                            .onSubmit { registerFocus = nil }
+                                            .id(RegisterField.confirmPassword)
+                                    }
+                                    .staggered(6, show: $showIntro)
+                                    .animation(nil, value: registerFocus)
+
+                                    Text(String(localized: "auth.password_requirements_hint"))
+                                        .font(AlynnaTypography.font(.footnote))
+                                        .foregroundColor(themeManager.descriptionText.opacity(0.70))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.horizontal, 4)
+                                        .staggered(6, show: $showIntro)
 
                                     Button(action: {
                                         guard !authBusy else { return }
@@ -434,6 +474,38 @@ struct SignUpView: View {
                         )
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
                         .zIndex(20)
+                    } else if showEmailInUseDialog {
+                        AlynnaActionDialog(
+                            title: String(localized: "signup.dialog_email_in_use_title"),
+                            message: String(format: String(localized: "signup.dialog_email_in_use_message"), prefillLoginEmail),
+                            symbol: "person.crop.circle.badge.exclamationmark",
+                            tone: .info,
+                            primaryButtonTitle: String(localized: "signup.dialog_go_to_login"),
+                            primaryAction: {
+                                showEmailInUseDialog = false
+                                navigateToLogin = true
+                            },
+                            secondaryButtonTitle: String(localized: "auth.forgot_password"),
+                            secondaryAction: {
+                                showEmailInUseDialog = false
+                                sendPasswordResetFromSignUp()
+                            },
+                            dismissButtonTitle: String(localized: "signup.dialog_cancel"),
+                            onDismiss: { showEmailInUseDialog = false }
+                        )
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                        .zIndex(20)
+                    } else if showResetSentDialog {
+                        AlynnaActionDialog(
+                            title: String(localized: "auth.password_reset_sent_title"),
+                            message: resetSentMessage,
+                            symbol: "envelope.arrow.triangle.branch",
+                            tone: .info,
+                            dismissButtonTitle: String(localized: "auth.dialog_ok"),
+                            onDismiss: { showResetSentDialog = false }
+                        )
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                        .zIndex(20)
                     }
                 }
                 .navigationDestination(isPresented: $navigateToOnboarding) {
@@ -442,7 +514,7 @@ struct SignUpView: View {
                         .environmentObject(themeManager)
                 }
                 .navigationDestination(isPresented: $navigateToLogin) {
-                    LoginView()
+                    LoginView(initialEmail: prefillLoginEmail)
                         .environmentObject(starManager)
                         .environmentObject(themeManager)
                         .environmentObject(viewModel)
@@ -534,9 +606,42 @@ struct SignUpView: View {
     }
 
     private func registerWithEmailPassword() {
-        guard !email.isEmpty, !password.isEmpty else {
+        // Client-side validation before hitting Firebase — avoids round-trips
+        // and lets us show localized, specific errors instead of Firebase's
+        // raw English messages.
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedEmail.isEmpty, !password.isEmpty, !confirmPassword.isEmpty else {
             showAuthOverlay = false
+            authBusy = false
+            activeAuthAction = nil
             alertMessage = String(localized: "signup.error_fill_fields")
+            showAlert = true
+            return
+        }
+
+        guard isValidEmailFormat(trimmedEmail) else {
+            showAuthOverlay = false
+            authBusy = false
+            activeAuthAction = nil
+            alertMessage = String(localized: "auth.error_invalid_email")
+            showAlert = true
+            return
+        }
+
+        guard password.count >= 6 else {
+            showAuthOverlay = false
+            authBusy = false
+            activeAuthAction = nil
+            alertMessage = String(localized: "auth.error_weak_password")
+            showAlert = true
+            return
+        }
+
+        guard password == confirmPassword else {
+            showAuthOverlay = false
+            authBusy = false
+            activeAuthAction = nil
+            alertMessage = String(localized: "auth.error_password_mismatch")
             showAlert = true
             return
         }
@@ -546,76 +651,40 @@ struct SignUpView: View {
         isLoggedIn = false
         shouldOnboardAfterSignIn = true
 
-        Auth.auth().createUser(withEmail: email, password: password) { result, error in
+        Auth.auth().createUser(withEmail: trimmedEmail, password: password) { result, error in
             if let error = error {
-                authBusy = false
-                activeAuthAction = nil
-                if let errCode = AuthErrorCode(rawValue: error._code),
-                   errCode == .emailAlreadyInUse {
-                    // Attempt direct login with the provided credentials.
-                    Auth.auth().signIn(withEmail: email, password: password) { result, signInError in
-                        DispatchQueue.main.async {
-                            if let signInError = signInError {
-                                authBusy = false
-                                activeAuthAction = nil
-                                showAuthOverlay = false
-                                alertMessage = signInError.localizedDescription
-                                showAlert = true
-                                return
-                            }
+                DispatchQueue.main.async {
+                    authBusy = false
+                    activeAuthAction = nil
+                    showAuthOverlay = false
 
-                            guard let user = result?.user else {
-                                authBusy = false
-                                activeAuthAction = nil
-                                showAuthOverlay = false
-                                alertMessage = String(localized: "signup.error_sign_in_failed")
-                                showAlert = true
-                                return
-                            }
-                            viewModel.userId = user.uid
-
-                            if !user.isEmailVerified {
-                                user.sendEmailVerification(completion: nil)
-                                authBusy = false
-                                activeAuthAction = nil
-                                showAuthOverlay = false
-                                verifyMessage = String(format: String(localized: "signup.verify_email_sent"), email)
-                                showVerifyAlert = true
-                                return
-                            }
-
-                            routeAuthenticatedUser(
-                                onSuccessToLogin: {
-                                    authBusy = false
-                                    activeAuthAction = nil
-                                    showAuthOverlay = false
-                                    isLoggedIn = true
-                                    dismiss()
-                                },
-                                onSuccessToOnboarding: {
-                                    authBusy = false
-                                    activeAuthAction = nil
-                                    showAuthOverlay = false
-                                    proceedToOnboarding()
-                                },
-                                onError: { message in
-                                    authBusy = false
-                                    activeAuthAction = nil
-                                    showAuthOverlay = false
-                                    alertMessage = message
-                                    showAlert = true
-                                }
-                            )
+                    if let errCode = AuthErrorCode(rawValue: error._code) {
+                        switch errCode {
+                        case .emailAlreadyInUse:
+                            // Explicit path: show a dialog offering Login or
+                            // Reset Password rather than silently attempting
+                            // sign-in with the provided credentials.
+                            prefillLoginEmail = trimmedEmail
+                            showEmailInUseDialog = true
+                            return
+                        case .invalidEmail:
+                            alertMessage = String(localized: "auth.error_invalid_email")
+                        case .weakPassword:
+                            alertMessage = String(localized: "auth.error_weak_password")
+                        case .networkError:
+                            alertMessage = String(localized: "auth.error_network")
+                        case .tooManyRequests:
+                            alertMessage = String(localized: "auth.error_too_many_requests")
+                        default:
+                            alertMessage = error.localizedDescription
                         }
+                        showAlert = true
+                        return
                     }
-                    return
-                }
 
-                authBusy = false
-                activeAuthAction = nil
-                showAuthOverlay = false
-                alertMessage = error.localizedDescription
-                showAlert = true
+                    alertMessage = error.localizedDescription
+                    showAlert = true
+                }
                 return
             }
 
@@ -627,8 +696,35 @@ struct SignUpView: View {
                 authBusy = false
                 activeAuthAction = nil
                 showAuthOverlay = false
-                verifyMessage = String(format: String(localized: "signup.verify_email_sent"), email)
+                verifyMessage = String(format: String(localized: "signup.verify_email_sent"), trimmedEmail)
                 showVerifyAlert = true
+            }
+        }
+    }
+
+    private func isValidEmailFormat(_ s: String) -> Bool {
+        // Lightweight format check — good enough to reject obvious typos
+        // before Firebase round-trip; Firebase does the authoritative check.
+        let pattern = #"^[^\s@]+@[^\s@]+\.[^\s@]+$"#
+        return s.range(of: pattern, options: .regularExpression) != nil
+    }
+
+    /// Send a password reset for the email already entered in the signup form.
+    /// Triggered from the "email already in use" dialog.
+    private func sendPasswordResetFromSignUp() {
+        let target = prefillLoginEmail.isEmpty
+            ? email.trimmingCharacters(in: .whitespacesAndNewlines)
+            : prefillLoginEmail
+        guard !target.isEmpty else { return }
+        Auth.auth().sendPasswordReset(withEmail: target) { error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    alertMessage = error.localizedDescription
+                    showAlert = true
+                    return
+                }
+                resetSentMessage = String(format: String(localized: "auth.password_reset_sent"), target)
+                showResetSentDialog = true
             }
         }
     }
