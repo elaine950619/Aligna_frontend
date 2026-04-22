@@ -2002,6 +2002,13 @@ private extension ProfileView {
                     }
                     .foregroundColor(themeManager.accent)
                 } else {
+                    // Invisible pencil on the left balances the visible one on
+                    // the right, so the HStack is symmetric and the nickname
+                    // Text lands on the true center of the row.
+                    Image(systemName: "pencil")
+                        .font(AlynnaTypography.font(.title3))
+                        .hidden()
+
                     Text(nickname.isEmpty ? "—" : nickname)
                         .font(.custom("Merriweather-Regular", size: 36))
                         .foregroundColor(themeManager.primaryText)
