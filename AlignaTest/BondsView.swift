@@ -18,6 +18,8 @@ struct BondsView: View {
     @State private var isRefreshing: Bool = false
     @State private var rowError: [String: String] = [:]  // bondId/requestId → message
     @State private var appearCount: Int = 0  // incremented on every appear to retrigger .task
+    @State private var showBondLockedDialog: Bool = false
+    @State private var navigateToAddBond: Bool = false
 
     var body: some View {
         ZStack {
@@ -82,11 +84,12 @@ struct BondsView: View {
                 }
 
                 // Bottom CTA — Add someone close
-                NavigationLink {
-                    AddBondView()
-                        .environmentObject(viewModel)
-                        .environmentObject(themeManager)
-                        .environmentObject(starManager)
+                Button {
+                    if EmailVerificationGate.isBondingRestricted {
+                        showBondLockedDialog = true
+                    } else {
+                        navigateToAddBond = true
+                    }
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "plus.circle.fill")
@@ -141,6 +144,32 @@ struct BondsView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .navigationDestination(isPresented: $navigateToAddBond) {
+            AddBondView()
+                .environmentObject(viewModel)
+                .environmentObject(themeManager)
+                .environmentObject(starManager)
+        }
+        .overlay {
+            if showBondLockedDialog {
+                AlynnaActionDialog(
+                    title: String(localized: "bonds.locked_title"),
+                    message: String(localized: "bonds.locked_message"),
+                    symbol: "lock.fill",
+                    tone: .warning,
+                    primaryButtonTitle: String(localized: "verify.banner_resend"),
+                    primaryAction: {
+                        EmailVerificationGate.resendVerificationEmail(nil)
+                        showBondLockedDialog = false
+                    },
+                    dismissButtonTitle: String(localized: "auth.dialog_ok"),
+                    onDismiss: { showBondLockedDialog = false }
+                )
+                .environmentObject(themeManager)
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .zIndex(20)
+            }
+        }
         .onAppear { appearCount += 1 }
         .task(id: appearCount) {
             await viewModel.refreshBonds()
@@ -346,6 +375,10 @@ struct BondsView: View {
 
             HStack(spacing: 10) {
                 Button {
+                    if EmailVerificationGate.isBondingRestricted {
+                        showBondLockedDialog = true
+                        return
+                    }
                     Task {
                         do {
                             _ = try await AlynnaAPI.shared.acceptBondRequest(req.request_id)

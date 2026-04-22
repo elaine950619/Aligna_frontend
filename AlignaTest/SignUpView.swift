@@ -19,9 +19,6 @@ struct SignUpView: View {
     @State private var alertMessage = ""
     @State private var showInfoAlert = false
     @State private var infoMessage = ""
-    @State private var showVerifyAlert = false
-    @State private var verifyMessage = "We sent a verification email. Please verify and then continue."
-    @State private var isVerifyingEmail = false
     @State private var navigateToOnboarding = false
     @State private var showAuthOverlay = false
     @State private var navigateToLogin = false
@@ -452,28 +449,6 @@ struct SignUpView: View {
                         )
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
                         .zIndex(20)
-                    } else if showVerifyAlert {
-                        AlynnaActionDialog(
-                            title: String(localized: "signup.dialog_verify_title"),
-                            message: verifyMessage,
-                            symbol: "envelope.badge",
-                            tone: .warning,
-                            primaryButtonTitle: String(localized: "signup.dialog_i_verified"),
-                            primaryAction: {
-                                guard !isVerifyingEmail else { return }
-                                isVerifyingEmail = true
-                                checkEmailVerificationAndContinue()
-                            },
-                            secondaryButtonTitle: String(localized: "signup.dialog_resend"),
-                            secondaryAction: {
-                                guard !isVerifyingEmail else { return }
-                                resendVerificationEmail()
-                            },
-                            dismissButtonTitle: String(localized: "signup.dialog_cancel"),
-                            onDismiss: { showVerifyAlert = false }
-                        )
-                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
-                        .zIndex(20)
                     } else if showEmailInUseDialog {
                         AlynnaActionDialog(
                             title: String(localized: "signup.dialog_email_in_use_title"),
@@ -520,7 +495,7 @@ struct SignUpView: View {
                         .environmentObject(viewModel)
                 }
                 .overlay {
-                    if isVerifyingEmail || showAuthOverlay {
+                    if showAuthOverlay {
                         ZStack {
                             Color.black.opacity(0.35)
                                 .ignoresSafeArea()
@@ -529,7 +504,7 @@ struct SignUpView: View {
                                     .progressViewStyle(.circular)
                                     .tint(themeManager.primaryText)
                                     .scaleEffect(1.05)
-                                Text(showAuthOverlay ? String(localized: "signup.overlay_signing_up") : String(localized: "signup.overlay_checking"))
+                                Text(String(localized: "signup.overlay_signing_up"))
                                     .font(AlynnaTypography.font(.footnote))
                                     .foregroundColor(themeManager.primaryText)
                             }
@@ -691,13 +666,34 @@ struct SignUpView: View {
             if let user = result?.user {
                 viewModel.userId = user.uid
             }
+            // Fire-and-forget the verification email. We don't gate on it —
+                // the user can proceed straight into onboarding, and a
+                // non-blocking banner on MainView will remind them to verify.
             result?.user.sendEmailVerification(completion: nil)
+            UserDefaults.standard.set("password", forKey: "lastAuthProvider")
             DispatchQueue.main.async {
-                authBusy = false
-                activeAuthAction = nil
-                showAuthOverlay = false
-                verifyMessage = String(format: String(localized: "signup.verify_email_sent"), trimmedEmail)
-                showVerifyAlert = true
+                routeAuthenticatedUser(
+                    onSuccessToLogin: {
+                        authBusy = false
+                        activeAuthAction = nil
+                        showAuthOverlay = false
+                        isLoggedIn = true
+                        dismiss()
+                    },
+                    onSuccessToOnboarding: {
+                        authBusy = false
+                        activeAuthAction = nil
+                        showAuthOverlay = false
+                        proceedToOnboarding()
+                    },
+                    onError: { message in
+                        authBusy = false
+                        activeAuthAction = nil
+                        showAuthOverlay = false
+                        alertMessage = message
+                        showAlert = true
+                    }
+                )
             }
         }
     }
@@ -729,84 +725,6 @@ struct SignUpView: View {
         }
     }
 
-    private func resendVerificationEmail() {
-        Auth.auth().currentUser?.sendEmailVerification(completion: nil)
-    }
-
-    private func checkEmailVerificationAndContinue() {
-        func proceed(with user: User) {
-            authBusy = true
-            user.reload { error in
-                DispatchQueue.main.async {
-                    authBusy = false
-                    isVerifyingEmail = false
-                    if let error = error {
-                        showAuthOverlay = false
-                        alertMessage = error.localizedDescription
-                        showAlert = true
-                        return
-                    }
-
-                    if user.isEmailVerified {
-                        showVerifyAlert = false
-                        viewModel.userId = user.uid
-                        UserDefaults.standard.set("password", forKey: "lastAuthProvider")
-                        routeAuthenticatedUser(
-                            onSuccessToLogin: {
-                                showAuthOverlay = false
-                                isLoggedIn = true
-                                dismiss()
-                            },
-                            onSuccessToOnboarding: {
-                                showAuthOverlay = false
-                                proceedToOnboarding()
-                            },
-                            onError: { message in
-                                showAuthOverlay = false
-                                alertMessage = message
-                                showAlert = true
-                            }
-                        )
-                    } else {
-                        showAuthOverlay = false
-                        alertMessage = String(localized: "signup.error_not_verified")
-                        showAlert = true
-                    }
-                }
-            }
-        }
-
-        // Case 1: Session exists, just reload
-        if let user = Auth.auth().currentUser {
-            proceed(with: user)
-            return
-        }
-
-        // Case 2: Session missing, try silent sign-in with the email/password on this screen
-        if !email.isEmpty, !password.isEmpty {
-            authBusy = true
-            Auth.auth().signIn(withEmail: email, password: password) { result, error in
-                DispatchQueue.main.async {
-                    if let user = result?.user {
-                        proceed(with: user)
-                    } else {
-                        authBusy = false
-                        isVerifyingEmail = false
-                        infoMessage = String(localized: "signup.session_expired_goto_login")
-                        navigateToLoginOnDismiss = true
-                        showInfoAlert = true
-                    }
-                }
-            }
-            return
-        }
-
-        // Case 3: No session and no credentials available (e.g., app restarted). Ask user to login.
-        isVerifyingEmail = false
-        infoMessage = String(localized: "signup.session_expired_goto_login")
-        navigateToLoginOnDismiss = true
-        showInfoAlert = true
-    }
 }
 
 #Preview("Sign Up") {

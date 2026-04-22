@@ -373,13 +373,13 @@ struct LoginView: View {
                                     return
                                 }
 
+                                // Email verification is no longer a hard gate —
+                                // un-verified users proceed and see a
+                                // non-blocking banner on MainView instead.
+                                // We still (re)send the verification email so
+                                // they have a fresh link to click when ready.
                                 if let user = Auth.auth().currentUser, !user.isEmailVerified {
                                     user.sendEmailVerification(completion: nil)
-                                    try? Auth.auth().signOut()
-                                    showAuthOverlay = false
-                                    alertMessage = String(localized: "login.error_verify_email")
-                                    showAlert = true
-                                    return
                                 }
 
                                 UserDefaults.standard.set("password", forKey: "lastAuthProvider")

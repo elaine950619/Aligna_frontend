@@ -2842,6 +2842,8 @@ struct MainView: View {
 
                     ScrollView(showsIndicators: false) {
                     VStack(spacing: minLength * 0.015) {
+                        EmailVerificationBanner()
+                            .environmentObject(themeManager)
                         // 顶部按钮
                         HStack(alignment: .top) {
                             // 左上角：日期（第一行）+ 天气 · 地点（第二行）
