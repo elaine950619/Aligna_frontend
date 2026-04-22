@@ -448,6 +448,12 @@ struct OnboardingStep0: View {
                         AlignaTopHeader(minLength: minLength, show: $showIntro)
                             .staggered(0, show: $showIntro)
 
+                        if EmailVerificationGate.isUnverifiedPasswordUser {
+                            VerifyEmailNoticeBar()
+                                .padding(.horizontal, 20)
+                                .staggered(0, show: $showIntro)
+                        }
+
                         Text("onboarding.step0.title")
                             .onboardingTitleStyle()
                             .padding(.top, 6)

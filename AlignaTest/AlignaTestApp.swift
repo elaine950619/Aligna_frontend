@@ -403,7 +403,10 @@ struct RootRouter: View {
 
     // 路由状态
     @State private var isReady = false
-    @State private var isAuthenticated = (Auth.auth().currentUser?.isEmailVerified == true)
+    // Auth presence only — email-verification is enforced selectively by
+    // EmailVerificationGate (banner + bonding lock) and by the backend,
+    // not as a hard signed-in/signed-out gate.
+    @State private var isAuthenticated = (Auth.auth().currentUser != nil)
     @State private var needsOnboarding: Bool? = nil
     @State private var authStateListenerHandle: AuthStateDidChangeListenerHandle?
     @AppStorage("shouldShowBootLoading") private var shouldShowBootLoading: Bool = false
@@ -521,15 +524,13 @@ struct RootRouter: View {
                     return
                 }
 
-                // Enforce email verification at the root router level.
-                if let user, user.isEmailVerified == false {
-                    try? Auth.auth().signOut()
-                    GIDSignIn.sharedInstance.signOut()
-                    setRouteState(isAuthenticated: false, isReady: true)
-                    print("Auth state -> unverified email, signed out")
-                    return
-                }
-
+                // Email verification is no longer a hard gate — unverified
+                // password users are allowed through the root router and see
+                // a non-blocking reminder (VerifyEmailNoticeBar on Step0,
+                // EmailVerificationBanner on MainView). The 7-day grace and
+                // subsequent bonding lock are enforced by
+                // EmailVerificationGate (client) and `require_verified_email`
+                // (backend).
                 let nextIsAuthenticated = (user != nil)
                 setRouteState(isAuthenticated: nextIsAuthenticated)
                 print("Auth state -> isAuthenticated=\(nextIsAuthenticated)")
